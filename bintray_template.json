@@ -12,7 +12,7 @@
 
   "files": [
     {
-      "includePattern": "commonutils/build/release/(.*)",
+      "includePattern": "\b(commonutils|customcontentprovider|networkutils|recyclerview-lib|taskutils)\b/build/release/(.*)",
       "uploadPattern": "$1"
     }
   ],
