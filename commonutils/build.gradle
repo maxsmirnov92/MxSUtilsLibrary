@@ -3,7 +3,6 @@ apply plugin: 'maven'
 
 def groupId = "net.maxsmr"
 def artifactId = "commonutils"
-def version = "1.0"
 
 def releaseDir = "${buildDir}/release"
 
@@ -18,7 +17,7 @@ android {
         minSdkVersion 10
         targetSdkVersion 23
         versionCode 1
-        versionName version
+        versionName version.toString()
     }
     buildTypes {
         release {
@@ -88,16 +87,9 @@ uploadArchives {
     repositories.mavenDeployer {
         pom.groupId = groupId
         pom.artifactId = artifactId
-        pom.version = version
+        pom.version = version.toString()
         repository(url: "file://${releaseDir}")
     }
-}
-
-task generateBintrayJson {
-    def template = new File("bintray_template.json").text
-    File configFileText = new File("bintray.json")
-    configFileText.createNewFile()
-    configFileText.write(template.replace('[version]', version))
 }
 
 artifacts {

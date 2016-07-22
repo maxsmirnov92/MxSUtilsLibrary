@@ -7,15 +7,10 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class PreferencesManager {
-
-    private static final Logger logger = LoggerFactory.getLogger(PreferencesManager.class);
 
     @NonNull
     private Context context;
@@ -55,7 +50,6 @@ public class PreferencesManager {
 
     @SuppressWarnings("unchecked")
     public synchronized <V> V getValue(@NonNull String key, @NonNull Class<V> clazz, @Nullable V defaultValue) {
-        logger.debug("getValue(), key=" + key + ", clazz=" + clazz);
         try {
             if (clazz.isAssignableFrom(String.class)) {
                 return (V) preferences.getString(key, (String) defaultValue);
@@ -81,7 +75,6 @@ public class PreferencesManager {
      * @return true if successfully committed
      */
     public synchronized <V> boolean setValue(@NonNull String key, @Nullable V value) {
-        logger.debug("setValue(), key=" + key + ", value=" + value);
         final V oldValue = value != null ? getValue(key, (Class<V>) value.getClass(), null) : null;
         final SharedPreferences.Editor editor = preferences.edit();
         try {
@@ -126,7 +119,6 @@ public class PreferencesManager {
      */
     @SuppressLint("CommitPrefEdits")
     public synchronized boolean clearValues() {
-        logger.debug("clearValues()");
         final SharedPreferences.Editor editor = preferences.edit();
         editor.clear();
         return editor.commit();

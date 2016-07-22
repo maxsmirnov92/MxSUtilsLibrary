@@ -1,4 +1,10 @@
 apply plugin: 'com.android.library'
+apply plugin: 'maven'
+
+def groupId = "net.maxsmr"
+def artifactId = "customcontentprovider"
+
+def releaseDir = "${buildDir}/release"
 
 android {
     compileSdkVersion 23
@@ -8,12 +14,12 @@ android {
         minSdkVersion 14
         targetSdkVersion 23
         versionCode 1
-        versionName "1.0"
+        versionName version.toString()
     }
     buildTypes {
         release {
             minifyEnabled false
-            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
 
@@ -26,6 +32,41 @@ android {
         abortOnError false
     }
 
+}
+
+configurations {
+    javadocDependencies
+}
+
+//task javaDocs(type: Javadoc) {
+//    source = android.sourceSets.main.java.srcDirs
+//    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+//    classpath += configurations.javadocDependencies
+//}
+//
+//task javaDocsJar(type: Jar, dependsOn: javaDocs) {
+//    classifier = 'javadoc'
+//    from javaDocs.destinationDir
+//}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from android.sourceSets.main.java.srcDirs
+}
+
+
+uploadArchives {
+    repositories.mavenDeployer {
+        pom.groupId = groupId
+        pom.artifactId = artifactId
+        pom.version = version.toString()
+        repository(url: "file://${releaseDir}")
+    }
+}
+
+artifacts {
+    archives sourcesJar
+//    archives javaDocsJar
 }
 
 dependencies {
