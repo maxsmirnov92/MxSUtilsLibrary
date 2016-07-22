@@ -338,6 +338,7 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
     @CallSuper
     public void onViewRecycled(VH holder) {
         super.onViewRecycled(holder);
+        holder.onViewRecycled();
         holder.itemView.setOnClickListener(null);
     }
 
@@ -388,6 +389,10 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
 
         protected void displayNoData(int position, @Nullable final I item) {
             itemView.setVisibility(View.GONE);
+        }
+
+        protected void onViewRecycled() {
+
         }
     }
 }

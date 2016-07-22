@@ -12,7 +12,23 @@
 
   "files": [
     {
-      "includePattern": "commonutils/build/release/(.*) | customcontentprovider/build/release/(.*) | networkutils/build/release/(.*) | recyclerview-lib/build/release/(.*) | taskutils/build/release/(.*) ",
+      "includePattern": "commonutils/build/release/(.*)",
+      "uploadPattern": "$1"
+    },
+    {
+      "includePattern": "customcontentprovider/build/release/(.*)",
+      "uploadPattern": "$1"
+    },
+    {
+      "includePattern": "networkutils/build/release/(.*)",
+      "uploadPattern": "$1"
+    },
+    {
+      "includePattern": "recyclerview-lib/build/release/(.*)",
+      "uploadPattern": "$1"
+    },
+    {
+      "includePattern": "taskutils/build/release/(.*) ",
       "uploadPattern": "$1"
     }
   ],
