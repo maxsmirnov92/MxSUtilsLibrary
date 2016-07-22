@@ -28,7 +28,7 @@
       "uploadPattern": "$1"
     },
     {
-      "includePattern": "taskutils/build/release/(.*) ",
+      "includePattern": "taskutils/build/release/(.*)",
       "uploadPattern": "$1"
     }
   ],
