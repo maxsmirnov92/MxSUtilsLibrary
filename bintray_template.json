@@ -28,7 +28,11 @@
       "uploadPattern": "$1"
     },
     {
-      "includePattern": "taskutils/build/release/(.*)",
+      "includePattern": "tasksutils/build/release/(.*)",
+      "uploadPattern": "$1"
+    },
+    {
+      "includePattern": "devicewatchers/build/release/(.*)",
       "uploadPattern": "$1"
     }
   ],

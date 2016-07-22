@@ -1,1 +1,1 @@
-include ':app', ':commonutils', ':tasksutils', ':networkutils', ':recyclerview-lib', 'customcontentprovider'
+include ':commonutils', ':tasksutils', ':networkutils', ':recyclerview-lib', 'customcontentprovider', 'devicewatchers'

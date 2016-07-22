@@ -3,6 +3,7 @@ apply plugin: 'maven'
 
 def groupId = "net.maxsmr"
 def artifactId = "networkutils"
+def version = "1.0"
 
 def releaseDir = "${buildDir}/release"
 
@@ -14,7 +15,7 @@ android {
         minSdkVersion 10
         targetSdkVersion 23
         versionCode 1
-        versionName version.toString()
+        versionName version
     }
     buildTypes {
         release {
@@ -62,7 +63,7 @@ uploadArchives {
     repositories.mavenDeployer {
         pom.groupId = groupId
         pom.artifactId = artifactId
-        pom.version = version.toString()
+        pom.version = version
         repository(url: "file://${releaseDir}")
     }
 }

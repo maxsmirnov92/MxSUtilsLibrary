@@ -2,7 +2,7 @@ apply plugin: 'com.android.library'
 apply plugin: 'maven'
 
 def groupId = "net.maxsmr"
-def artifactId = "recyclerview-lib"
+def artifactId = "devicewatchers"
 def version = "1.0"
 
 def releaseDir = "${buildDir}/release"
@@ -12,7 +12,7 @@ android {
     buildToolsVersion "23.0.3"
 
     defaultConfig {
-        minSdkVersion 7
+        minSdkVersion 10
         targetSdkVersion 23
         versionCode 1
         versionName version
@@ -20,19 +20,10 @@ android {
     buildTypes {
         release {
             minifyEnabled false
-//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
-    }
-
-    compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
-    }
-
-    lintOptions {
-        // Don't abort if Lint finds an error, otherwise the Jenkins build
-        // will be marked as failed, and Jenkins won't analyse the Lint output
-        abortOnError false
+        debug {
+        }
     }
 }
 
@@ -56,7 +47,6 @@ task sourcesJar(type: Jar) {
     from android.sourceSets.main.java.srcDirs
 }
 
-
 uploadArchives {
     repositories.mavenDeployer {
         pom.groupId = groupId
@@ -73,5 +63,11 @@ artifacts {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    compile 'com.android.support:recyclerview-v7:23.1.1'
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:23.1.1'
+    compile 'com.android.support:support-annotations:23.1.1'
+
+    compile 'org.slf4j:slf4j-log4j12:1.7.12'
+
+    compile project(":tasksutils")
 }
