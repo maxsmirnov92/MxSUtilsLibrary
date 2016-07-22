@@ -12,7 +12,7 @@
 
   "files": [
     {
-      "includePattern": "commonutils/build/release/(.*) | customcontentprovider/build/release/(.*)",
+      "includePattern": "commonutils/build/release/(.*) | customcontentprovider/build/release/(.*) | networkutils/build/release/(.*) | recyclerview-lib/build/release/(.*) | taskutils/build/release/(.*) ",
       "uploadPattern": "$1"
     }
   ],

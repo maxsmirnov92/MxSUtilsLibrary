@@ -5,6 +5,8 @@ import android.support.annotation.Nullable;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonPrimitive;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,5 +64,42 @@ public class GsonHelper {
             logger.error("an Exception occurred during toJson(): " + e.getMessage());
             return "null";
         }
+    }
+
+    @SuppressWarnings("unchecked")
+    @NonNull
+    public static <P extends Number> P getPrimitiveNumber(Object object, Class<P> clazz) {
+        return object != null && clazz.isAssignableFrom(object.getClass()) ? (P) object : (P) Integer.valueOf(0);
+    }
+
+    @SuppressWarnings("unchecked")
+    @NonNull
+    public static <P extends Number> P getPrimitiveNumber(JsonElement element, Class<P> clazz) {
+        JsonPrimitive obj = element instanceof JsonPrimitive ? (JsonPrimitive) element : null;
+        return obj != null && clazz.isAssignableFrom(obj.getAsNumber().getClass()) ? (P) obj.getAsNumber() : (P) Integer.valueOf(0);
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    public static String getPrimitiveString(Object object) {
+        return object instanceof String ? (String) object : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    public static String getPrimitiveString(JsonElement object) {
+        JsonPrimitive obj = object instanceof JsonPrimitive ? (JsonPrimitive) object : null;
+        return obj != null && obj.isString() ? obj.getAsString() : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static boolean getPrimitiveBoolean(Object object) {
+        return object instanceof Boolean ? (Boolean) object : false;
+    }
+
+    @SuppressWarnings("unchecked")
+    public static boolean getPrimitiveBoolean(JsonElement object) {
+        JsonPrimitive obj = object instanceof JsonPrimitive ? (JsonPrimitive) object : null;
+        return (obj != null && obj.isBoolean()) && obj.getAsBoolean();
     }
 }
