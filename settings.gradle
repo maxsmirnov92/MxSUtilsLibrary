@@ -1,0 +1,1 @@
+include ':app', ':commonutils', ':tasksutils', ':networkutils', ':recyclerview-lib', 'customcontentprovider'

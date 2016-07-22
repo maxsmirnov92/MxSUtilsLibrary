@@ -1,0 +1,121 @@
+apply plugin: 'com.android.library'
+apply plugin: 'maven'
+
+def groupId = "net.maxsmr"
+def artifactId = "commonutils"
+def version = "1.0"
+
+def releaseDir = "${buildDir}/release"
+
+android {
+    compileSdkVersion 23
+    buildToolsVersion "23.0.3"
+
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
+
+    defaultConfig {
+        minSdkVersion 10
+        targetSdkVersion 23
+        versionCode 1
+        versionName version
+    }
+    buildTypes {
+        release {
+            minifyEnabled false
+//            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+        debug {
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_7
+        targetCompatibility JavaVersion.VERSION_1_7
+    }
+
+    lintOptions {
+        // Don't abort if Lint finds an error, otherwise the Jenkins build
+        // will be marked as failed, and Jenkins won't analyse the Lint output
+        abortOnError false
+    }
+}
+
+
+configurations {
+    javadocDependencies
+}
+
+//task javaDocs(type: Javadoc) {
+//    source = android.sourceSets.main.java.srcDirs
+//    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+//    classpath += configurations.javadocDependencies
+//}
+//
+//task javaDocsJar(type: Jar, dependsOn: javaDocs) {
+//    classifier = 'javadoc'
+//    from javaDocs.destinationDir
+//}
+
+task sourcesJar(type: Jar) {
+    classifier = 'sources'
+    from android.sourceSets.main.java.srcDirs
+}
+
+
+//bintray {
+//    user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+//    key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+//    // jFrog plugin must be declared for this line to work
+//    configurations = ['archives']
+//    // Package info for BinTray
+//    pkg {
+//        repo = 'maven'
+//        name = 'commonutils'
+//        userOrg = user
+//        licenses = ['Apache-2.0']
+//        vcsUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary.git'
+//        version {
+//            name = '0.1'
+//            desc = 'Common Utils'
+//            vcsTag = '0.1'
+//        }
+//    }
+//}
+
+
+uploadArchives {
+    repositories.mavenDeployer {
+        pom.groupId = groupId
+        pom.artifactId = artifactId
+        pom.version = version
+        repository(url: "file://${releaseDir}")
+    }
+}
+
+task generateBintrayJson {
+    def template = new File("bintray_template.json").text
+    File configFileText = new File("bintray.json")
+    configFileText.createNewFile()
+    configFileText.write(template.replace('[version]', version))
+}
+
+artifacts {
+    archives sourcesJar
+//    archives javaDocsJar
+}
+
+
+dependencies {
+    compile fileTree(dir: 'libs', include: ['*.jar'])
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:support-annotations:23.1.1'
+    compile 'com.android.support:palette-v7:23.1.1'
+    compile 'com.android.support:design:23.1.1'
+
+    compile 'org.slf4j:slf4j-log4j12:1.7.21'
+    compile 'com.google.code.gson:gson:2.4'
+
+    javadocDependencies 'com.android.support:appcompat-v7:23.4.0'
+    javadocDependencies 'com.android.support:support-annotations:23.4.0'
+}

@@ -1,0 +1,22 @@
+{
+
+  "package": {
+    "name": "MxSUtilsLibrary",
+    "repo": "maven",
+    "subject": "maxsmirnov92"
+  },
+
+  "version": {
+    "name": "1.0"
+  },
+
+  "files": [
+    {
+      "includePattern": "commonutils/build/release/(.*)",
+      "uploadPattern": "$1"
+    }
+  ],
+
+  "publish": true
+
+}
