@@ -1,0 +1,8 @@
+<resources>
+    <string name="app_name">JugglerHelper</string>
+    <string name="empty"/>
+    <string name="loading">Загрузка…</string>
+    <string name="data_missing">Нет данных</string>
+    <string name="data_load_failed">Не удалось загрузить данные</string>
+    <string name="button_retry">Повторить попытку</string>
+</resources>

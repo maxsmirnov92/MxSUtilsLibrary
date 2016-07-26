@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?><!--Так как на версиях андройд ниже 21 тень под тулбаром не рисуеться
+    надо рисовать вручную
+-->
+<View xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/toolbarshadow"
+    android:layout_width="match_parent"
+    android:layout_height="6dp"
+    android:background="@drawable/shape_shadow" />

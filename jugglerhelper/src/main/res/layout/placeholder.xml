@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<net.maxsmr.commonutils.android.gui.views.font.FontTextView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/emptyText"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_gravity="center"
+    android:gravity="center"
+    android:text="@string/data_missing"
+    android:textColor="@color/gray_middle"
+    android:textSize="18sp"
+    android:textStyle="bold"
+    android:visibility="gone"/>

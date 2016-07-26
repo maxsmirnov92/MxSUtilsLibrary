@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <integer name="anim_selector">250</integer>
+    <integer name="anim_selector_enter">@integer/anim_selector</integer>
+    <integer name="anim_selector_exit">@integer/anim_selector</integer>
+</resources>
