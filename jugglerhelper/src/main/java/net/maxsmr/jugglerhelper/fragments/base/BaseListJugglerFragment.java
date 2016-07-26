@@ -35,9 +35,9 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class AbsListJugglerFragment<I, Adapter extends BaseRecyclerViewAdapter<I, ? extends BaseRecyclerViewAdapter.ViewHolder<I>>> extends BaseJugglerFragment implements BaseRecyclerViewAdapter.OnItemClickListener<I>, BaseRecyclerViewAdapter.OnItemLongClickListener<I>, BaseRecyclerViewAdapter.OnItemAddedListener<I>, BaseRecyclerViewAdapter.OnItemSetListener<I>, BaseRecyclerViewAdapter.OnItemRemovedListener<I>, RecyclerScrollableController.OnLastItemVisibleListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
+public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerViewAdapter<I, ? extends BaseRecyclerViewAdapter.ViewHolder<I>>> extends BaseJugglerFragment implements BaseRecyclerViewAdapter.OnItemClickListener<I>, BaseRecyclerViewAdapter.OnItemLongClickListener<I>, BaseRecyclerViewAdapter.OnItemAddedListener<I>, BaseRecyclerViewAdapter.OnItemSetListener<I>, BaseRecyclerViewAdapter.OnItemRemovedListener<I>, RecyclerScrollableController.OnLastItemVisibleListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbsListJugglerFragment.class);
+    private static final Logger logger = LoggerFactory.getLogger(BaseListJugglerFragment.class);
 
     //    @BindView(R.id.swipeRefreshLayout)
     @Nullable
@@ -251,7 +251,7 @@ public abstract class AbsListJugglerFragment<I, Adapter extends BaseRecyclerView
 
     @Override
     public final void onRefresh() {
-        if (progressable instanceof AbsListJugglerFragment.LoadListProgressable) {
+        if (progressable instanceof BaseListJugglerFragment.LoadListProgressable) {
             doRefreshList();
         } else {
             throw new RuntimeException("progressable is not instance of " + LoadListProgressable.class);

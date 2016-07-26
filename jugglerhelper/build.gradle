@@ -1,5 +1,5 @@
 apply plugin: 'com.android.library'
-apply plugin: 'com.neenbedankt.android-apt'
+//apply plugin: 'com.neenbedankt.android-apt'
 apply plugin: 'maven'
 
 def groupId = "net.maxsmr"
@@ -91,6 +91,6 @@ dependencies {
     compile 'me.ilich:juggler:0.1.16'
     compile(group: 'me.ilich', name: 'NestableViewPager', version: '0.2.0')
 
-    compile 'com.jakewharton:butterknife:8.0.1'
-    apt 'com.jakewharton:butterknife-compiler:8.0.1'
+//    compile 'com.jakewharton:butterknife:8.0.1'
+//    apt 'com.jakewharton:butterknife-compiler:8.0.1'
 }

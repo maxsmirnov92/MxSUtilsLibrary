@@ -78,11 +78,6 @@ public abstract class BaseJugglerFragment extends JugglerFragment implements Nes
         return null;
     }
 
-    @Nullable
-    protected static final <V extends View> V findViewById(@Nullable View view, @IdRes int id) throws ClassCastException {
-        return view != null? (V) view.findViewById(id) : null;
-    }
-
     @SuppressWarnings("unchecked")
     @NonNull
     protected <T extends JugglerActivity> T getBaseActivity() {
@@ -140,6 +135,7 @@ public abstract class BaseJugglerFragment extends JugglerFragment implements Nes
     }
 
     protected abstract void onBindViews(@NonNull View rootView);
+//        ButterKnife.bind(this, rootView);
 
     private Menu menu;
 
@@ -263,5 +259,11 @@ public abstract class BaseJugglerFragment extends JugglerFragment implements Nes
     @Override
     public ViewPager getNestedViewPager() {
         return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    public static <V extends View> V findViewById(@Nullable View view, @IdRes int id) throws ClassCastException {
+        return view != null? (V) view.findViewById(id) : null;
     }
 }

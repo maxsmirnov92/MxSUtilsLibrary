@@ -12,13 +12,12 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import net.maxsmr.jugglerhelper.navigation.NavigationMode;
 import net.maxsmr.jugglerhelper.R;
+import net.maxsmr.jugglerhelper.navigation.NavigationMode;
 
-import butterknife.ButterKnife;
 import me.ilich.juggler.gui.JugglerToolbarFragment;
 
-public abstract class AbsJugglerToolbarFragment extends JugglerToolbarFragment {
+public abstract class BaseJugglerToolbarFragment extends JugglerToolbarFragment {
 
     @LayoutRes
     protected abstract int getLayoutId();
@@ -27,11 +26,14 @@ public abstract class AbsJugglerToolbarFragment extends JugglerToolbarFragment {
 
     @Nullable
     @Override
-    public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
+    public final View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
         View rootView = inflater.inflate(getLayoutId(), container, false);
-        ButterKnife.bind(this, rootView);
+        onBindViews(rootView);
         return rootView;
     }
+
+    protected abstract void onBindViews(@NonNull View rootView);
+//        ButterKnife.bind(this, rootView);
 
     private void initToolbar() {
         View rootView = getView();
@@ -40,7 +42,7 @@ public abstract class AbsJugglerToolbarFragment extends JugglerToolbarFragment {
             throw new IllegalStateException("root view was not created");
         }
 
-        toolbar = ButterKnife.findById(rootView, getToolbarId());
+        toolbar = BaseJugglerFragment.findViewById(rootView, getToolbarId());
 
         if (toolbar == null) {
             throw new IllegalStateException("toolbar was not found");

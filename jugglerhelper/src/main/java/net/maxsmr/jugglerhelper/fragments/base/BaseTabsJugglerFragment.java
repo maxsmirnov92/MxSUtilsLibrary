@@ -17,7 +17,7 @@ import net.maxsmr.jugglerhelper.R;
 
 import java.lang.reflect.Field;
 
-public abstract class AbsTabsJugglerFragment<PagerAdapter extends CustomFragmentStatePagerAdapter> extends BaseJugglerFragment {
+public abstract class BaseTabsJugglerFragment<PagerAdapter extends CustomFragmentStatePagerAdapter> extends BaseJugglerFragment {
 
     @NonNull
     protected abstract PagerAdapter initStatePagerAdapter();
