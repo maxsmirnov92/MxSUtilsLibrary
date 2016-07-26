@@ -79,5 +79,5 @@ dependencies {
     compile 'com.android.support:support-annotations:23.1.1'
 
 //    compile project(":tasksutils")
-    compile 'net.maxsmr:tasksutils:1.0'
+    compile 'net.maxsmr:taskutils:1.0'
 }

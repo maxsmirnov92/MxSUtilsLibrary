@@ -70,5 +70,5 @@ dependencies {
     compile 'org.slf4j:slf4j-log4j12:1.7.12'
 
 //    compile project(":tasksutils")
-    compile 'net.maxsmr:tasksutils:1.0'
+    compile 'net.maxsmr:taskutils:1.0'
 }
