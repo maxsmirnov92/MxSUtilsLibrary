@@ -1,4 +1,4 @@
-package net.maxsmr.jugglerfragments.activities.base;
+package net.maxsmr.jugglerhelper.activities.base;
 
 import android.content.Intent;
 import android.support.annotation.Nullable;
@@ -8,7 +8,7 @@ import android.view.KeyEvent;
 import android.view.MotionEvent;
 
 import net.maxsmr.commonutils.data.CompareUtils;
-import net.maxsmr.jugglerfragments.fragments.base.BaseJugglerFragment;
+import net.maxsmr.jugglerhelper.fragments.base.BaseJugglerFragment;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

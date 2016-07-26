@@ -1,4 +1,4 @@
-package net.maxsmr.jugglerfragments.navigation;
+package net.maxsmr.jugglerhelper.navigation;
 
 public enum NavigationMode {
     SANDWICH,

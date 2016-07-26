@@ -1,4 +1,4 @@
-package net.maxsmr.jugglerfragments.navigation;
+package net.maxsmr.jugglerhelper.navigation;
 
 import android.support.annotation.DrawableRes;
 import android.support.annotation.StringRes;

@@ -1,4 +1,4 @@
-package net.maxsmr.jugglerfragments.fragments.base;
+package net.maxsmr.jugglerhelper.fragments.base;
 
 import android.graphics.drawable.Drawable;
 import android.os.Bundle;
@@ -13,7 +13,7 @@ import android.view.View;
 
 import net.maxsmr.commonutils.android.gui.adapters.CustomFragmentStatePagerAdapter;
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
-import net.maxsmr.jugglerfragments.R;
+import net.maxsmr.jugglerhelper.R;
 
 import java.lang.reflect.Field;
 

@@ -1,4 +1,4 @@
-package net.maxsmr.jugglerfragments.fragments.base;
+package net.maxsmr.jugglerhelper.fragments.base;
 
 import android.os.Bundle;
 import android.support.annotation.DrawableRes;
@@ -12,8 +12,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
-import net.maxsmr.jugglerfragments.R;
-import net.maxsmr.jugglerfragments.navigation.NavigationMode;
+import net.maxsmr.jugglerhelper.navigation.NavigationMode;
+import net.maxsmr.jugglerhelper.R;
 
 import butterknife.ButterKnife;
 import me.ilich.juggler.gui.JugglerToolbarFragment;

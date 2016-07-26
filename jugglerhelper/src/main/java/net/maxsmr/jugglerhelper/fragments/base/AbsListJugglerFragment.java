@@ -1,4 +1,4 @@
-package net.maxsmr.jugglerfragments.fragments.base;
+package net.maxsmr.jugglerhelper.fragments.base;
 
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
@@ -24,7 +24,7 @@ import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
 import net.maxsmr.commonutils.android.gui.progressable.DialogProgressable;
 import net.maxsmr.commonutils.android.gui.progressable.Progressable;
 import net.maxsmr.commonutils.android.gui.views.RecyclerScrollableController;
-import net.maxsmr.jugglerfragments.R;
+import net.maxsmr.jugglerhelper.R;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
