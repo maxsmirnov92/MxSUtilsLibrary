@@ -98,6 +98,9 @@ artifacts {
 //    archives javaDocsJar
 }
 
+//jar {
+//    archiveName = "commonutils-" + version + ".jar"
+//}
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])

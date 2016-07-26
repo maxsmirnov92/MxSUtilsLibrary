@@ -71,5 +71,6 @@ artifacts {
 }
 
 dependencies {
-    compile project(':commonutils')
+//    compile project(':commonutils')
+    compile 'net.maxsmr:commonutils:1.0'
 }
