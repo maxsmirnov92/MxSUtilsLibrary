@@ -5,14 +5,16 @@ import android.content.res.TypedArray;
 import android.graphics.Typeface;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.AppCompatEditText;
 import android.util.AttributeSet;
 
-import java.util.LinkedList;
-
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
+
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public class FontEditText extends AppCompatEditText implements ITypefaceChangeable {
 
@@ -21,20 +23,16 @@ public class FontEditText extends AppCompatEditText implements ITypefaceChangeab
     }
 
     private HandlerThread thread;
-    private Handler handler;
+    private Handler handler = new Handler(Looper.getMainLooper());
 
-    private final LinkedList<OnSelectionChangedListener> selectionChangedListeners = new LinkedList<>();
+    private final Set<OnSelectionChangedListener> selectionChangedListeners = new LinkedHashSet<>();
 
     public void addOnSelectionChangedListener(@NonNull OnSelectionChangedListener listener) {
-        if (!selectionChangedListeners.contains(listener)) {
             selectionChangedListeners.add(listener);
-        }
     }
 
     public void removeOnSelectionChangedListener(@NonNull OnSelectionChangedListener listener) {
-        if (selectionChangedListeners.contains(listener)) {
             selectionChangedListeners.remove(listener);
-        }
     }
 
     public FontEditText(Context context) {
@@ -76,7 +74,6 @@ public class FontEditText extends AppCompatEditText implements ITypefaceChangeab
     private void prepareThread() {
         thread = new HandlerThread("EditSelectionChangeThread");
         thread.start();
-
     }
 
     @Override
