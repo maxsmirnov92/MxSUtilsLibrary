@@ -3,7 +3,7 @@ apply plugin: 'maven'
 
 def groupId = "net.maxsmr"
 def artifactId = "devicewatchers"
-def version = "1.0"
+def version = "1.0.1"
 
 def releaseDir = "${buildDir}/release"
 
@@ -70,5 +70,5 @@ dependencies {
     compile 'org.slf4j:slf4j-log4j12:1.7.12'
 
 //    compile project(":tasksutils")
-    compile 'net.maxsmr:taskutils:1.0'
+    compile 'net.maxsmr:tasskutils:1.0'
 }
