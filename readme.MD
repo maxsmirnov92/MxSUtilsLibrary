@@ -23,6 +23,7 @@ dependencies {
     compile 'net.maxsmr:devicewatchers:1.0'
     compile 'net.maxsmr:networkutils:1.0'
     compile 'net.maxsmr:recyclerview-lib:1.0'
-    compile 'net.maxsmr:taskutils:1.0'
+    compile 'net.maxsmr:tasksutils:1.0'
+    compile 'net.maxsmr:jugglerhelper:1.0'
 }
 ```
