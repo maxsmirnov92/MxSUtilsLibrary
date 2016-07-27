@@ -33,6 +33,7 @@ public class GsonHelper {
         try {
             return gson.fromJson(jsonString, type);
         } catch (Exception e) {
+            e.printStackTrace();
             logger.error("an Exception occurred during fromJson(): " + e.getMessage());
             return null;
         }
@@ -47,6 +48,7 @@ public class GsonHelper {
         try {
             return new ArrayList<>(Arrays.asList(gson.fromJson(jsonString, type)));
         } catch (Exception e) {
+            e.printStackTrace();
             logger.error("an Exception occurred during fromJson(): " + e.getMessage());
             return new ArrayList<>();
         }
@@ -59,8 +61,9 @@ public class GsonHelper {
         final Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
 
         try {
-            return gson.toJson(what);
+            return gson.toJson(what != null && what.length == 1? what[0] : what);
         } catch (Exception e) {
+            e.printStackTrace();
             logger.error("an Exception occurred during toJson(): " + e.getMessage());
             return "null";
         }
