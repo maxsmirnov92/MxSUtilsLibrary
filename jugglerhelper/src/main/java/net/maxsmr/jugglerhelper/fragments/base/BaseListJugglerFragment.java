@@ -127,10 +127,30 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
         if (retryButton != null) {
             retryButton.setOnClickListener(this);
         }
+
+        applyTypeface();
     }
 
     protected void postInit() {
 
+    }
+
+    @CallSuper
+    protected void applyTypeface() {
+
+        View rootView = getView();
+
+        if (rootView == null) {
+            throw new IllegalStateException("root view was not created");
+        }
+
+        String alias = getFontAlias();
+
+        if (!TextUtils.isEmpty(alias)) {
+            FontsHolder.getInstance().apply(placeholder, alias, false);
+            FontsHolder.getInstance().apply(loadingLayout, alias, false);
+            FontsHolder.getInstance().apply(retryButton, alias, false);
+        }
     }
 
     private void setLayoutParams() {

@@ -6,7 +6,7 @@ import java.util.Date;
 
 public class CompareUtils {
 
-    public static <O extends Object> boolean objectsEqual(@Nullable O one, @Nullable O another) {
+    public static boolean objectsEqual(@Nullable Object one, @Nullable Object another) {
         return one != null ? one.equals(another) : another == null;
     }
 
@@ -20,6 +20,13 @@ public class CompareUtils {
 
     public static boolean stringsEqual(@Nullable String one, @Nullable String another, boolean ignoreCase) {
         return one != null ? (!ignoreCase ? one.equals(another) : one.equalsIgnoreCase(another)) : another == null;
+    }
+
+    public static <C extends Comparable<C>> int compareObjects(@Nullable C one, @Nullable C another, boolean ascending) {
+        if (one == null || another == null) {
+            return one == null ? (another == null ? 0 : -1) : 1;
+        }
+        return ascending? one.compareTo(another) : another.compareTo(one);
     }
 
     public static int compareInts(@Nullable Integer one, @Nullable Integer another, boolean ascending) {
@@ -55,7 +62,6 @@ public class CompareUtils {
     public static int compareDates(@Nullable Date one, @Nullable Date another, boolean ascending) {
         return compareLongs(one != null ? one.getTime() : 0, another != null ? another.getTime() : 0, ascending);
     }
-
 
 
 }

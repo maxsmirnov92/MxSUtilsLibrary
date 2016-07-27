@@ -10,20 +10,29 @@ import android.text.TextUtils;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class PreferencesManager {
+public final class PreferencesManager {
 
     @NonNull
-    private Context context;
+    private final Context context;
 
     private SharedPreferences preferences;
+    private String preferencesName;
 
     public PreferencesManager(@NonNull Context ctx, @Nullable String preferencesName) {
-        context = ctx;
-        init(preferencesName);
+        this(ctx, preferencesName, Context.MODE_PRIVATE);
     }
 
-    private void init(String name) {
-        preferences = !TextUtils.isEmpty(name) ? context.getSharedPreferences(name, Context.MODE_WORLD_READABLE) : android.preference.PreferenceManager.getDefaultSharedPreferences(context);
+    public PreferencesManager(@NonNull Context ctx, @Nullable String preferencesName, int mode) {
+        context = ctx;
+        init(preferencesName, mode);
+    }
+
+    private void init(String name, int mode) {
+        if (!(mode == Context.MODE_PRIVATE || mode == Context.MODE_WORLD_READABLE || mode == Context.MODE_WORLD_WRITEABLE || mode == Context.MODE_APPEND)) {
+            throw new IllegalArgumentException("incorrect mode value: " + mode);
+        }
+        preferences = !TextUtils.isEmpty(name) ? context.getSharedPreferences(name, mode) : android.preference.PreferenceManager.getDefaultSharedPreferences(context);
+        preferencesName = !TextUtils.isEmpty(name) ? name : context.getPackageName() + "_preferences";
     }
 
     private final Set<PreferenceChangeListener> changeListeners = new LinkedHashSet<>();
@@ -33,15 +42,15 @@ public class PreferencesManager {
         if (listener == null) {
             throw new NullPointerException("listener is null");
         }
-            synchronized (changeListeners) {
-                changeListeners.add(listener);
-            }
+        synchronized (changeListeners) {
+            changeListeners.add(listener);
+        }
     }
 
     public void removePreferenceChangeListener(PreferenceChangeListener listener) {
-            synchronized (changeListeners) {
-                changeListeners.remove(listener);
-            }
+        synchronized (changeListeners) {
+            changeListeners.remove(listener);
+        }
     }
 
     public synchronized <V> V getValue(@NonNull String key, @NonNull Class<V> clazz) {
@@ -103,11 +112,10 @@ public class PreferencesManager {
             if (value != null && !value.equals(oldValue)) {
                 synchronized (changeListeners) {
                     for (PreferenceChangeListener l : changeListeners) {
-                        l.onPreferenceChanged(key, oldValue, value);
+                        l.onPreferenceChanged(preferencesName, key, oldValue, value);
                     }
                 }
             }
-
             return true;
         }
 
@@ -117,11 +125,32 @@ public class PreferencesManager {
     /**
      * @return true if successfully committed
      */
+    public synchronized boolean clearValue(@NonNull String key) {
+        boolean b = preferences.edit().remove(key).commit();
+        if (b) {
+            synchronized (changeListeners) {
+                for (PreferenceChangeListener l : changeListeners) {
+                    l.onPreferenceRemoved(preferencesName, key);
+                }
+            }
+        }
+        return b;
+    }
+
+    /**
+     * @return true if successfully committed
+     */
     @SuppressLint("CommitPrefEdits")
-    public synchronized boolean clearValues() {
-        final SharedPreferences.Editor editor = preferences.edit();
-        editor.clear();
-        return editor.commit();
+    public synchronized boolean clear() {
+        boolean b = preferences.edit().clear().commit();
+        if (b) {
+            synchronized (changeListeners) {
+                for (PreferenceChangeListener l : changeListeners) {
+                    l.onAllPreferencesRemoved(preferencesName);
+                }
+            }
+        }
+        return b;
     }
 
 }
