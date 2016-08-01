@@ -38,13 +38,13 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import net.maxsmr.commonutils.data.StringUtils;
+
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-
-import net.maxsmr.commonutils.data.StringUtils;
 
 public final class GuiUtils {
 

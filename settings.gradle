@@ -1,1 +1,1 @@
-include ':commonutils', ':tasksutils', ':networkutils', ':recyclerview-lib', ':jugglerhelper', 'customcontentprovider', 'devicewatchers'
+include ':commonutils', ':tasksutils', /*':networkutils',*/ ':recyclerview-lib', ':jugglerhelper', 'customcontentprovider'/*, 'devicewatchers'*/

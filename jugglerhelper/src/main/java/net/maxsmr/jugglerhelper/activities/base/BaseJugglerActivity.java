@@ -1,6 +1,7 @@
 package net.maxsmr.jugglerhelper.activities.base;
 
 import android.content.Intent;
+import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -22,6 +23,12 @@ import me.ilich.juggler.gui.JugglerFragment;
 public class BaseJugglerActivity extends JugglerActivity {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseJugglerActivity.class);
+
+    private boolean isCommitAllowed = true;
+
+    protected final boolean isCommitAllowed() {
+        return isCommitAllowed;
+    }
 
     @Nullable
     @SuppressWarnings("unchecked")
@@ -108,5 +115,17 @@ public class BaseJugglerActivity extends JugglerActivity {
             }
         }
         return super.onKeyDown(keyCode, event);
+    }
+
+    @Override
+    public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        isCommitAllowed = false;
+    }
+
+    @Override
+    protected void onResumeFragments() {
+        super.onResumeFragments();
+        isCommitAllowed = true;
     }
 }
