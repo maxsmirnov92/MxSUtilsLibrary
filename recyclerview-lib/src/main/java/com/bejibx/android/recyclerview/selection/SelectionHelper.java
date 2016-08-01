@@ -8,6 +8,7 @@ import android.view.View;
 
 import java.lang.ref.WeakReference;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
@@ -28,7 +29,7 @@ public final class SelectionHelper {
     public void setSelectable(boolean isSelectable) {
         if (mIsSelectable != isSelectable) {
             mIsSelectable = isSelectable;
-            if (!isSelectable) clearSelection();
+            if (!isSelectable) clearSelection(false);
             mSelectionObservable.notifySelectableChanged(isSelectable);
         }
     }
@@ -43,22 +44,26 @@ public final class SelectionHelper {
         return holder;
     }
 
+    public <H extends RecyclerView.ViewHolder> void recycleHolder(@NonNull H holder) {
+        mTracker.recycleWrapper(holder.getAdapterPosition());
+    }
+
     private <W extends SelectionHelper.ViewHolderWrapper> void bindWrapper(@NonNull W wrapper) {
         RecyclerView.ViewHolder holder = wrapper.getHolder();
         if (holder != null)
             mTracker.bindWrapper(wrapper, holder.getAdapterPosition());
     }
 
-    public boolean setItemSelectedByHolder(@NonNull RecyclerView.ViewHolder holder, boolean isSelected) {
-        return setItemSelectedByPosition(holder.getAdapterPosition(), isSelected);
+    public boolean setItemSelectedByHolder(@NonNull RecyclerView.ViewHolder holder, boolean isSelected, boolean fromUser) {
+        return setItemSelectedByPosition(holder.getAdapterPosition(), isSelected, fromUser);
     }
 
-    public boolean setItemsSelectedByHolders(@Nullable Collection<RecyclerView.ViewHolder> holders, boolean isSelected) {
+    public boolean setItemsSelectedByHolders(@Nullable Collection<RecyclerView.ViewHolder> holders, boolean isSelected, boolean fromUser) {
         boolean success = false;
         if (holders != null) {
             success = true;
             for (RecyclerView.ViewHolder holder : holders) {
-                if (holder == null || !setItemSelectedByHolder(holder, isSelected)) {
+                if (holder == null || !setItemSelectedByHolder(holder, isSelected, fromUser)) {
                     success = false;
                 }
             }
@@ -66,15 +71,15 @@ public final class SelectionHelper {
         return success;
     }
 
-    public boolean toggleItemSelectedByHolder(@NonNull RecyclerView.ViewHolder holder) {
-        return setItemSelectedByHolder(holder, !isItemSelected(holder));
+    public boolean toggleItemSelectedByHolder(@NonNull RecyclerView.ViewHolder holder, boolean fromUser) {
+        return setItemSelectedByHolder(holder, !isItemSelected(holder), fromUser);
     }
 
-    public boolean toggleItemsSelectedByHolders(@Nullable Collection<RecyclerView.ViewHolder> holders) {
+    public boolean toggleItemsSelectedByHolders(@Nullable Collection<RecyclerView.ViewHolder> holders, boolean fromUser) {
         boolean success = true;
         if (holders != null) {
             for (RecyclerView.ViewHolder holder : holders) {
-                if (!toggleItemSelectedByHolder(holder)) {
+                if (!toggleItemSelectedByHolder(holder, fromUser)) {
                     success = false;
                 }
             }
@@ -82,7 +87,7 @@ public final class SelectionHelper {
         return success;
     }
 
-    public boolean setItemSelectedByPosition(int position, boolean isSelected) {
+    public boolean setItemSelectedByPosition(int position, boolean isSelected, boolean fromUser) {
         if (isSelectable() && position != RecyclerView.NO_POSITION) {
             boolean isAlreadySelected = isItemSelected(position);
             if (isSelected) {
@@ -93,7 +98,7 @@ public final class SelectionHelper {
             if (isSelected ^ isAlreadySelected) {
                 ViewHolderWrapper wrapper = mTracker.getWrapper(position);
                 if (wrapper != null) {
-                    mSelectionObservable.notifySelectionChanged(wrapper.getHolder(), isSelected);
+                    mSelectionObservable.notifySelectionChanged(wrapper.getHolder(), isSelected, fromUser);
                 }
             }
             return true;
@@ -101,12 +106,12 @@ public final class SelectionHelper {
         return false;
     }
 
-    public boolean setItemsSelectedByPositions(@Nullable Collection<Integer> positions, boolean isSelected) {
+    public boolean setItemsSelectedByPositions(@Nullable Collection<Integer> positions, boolean isSelected, boolean fromUser) {
         boolean success = false;
         if (positions != null) {
             success = true;
             for (int pos : positions) {
-                if (!setItemSelectedByPosition(pos, isSelected)) {
+                if (!setItemSelectedByPosition(pos, isSelected, fromUser)) {
                     success = false;
                 }
             }
@@ -114,15 +119,15 @@ public final class SelectionHelper {
         return success;
     }
 
-    public boolean toggleItemSelectedByPosition(int position) {
-        return setItemSelectedByPosition(position, !isItemSelected(position));
+    public boolean toggleItemSelectedByPosition(int position, boolean fromUser) {
+        return setItemSelectedByPosition(position, !isItemSelected(position), fromUser);
     }
 
-    public boolean toggleItemsSelectedByPositions(@Nullable Collection<Integer> positions) {
+    public boolean toggleItemsSelectedByPositions(@Nullable Collection<Integer> positions, boolean fromUser) {
         boolean success = true;
         if (positions != null) {
             for (int pos : positions) {
-                if (!toggleItemSelectedByPosition(pos)) {
+                if (!toggleItemSelectedByPosition(pos, fromUser)) {
                     success = false;
                 }
             }
@@ -130,12 +135,12 @@ public final class SelectionHelper {
         return success;
     }
 
-    public void clearSelection() {
+    public void clearSelection(boolean fromUser) {
         if (!mSelectedItems.isEmpty()) {
             mSelectedItems.clear();
             for (ViewHolderWrapper wrapper : mTracker.getTrackedWrappers()) {
                 if (wrapper != null) {
-                    mSelectionObservable.notifySelectionChanged(wrapper.getHolder(), false);
+                    mSelectionObservable.notifySelectionChanged(wrapper.getHolder(), false, fromUser);
                 }
             }
         }
@@ -194,10 +199,10 @@ public final class SelectionHelper {
     }
 
     private class SelectionObservable extends Observable<SelectionObserver> {
-        private void notifySelectionChanged(RecyclerView.ViewHolder holder, boolean isSelected) {
+        private void notifySelectionChanged(RecyclerView.ViewHolder holder, boolean isSelected, boolean fromUser) {
             synchronized (mObservers) {
                 for (SelectionObserver observer : mObservers) {
-                    observer.onSelectedChanged(holder, isSelected);
+                    observer.onSelectedChanged(holder, isSelected, fromUser);
                 }
             }
         }
@@ -231,8 +236,17 @@ public final class SelectionHelper {
     class ViewHolderMultiSelectionWrapper extends ViewHolderWrapper
             implements View.OnLongClickListener {
 
-        private ViewHolderMultiSelectionWrapper(RecyclerView.ViewHolder holder, Set<SelectMode> selectModes) {
+        @Nullable Set<SelectMode> selectModes;
+
+        @NonNull
+        public Set<SelectMode> getSelectModes() {
+            return selectModes != null? new HashSet<>(selectModes) : new HashSet<SelectMode>();
+        }
+
+        private ViewHolderMultiSelectionWrapper(RecyclerView.ViewHolder holder, @Nullable Set<SelectMode> selectModes) {
             super(holder);
+
+            this.selectModes = selectModes;
 
             View itemView = holder.itemView;
 
@@ -260,7 +274,7 @@ public final class SelectionHelper {
             RecyclerView.ViewHolder holder = mWrappedHolderRef.get();
             if (holder != null) {
                 if (isSelectable()) {
-                    toggleItemSelectedByHolder(holder);
+                    toggleItemSelectedByHolder(holder, true);
                 } else {
                     mHolderClickObservable.notifyOnHolderClick(holder);
                 }
@@ -272,7 +286,7 @@ public final class SelectionHelper {
             RecyclerView.ViewHolder holder = mWrappedHolderRef.get();
             if (holder != null) {
                 if (isSelectable()) {
-                    toggleItemSelectedByHolder(holder);
+                    toggleItemSelectedByHolder(holder, true);
                     return true;
                 } else {
                     return mHolderClickObservable.notifyOnHolderLongClick(holder);

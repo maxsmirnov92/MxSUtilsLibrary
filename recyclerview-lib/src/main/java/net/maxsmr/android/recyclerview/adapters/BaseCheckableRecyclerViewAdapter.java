@@ -1,5 +1,6 @@
 package net.maxsmr.android.recyclerview.adapters;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.CallSuper;
@@ -18,11 +19,16 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdapter.ViewHolder> extends BaseRecyclerViewAdapter<I, VH> implements HolderClickObserver, SelectionObserver {
 
     private SelectionHelper mSelectionHelper;
+
+    @NonNull
+//    private final Map<Integer, Set<SelectionHelper.SelectMode>> mSelectionModes = new LinkedHashMap<>();
+    private final Set<SelectionHelper.SelectMode> mSelectionModes = new LinkedHashSet<>();
 
     @Nullable
     private Drawable defaultDrawable, selectionDrawable;
@@ -63,11 +69,50 @@ public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecycle
         mSelectionHelper.setSelectable(toggle);
     }
 
+//    private void checkSelectionModes(@Nullable Map<Integer, Set<SelectionHelper.SelectMode>> selectionModes) {
+//        if (selectionModes != null) {
+//            for (int pos : selectionModes.keySet()) {
+//                rangeCheck(pos);
+//            }
+//        }
+//    }
+
+//    @SuppressLint("NewApi")
+//    public void setSelectionModes(@Nullable Map<Integer, Set<SelectionHelper.SelectMode>> selectionModes) {
+//        checkSelectionModes(selectionModes);
+//        synchronized (mSelectionModes) {
+//            if (!Objects.equals(selectionModes, mSelectionModes)) {
+//                mSelectionModes.clear();
+//                if (selectionModes != null) {
+//                    mSelectionModes.putAll(selectionModes);
+//                }
+//            }
+//        }
+//    }
+
+
     @NonNull
-    public abstract Set<SelectionHelper.SelectMode> getSelectionModes(int position);
+    public Set<SelectionHelper.SelectMode> getSelectionModes() {
+        return new LinkedHashSet<>(mSelectionModes);
+    }
+
+    @SuppressLint("NewApi")
+    public void setSelectionModes(@Nullable Set<SelectionHelper.SelectMode> selectionModes) {
+        synchronized (mSelectionModes) {
+            if (!Objects.equals(selectionModes, mSelectionModes)) {
+                mSelectionModes.clear();
+                if (selectionModes != null) {
+                    mSelectionModes.addAll(selectionModes);
+                }
+                if (isNotifyOnChange()) {
+                    notifyDataSetChanged();
+                }
+            }
+        }
+    }
 
     private void processSelection(@NonNull VH holder, @Nullable I item, int position) {
-        mSelectionHelper.wrapSelectable(holder, getSelectionModes(position));
+        mSelectionHelper.wrapSelectable(holder, mSelectionModes); /* mSelectionModes.get(position) */
 
         final boolean isSelected = isItemSelected(position);
 
@@ -80,6 +125,12 @@ public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecycle
         } else {
             onProcessItemNotSelected(holder);
         }
+    }
+
+    @Override
+    public void onViewRecycled(VH holder) {
+        super.onViewRecycled(holder);
+        mSelectionHelper.recycleHolder(holder);
     }
 
     @Override
@@ -130,8 +181,7 @@ public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecycle
     }
 
     @Override
-    protected void onItemsCleared() {
-        super.onItemsCleared();
+    protected void onItemsCleared(int previousSize) {
         if (mSelectionHelper != null) {
             clearSelection();
         }
@@ -142,7 +192,7 @@ public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecycle
         super.onItemRemoved(removedPosition, item);
         if (mSelectionHelper != null) {
             if (mSelectionHelper.isItemSelected(removedPosition)) {
-                mSelectionHelper.setItemSelectedByPosition(removedPosition, false);
+                mSelectionHelper.setItemSelectedByPosition(removedPosition, false, false);
             }
         }
     }
@@ -203,7 +253,7 @@ public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecycle
         if (mSelectionHelper == null) {
             throw new IllegalStateException(SelectionHelper.class.getSimpleName() + " was not initialized");
         }
-        return getItemCount() > 0? mSelectionHelper.getSelectedItemsCount() : 0;
+        return getItemCount() > 0 ? mSelectionHelper.getSelectedItemsCount() : 0;
     }
 
     public boolean setItemsSelectedByPositions(@Nullable Collection<Integer> positions, boolean isSelected) {
@@ -215,7 +265,7 @@ public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecycle
                 rangeCheck(pos);
             }
         }
-        return mSelectionHelper.setItemsSelectedByPositions(positions, isSelected);
+        return mSelectionHelper.setItemsSelectedByPositions(positions, isSelected, false);
     }
 
     public boolean setItemSelectedByPosition(int position, boolean isSelected) {
@@ -223,7 +273,7 @@ public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecycle
             throw new IllegalStateException(SelectionHelper.class.getSimpleName() + " was not initialized");
         }
         rangeCheck(position);
-        return mSelectionHelper.setItemSelectedByPosition(position, isSelected);
+        return mSelectionHelper.setItemSelectedByPosition(position, isSelected, false);
     }
 
     public boolean toggleItemsSelectedByPositions(@Nullable Collection<Integer> positions) {
@@ -235,7 +285,7 @@ public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecycle
                 rangeCheck(pos);
             }
         }
-        return mSelectionHelper.toggleItemsSelectedByPositions(positions);
+        return mSelectionHelper.toggleItemsSelectedByPositions(positions, false);
     }
 
     public boolean toggleItemSelectedByPosition(int position) {
@@ -243,7 +293,7 @@ public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecycle
             throw new IllegalStateException(SelectionHelper.class.getSimpleName() + " was not initialized");
         }
         rangeCheck(position);
-        return mSelectionHelper.toggleItemSelectedByPosition(position);
+        return mSelectionHelper.toggleItemSelectedByPosition(position, false);
     }
 
     public boolean setItemsSelected(@Nullable Collection<I> items, boolean isSelected) {
@@ -285,7 +335,7 @@ public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecycle
             throw new IllegalStateException(SelectionHelper.class.getSimpleName() + " was not initialized");
         }
         if (mSelectionHelper.getSelectedItemsCount() > 0) {
-            mSelectionHelper.clearSelection();
+            mSelectionHelper.clearSelection(false);
         }
     }
 
@@ -299,7 +349,7 @@ public abstract class BaseCheckableRecyclerViewAdapter<I, VH extends BaseRecycle
 
     @SuppressWarnings("unchecked")
     @Override
-    public final void onSelectedChanged(RecyclerView.ViewHolder holder, boolean isSelected) {
+    public final void onSelectedChanged(RecyclerView.ViewHolder holder, boolean isSelected, boolean fromUser) {
         if (itemSelectedChangeListener != null) {
             itemSelectedChangeListener.onItemSelectedChange(holder.getAdapterPosition(), isSelected);
         }
