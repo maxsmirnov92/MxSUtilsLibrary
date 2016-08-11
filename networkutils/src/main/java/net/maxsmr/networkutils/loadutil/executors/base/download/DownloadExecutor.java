@@ -2,6 +2,14 @@ package net.maxsmr.networkutils.loadutil.executors.base.download;
 
 import android.support.annotation.NonNull;
 
+import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.networkutils.loadutil.executors.base.LoadExecutor;
+import net.maxsmr.networkutils.loadutil.executors.base.LoadFileListener;
+import net.maxsmr.networkutils.loadutil.executors.base.LoadFileListener.STATE;
+import net.maxsmr.networkutils.loadutil.executors.base.LoadRunnableInfo;
+import net.maxsmr.tasksutils.taskrunnable.RunnableInfo;
+import net.maxsmr.tasksutils.taskrunnable.TaskRunnable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,14 +23,6 @@ import java.net.HttpURLConnection;
 import java.nio.channels.FileLock;
 import java.util.ArrayList;
 import java.util.List;
-
-import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.networkutils.loadutil.executors.base.LoadExecutor;
-import net.maxsmr.networkutils.loadutil.executors.base.LoadFileListener;
-import net.maxsmr.networkutils.loadutil.executors.base.LoadFileListener.STATE;
-import net.maxsmr.networkutils.loadutil.executors.base.LoadRunnableInfo;
-import net.maxsmr.tasksutils.taskrunnable.RunnableInfo;
-import net.maxsmr.tasksutils.taskrunnable.TaskRunnable;
 
 
 public class DownloadExecutor extends LoadExecutor<DownloadRunnableInfo, DownloadExecutor.DownloadRunnable> {
@@ -143,12 +143,21 @@ public class DownloadExecutor extends LoadExecutor<DownloadRunnableInfo, Downloa
 //            boolean downloadCancelled = false;
             Throwable lastException;
 
-            while (!downloadSuccess && !rInfo.isCancelled() && (rInfo.settings.retryLimit == LoadRunnableInfo.RETRY_LIMIT_NONE || retriesCount < rInfo.settings.retryLimit)) {
+            while (!downloadSuccess && !rInfo.isCancelled() &&
+                    (rInfo.settings.retryLimit == LoadRunnableInfo.LoadSettings.RETRY_LIMIT_UNLIMITED
+                            || (rInfo.settings.retryLimit != LoadRunnableInfo.LoadSettings.RETRY_LIMIT_NONE && retriesCount < rInfo.settings.retryLimit))) {
+
+                if (Thread.currentThread().isInterrupted()) {
+                    logger.warn("thread interrupted, cancelling upload...");
+                    rInfo.cancel();
+                }
 
                 if (rInfo.isCancelled()) {
-                    logger.warn("download " + rInfo + " cancelled");
-                    deleteUnfinishedFile(rInfo.deleteUnfinishedFile, rInfo.destFile);
-                    notifyStateChanged(STATE.CANCELLED, rInfo, System.currentTimeMillis() - startDownloadTime, 0, 0, null);
+                    if (retriesCount == 0) {
+                        logger.warn("download " + rInfo + " cancelled");
+                        deleteUnfinishedFile(rInfo.deleteUnfinishedFile, rInfo.destFile);
+                        notifyStateChanged(STATE.CANCELLED, rInfo, System.currentTimeMillis() - startDownloadTime, 0, 0, null);
+                    }
                     return;
                 }
 
@@ -292,6 +301,22 @@ public class DownloadExecutor extends LoadExecutor<DownloadRunnableInfo, Downloa
                             logger.error("download " + rInfo + " failed, retries left: " + (rInfo.settings.retryLimit - retriesCount));
                             if (retriesCount == rInfo.settings.retryLimit) {
                                 notifyStateChanged(STATE.FAILED, rInfo, System.currentTimeMillis() - startDownloadTime, (float) total / 1024f, ((float) contentLength / 1024f), lastException = new Throwable("download with id " + rInfo.id + " failed, retries left: " + (rInfo.settings.retryLimit - retriesCount), lastException));
+
+                                if (rInfo.settings.retryDelay > 0) {
+                                    try {
+                                        Thread.sleep(rInfo.settings.retryDelay);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                        Thread.currentThread().interrupt();
+
+                                        logger.warn("thread interrupted, cancelling upload...");
+                                        rInfo.cancel();
+                                        logger.error("upload " + rInfo + " cancelled");
+                                        notifyStateChanged(STATE.CANCELLED, rInfo, System.currentTimeMillis() - startDownloadTime, (float) total / 1024f,
+                                                contentLength > 0 ? (float) contentLength / 1024f : 0, lastException = new Throwable("download with id " + rInfo.id + " was cancelled"));
+                                    }
+                                }
+
                             } else {
                                 notifyStateChanged(STATE.FAILED_RETRIES_EXCEEDED, rInfo, System.currentTimeMillis() - startDownloadTime, (float) total / 1024f, (float) contentLength / 1024f, null);
                             }

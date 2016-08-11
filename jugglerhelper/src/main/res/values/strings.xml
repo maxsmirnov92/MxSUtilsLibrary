@@ -5,4 +5,8 @@
     <string name="data_missing">Нет данных</string>
     <string name="data_load_failed">Не удалось загрузить данные</string>
     <string name="button_retry">Повторить попытку</string>
+    <string name="dialog_message_permission_denied">App requires permission %s to work properly</string>
+    <string name="dialog_message_permission_granted">Permission granted %s</string>
+    <string name="dialog_message_permissions_empty">No permissions for this app</string>
+    <string name="text_all_permissions_granted">All permissions granted</string>
 </resources>

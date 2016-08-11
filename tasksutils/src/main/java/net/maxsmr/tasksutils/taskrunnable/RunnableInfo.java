@@ -1,8 +1,8 @@
 package net.maxsmr.tasksutils.taskrunnable;
 
-import java.io.Serializable;
-
 import net.maxsmr.commonutils.data.model.InstanceManager;
+
+import java.io.Serializable;
 
 public class RunnableInfo implements Serializable {
 
@@ -36,11 +36,11 @@ public class RunnableInfo implements Serializable {
         return InstanceManager.fromByteArray(iClass, byteArray);
     }
 
-    public boolean isCancelled() {
+    public synchronized boolean isCancelled() {
         return cancelled;
     }
 
-    public void cancel() {
+    public synchronized void cancel() {
         cancelled = true;
     }
 

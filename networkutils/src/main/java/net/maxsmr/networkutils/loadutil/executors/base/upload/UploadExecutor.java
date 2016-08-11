@@ -5,6 +5,14 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.networkutils.loadutil.executors.base.LoadExecutor;
+import net.maxsmr.networkutils.loadutil.executors.base.LoadFileListener;
+import net.maxsmr.networkutils.loadutil.executors.base.LoadFileListener.STATE;
+import net.maxsmr.networkutils.loadutil.executors.base.LoadRunnableInfo;
+import net.maxsmr.tasksutils.taskrunnable.RunnableInfo;
+import net.maxsmr.tasksutils.taskrunnable.TaskRunnable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,20 +23,13 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.io.InterruptedIOException;
 import java.net.HttpURLConnection;
 import java.net.URLConnection;
 import java.nio.channels.FileLock;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.List;
-
-import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.networkutils.loadutil.executors.base.LoadExecutor;
-import net.maxsmr.networkutils.loadutil.executors.base.LoadFileListener;
-import net.maxsmr.networkutils.loadutil.executors.base.LoadFileListener.STATE;
-import net.maxsmr.networkutils.loadutil.executors.base.LoadRunnableInfo;
-import net.maxsmr.tasksutils.taskrunnable.RunnableInfo;
-import net.maxsmr.tasksutils.taskrunnable.TaskRunnable;
 
 
 public class UploadExecutor extends LoadExecutor<UploadRunnableInfo, UploadExecutor.UploadRunnable> {
@@ -88,7 +89,7 @@ public class UploadExecutor extends LoadExecutor<UploadRunnableInfo, UploadExecu
 
             if (rInfo.isCancelled()) {
                 logger.warn("upload " + rInfo + " cancelled");
-//                notifyStateChanged(STATE.CANCELLED, rInfo, System.currentTimeMillis() - startUploadTime, 0, 0, null);
+                notifyStateChanged(STATE.CANCELLED, rInfo, System.currentTimeMillis() - startUploadTime, 0, 0, null);
                 return;
             }
 
@@ -110,11 +111,20 @@ public class UploadExecutor extends LoadExecutor<UploadRunnableInfo, UploadExecu
 
             final long fileLength = rInfo.fileFormField != null ? rInfo.fileFormField.sourceFile.length() : 0;
 
-            while (!uploadSuccess && !rInfo.isCancelled() && (rInfo.settings.retryLimit == LoadRunnableInfo.RETRY_LIMIT_NONE || retriesCount < rInfo.settings.retryLimit)) {
+            while (!uploadSuccess && !rInfo.isCancelled() &&
+                    (rInfo.settings.retryLimit == LoadRunnableInfo.LoadSettings.RETRY_LIMIT_UNLIMITED
+                            || (rInfo.settings.retryLimit != LoadRunnableInfo.LoadSettings.RETRY_LIMIT_NONE && retriesCount < rInfo.settings.retryLimit))) {
+
+                if (Thread.currentThread().isInterrupted()) {
+                    logger.warn("thread interrupted, cancelling upload...");
+                    rInfo.cancel();
+                }
 
                 if (rInfo.isCancelled()) {
-                    logger.warn("upload " + rInfo + " cancelled");
-                    notifyStateChanged(STATE.CANCELLED, rInfo, System.currentTimeMillis() - startUploadTime, 0, 0, null);
+                    if (retriesCount == 0) {
+                        logger.warn("upload " + rInfo + " cancelled");
+                        notifyStateChanged(STATE.CANCELLED, rInfo, System.currentTimeMillis() - startUploadTime, 0, 0, null);
+                    }
                     return;
                 }
 
@@ -221,7 +231,12 @@ public class UploadExecutor extends LoadExecutor<UploadRunnableInfo, UploadExecu
                             }
                         };
 
-                        addFilePart(requestStream, rInfo.fileFormField.name, rInfo.fileFormField.sourceFile, notifier, rInfo.settings.logRequestData);
+                        try {
+                            addFilePart(requestStream, rInfo.fileFormField.name, rInfo.fileFormField.sourceFile, notifier, rInfo.settings.logRequestData);
+                        } catch (InterruptedIOException e) {
+                            e.printStackTrace();
+                            break;
+                        }
                     }
 
                     addCloseLine(requestStream, rInfo.settings.logRequestData);
@@ -385,6 +400,22 @@ public class UploadExecutor extends LoadExecutor<UploadRunnableInfo, UploadExecu
                             logger.error("upload " + rInfo + " failed, retries left: " + (rInfo.settings.retryLimit - retriesCount));
                             if (retriesCount < rInfo.settings.retryLimit) {
                                 notifyStateChanged(STATE.FAILED, rInfo, System.currentTimeMillis() - startUploadTime, (float) totalUploaded / 1024f, (float) fileLength / 1024f, lastException = new Throwable("upload with id " + rInfo.id + " failed, retries left: " + (rInfo.settings.retryLimit - retriesCount), lastException));
+
+                                if (rInfo.settings.retryDelay > 0) {
+                                    try {
+                                        Thread.sleep(rInfo.settings.retryDelay);
+                                    } catch (InterruptedException e) {
+                                        e.printStackTrace();
+                                        Thread.currentThread().interrupt();
+
+                                        logger.warn("thread interrupted, cancelling upload...");
+                                        rInfo.cancel();
+                                        logger.error("upload " + rInfo + " cancelled");
+                                        notifyStateChanged(STATE.CANCELLED, rInfo, System.currentTimeMillis() - startUploadTime, (float) totalUploaded / 1024f,
+                                                (float) fileLength / 1024f, lastException = new Throwable("upload with id " + rInfo.id + " was cancelled"));
+                                    }
+                                }
+
                             } else {
                                 notifyStateChanged(STATE.FAILED_RETRIES_EXCEEDED, rInfo, System.currentTimeMillis() - startUploadTime, (float) totalUploaded / 1024f, (float) fileLength / 1024f, null);
                             }
@@ -445,7 +476,7 @@ public class UploadExecutor extends LoadExecutor<UploadRunnableInfo, UploadExecu
          * @param uploadFile a File to be uploaded
          * @throws RuntimeException, IOException
          */
-        private void addFilePart(@NonNull DataOutputStream requestStream, @NonNull String fieldName, @NonNull File uploadFile, @Nullable IWriteNotifier notifier, boolean log) throws RuntimeException, IOException {
+        private void addFilePart(@NonNull DataOutputStream requestStream, @NonNull String fieldName, @NonNull File uploadFile, @Nullable IWriteNotifier notifier, boolean log) throws RuntimeException, IOException, InterruptedIOException {
             logger.debug("addFilePart(), fieldName=" + fieldName + ", uploadFile=" + uploadFile + ", log=" + log);
 
             if (!FileHelper.isFileCorrect(uploadFile)) {
@@ -475,12 +506,17 @@ public class UploadExecutor extends LoadExecutor<UploadRunnableInfo, UploadExecu
             FileInputStream inputStream = new FileInputStream(uploadFile);
             byte[] buffer = new byte[BUF_SIZE];
 
+            boolean cancelled = false;
             int bytesRead;
-            while ((notifier == null || !notifier.isCancelled()) && (bytesRead = inputStream.read(buffer)) > -1) {
+            while ((notifier == null || !(cancelled = notifier.isCancelled())) && (bytesRead = inputStream.read(buffer)) > -1) {
                 if (notifier != null) {
                     notifier.onWriteBytes(bytesRead);
                 }
                 requestStream.write(buffer, 0, bytesRead);
+            }
+
+            if (cancelled) {
+                throw new InterruptedIOException("addFilePart is interrupted");
             }
 
             requestStream.writeBytes(LINE_FEED);

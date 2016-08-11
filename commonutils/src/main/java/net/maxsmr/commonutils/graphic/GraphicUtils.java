@@ -16,8 +16,11 @@ import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.PorterDuffXfermode;
 import android.graphics.Rect;
+import android.graphics.RectF;
 import android.graphics.Typeface;
 import android.graphics.YuvImage;
+import android.graphics.drawable.BitmapDrawable;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.media.ExifInterface;
 import android.media.MediaMetadataRetriever;
@@ -27,12 +30,16 @@ import android.provider.MediaStore;
 import android.support.annotation.ColorInt;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.v7.graphics.Palette;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.util.Pair;
 import android.util.TypedValue;
 import android.view.WindowManager;
+
+import net.maxsmr.commonutils.android.media.MetadataRetriever;
+import net.maxsmr.commonutils.data.FileHelper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -49,9 +56,6 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
-
-import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.android.media.MetadataRetriever;
 
 public final class GraphicUtils {
 
@@ -90,7 +94,7 @@ public final class GraphicUtils {
         }
 
         Integer duration = MetadataRetriever.extractMetaDataField(videoFile, MediaMetadataRetriever.METADATA_KEY_DURATION, Integer.class);
-        return duration != null? duration : 0;
+        return duration != null ? duration : 0;
     }
 
     public static Bitmap getVideoFrameAtPosition(File videoFile, long positionMs) {
@@ -107,6 +111,7 @@ public final class GraphicUtils {
 
         return MetadataRetriever.extractFrame(videoFile, positionMs);
     }
+
     public static List<Pair<Long, Bitmap>> getVideoFrames(File videoFile, int framesCount) {
         // logger.debug("getVideoFrames(), videoFile=" + videoFile + ", framesCount=" + framesCount);
 
@@ -590,27 +595,6 @@ public final class GraphicUtils {
         }
     }
 
-    public static Bitmap createBitmapFromDrawable(Drawable d, Bitmap.Config config, int widthPixels, int heightPixels) {
-
-        if (d == null || config == null) {
-            return null;
-        }
-
-        widthPixels = widthPixels > 0 ? widthPixels : d.getIntrinsicWidth();
-        heightPixels = heightPixels > 0 ? heightPixels : d.getIntrinsicHeight();
-
-        if (widthPixels <= 0 || heightPixels <= 0) {
-            logger.error("incorrect bounds: " + widthPixels + "x" + heightPixels);
-            return null;
-        }
-
-        Bitmap mutableBitmap = Bitmap.createBitmap(widthPixels, heightPixels, config);
-        Canvas canvas = new Canvas(mutableBitmap);
-        d.setBounds(0, 0, widthPixels, heightPixels);
-        d.draw(canvas);
-        return mutableBitmap;
-    }
-
     /**
      * Определяет поворот картинки
      *
@@ -852,8 +836,9 @@ public final class GraphicUtils {
      */
     @TargetApi(Build.VERSION_CODES.KITKAT)
     public static Bitmap reconfigureBitmap(Bitmap b, Bitmap.Config c) {
+
         if (b == null || c == null)
-            return b;
+            return null;
 
         if (!b.isMutable()) {
             logger.error("given bitmap is immutable!");
@@ -865,6 +850,85 @@ public final class GraphicUtils {
 
         b.reconfigure(b.getWidth(), b.getHeight(), c);
         return b;
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromDrawable(Drawable drawable, int width, int height, @NonNull Bitmap.Config config) {
+
+        if (drawable == null) {
+            return null;
+        }
+
+        if (drawable instanceof BitmapDrawable) {
+            return ((BitmapDrawable) drawable).getBitmap();
+        }
+
+        if (!(drawable instanceof ColorDrawable)) {
+            width = drawable.getIntrinsicWidth();
+            height = drawable.getIntrinsicWidth();
+        }
+
+        if (width <= 0 || height <= 0) {
+            logger.error("incorrect bounds: " + width + "x" + height);
+            return null;
+        }
+
+        try {
+            Bitmap bitmap;
+
+            bitmap = Bitmap.createBitmap(width, height, config);
+
+            Canvas canvas = new Canvas(bitmap);
+            drawable.setBounds(0, 0, canvas.getWidth(), canvas.getHeight());
+            drawable.draw(canvas);
+            return bitmap;
+
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    @Nullable
+    public static Bitmap curveImage(Bitmap bitmap, @NonNull Point corners) {
+
+        if (!GraphicUtils.isBitmapCorrect(bitmap)) {
+            return null;
+        }
+
+        // Bitmap myCoolBitmap = ... ; // <-- Your bitmap you
+        // want rounded
+        int w = bitmap.getWidth(), h = bitmap.getHeight();
+        Bitmap.Config c = bitmap.getConfig();
+
+        // We have to make sure our rounded corners have an
+        // alpha channel in most cases
+        Bitmap rounder = Bitmap.createBitmap(w, h, c);
+        Canvas canvas = new Canvas(rounder);
+
+        // We're going to apply this paint eventually using a
+        // porter-duff xfer mode.
+        // This will allow us to only overwrite certain pixels.
+        // RED is arbitrary. This
+        // could be any color that was fully opaque (alpha =
+        // 255)
+        Paint xferPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        xferPaint.setColor(Color.RED);
+
+        // We're just reusing xferPaint to paint a normal
+        // looking rounded box, the 20.f
+        // is the amount we're rounding by.
+        canvas.drawRoundRect(new RectF(0, 0, w, h), corners.x, corners.y, xferPaint);
+
+        // Now we apply the 'magic sauce' to the paint
+        xferPaint.setXfermode(new PorterDuffXfermode(PorterDuff.Mode.DST_IN));
+
+        Bitmap result = Bitmap.createBitmap(w, h, c);
+        Canvas resultCanvas = new Canvas(result);
+        resultCanvas.drawBitmap(bitmap, 0, 0, null);
+        resultCanvas.drawBitmap(rounder, 0, 0, xferPaint);
+
+        return result;
     }
 
     public static byte[] convertYuvToJpeg(byte[] data, int format, int width, int height) {

@@ -12,6 +12,7 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
 import android.support.annotation.ColorInt;
+import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
@@ -52,7 +53,14 @@ public final class GuiUtils {
         throw new AssertionError("no instances.");
     }
 
-    public static void setBackgroundOn(Drawable background, View view) {
+    @SuppressWarnings("unchecked")
+    @Nullable
+    public static <V extends View> V findViewById(@Nullable View view, @IdRes int id) throws ClassCastException {
+        return view != null? (V) view.findViewById(id) : null;
+    }
+
+    @SuppressWarnings("deprecation")
+    public static void setBackground(Drawable background, View view) {
         if (background != null && view != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 view.setBackground(background);

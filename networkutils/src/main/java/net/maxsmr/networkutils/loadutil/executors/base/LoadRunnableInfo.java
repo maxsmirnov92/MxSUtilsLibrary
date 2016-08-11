@@ -4,20 +4,32 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import net.maxsmr.tasksutils.taskrunnable.RunnableInfo;
+
 import java.net.MalformedURLException;
 import java.net.URL;
-
-import net.maxsmr.tasksutils.taskrunnable.RunnableInfo;
 
 public abstract class LoadRunnableInfo extends RunnableInfo {
 
     public final static class LoadSettings {
+
+        /**
+         * no retries
+         */
+        public static int RETRY_LIMIT_NONE = -1;
+
+        /**
+         * infinite load attempts
+         */
+        public static int RETRY_LIMIT_UNLIMITED = 0;
 
         public final int connectionTimeout;
 
         public final int readTimeout;
 
         public final int retryLimit;
+
+        public final int retryDelay;
 
         public final boolean notifyRead;
 
@@ -27,7 +39,7 @@ public abstract class LoadRunnableInfo extends RunnableInfo {
 
         public final boolean logResponseData;
 
-        public LoadSettings(int connectionTimeout, int readTimeout, int retryLimit, boolean notifyRead, boolean notifyWrite, boolean logRequestData, boolean logResponseData) {
+        public LoadSettings(int connectionTimeout, int readTimeout, int retryLimit, int retryDelay, boolean notifyRead, boolean notifyWrite, boolean logRequestData, boolean logResponseData) {
 
             if (connectionTimeout < 0) {
                 throw new IllegalArgumentException("incorrect connectionTimeout: " + connectionTimeout);
@@ -37,9 +49,18 @@ public abstract class LoadRunnableInfo extends RunnableInfo {
                 throw new IllegalArgumentException("incorrect readTimeout: " + readTimeout);
             }
 
+            if (retryLimit < 0) {
+                throw new IllegalArgumentException("incorrect retryLimit: " + readTimeout);
+            }
+
+            if (retryDelay < 0) {
+                throw new IllegalArgumentException("incorrect retryDelay: " + readTimeout);
+            }
+
             this.connectionTimeout = connectionTimeout;
             this.readTimeout = readTimeout;
             this.retryLimit = retryLimit;
+            this.retryDelay = retryDelay;
 
             this.notifyRead = notifyRead;
             this.notifyWrite = notifyWrite;
@@ -49,15 +70,16 @@ public abstract class LoadRunnableInfo extends RunnableInfo {
         }
 
         @Override
-        public boolean equals(Object o) {
-            if (this == o) return true;
-            if (o == null || getClass() != o.getClass()) return false;
+        public boolean equals(Object object) {
+            if (this == object) return true;
+            if (object == null || getClass() != object.getClass()) return false;
 
-            LoadSettings that = (LoadSettings) o;
+            LoadSettings that = (LoadSettings) object;
 
             if (connectionTimeout != that.connectionTimeout) return false;
             if (readTimeout != that.readTimeout) return false;
             if (retryLimit != that.retryLimit) return false;
+            if (retryDelay != that.retryDelay) return false;
             if (notifyRead != that.notifyRead) return false;
             if (notifyWrite != that.notifyWrite) return false;
             if (logRequestData != that.logRequestData) return false;
@@ -70,6 +92,7 @@ public abstract class LoadRunnableInfo extends RunnableInfo {
             int result = connectionTimeout;
             result = 31 * result + readTimeout;
             result = 31 * result + retryLimit;
+            result = 31 * result + retryDelay;
             result = 31 * result + (notifyRead ? 1 : 0);
             result = 31 * result + (notifyWrite ? 1 : 0);
             result = 31 * result + (logRequestData ? 1 : 0);
@@ -83,6 +106,7 @@ public abstract class LoadRunnableInfo extends RunnableInfo {
                     "connectionTimeout=" + connectionTimeout +
                     ", readTimeout=" + readTimeout +
                     ", retryLimit=" + retryLimit +
+                    ", retryDelay=" + retryDelay +
                     ", notifyRead=" + notifyRead +
                     ", notifyWrite=" + notifyWrite +
                     ", logRequestData=" + logRequestData +
@@ -90,11 +114,6 @@ public abstract class LoadRunnableInfo extends RunnableInfo {
                     '}';
         }
     }
-
-    /**
-     * no retries
-     */
-    public static int RETRY_LIMIT_NONE = 0;
 
     protected LoadRunnableInfo(int id, String name, @Nullable URL url, @NonNull LoadSettings settings) throws MalformedURLException {
         super(id, name);

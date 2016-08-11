@@ -68,8 +68,9 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
         return progressable;
     }
 
+    /** @return 0 if it's not used or recycler has different layouts */
     @LayoutRes
-    protected abstract int getItemLayoutId();
+    protected abstract int getBaseItemLayoutId();
 
     @Nullable
     protected Progressable initProgressable() {
@@ -144,7 +145,7 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
             throw new IllegalStateException("root view was not created");
         }
 
-        String alias = getFontAlias();
+        String alias = getBaseFontAlias();
 
         if (!TextUtils.isEmpty(alias)) {
             FontsHolder.getInstance().apply(placeholder, alias, false);
@@ -158,7 +159,7 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
         View rootView = getView();
 
         if (rootView == null) {
-            throw new RuntimeException("root view is not inflated");
+            throw new RuntimeException("root view was not inflated");
         }
 
         Pair<Integer, Integer> size = getRecyclerSize();
@@ -253,13 +254,6 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
     protected final void onStartLoading() {
         if (progressable != null) {
             progressable.onStart();
-            if (progressable instanceof DialogProgressable) {
-                GuiUtils.setProgressBarColor(ContextCompat.getColor(getContext(), R.color.progress_primary), ((DialogProgressable) progressable).getProgressBar());
-                String alias = getFontAlias();
-                if (TextUtils.isEmpty(alias)) {
-                    FontsHolder.getInstance().apply(((DialogProgressable) progressable).getMessageView(), alias, false);
-                }
-            }
         }
     }
 
@@ -270,15 +264,14 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
     }
 
     @Override
-    public final void onRefresh() {
-        if (progressable instanceof BaseListJugglerFragment.LoadListProgressable) {
-            doRefreshList();
-        } else {
-            throw new RuntimeException("progressable is not instance of " + LoadListProgressable.class);
-        }
-    }
+    public void onRefresh() {}
+//        if (progressable instanceof BaseListJugglerFragment.LoadListProgressable) {
+//            doRefreshList();
+//        } else {
+//            throw new RuntimeException("progressable is not instance of " + LoadListProgressable.class);
+//        }
 
-    protected abstract void doRefreshList();
+//    protected abstract void doRefreshList();
 
     protected void loading(boolean toggle) {
         if (loadingLayout != null) {
@@ -517,6 +510,17 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
     }
 
     protected final Progressable newDialogProgressable() {
-        return new DialogProgressable(getContext());
+
+        if (getContext() == null) {
+            throw new IllegalStateException("fragment is not attached");
+        }
+
+        DialogProgressable p =  new DialogProgressable(getContext());
+            GuiUtils.setProgressBarColor(ContextCompat.getColor(getContext(), R.color.progress_primary), ((DialogProgressable) progressable).getProgressBar());
+            String alias = getBaseFontAlias();
+            if (TextUtils.isEmpty(alias)) {
+                FontsHolder.getInstance().apply(p.getMessageView(), alias, false);
+            }
+        return p;
     }
 }

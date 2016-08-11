@@ -103,7 +103,7 @@ public abstract class BaseJugglerFragment extends JugglerFragment implements Nes
     }
 
     @Nullable
-    protected String getFontAlias() {
+    protected String getBaseFontAlias() {
         return null;
     }
 
@@ -147,17 +147,11 @@ public abstract class BaseJugglerFragment extends JugglerFragment implements Nes
         this.menu = menu;
     }
 
-    protected void init() {
+    protected void init() {}
 
-    }
+    protected void postInit() {}
 
-    protected void postInit() {
-
-    }
-
-    protected void unlisten() {
-
-    }
+    protected void unlisten() {}
 
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
@@ -226,7 +220,6 @@ public abstract class BaseJugglerFragment extends JugglerFragment implements Nes
         }
     }
 
-    @CallSuper
     public boolean onBackPressed() {
         List<Fragment> childFragments = getChildFragmentManager().getFragments();
         if (childFragments != null) {

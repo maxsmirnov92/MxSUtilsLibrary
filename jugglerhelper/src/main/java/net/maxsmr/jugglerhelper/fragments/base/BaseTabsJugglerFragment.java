@@ -115,7 +115,7 @@ public abstract class BaseTabsJugglerFragment<PagerAdapter extends CustomFragmen
             throw new RuntimeException("not attached to activity");
         }
 
-        String alias = getFontAlias();
+        String alias = getBaseFontAlias();
 
         if (!TextUtils.isEmpty(alias)) {
             setTabsTypeface(alias);

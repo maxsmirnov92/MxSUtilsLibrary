@@ -11,7 +11,6 @@ import com.google.gson.JsonPrimitive;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -24,11 +23,14 @@ public class GsonHelper {
         throw new AssertionError("no instances.");
     }
 
+    /**
+     * @param type T Serializable or Parcelable
+     */
     @Nullable
-    public static <T extends Serializable> T fromJsonObjectString(@Nullable String jsonString, @NonNull Class<T> type) {
+    public static <T> T fromJsonObjectString(@Nullable String jsonString, @NonNull Class<T> type, boolean withExposedOnly) {
         logger.debug("fromJsonObjectString(), jsonString=" + jsonString + ", type=" + type);
 
-        final Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+        final Gson gson = withExposedOnly? new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create() : new GsonBuilder().create();
 
         try {
             return gson.fromJson(jsonString, type);
@@ -39,11 +41,14 @@ public class GsonHelper {
         }
     }
 
+    /**
+     * @param type T Serializable or Parcelable
+     */
     @NonNull
-    public static <T extends Serializable> List<T> fromJsonArrayString(@Nullable String jsonString, @NonNull Class<T[]> type) {
+    public static <T> List<T> fromJsonArrayString(@Nullable String jsonString, @NonNull Class<T[]> type, boolean withExposedOnly) {
         logger.debug("fromJsonArrayString(), jsonString=" + jsonString + ", type=" + type);
 
-        final Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+        final Gson gson = withExposedOnly? new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create() : new GsonBuilder().create();
 
         try {
             return new ArrayList<>(Arrays.asList(gson.fromJson(jsonString, type)));
@@ -55,10 +60,10 @@ public class GsonHelper {
     }
 
     @NonNull
-    public static <T extends Serializable> String toJsonString(T... what) {
+    public static <T> String toJsonString(boolean withExposedOnly, T... what) {
         logger.debug("toJsonString(), what=" + Arrays.toString(what));
 
-        final Gson gson = new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create();
+        final Gson gson = withExposedOnly? new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create() : new GsonBuilder().create();
 
         try {
             return gson.toJson(what != null && what.length == 1? what[0] : what);

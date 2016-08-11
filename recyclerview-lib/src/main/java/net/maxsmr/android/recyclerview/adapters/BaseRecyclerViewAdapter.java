@@ -148,7 +148,11 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
     @CallSuper
     protected void onItemAdded(int to, @Nullable I item) {
         if (notifyOnChange) {
-            notifyItemRangeInserted(to, 1);
+            if (to == 0) {
+                notifyDataSetChanged();
+            } else {
+                notifyItemInserted(to);
+            }
         }
         if (itemAddedListener != null) {
             itemAddedListener.onItemAdded(to, item);
@@ -172,6 +176,8 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
             itemSetListener.onItemSet(in, item);
         }
     }
+
+    // TODO replace item and replace range
 
     @Nullable
     public final I removeItem(@Nullable I item) {
