@@ -3,7 +3,7 @@ apply plugin: 'maven'
 
 def groupId = "net.maxsmr"
 def artifactId = "commonutils"
-def version = "1.0.2.1"
+def version = "1.0.2.2"
 
 def releaseDir = "${buildDir}/release"
 
@@ -108,6 +108,9 @@ dependencies {
     compile 'com.android.support:support-annotations:23.1.1'
     compile 'com.android.support:palette-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'
+
+    compile 'de.mindpipe.android:android-logging-log4j:1.0.3'
+
 
     compile 'org.slf4j:slf4j-log4j12:1.7.21'
     compile 'com.google.code.gson:gson:2.4'

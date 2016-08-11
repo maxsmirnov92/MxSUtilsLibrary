@@ -27,3 +27,5 @@ dependencies {
     compile 'net.maxsmr:jugglerhelper:1.0'
 }
 ```
+
+You can find out which version of each module is latest here: https://bintray.com/maxsmirnov92/maven/MxSUtilsLibrary

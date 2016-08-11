@@ -119,12 +119,15 @@ public final class FileHelper {
                 return !blocking ? channel.tryLock() : channel.lock();
 
             } catch (IOException e) {
+                e.printStackTrace();
                 logger.error("an IOException occurred during tryLock()", e);
             } catch (OverlappingFileLockException e) {
+                e.printStackTrace();
                 logger.error("an OverlappingFileLockException occurred during tryLock()", e);
             }
 
         } catch (FileNotFoundException e) {
+            e.printStackTrace();
             logger.error("a FileNotFoundException occurred during new RandomAccessFile()", e);
 
         } finally {
@@ -134,6 +137,7 @@ public final class FileHelper {
                 if (randomAccFile != null)
                     randomAccFile.close();
             } catch (IOException e) {
+                e.printStackTrace();
                 logger.error("an IOException occurred during close()", e);
             }
         }
@@ -338,13 +342,8 @@ public final class FileHelper {
     }
 
     public static boolean isBinaryFile(File f) throws FileNotFoundException, IOException {
-        FileInputStream in = new FileInputStream(f);
-        int size = in.available();
-        if (size > 1024)
-            size = 1024;
-        byte[] data = new byte[size];
-        in.read(data);
-        in.close();
+
+        byte[] data = readBytesFromFile(f);
 
         int ascii = 0;
         int other = 0;
@@ -397,6 +396,7 @@ public final class FileHelper {
 
     }
 
+    @Nullable
     public static byte[] readBytesFromFile(File file) {
 
         if (!isFileCorrect(file)) {
@@ -411,6 +411,7 @@ public final class FileHelper {
         }
     }
 
+    @Nullable
     public static byte[] readBytesFromInputStream(InputStream inputStream) {
 
         if (inputStream != null) {
@@ -439,11 +440,14 @@ public final class FileHelper {
         return null;
     }
 
+    @NonNull
     public static List<String> readLinesFromFile(File file) {
+
+        List<String> lines = new ArrayList<>();
 
         if (!isFileCorrect(file)) {
             logger.error("incorrect file: " + file);
-            return null;
+            return lines;
         }
 
         FileReader reader = null;
@@ -452,21 +456,20 @@ public final class FileHelper {
 
         } catch (FileNotFoundException e) {
             logger.debug("a FileNotFoundException occurred", e);
-            return null;
+            return lines;
         }
 
         BufferedReader br = new BufferedReader(reader);
 
-        List<String> linesList = new ArrayList<String>();
         String line;
 
         try {
 
             while ((line = br.readLine()) != null) {
-                linesList.add(line);
+                lines.add(line);
             }
 
-            return linesList;
+            return lines;
 
         } catch (IOException e) {
             logger.error("an IOException occurred during readLine()", e);
@@ -480,9 +483,10 @@ public final class FileHelper {
             }
         }
 
-        return null;
+        return lines;
     }
 
+    @Nullable
     public static File writeBytesToFile(byte[] data, String fileName, String parentPath, boolean append) {
         logger.debug("writeBytesToFile(), data=" + data + ", fileName=" + fileName + ", parentPath=" + parentPath + ", append=" + append);
 
@@ -518,6 +522,7 @@ public final class FileHelper {
             return file;
 
         } catch (IOException e) {
+            e.printStackTrace();
             logger.error("an IOException occurred ", e);
         } finally {
             try {
@@ -525,8 +530,50 @@ public final class FileHelper {
                     fos.close();
                 }
             } catch (IOException e) {
+                e.printStackTrace();
                 logger.error("an IOException occurred during close", e);
             }
+        }
+
+        return null;
+    }
+
+    @Nullable
+    public static File writeFromStreamToFile(InputStream data, String fileName, String parentPath, boolean append) {
+        logger.debug("writeFromStreamToFile(), data=" + data + ", fileName=" + fileName + ", parentPath=" + parentPath + ", append=" + append);
+
+        try {
+            if (data == null || data.available() == 0) {
+                logger.error("data is null or not available");
+                return null;
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            return null;
+        }
+
+        final File file;
+
+        if (!append) {
+            file = createNewFile(fileName, parentPath);
+        } else {
+            if (!isFileExists(fileName, parentPath))
+                file = createNewFile(fileName, parentPath);
+            else
+                file = new File(parentPath, fileName);
+        }
+
+        if (file == null) {
+            logger.error("can't create file: " + parentPath + File.separator + fileName);
+            return null;
+        }
+
+        try {
+            revectorStream(data, new FileOutputStream(file));
+            return file;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+            logger.error("an IOException occurred ", e);
         }
 
         return null;
@@ -564,6 +611,7 @@ public final class FileHelper {
             return file;
 
         } catch (IOException e) {
+            e.printStackTrace();
             logger.error("an IOException occurred during close()", e);
 
         } finally {
@@ -571,6 +619,7 @@ public final class FileHelper {
                 try {
                     writer.close();
                 } catch (IOException e) {
+                    e.printStackTrace();
                     logger.error("an IOException occurred during close()", e);
                 }
             }
@@ -619,6 +668,7 @@ public final class FileHelper {
                 return zippedFiles > 0 ? new File(destZipName) : null;
 
             } catch (Exception e) {
+                e.printStackTrace();
                 logger.error("an Exception occurred", e);
 
             } finally {
@@ -631,12 +681,14 @@ public final class FileHelper {
                         os.close();
                     }
                 } catch (IOException e) {
+                    e.printStackTrace();
                     logger.error("an IOException occurred during close()", e);
                 }
 
             }
 
         } catch (IOException e) {
+            e.printStackTrace();
             logger.error("an IOException occurred", e);
         }
 
@@ -700,6 +752,7 @@ public final class FileHelper {
             }
 
         } catch (IOException e) {
+            e.printStackTrace();
             logger.error("an IOException occurred", e);
             return false;
 
@@ -716,6 +769,7 @@ public final class FileHelper {
                     fos.close();
                 }
             } catch (IOException e) {
+                e.printStackTrace();
                 logger.error("an IOException occurred during close()", e);
             }
         }
@@ -1329,8 +1383,9 @@ public final class FileHelper {
         try {
             out = new FileOutputStream(to);
             in = ctx.getAssets().open(assetsPath);
-            return FileHelper.revectorStream(in, out);
+            return revectorStream(in, out);
         } catch (IOException e) {
+            e.printStackTrace();
             logger.error("an IOException occurred", e);
             return false;
         } finally {
@@ -1340,6 +1395,7 @@ public final class FileHelper {
                 if (in != null)
                     in.close();
             } catch (IOException e) {
+                e.printStackTrace();
                 logger.error("an IOException occurred during close()", e);
             }
         }
@@ -1351,22 +1407,61 @@ public final class FileHelper {
     public static File copyFile(File sourceFile, String destDir, boolean rewrite) {
 
         if (!isFileCorrect(sourceFile)) {
-            throw new IllegalArgumentException("incorrect source file: " + sourceFile);
+//            throw new IllegalArgumentException("incorrect source file: " + sourceFile);
+            logger.error("incorrect source file: " + sourceFile);
+            return null;
         }
 
         File destFile = createNewFile(sourceFile.getName(), destDir, rewrite);
 
         if (destFile == null) {
-            throw new IllegalArgumentException("can't create dest file");
+//            throw new IllegalArgumentException("can't create dest file");
+            logger.error("can't create dest file");
+            return null;
         }
 
-        destFile = writeBytesToFile(readBytesFromFile(sourceFile), destFile.getName(), destFile.getParent(), false);
+        destFile = writeBytesToFile(readBytesFromFile(sourceFile), destFile.getName(), destFile.getParent(), !rewrite);
 
         if (destFile == null) {
-            throw new IllegalArgumentException("can't write to dest file");
+//            throw new IllegalArgumentException("can't write to dest file");
+            logger.error("can't write to dest file");
         }
 
         return destFile;
+    }
+
+    /**
+     * @return dest file
+     */
+    public static File copyFileWithBuffering(File sourceFile, String destDir, boolean rewrite) {
+
+        if (!isFileCorrect(sourceFile)) {
+//            throw new IllegalArgumentException("incorrect source file: " + sourceFile);
+            logger.error("incorrect source file: " + sourceFile);
+            return null;
+        }
+
+        File destFile = createNewFile(sourceFile.getName(), destDir, rewrite);
+
+        if (destFile == null) {
+//            throw new IllegalArgumentException("can't create dest file");
+            logger.error("can't create dest file");
+            return null;
+        }
+
+        try {
+            destFile = writeFromStreamToFile(new FileInputStream(sourceFile), destFile.getName(), destFile.getParent(), !rewrite);
+            if (destFile == null) {
+//              throw new IllegalArgumentException("can't write to dest file");
+                logger.error("can't write to dest file");
+            }
+            return destFile;
+        } catch (FileNotFoundException e) {
+            e.printStackTrace();
+
+        }
+
+        return null;
     }
 
     public static boolean writeExifLocation(File f, Location loc) {
@@ -1397,6 +1492,7 @@ public final class FileHelper {
             return true;
 
         } catch (IOException e) {
+            e.printStackTrace();
             logger.error("an IOException occurred", e);
             return false;
         }
@@ -1425,6 +1521,7 @@ public final class FileHelper {
                     if (field.getInt(null) == id)
                         return true;
                 } catch (Exception e) {
+                    e.printStackTrace();
                     logger.error("an Exception occurred during getInt()");
                 }
             }
