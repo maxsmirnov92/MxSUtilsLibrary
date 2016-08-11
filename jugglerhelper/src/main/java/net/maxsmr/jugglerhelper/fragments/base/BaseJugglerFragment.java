@@ -4,7 +4,6 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
 import android.support.annotation.ColorInt;
-import android.support.annotation.IdRes;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -254,9 +253,4 @@ public abstract class BaseJugglerFragment extends JugglerFragment implements Nes
         return null;
     }
 
-    @SuppressWarnings("unchecked")
-    @Nullable
-    public static <V extends View> V findViewById(@Nullable View view, @IdRes int id) throws ClassCastException {
-        return view != null? (V) view.findViewById(id) : null;
-    }
 }

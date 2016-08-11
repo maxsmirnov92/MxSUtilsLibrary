@@ -11,6 +11,7 @@ import android.support.v4.view.ViewPager;
 import android.text.TextUtils;
 import android.view.View;
 
+import net.maxsmr.commonutils.android.gui.GuiUtils;
 import net.maxsmr.commonutils.android.gui.adapters.CustomFragmentStatePagerAdapter;
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
 import net.maxsmr.jugglerhelper.R;
@@ -37,8 +38,8 @@ public abstract class BaseTabsJugglerFragment<PagerAdapter extends CustomFragmen
     @Override
     @CallSuper
     protected void onBindViews(@NonNull View rootView) {
-        tabLayout = findViewById(rootView, R.id.tab_layout);
-        viewPager = findViewById(rootView, R.id.pager);
+        tabLayout = GuiUtils.findViewById(rootView, R.id.tab_layout);
+        viewPager = GuiUtils.findViewById(rootView, R.id.pager);
     }
 
     @Override

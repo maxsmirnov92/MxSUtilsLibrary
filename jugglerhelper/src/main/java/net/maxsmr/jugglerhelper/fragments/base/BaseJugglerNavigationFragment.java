@@ -10,6 +10,8 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import net.maxsmr.commonutils.android.gui.GuiUtils;
+
 import me.ilich.juggler.gui.JugglerNavigationFragment;
 
 public abstract class BaseJugglerNavigationFragment extends JugglerNavigationFragment {
@@ -87,7 +89,7 @@ public abstract class BaseJugglerNavigationFragment extends JugglerNavigationFra
             throw new RuntimeException("not attached to activity");
         }
 
-        DrawerLayout drawer = BaseJugglerFragment.findViewById(getActivity().getWindow().getDecorView(), getDrawerLayoutId());
+        DrawerLayout drawer = GuiUtils.findViewById(getActivity().getWindow().getDecorView(), getDrawerLayoutId());
 
         if (drawer == null) {
             throw new RuntimeException("drawer not found");
@@ -105,7 +107,7 @@ public abstract class BaseJugglerNavigationFragment extends JugglerNavigationFra
     }
 
     protected final void revertDrawerState() {
-        DrawerLayout drawer = BaseJugglerFragment.findViewById(getActivity().getWindow().getDecorView(), getDrawerLayoutId());
+        DrawerLayout drawer = GuiUtils.findViewById(getActivity().getWindow().getDecorView(), getDrawerLayoutId());
 
         if (drawer == null) {
             throw new RuntimeException("drawer not found");

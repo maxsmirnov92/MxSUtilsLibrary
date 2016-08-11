@@ -80,11 +80,11 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
     @CallSuper
     protected void onBindViews(@NonNull View rootView) {
 //        ButterKnife.bind(this, rootView);
-        swipeRefreshLayout = findViewById(rootView, R.id.swipeRefreshLayout);
-        recycler = findViewById(rootView, R.id.recycler);
-        placeholder = findViewById(rootView, R.id.emptyText);
-        loadingLayout = findViewById(rootView, R.id.loading);
-        retryButton = findViewById(rootView, R.id.btRetry);
+        swipeRefreshLayout = GuiUtils.findViewById(rootView, R.id.swipeRefreshLayout);
+        recycler = GuiUtils.findViewById(rootView, R.id.recycler);
+        placeholder = GuiUtils.findViewById(rootView, R.id.emptyText);
+        loadingLayout = GuiUtils.findViewById(rootView, R.id.loading);
+        retryButton = GuiUtils.findViewById(rootView, R.id.btRetry);
     }
 
 
@@ -434,6 +434,11 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
     @Override
     public void onItemSet(int to, I item) {
         logger.debug("onItemSet(), to=" + to + ", item=" + item);
+    }
+
+    @Override
+    public void onItemsSet(@NonNull List<I> items) {
+        logger.debug("onItemsSet(), items=" + items);
     }
 
     @Override

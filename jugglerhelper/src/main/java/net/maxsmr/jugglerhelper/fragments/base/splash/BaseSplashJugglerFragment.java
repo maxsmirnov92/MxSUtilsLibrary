@@ -3,6 +3,7 @@ package net.maxsmr.jugglerhelper.fragments.base.splash;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.CallSuper;
 import android.support.annotation.Nullable;
 import android.view.View;
 
@@ -38,6 +39,7 @@ public abstract class BaseSplashJugglerFragment extends BaseJugglerFragment {
         expiredTime = savedInstanceState != null ? savedInstanceState.getLong(ARG_EXPIRED_TIME) : expiredTime;
     }
 
+    @CallSuper
     @Override
     protected void init() {
         if (allowResetOnRootClick()) {
@@ -58,6 +60,7 @@ public abstract class BaseSplashJugglerFragment extends BaseJugglerFragment {
         }
     }
 
+    @CallSuper
     @Override
     protected void postInit() {
         long timeout = getSplashTimeout();

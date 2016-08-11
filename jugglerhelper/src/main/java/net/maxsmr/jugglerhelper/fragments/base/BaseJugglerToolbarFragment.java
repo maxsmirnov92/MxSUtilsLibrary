@@ -12,6 +12,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 
+import net.maxsmr.commonutils.android.gui.GuiUtils;
 import net.maxsmr.jugglerhelper.R;
 import net.maxsmr.jugglerhelper.navigation.NavigationMode;
 
@@ -42,7 +43,7 @@ public abstract class BaseJugglerToolbarFragment extends JugglerToolbarFragment 
             throw new IllegalStateException("root view was not created");
         }
 
-        toolbar = BaseJugglerFragment.findViewById(rootView, getToolbarId());
+        toolbar = GuiUtils.findViewById(rootView, getToolbarId());
 
         if (toolbar == null) {
             throw new IllegalStateException("toolbar was not found");
