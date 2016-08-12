@@ -241,6 +241,9 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
 
     @CallSuper
     protected void onItemRemoved(int removedPosition, @Nullable I item) {
+        if (notifyOnChange) {
+            notifyItemRemoved(removedPosition);
+        }
         if (itemRemovedListener != null) {
             itemRemovedListener.onItemRemoved(removedPosition, item);
         }
