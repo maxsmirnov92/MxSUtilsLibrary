@@ -35,7 +35,7 @@ import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerViewAdapter<I, ? extends BaseRecyclerViewAdapter.ViewHolder<I>>> extends BaseJugglerFragment implements BaseRecyclerViewAdapter.OnItemClickListener<I>, BaseRecyclerViewAdapter.OnItemLongClickListener<I>, BaseRecyclerViewAdapter.OnItemAddedListener<I>, BaseRecyclerViewAdapter.OnItemSetListener<I>, BaseRecyclerViewAdapter.OnItemRemovedListener<I>, RecyclerScrollableController.OnLastItemVisibleListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
+public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerViewAdapter<I, ? extends BaseRecyclerViewAdapter.ViewHolder<?>>> extends BaseJugglerFragment implements BaseRecyclerViewAdapter.OnItemClickListener<I>, BaseRecyclerViewAdapter.OnItemLongClickListener<I>, BaseRecyclerViewAdapter.OnItemAddedListener<I>, BaseRecyclerViewAdapter.OnItemSetListener<I>, BaseRecyclerViewAdapter.OnItemRemovedListener<I>, RecyclerScrollableController.OnLastItemVisibleListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseListJugglerFragment.class);
 
