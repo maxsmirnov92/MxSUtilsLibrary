@@ -31,12 +31,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
 
-public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerViewAdapter<I, ?>> extends BaseJugglerFragment implements BaseRecyclerViewAdapter.OnItemClickListener<I>, BaseRecyclerViewAdapter.OnItemLongClickListener<I>, BaseRecyclerViewAdapter.OnItemAddedListener<I>, BaseRecyclerViewAdapter.OnItemSetListener<I>, BaseRecyclerViewAdapter.OnItemRemovedListener<I>, RecyclerScrollableController.OnLastItemVisibleListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
+public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerViewAdapter<I, ?>> extends BaseJugglerFragment implements BaseRecyclerViewAdapter.OnItemClickListener<I>, BaseRecyclerViewAdapter.OnItemLongClickListener<I>, BaseRecyclerViewAdapter.OnItemAddedListener<I>, BaseRecyclerViewAdapter.OnItemsSetListener<I>, BaseRecyclerViewAdapter.OnItemsRemovedListener<I>, RecyclerScrollableController.OnLastItemVisibleListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseListJugglerFragment.class);
 
@@ -138,8 +139,8 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
         adapter.setOnItemClickListener(this);
         adapter.setOnItemLongClickListener(this);
         adapter.setOnItemAddedListener(this);
-        adapter.setOnItemSetListener(this);
-        adapter.setOnItemRemovedListener(this);
+        adapter.setOnItemsSetListener(this);
+        adapter.setOnItemsRemovedListener(this);
 
         recycler.setLayoutManager(getRecyclerLayoutManager());
         RecyclerView.ItemDecoration itemDecoration = getItemDecoration();
@@ -361,8 +362,8 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
         adapter.setOnItemClickListener(null);
         adapter.setOnItemLongClickListener(null);
         adapter.setOnItemAddedListener(null);
-        adapter.setOnItemSetListener(null);
-        adapter.setOnItemRemovedListener(null);
+        adapter.setOnItemsSetListener(null);
+        adapter.setOnItemsRemovedListener(null);
 
         recycler.removeOnScrollListener(recyclerScrollableController);
         recyclerScrollableController = null;
@@ -459,6 +460,11 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
     }
 
     @Override
+    public void onItemsAdded(int to, @NonNull Collection<I> items) {
+        logger.debug("onItemsAdded(), to=" + to + ", items=" + items);
+    }
+
+    @Override
     public void onItemSet(int to, I item) {
         logger.debug("onItemSet(), to=" + to + ", item=" + item);
     }
@@ -471,6 +477,11 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
     @Override
     public void onItemRemoved(int from, I item) {
         logger.debug("onItemRemoved(), from=" + from + ",  item=" + item);
+    }
+
+    @Override
+    public void onItemsRangeRemoved(int from, int to, int previousSize) {
+        logger.debug("onItemsRangeRemoved(), from=" + from + ", to=" + ", previousSize=" + previousSize);
     }
 
     @Override

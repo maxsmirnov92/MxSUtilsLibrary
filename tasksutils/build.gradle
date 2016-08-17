@@ -3,7 +3,7 @@ apply plugin: 'maven'
 
 def groupId = "net.maxsmr"
 def artifactId = "tasksutils"
-def version = "1.0.1"
+def version = "1.0.1.1"
 
 def releaseDir = "${buildDir}/release"
 
@@ -79,5 +79,5 @@ dependencies {
     compile 'com.android.support:support-annotations:23.1.1'
 
 //    compile project(":commonutils")
-    compile 'net.maxsmr:commonutils:1.0.2.2'
+    compile 'net.maxsmr:commonutils:1.0.2.3'
 }
