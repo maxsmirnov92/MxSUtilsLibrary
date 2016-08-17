@@ -8,8 +8,8 @@ import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
+import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
-import android.graphics.drawable.StateListDrawable;
 import android.os.Build;
 import android.support.annotation.ColorInt;
 import android.support.annotation.IdRes;
@@ -42,7 +42,6 @@ import android.widget.TextView;
 import net.maxsmr.commonutils.data.StringUtils;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -68,15 +67,6 @@ public final class GuiUtils {
                 view.setBackgroundDrawable(background);
             }
         }
-    }
-
-    public static int getStatusBarHeight(@NonNull Context context) {
-        int result = 0;
-        int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            result = context.getResources().getDimensionPixelSize(resourceId);
-        }
-        return result;
     }
 
     @NonNull
@@ -149,6 +139,19 @@ public final class GuiUtils {
         }
     }
 
+    public static boolean isKeyboardShowed(View view) {
+        if (view == null) {
+            return false;
+        }
+        try {
+            InputMethodManager inputManager = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            return inputManager.isActive(view);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return false;
+    }
+
     public static void hideKeyboard(Activity activity) {
         if (activity != null) {
             hideKeyboard(activity, activity.getCurrentFocus());
@@ -215,7 +218,7 @@ public final class GuiUtils {
             if (act != null) {
                 if (view.isFocusable()) {
                     if (view.requestFocus()) {
-                        act.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
+//                        act.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
                         return true;
                     }
                 }
@@ -231,7 +234,7 @@ public final class GuiUtils {
         if (view != null) {
             if (act != null) {
                 view.clearFocus();
-                act.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
+//                act.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
                 return true;
             }
         }
@@ -243,6 +246,56 @@ public final class GuiUtils {
      */
     public static boolean clearFocus(@Nullable Activity act) {
         return clearFocus(act != null ? act.getCurrentFocus() : null, act);
+    }
+
+    public static int getViewInset(View view) {
+
+        if (view == null) {
+            return 0;
+        }
+
+        int statusBarHeight = getStatusBarHeight(view.getContext());
+
+        if (statusBarHeight < 0) {
+            return 0;
+        }
+
+        DisplayMetrics dm = view.getContext().getResources().getDisplayMetrics();
+
+        if (Build.VERSION.SDK_INT < 21 || view.getHeight() == dm.heightPixels || view.getHeight() == dm.heightPixels - statusBarHeight) {
+            return 0;
+        }
+        try {
+            Field mAttachInfoField = View.class.getDeclaredField("mAttachInfo");
+            mAttachInfoField.setAccessible(true);
+            Object mAttachInfo = mAttachInfoField.get(view);
+            if (mAttachInfo != null) {
+                Field mStableInsetsField = mAttachInfo.getClass().getDeclaredField("mStableInsets");
+                mStableInsetsField.setAccessible(true);
+                Rect insets = (Rect) mStableInsetsField.get(mAttachInfo);
+                return insets.bottom;
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+
+        }
+        return 0;
+    }
+
+    public static int getStatusBarHeight(@NonNull Context context) {
+        int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
+        if (resourceId > 0) {
+            return context.getResources().getDimensionPixelSize(resourceId);
+        }
+        return 0;
+    }
+
+    public static int getKeyboardHeight(@NonNull View rootView, @NonNull View targetView) {
+        Rect rect = new Rect();
+        targetView.getWindowVisibleDisplayFrame(rect);
+        int usableViewHeight = rootView.getHeight() - (rect.top != 0 ? getStatusBarHeight(rootView.getContext()) : 0) - getViewInset(rootView);
+        return usableViewHeight - (rect.bottom - rect.top);
+
     }
 
     public static void setEditTextHintByError(@NonNull TextInputLayout on, @Nullable String hint) {
@@ -518,22 +571,6 @@ public final class GuiUtils {
         layoutParams.width = size.x;
         layoutParams.height = size.y;
         view.setLayoutParams(layoutParams);
-    }
-
-    @SuppressWarnings("PrimitiveArrayArgumentToVariableArgMethod")
-    @Nullable
-    public static Drawable getDrawableForState(@NonNull StateListDrawable stateListDrawable, int... state) {
-        try {
-            Method getStateDrawableIndex = StateListDrawable.class.getMethod("getStateDrawableIndex", int[].class);
-            Method getStateDrawable = StateListDrawable.class.getMethod("getStateDrawable", int.class);
-            getStateDrawableIndex.setAccessible(true);
-            getStateDrawable.setAccessible(true);
-            int index = (int) getStateDrawableIndex.invoke(stateListDrawable, state);
-            return (Drawable) getStateDrawable.invoke(stateListDrawable, index);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-        return null;
     }
 
     public static void collapseToolbar(CoordinatorLayout rootLayout, View coordinatorChild, AppBarLayout appbarLayout) {

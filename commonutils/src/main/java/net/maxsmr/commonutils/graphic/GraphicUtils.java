@@ -4,6 +4,8 @@ import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
+import android.content.res.ColorStateList;
+import android.content.res.XmlResourceParser;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
@@ -22,6 +24,7 @@ import android.graphics.YuvImage;
 import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
+import android.graphics.drawable.StateListDrawable;
 import android.media.ExifInterface;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
@@ -31,6 +34,7 @@ import android.support.annotation.ColorInt;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.support.annotation.XmlRes;
 import android.support.v7.graphics.Palette;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
@@ -43,6 +47,7 @@ import net.maxsmr.commonutils.data.FileHelper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -50,9 +55,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
@@ -1012,26 +1016,43 @@ public final class GraphicUtils {
         return Color.rgb((red + (Color.red(color))) / 2, (green + (Color.green(color))) / 2, (blue + (Color.blue(color))) / 2);
     }
 
-    public static int[] toIntArray(byte[] byteArray, ByteOrder order) {
-        // ByteBuffer buffer = ByteBuffer.wrap(buf).order(ByteOrder.nativeOrder());
-        // final int[] ret = new int[buf.length / 4];
-        // buffer.asIntBuffer().put(ret);
-        // buffer = null;
-        // return ret;
-
-        IntBuffer intBuf = ByteBuffer.wrap(byteArray).order(order).asIntBuffer();
-
-        int[] intArray = new int[intBuf.remaining()];
-        intBuf.get(intArray);
-
-        return intArray;
+    @Nullable
+    public static ColorStateList createColorStateListFromRes(@NonNull Context context, @XmlRes int res) {
+        XmlResourceParser parser = context.getResources().getXml(res);
+        try {
+            return ColorStateList.createFromXml(context.getResources(), parser);
+        } catch (XmlPullParserException | IOException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
-    public static byte[] toByteArray(int[] intArray, ByteOrder order) {
-        final ByteBuffer buf = ByteBuffer.allocate(intArray.length * 4).order(order);
-        buf.asIntBuffer().put(intArray);
-        return buf.array();
+    @ColorInt
+    public static int getDefaultColor(ColorStateList c) {
+        return c != null ? c.getDefaultColor() : 0;
     }
+
+    @Nullable
+    public static Drawable getDefaultDrawable(StateListDrawable d) {
+        return d != null ? getDrawableForState(d, 0) : null;
+    }
+
+    @SuppressWarnings("PrimitiveArrayArgumentToVariableArgMethod")
+    @Nullable
+    public static Drawable getDrawableForState(@NonNull StateListDrawable stateListDrawable, int... state) {
+        try {
+            Method getStateDrawableIndex = StateListDrawable.class.getMethod("getStateDrawableIndex", int[].class);
+            Method getStateDrawable = StateListDrawable.class.getMethod("getStateDrawable", int.class);
+            getStateDrawableIndex.setAccessible(true);
+            getStateDrawable.setAccessible(true);
+            int index = (int) getStateDrawableIndex.invoke(stateListDrawable, state);
+            return (Drawable) getStateDrawable.invoke(stateListDrawable, index);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return null;
+    }
+
 
 
     public enum Swatch {

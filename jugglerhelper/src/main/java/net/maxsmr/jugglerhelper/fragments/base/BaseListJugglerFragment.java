@@ -2,6 +2,7 @@ package net.maxsmr.jugglerhelper.fragments.base;
 
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
+import android.support.annotation.IdRes;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -68,7 +69,9 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
         return progressable;
     }
 
-    /** @return 0 if it's not used or recycler has different layouts */
+    /**
+     * @return 0 if it's not used or recycler has different layouts
+     */
     @LayoutRes
     protected abstract int getBaseItemLayoutId();
 
@@ -77,14 +80,39 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
         return newLoadListProgressable();
     }
 
+    @IdRes
+    protected int getSwipeRefreshLayoutId() {
+        return R.id.swipeRefreshLayout;
+    }
+
+    @IdRes
+    protected int getRecyclerId() {
+        return R.id.recycler;
+    }
+
+    @IdRes
+    protected int getEmptyTextId() {
+        return R.id.emptyText;
+    }
+
+    @IdRes
+    protected int getLoadingLayoutId() {
+        return R.id.loading;
+    }
+
+    @IdRes
+    protected int getRetryButtonId() {
+        return R.id.btRetry;
+    }
+
     @CallSuper
     protected void onBindViews(@NonNull View rootView) {
 //        ButterKnife.bind(this, rootView);
-        swipeRefreshLayout = GuiUtils.findViewById(rootView, R.id.swipeRefreshLayout);
-        recycler = GuiUtils.findViewById(rootView, R.id.recycler);
-        placeholder = GuiUtils.findViewById(rootView, R.id.emptyText);
-        loadingLayout = GuiUtils.findViewById(rootView, R.id.loading);
-        retryButton = GuiUtils.findViewById(rootView, R.id.btRetry);
+        swipeRefreshLayout = GuiUtils.findViewById(rootView, getSwipeRefreshLayoutId());
+        recycler = GuiUtils.findViewById(rootView, getRecyclerId());
+        placeholder = GuiUtils.findViewById(rootView, getEmptyTextId());
+        loadingLayout = GuiUtils.findViewById(rootView, getLoadingLayoutId());
+        retryButton = GuiUtils.findViewById(rootView, getRetryButtonId());
     }
 
 
@@ -132,9 +160,7 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
         applyTypeface();
     }
 
-    protected void postInit() {
-
-    }
+    protected void postInit() {}
 
     @CallSuper
     protected void applyTypeface() {
@@ -264,7 +290,8 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
     }
 
     @Override
-    public void onRefresh() {}
+    public void onRefresh() {
+    }
 //        if (progressable instanceof BaseListJugglerFragment.LoadListProgressable) {
 //            doRefreshList();
 //        } else {
@@ -520,12 +547,12 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
             throw new IllegalStateException("fragment is not attached");
         }
 
-        DialogProgressable p =  new DialogProgressable(getContext());
-            GuiUtils.setProgressBarColor(ContextCompat.getColor(getContext(), R.color.progress_primary), ((DialogProgressable) progressable).getProgressBar());
-            String alias = getBaseFontAlias();
-            if (TextUtils.isEmpty(alias)) {
-                FontsHolder.getInstance().apply(p.getMessageView(), alias, false);
-            }
+        DialogProgressable p = new DialogProgressable(getContext());
+        GuiUtils.setProgressBarColor(ContextCompat.getColor(getContext(), R.color.progress_primary), ((DialogProgressable) progressable).getProgressBar());
+        String alias = getBaseFontAlias();
+        if (TextUtils.isEmpty(alias)) {
+            FontsHolder.getInstance().apply(p.getMessageView(), alias, false);
+        }
         return p;
     }
 }

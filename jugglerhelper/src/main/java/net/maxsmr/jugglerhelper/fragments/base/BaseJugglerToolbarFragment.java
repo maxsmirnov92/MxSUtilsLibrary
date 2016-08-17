@@ -1,5 +1,6 @@
 package net.maxsmr.jugglerhelper.fragments.base;
 
+import android.graphics.drawable.Drawable;
 import android.os.Bundle;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.LayoutRes;
@@ -23,8 +24,6 @@ public abstract class BaseJugglerToolbarFragment extends JugglerToolbarFragment 
     @LayoutRes
     protected abstract int getLayoutId();
 
-    private Toolbar toolbar;
-
     @Nullable
     @Override
     public final View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -36,14 +35,14 @@ public abstract class BaseJugglerToolbarFragment extends JugglerToolbarFragment 
     protected abstract void onBindViews(@NonNull View rootView);
 //        ButterKnife.bind(this, rootView);
 
-    private void initToolbar() {
+    protected void initToolbar() {
         View rootView = getView();
 
         if (rootView == null) {
             throw new IllegalStateException("root view was not created");
         }
 
-        toolbar = GuiUtils.findViewById(rootView, getToolbarId());
+        Toolbar toolbar = GuiUtils.findViewById(rootView, getToolbarId());
 
         if (toolbar == null) {
             throw new IllegalStateException("toolbar was not found");
@@ -65,24 +64,19 @@ public abstract class BaseJugglerToolbarFragment extends JugglerToolbarFragment 
         }
     }
 
-    private void initNavigationMode() {
-        setMode(getNavigationMode(), getMenuDrawableId(), getBackDrawableId());
-    }
-
-    private void initTitle() {
+    protected void initTitle() {
         CharSequence title = getActivity().getTitle();
         setTitle(title);
     }
 
-    @Override
-    public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        initToolbar();
+    protected void initNavigationMode() {
+        setMode(getNavigationMode(), getMenuDrawableId(), getBackDrawableId());
     }
 
     @Override
     public void onActivityCreated(@Nullable Bundle savedInstanceState) {
         super.onActivityCreated(savedInstanceState);
+        initToolbar();
         initTitle();
         initNavigationMode();
     }
@@ -102,6 +96,8 @@ public abstract class BaseJugglerToolbarFragment extends JugglerToolbarFragment 
     private void setMode(NavigationMode mode, @DrawableRes int menuDrawableResId, @DrawableRes int backDrawableResId) {
 
         if (mode != null) {
+
+            Toolbar toolbar = getToolbar();
 
             if (toolbar == null) {
                 throw new RuntimeException("toolbar was not initialized");
@@ -157,7 +153,11 @@ public abstract class BaseJugglerToolbarFragment extends JugglerToolbarFragment 
         return actionBar != null ? actionBar.getTitle() : null;
     }
 
-    private void setTitle(CharSequence text) {
+    protected void setTitle(CharSequence text) {
+        Toolbar toolbar = getToolbar();
+        if (toolbar == null) {
+            throw new RuntimeException("toolbar was not initialized");
+        }
         toolbar.setTitle(text);
         ActionBar actionBar = getJugglerActivity().getSupportActionBar();
         if (actionBar != null) {
@@ -165,9 +165,16 @@ public abstract class BaseJugglerToolbarFragment extends JugglerToolbarFragment 
         }
     }
 
-    private void setTitle(@StringRes int textRestId) {
+    protected void setTitle(@StringRes int textRestId) {
         setTitle(getString(textRestId));
     }
 
+    public void setLogo(Drawable icon) {
+        Toolbar toolbar = getToolbar();
+        if (toolbar == null) {
+            throw new RuntimeException("toolbar was not initialized");
+        }
+        toolbar.setLogo(icon);
+    }
 
 }
