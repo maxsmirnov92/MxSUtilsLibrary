@@ -1,5 +1,7 @@
-include ':commonutils',
-        'customcontentprovider',
-        ':tasksutils', ':networkutils', 'devicewatchers',
-        ':recyclerview-lib',
-        ':jugglerhelper'
+//        ':commonutils',
+//        'customcontentprovider',
+//        ':tasksutils',
+//        ':networkutils',
+//        'devicewatchers',
+include        ':recyclerview-lib'
+//        ':jugglerhelper'

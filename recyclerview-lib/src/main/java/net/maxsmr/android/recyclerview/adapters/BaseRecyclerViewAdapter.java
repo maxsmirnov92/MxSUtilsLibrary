@@ -1,6 +1,5 @@
 package net.maxsmr.android.recyclerview.adapters;
 
-import android.annotation.SuppressLint;
 import android.content.Context;
 import android.support.annotation.CallSuper;
 import android.support.annotation.LayoutRes;
@@ -17,7 +16,6 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
 
 public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdapter.ViewHolder> extends RecyclerView.Adapter<VH> {
 
@@ -27,14 +25,28 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
     @LayoutRes
     protected final int mBaseItemLayoutId;
 
+    @NonNull
+    private final ArrayList<I> mItems = new ArrayList<>();
+
+    private OnProcessingItemListener<I, VH> mProcessingItemListener;
+
+    protected OnItemClickListener<I> mItemClickListener;
+
+    protected OnItemLongClickListener<I> mItemLongClickListener;
+
+    protected OnItemAddedListener<I> mItemAddedListener;
+
+    protected OnItemsRemovedListener<I> mItemsRemovedListener;
+
+    protected OnItemsSetListener<I> mItemsSetListener;
+
+    private boolean mNotifyOnChange = true;
+
     protected BaseRecyclerViewAdapter(@NonNull Context context, @LayoutRes int baseItemLayoutId, @Nullable Collection<I> items) {
         this.mContext = context;
         this.mBaseItemLayoutId = baseItemLayoutId;
         this.setItems(items);
     }
-
-    @NonNull
-    private final ArrayList<I> mItems = new ArrayList<>();
 
     protected final void rangeCheck(int position) {
         synchronized (mItems) {
@@ -82,7 +94,7 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
     public void sort(@NonNull Comparator<? super I> comparator) {
         synchronized (mItems) {
             Collections.sort(mItems, comparator);
-            if (notifyOnChange) {
+            if (mNotifyOnChange) {
                 notifyDataSetChanged();
             }
         }
@@ -91,10 +103,9 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
     /**
      * @param items null for reset adapter
      */
-    @SuppressLint("NewApi")
     public final void setItems(@Nullable Collection<I> items) {
         synchronized (mItems) {
-            if (!Objects.equals(mItems, items)) {
+            if (!mItems.equals(items)) {
                 clearItems();
                 if (items != null) {
                     this.mItems.addAll(items);
@@ -105,11 +116,11 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
     }
 
     protected void onItemsSet() {
-        if (notifyOnChange) {
+        if (mNotifyOnChange) {
             notifyDataSetChanged();
         }
-        if (itemSetListener != null) {
-            itemSetListener.onItemsSet(getItems());
+        if (mItemsSetListener != null) {
+            mItemsSetListener.onItemsSet(getItems());
         }
     }
 
@@ -118,14 +129,12 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
             if (!isEmpty()) {
                 int previousSize = getItemCount();
                 mItems.clear();
-                onItemRangeRemoved(0, previousSize - 1, previousSize);
+                onItemsRangeRemoved(0, previousSize - 1, previousSize);
             }
         }
     }
 
-    protected void onItemsCleared(int previousSize) {
-
-    }
+    protected void onItemsCleared(int previousSize) {}
 
     public final void addItem(int to, @Nullable I item) throws IndexOutOfBoundsException {
         synchronized (mItems) {
@@ -139,23 +148,45 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
         addItem(getItemCount(), item);
     }
 
-    public final void addItems(@NonNull List<I> items) {
-        for (I item : items) {
-            addItem(item);
-        }
-    }
-
     @CallSuper
     protected void onItemAdded(int to, @Nullable I item) {
-        if (notifyOnChange) {
+        if (mNotifyOnChange) {
             if (to == 0) {
                 notifyDataSetChanged();
             } else {
                 notifyItemInserted(to);
             }
         }
-        if (itemAddedListener != null) {
-            itemAddedListener.onItemAdded(to, item);
+        if (mItemAddedListener != null) {
+            mItemAddedListener.onItemAdded(to, item);
+        }
+    }
+
+    public final void addItems(int to, @Nullable Collection<I> items) {
+        synchronized (mItems) {
+            rangeCheckForAdd(to);
+            if (items != null) {
+                mItems.addAll(to, items);
+                onItemsAdded(to, items);
+            }
+        }
+    }
+
+    public final void addItems(@Nullable Collection<I> items) {
+        addItems(getItemCount(), items);
+    }
+
+    @CallSuper
+    protected void onItemsAdded(int to, @NonNull Collection<I> items) {
+        if (mNotifyOnChange) {
+            if (to == 0) {
+                notifyDataSetChanged();
+            } else {
+                notifyItemRangeInserted(to, items.size());
+            }
+        }
+        if (mItemAddedListener != null) {
+            mItemAddedListener.onItemsAdded(to, items);
         }
     }
 
@@ -169,21 +200,52 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
 
     @CallSuper
     protected void onItemSet(int in, @Nullable I item) {
-        if (notifyOnChange) {
+        if (mNotifyOnChange) {
             notifyItemChanged(in);
         }
-        if (itemSetListener != null) {
-            itemSetListener.onItemSet(in, item);
+        if (mItemsSetListener != null) {
+            mItemsSetListener.onItemSet(in, item);
         }
     }
 
-    // TODO replace item and replace range
+    @Nullable
+    public final I replaceItem(int in, @Nullable I newItem) {
+        synchronized (mItems) {
+            rangeCheck(in);
+            setNotifyOnChange(false);
+            I replacedItem = getItem(in);
+            mItems.remove(in);
+            onItemRemoved(in, replacedItem);
+            addItem(in, newItem);
+            setNotifyOnChange(true);
+            notifyItemChanged(in);
+            return replacedItem;
+        }
+    }
+
+    @Nullable
+    public final I replaceItem(@Nullable I replaceableItem, @Nullable I newItem) {
+        return replaceItem(indexOf(replaceableItem), newItem);
+    }
+
+    @NonNull
+    public final List<I> replaceItemsRange(int from, int to, @Nullable Collection<I> newItems) {
+        synchronized (mItems) {
+            setNotifyOnChange(false);
+            List<I> replacedItems = removeItemsRange(from, to);
+            addItems(newItems);
+            setNotifyOnChange(true);
+            notifyItemRangeChanged(from, to - from);
+            return replacedItems;
+        }
+    }
 
     @Nullable
     public final I removeItem(@Nullable I item) {
         return removeItem(indexOf(item));
     }
 
+    @Nullable
     public final I removeItem(int from) {
         synchronized (mItems) {
             rangeCheck(from);
@@ -191,6 +253,16 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
             mItems.remove(from);
             onItemRemoved(from, removedItem);
             return removedItem;
+        }
+    }
+
+    @CallSuper
+    protected void onItemRemoved(int removedPosition, @Nullable I item) {
+        if (mNotifyOnChange) {
+            notifyItemRemoved(removedPosition);
+        }
+        if (mItemsRemovedListener != null) {
+            mItemsRemovedListener.onItemRemoved(removedPosition, item);
         }
     }
 
@@ -212,7 +284,7 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
                 position++;
             }
             if (!removed.isEmpty()) {
-                onItemRangeRemoved(from, to, previousSize);
+                onItemsRangeRemoved(from, to, previousSize);
             }
             return removed;
         }
@@ -227,25 +299,15 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
     }
 
     @CallSuper
-    protected void onItemRangeRemoved(int from, int to, int previousSize) {
-        if (notifyOnChange) {
-            notifyItemRangeChanged(from, to);
+    protected void onItemsRangeRemoved(int from, int to, int previousSize) {
+        if (mNotifyOnChange) {
+            notifyItemRangeRemoved(from, to - from);
         }
-        if (itemRangeRemovedListener != null) {
-            itemRangeRemovedListener.onItemRangeRemoved(from, to, previousSize);
+        if (mItemsRemovedListener != null) {
+            mItemsRemovedListener.onItemsRangeRemoved(from, to, previousSize);
         }
         if (from == 0 && to == previousSize - 1) {
             onItemsCleared(previousSize);
-        }
-    }
-
-    @CallSuper
-    protected void onItemRemoved(int removedPosition, @Nullable I item) {
-        if (notifyOnChange) {
-            notifyItemRemoved(removedPosition);
-        }
-        if (itemRemovedListener != null) {
-            itemRemovedListener.onItemRemoved(removedPosition, item);
         }
     }
 
@@ -280,8 +342,8 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
     @CallSuper
     protected void processItem(@NonNull VH holder, @Nullable final I item, final int position) {
 
-        if (processingItemListener != null) {
-            processingItemListener.onProcessingItem(holder, item, position);
+        if (mProcessingItemListener != null) {
+            mProcessingItemListener.onProcessingItem(holder, item, position);
         }
 
         if (item != null) {
@@ -290,8 +352,8 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
                 holder.itemView.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        if (itemClickListener != null) {
-                            itemClickListener.onItemClick(position, item);
+                        if (mItemClickListener != null) {
+                            mItemClickListener.onItemClick(position, item);
                         }
                     }
                 });
@@ -302,8 +364,8 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
                     @Override
                     public boolean onLongClick(View v) {
                         boolean consumed = false;
-                        if (itemLongClickListener != null) {
-                            consumed = itemLongClickListener.onItemLongClick(position, item);
+                        if (mItemLongClickListener != null) {
+                            consumed = mItemLongClickListener.onItemLongClick(position, item);
                         }
                         return consumed;
                     }
@@ -326,58 +388,34 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
         return mItems.size();
     }
 
-    private boolean notifyOnChange = true;
-
     public final boolean isNotifyOnChange() {
-        return notifyOnChange;
+        return mNotifyOnChange;
     }
 
     public void setNotifyOnChange(boolean enable) {
-        notifyOnChange = enable;
+        mNotifyOnChange = enable;
     }
-
-    public interface OnItemClickListener<I> {
-        void onItemClick(int position, I item);
-    }
-
-    protected OnItemClickListener<I> itemClickListener;
 
     public void setOnItemClickListener(OnItemClickListener<I> listener) {
         if (allowSetClickListener()) {
-            this.itemClickListener = listener;
+            this.mItemClickListener = listener;
         }
 //        else {
 //            throw new UnsupportedOperationException("setting click listener is not allowed");
 //        }
     }
 
-    public interface OnItemLongClickListener<I> {
-
-        /**
-         * @return true if event consumed
-         */
-        boolean onItemLongClick(int position, I item);
-    }
-
-    protected OnItemLongClickListener<I> itemLongClickListener;
-
     public void setOnItemLongClickListener(OnItemLongClickListener<I> listener) {
         if (allowSetLongClickListener()) {
-            this.itemLongClickListener = listener;
+            this.mItemLongClickListener = listener;
         }
 //        else {
 //            throw new UnsupportedOperationException("setting long click listener is not allowed");
 //        }
     }
 
-    public interface OnProcessingItemListener<I, VH extends RecyclerView.ViewHolder> {
-        void onProcessingItem(@NonNull VH holder, @Nullable I item, int position);
-    }
-
-    private OnProcessingItemListener<I, VH> processingItemListener;
-
     public void setOnProcessingItemListener(OnProcessingItemListener<I, VH> l) {
-        this.processingItemListener = l;
+        this.mProcessingItemListener = l;
     }
 
     @Override
@@ -390,46 +428,16 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
         }
     }
 
-    public interface OnItemAddedListener<I> {
-        void onItemAdded(int to, I item);
-    }
-
-    private OnItemAddedListener<I> itemAddedListener;
-
     public void setOnItemAddedListener(OnItemAddedListener<I> itemAddedListener) {
-        this.itemAddedListener = itemAddedListener;
+        this.mItemAddedListener = itemAddedListener;
     }
 
-    public interface OnItemSetListener<I> {
-        void onItemSet(int to, I item);
-        void onItemsSet(@NonNull List<I> items);
+    public void setOnItemsSetListener(OnItemsSetListener<I> itemsSetListener) {
+        this.mItemsSetListener = itemsSetListener;
     }
 
-    private OnItemSetListener<I> itemSetListener;
-
-    public void setOnItemSetListener(OnItemSetListener<I> itemSetListener) {
-        this.itemSetListener = itemSetListener;
-    }
-
-
-    public interface OnItemRemovedListener<I> {
-        void onItemRemoved(int from, I item);
-    }
-
-    private OnItemRemovedListener<I> itemRemovedListener;
-
-    public void setOnItemRemovedListener(OnItemRemovedListener<I> itemRemovedListener) {
-        this.itemRemovedListener = itemRemovedListener;
-    }
-
-    public interface OnItemRangeRemovedListener {
-        void onItemRangeRemoved(int from, int to, int previousSize);
-    }
-
-    private OnItemRangeRemovedListener itemRangeRemovedListener;
-
-    public void setOnItemRangeRemovedListener(OnItemRangeRemovedListener itemRangeRemovedListener) {
-        this.itemRangeRemovedListener = itemRangeRemovedListener;
+    public void setOnItemsRemovedListener(OnItemsRemovedListener<I> itemsRemovedListener) {
+        this.mItemsRemovedListener = itemsRemovedListener;
     }
 
     public static abstract class ViewHolder<I> extends RecyclerView.ViewHolder {
@@ -450,8 +458,38 @@ public abstract class BaseRecyclerViewAdapter<I, VH extends BaseRecyclerViewAdap
             itemView.setVisibility(View.GONE);
         }
 
-        protected void onViewRecycled() {
-
-        }
+        protected void onViewRecycled() {}
     }
+
+    public interface OnItemClickListener<I> {
+        void onItemClick(int position, I item);
+    }
+
+    public interface OnItemLongClickListener<I> {
+
+        /**
+         * @return true if event consumed
+         */
+        boolean onItemLongClick(int position, I item);
+    }
+
+    public interface OnProcessingItemListener<I, VH extends BaseRecyclerViewAdapter.ViewHolder> {
+        void onProcessingItem(@NonNull VH holder, @Nullable I item, int position);
+    }
+
+    public interface OnItemAddedListener<I> {
+        void onItemAdded(int to, @Nullable I item);
+        void onItemsAdded(int to, @NonNull Collection<I> items);
+    }
+
+    public interface OnItemsSetListener<I> {
+        void onItemSet(int to, I item);
+        void onItemsSet(@NonNull List<I> items);
+    }
+
+    public interface OnItemsRemovedListener<I> {
+        void onItemRemoved(int from, I item);
+        void onItemsRangeRemoved(int from, int to, int previousSize);
+    }
+
 }
