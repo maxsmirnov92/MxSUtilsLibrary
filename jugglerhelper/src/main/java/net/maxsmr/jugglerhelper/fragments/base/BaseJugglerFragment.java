@@ -205,17 +205,13 @@ public abstract class BaseJugglerFragment extends JugglerFragment implements Nes
 
     @CallSuper
     public void onKeyDown(int keyCode, KeyEvent e) {
-        if (keyCode != KeyEvent.KEYCODE_BACK) {
-            List<Fragment> childFragments = getChildFragmentManager().getFragments();
-            if (childFragments != null) {
-                for (Fragment f : childFragments) {
-                    if (f instanceof BaseJugglerFragment && !f.isDetached()) {
-                        ((BaseJugglerFragment) f).onKeyDown(keyCode, e);
-                    }
+        List<Fragment> childFragments = getChildFragmentManager().getFragments();
+        if (childFragments != null) {
+            for (Fragment f : childFragments) {
+                if (f instanceof BaseJugglerFragment && !f.isDetached()) {
+                    ((BaseJugglerFragment) f).onKeyDown(keyCode, e);
                 }
             }
-        } else {
-            onBackPressed();
         }
     }
 
@@ -243,7 +239,6 @@ public abstract class BaseJugglerFragment extends JugglerFragment implements Nes
                     f.onActivityResult(requestCode, resultCode, data);
             }
         }
-        super.onActivityResult(requestCode, resultCode, data);
     }
 
 

@@ -1,5 +1,10 @@
 package net.maxsmr.jugglerhelper.fragments.base;
 
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
+import android.net.ConnectivityManager;
 import android.os.Bundle;
 import android.support.annotation.CallSuper;
 import android.support.annotation.IdRes;
@@ -25,7 +30,9 @@ import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
 import net.maxsmr.commonutils.android.gui.progressable.DialogProgressable;
 import net.maxsmr.commonutils.android.gui.progressable.Progressable;
 import net.maxsmr.commonutils.android.gui.views.RecyclerScrollableController;
+import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.jugglerhelper.R;
+import net.maxsmr.networkutils.NetworkHelper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +47,11 @@ import java.util.List;
 public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerViewAdapter<I, ?>> extends BaseJugglerFragment implements BaseRecyclerViewAdapter.OnItemClickListener<I>, BaseRecyclerViewAdapter.OnItemLongClickListener<I>, BaseRecyclerViewAdapter.OnItemAddedListener<I>, BaseRecyclerViewAdapter.OnItemsSetListener<I>, BaseRecyclerViewAdapter.OnItemsRemovedListener<I>, RecyclerScrollableController.OnLastItemVisibleListener, SwipeRefreshLayout.OnRefreshListener, View.OnClickListener {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseListJugglerFragment.class);
+
+
+    private BroadcastReceiver networkReceiver;
+
+    private boolean isLoadErrorOccurred = false;
 
     //    @BindView(R.id.swipeRefreshLayout)
     @Nullable
@@ -159,6 +171,9 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
         }
 
         applyTypeface();
+
+        networkReceiver = new NetworkBroadcastReceiver();
+        getContext().registerReceiver(networkReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
     }
 
     protected void postInit() {}
@@ -260,6 +275,8 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
     @NonNull
     protected abstract Adapter initAdapter();
 
+    protected abstract boolean allowReloadOnNetworkRestored();
+
     protected abstract boolean allowSetInitialItems();
 
     @Nullable
@@ -292,6 +309,7 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
 
     @Override
     public void onRefresh() {
+        doRefreshList();
     }
 //        if (progressable instanceof BaseListJugglerFragment.LoadListProgressable) {
 //            doRefreshList();
@@ -299,7 +317,9 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
 //            throw new RuntimeException("progressable is not instance of " + LoadListProgressable.class);
 //        }
 
-//    protected abstract void doRefreshList();
+    protected void doRefreshList() {
+
+    }
 
     protected void loading(boolean toggle) {
         if (loadingLayout != null) {
@@ -340,6 +360,7 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
 
     @CallSuper
     protected void processError() {
+        isLoadErrorOccurred = true;
         if (adapter != null) {
             recycler.setVisibility(View.GONE);
             if (placeholder != null) {
@@ -367,6 +388,8 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
 
         recycler.removeOnScrollListener(recyclerScrollableController);
         recyclerScrollableController = null;
+
+        getContext().unregisterReceiver(networkReceiver);
     }
 
     @Override
@@ -491,6 +514,7 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
 
     @CallSuper
     protected void onLoaded(List<I> items) {
+        isLoadErrorOccurred = false;
         processEmpty();
     }
 
@@ -512,6 +536,13 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
     public void onClick(View v) {
         if (v.getId() == R.id.btRetry) {
             onRetryClick();
+        }
+    }
+
+    @CallSuper
+    protected void onNetworkStatusChanged(boolean isOnline) {
+        if (isOnline && isLoadErrorOccurred && allowReloadOnNetworkRestored()) {
+            doRefreshList();
         }
     }
 
@@ -565,5 +596,16 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
             FontsHolder.getInstance().apply(p.getMessageView(), alias, false);
         }
         return p;
+    }
+
+    private class NetworkBroadcastReceiver extends BroadcastReceiver {
+
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            logger.debug("NetworkBroadcastReceiver :: onReceive(), intent=" + intent);
+            if (intent != null && CompareUtils.stringsEqual(intent.getAction(), ConnectivityManager.CONNECTIVITY_ACTION, true)) {
+                onNetworkStatusChanged(NetworkHelper.isOnline(context));
+            }
+        }
     }
 }

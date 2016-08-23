@@ -23,6 +23,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
+import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -397,21 +398,6 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static byte[] readBytesFromFile(File file) {
-
-        if (!isFileCorrect(file)) {
-            logger.error("incorrect file: " + file);
-            return null;
-        }
-
-        try {
-            return readBytesFromInputStream(new FileInputStream(file));
-        } catch (IOException e) {
-            return null;
-        }
-    }
-
-    @Nullable
     public static byte[] readBytesFromInputStream(InputStream inputStream) {
 
         if (inputStream != null) {
@@ -427,6 +413,7 @@ public final class FileHelper {
                 return data;
 
             } catch (Exception e) {
+                e.printStackTrace();
                 logger.error("an Exception occurred", e);
             } finally {
                 try {
@@ -440,6 +427,27 @@ public final class FileHelper {
         return null;
     }
 
+    @Nullable
+    public static byte[] readBytesFromFile(File file) {
+
+        if (!isFileCorrect(file)) {
+            logger.error("incorrect file: " + file);
+            return null;
+        }
+
+        if (!file.canRead()) {
+            logger.error("can't read from file: " + file);
+            return null;
+        }
+
+
+        try {
+            return readBytesFromInputStream(new FileInputStream(file));
+        } catch (IOException e) {
+            return null;
+        }
+    }
+
     @NonNull
     public static List<String> readLinesFromFile(File file) {
 
@@ -450,10 +458,14 @@ public final class FileHelper {
             return lines;
         }
 
-        FileReader reader = null;
+        if (!file.canRead()) {
+            logger.error("can't read from file: " + file);
+            return lines;
+        }
+
+        FileReader reader;
         try {
             reader = new FileReader(file);
-
         } catch (FileNotFoundException e) {
             logger.debug("a FileNotFoundException occurred", e);
             return lines;
@@ -472,6 +484,7 @@ public final class FileHelper {
             return lines;
 
         } catch (IOException e) {
+            e.printStackTrace();
             logger.error("an IOException occurred during readLine()", e);
 
         } finally {
@@ -479,6 +492,7 @@ public final class FileHelper {
                 br.close();
                 reader.close();
             } catch (IOException e) {
+                e.printStackTrace();
                 logger.error("an IOException occurred during close()", e);
             }
         }
@@ -487,14 +501,7 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static File writeBytesToFile(byte[] data, String fileName, String parentPath, boolean append) {
-        logger.debug("writeBytesToFile(), data=" + data + ", fileName=" + fileName + ", parentPath=" + parentPath + ", append=" + append);
-
-        if (data == null || data.length == 0) {
-            logger.error("data is null or empty");
-            return null;
-        }
-
+    private static File createFile(String fileName, String parentPath, boolean append) {
         final File file;
 
         if (!append) {
@@ -508,7 +515,28 @@ public final class FileHelper {
 
         if (file == null) {
             logger.error("can't create file: " + parentPath + File.separator + fileName);
+        }
+
+        return file;
+    }
+
+    @Nullable
+    public static File writeBytesToFile(byte[] data, String fileName, String parentPath, boolean append) {
+        logger.debug("writeBytesToFile(), data=" + data + ", fileName=" + fileName + ", parentPath=" + parentPath + ", append=" + append);
+
+        if (data == null) {
+            data = new byte[0];
+        }
+
+        final File file = createFile(fileName, parentPath, append);
+
+        if (file == null) {
             return null;
+        }
+
+        if (!file.canWrite()) {
+            logger.error("can't write to file: " + file);
+            return file;
         }
 
         FileOutputStream fos = null;
@@ -552,20 +580,15 @@ public final class FileHelper {
             return null;
         }
 
-        final File file;
-
-        if (!append) {
-            file = createNewFile(fileName, parentPath);
-        } else {
-            if (!isFileExists(fileName, parentPath))
-                file = createNewFile(fileName, parentPath);
-            else
-                file = new File(parentPath, fileName);
-        }
+        final File file = createFile(fileName, parentPath, append);
 
         if (file == null) {
-            logger.error("can't create file: " + parentPath + File.separator + fileName);
             return null;
+        }
+
+        if (!file.canWrite()) {
+            logger.error("can't write to file: " + file);
+            return file;
         }
 
         try {
@@ -581,25 +604,19 @@ public final class FileHelper {
 
     public static File writeStringToFile(String data, String fileName, String parentPath, boolean append) {
 
-        if (data == null || data.isEmpty()) {
-            logger.error("data is null or empty");
-            return null;
+        if (data == null) {
+            data = "";
         }
 
-        final File file;
-
-        if (!append) {
-            file = createNewFile(fileName, parentPath);
-        } else {
-            if (!isFileExists(fileName, parentPath))
-                file = createNewFile(fileName, parentPath);
-            else
-                file = new File(parentPath, fileName);
-        }
+        final File file = createFile(fileName, parentPath, append);
 
         if (file == null) {
-            logger.error("can't create file: " + parentPath + File.separator + fileName);
             return null;
+        }
+
+        if (!file.canWrite()) {
+            logger.error("can't write to file: " + file);
+            return file;
         }
 
         FileWriter writer = null;
@@ -626,6 +643,54 @@ public final class FileHelper {
         }
 
         return null;
+    }
+
+    public static File writeStringsToFile(Collection<String> lines, String fileName, String parentPath, boolean append) {
+
+        if (lines == null) {
+            lines = new ArrayList<>();
+        }
+
+        final File file = createFile(fileName, parentPath, append);
+
+        if (file == null) {
+            return null;
+        }
+
+        if (!file.canWrite()) {
+            logger.error("can't write to file: " + file);
+            return file;
+        }
+
+        FileWriter writer;
+        try {
+            writer = new FileWriter(file);
+        } catch (IOException e) {
+            e.printStackTrace();
+            logger.debug("an IOException occurred", e);
+            return file;
+        }
+
+        BufferedWriter bw = new BufferedWriter(writer);
+
+        try {
+            for (String line : lines) {
+                bw.append(line);
+                bw.flush();
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+            logger.error("an IOException occurred during write", e);
+        } finally {
+            try {
+                bw.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+                logger.error("an IOException occurred during close()", e);
+            }
+        }
+
+        return file;
     }
 
     public final static String FILE_EXT_ZIP = "zip";

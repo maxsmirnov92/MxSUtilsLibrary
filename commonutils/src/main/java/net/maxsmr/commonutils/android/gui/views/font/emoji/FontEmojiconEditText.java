@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.android.gui.views.font;
+package net.maxsmr.commonutils.android.gui.views.font.emoji;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -7,17 +7,19 @@ import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
 import android.support.annotation.NonNull;
-import android.support.v7.widget.AppCompatTextView;
 import android.util.AttributeSet;
 
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
+import net.maxsmr.commonutils.android.gui.views.font.ITypefaceChangeable;
+import net.maxsmr.commonutils.android.gui.views.font.OnSelectionChangedListener;
 
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import io.github.rockerhieu.emojicon.EmojiconEditText;
 
-public class FontTextView extends AppCompatTextView implements ITypefaceChangeable {
+public class FontEmojiconEditText extends EmojiconEditText implements ITypefaceChangeable {
 
     private HandlerThread thread;
     private Handler handler = new Handler(Looper.getMainLooper());
@@ -32,15 +34,15 @@ public class FontTextView extends AppCompatTextView implements ITypefaceChangeab
         selectionChangedListeners.remove(listener);
     }
 
-    public FontTextView(Context context) {
+    public FontEmojiconEditText(Context context) {
         this(context, null);
     }
 
-    public FontTextView(Context context, AttributeSet attrs) {
-        this(context, attrs, 0);
+    public FontEmojiconEditText(Context context, AttributeSet attrs) {
+        this(context, attrs, context.getResources().getIdentifier("editTextStyle", "attr", "android"));
     }
 
-    public FontTextView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public FontEmojiconEditText(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         if (!isInEditMode()) {
             setTypefaceByName(getTypeFaceNameFromAttrs(attrs));
@@ -49,9 +51,9 @@ public class FontTextView extends AppCompatTextView implements ITypefaceChangeab
 
     private String getTypeFaceNameFromAttrs(AttributeSet attrs) {
         if (attrs != null) {
-            TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.FontTextView, 0, 0);
+            TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.FontEditText, 0, 0);
             try {
-                return a.getString(R.styleable.FontTextView_custom_typeface);
+                return a.getString(R.styleable.FontEditText_custom_typeface);
             } finally {
                 a.recycle();
             }
@@ -65,6 +67,7 @@ public class FontTextView extends AppCompatTextView implements ITypefaceChangeab
             setTypeface(typeface);
         }
     }
+
 
     private void prepareThread() {
         thread = new HandlerThread("EditSelectionChangeThread");

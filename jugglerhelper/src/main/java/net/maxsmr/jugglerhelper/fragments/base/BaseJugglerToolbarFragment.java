@@ -153,7 +153,7 @@ public abstract class BaseJugglerToolbarFragment extends JugglerToolbarFragment 
         return actionBar != null ? actionBar.getTitle() : null;
     }
 
-    protected void setTitle(CharSequence text) {
+    public void setTitle(CharSequence text) {
         Toolbar toolbar = getToolbar();
         if (toolbar == null) {
             throw new RuntimeException("toolbar was not initialized");

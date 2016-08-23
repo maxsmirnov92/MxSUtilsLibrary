@@ -34,4 +34,13 @@
         <attr name="margin_size" format="dimension"/>
         <attr name="allow_display_single" format="boolean"/>
     </declare-styleable>
+
+    <declare-styleable name="TypewriterFontTextView">
+        <attr name="scheduled_text" format="string"/>
+        <attr name="text_anim_time_limit" format="integer"/>
+        <attr name="text_anim_delay" format="integer"/>
+        <attr name="text_anim_looping" format="boolean"/>
+        <attr name="text_anim_start" format="boolean"/>
+    </declare-styleable>
+
 </resources>

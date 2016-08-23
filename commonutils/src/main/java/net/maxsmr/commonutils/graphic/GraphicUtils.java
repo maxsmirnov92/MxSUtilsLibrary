@@ -1053,7 +1053,20 @@ public final class GraphicUtils {
         return null;
     }
 
+    @Nullable
+    public static Drawable cloneDrawable(@Nullable Drawable d) {
+        Drawable cloned = d;
+        if (d != null) {
+            cloned = d.getConstantState() != null? (d.getConstantState().newDrawable()) : null;
+            if (cloned != null) {
+                cloned = cloned.mutate(); // mutate() -> not affecting other instances, for e.g. after setting color filter
+            } else {
+                cloned = d.mutate();
+            }
 
+        }
+        return cloned;
+    }
 
     public enum Swatch {
         VIBRANT,
@@ -1083,7 +1096,7 @@ public final class GraphicUtils {
     }
 
     public interface OnPaletteColorsGeneratedListener {
-        void onPaletteColorsGenerated(PaletteColors colors);
+        void onPaletteColorsGenerated(@NonNull PaletteColors colors);
     }
 
     private static PaletteColors makePaletteColors(Palette palette, @ColorInt final int defaultColor, final Swatch sw) {
@@ -1127,6 +1140,8 @@ public final class GraphicUtils {
         return colors;
     }
 
+
+    @Nullable
     public static PaletteColors generateColorByBitmap(Bitmap bm, @ColorInt final int defaultColor, final Swatch sw) {
         if (isBitmapCorrect(bm) && sw != null) {
             return makePaletteColors(new Palette.Builder(bm).generate(), defaultColor, sw);

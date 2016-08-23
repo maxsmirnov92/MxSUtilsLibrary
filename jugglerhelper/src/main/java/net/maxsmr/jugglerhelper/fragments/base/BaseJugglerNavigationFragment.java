@@ -1,6 +1,7 @@
 package net.maxsmr.jugglerhelper.fragments.base;
 
 import android.os.Bundle;
+import android.support.annotation.CallSuper;
 import android.support.annotation.LayoutRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -14,7 +15,7 @@ import net.maxsmr.commonutils.android.gui.GuiUtils;
 
 import me.ilich.juggler.gui.JugglerNavigationFragment;
 
-public abstract class BaseJugglerNavigationFragment extends JugglerNavigationFragment {
+public abstract class BaseJugglerNavigationFragment extends JugglerNavigationFragment implements DrawerLayout.DrawerListener {
 
     @Nullable
     private Bundle savedInstanceState;
@@ -49,11 +50,17 @@ public abstract class BaseJugglerNavigationFragment extends JugglerNavigationFra
         return null;
     }
 
-    protected void init() {}
+    @CallSuper
+    protected void init() {
+        getDrawerLayout().addDrawerListener(this);
+    }
 
     protected void postInit() {}
 
-    protected void unlisten() {}
+    @CallSuper
+    protected void unlisten() {
+        getDrawerLayout().removeDrawerListener(this);
+    }
 
     @Override
     public void onViewCreated(View view, Bundle savedInstanceState) {
@@ -121,4 +128,23 @@ public abstract class BaseJugglerNavigationFragment extends JugglerNavigationFra
     }
 
 
+    @Override
+    public void onDrawerSlide(View drawerView, float slideOffset) {
+
+    }
+
+    @Override
+    public void onDrawerOpened(View drawerView) {
+
+    }
+
+    @Override
+    public void onDrawerClosed(View drawerView) {
+
+    }
+
+    @Override
+    public void onDrawerStateChanged(int newState) {
+
+    }
 }

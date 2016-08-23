@@ -3,7 +3,7 @@ apply plugin: 'maven'
 
 def groupId = "net.maxsmr"
 def artifactId = "commonutils"
-def version = "1.0.2.3"
+def version = "1.0.2.4"
 
 def releaseDir = "${buildDir}/release"
 
@@ -110,7 +110,7 @@ dependencies {
     compile 'com.android.support:design:23.1.1'
 
     compile 'de.mindpipe.android:android-logging-log4j:1.0.3'
-
+    compile group: 'io.github.rockerhieu', name: 'emojicon', version: '1.4.0'
 
     compile 'org.slf4j:slf4j-log4j12:1.7.21'
     compile 'com.google.code.gson:gson:2.4'

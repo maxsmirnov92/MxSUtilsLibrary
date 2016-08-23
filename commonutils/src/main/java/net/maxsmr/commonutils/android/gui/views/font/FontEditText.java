@@ -18,10 +18,6 @@ import java.util.Set;
 
 public class FontEditText extends AppCompatEditText implements ITypefaceChangeable {
 
-    public interface OnSelectionChangedListener {
-        void onSelectionChanged(int selStart, int selEnd);
-    }
-
     private HandlerThread thread;
     private Handler handler = new Handler(Looper.getMainLooper());
 

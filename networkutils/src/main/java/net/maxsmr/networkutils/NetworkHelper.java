@@ -43,7 +43,7 @@ public class NetworkHelper {
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
 
-        if (activeNetInfo != null && activeNetInfo.isConnected()) {
+        if (activeNetInfo != null && activeNetInfo.isConnected() && activeNetInfo.isAvailable()) {
 
             logger.debug("isOnline=true");
             return true;
@@ -53,6 +53,7 @@ public class NetworkHelper {
         }
     }
 
+    @NonNull
     public static NetworkInfo.State getCurrentNetworkState(@NonNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -77,6 +78,7 @@ public class NetworkHelper {
 
     public final static int NETWORK_TYPE_NONE = -1;
 
+    @NonNull
     public static int getActiveNetworkType(@NonNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
@@ -163,6 +165,7 @@ public class NetworkHelper {
         return !TextUtils.isEmpty(domain) && Patterns.DOMAIN_NAME.matcher(domain).matches();
     }
 
+    @Nullable
     public static InetAddress getInetAddressByIp(String ipAddr) {
 
         if (!isIpAddress(ipAddr)) {
@@ -178,6 +181,7 @@ public class NetworkHelper {
         }
     }
 
+    @Nullable
     public static InetAddress getInetAddressByDomain(String hostName) {
 
         if (!isDomain(hostName)) {
