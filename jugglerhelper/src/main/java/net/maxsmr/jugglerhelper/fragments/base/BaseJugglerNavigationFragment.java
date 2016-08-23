@@ -135,12 +135,12 @@ public abstract class BaseJugglerNavigationFragment extends JugglerNavigationFra
 
     @Override
     public void onDrawerOpened(View drawerView) {
-
+        GuiUtils.hideKeyboard(getActivity());
     }
 
     @Override
     public void onDrawerClosed(View drawerView) {
-
+        GuiUtils.hideKeyboard(getActivity());
     }
 
     @Override

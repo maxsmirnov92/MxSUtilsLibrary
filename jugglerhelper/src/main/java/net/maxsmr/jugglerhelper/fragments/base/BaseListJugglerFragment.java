@@ -131,6 +131,7 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
 
     @CallSuper
     protected void init() {
+        super.init();
 
         View rootView = getView();
 
@@ -175,8 +176,6 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
         networkReceiver = new NetworkBroadcastReceiver();
         getContext().registerReceiver(networkReceiver, new IntentFilter(ConnectivityManager.CONNECTIVITY_ACTION));
     }
-
-    protected void postInit() {}
 
     @CallSuper
     protected void applyTypeface() {
@@ -230,17 +229,11 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
     @Override
     public void onViewCreated(View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        init();
         if (allowSetInitialItems()) {
             reloadAdapter(getInitialItems());
         }
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
-        postInit();
-    }
 
     protected boolean enableSwipeRefresh() {
         return true;
@@ -375,6 +368,7 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
 
     @CallSuper
     protected void unlisten() {
+        super.unlisten();
 
         if (swipeRefreshLayout != null) {
             swipeRefreshLayout.setOnRefreshListener(null);
@@ -390,12 +384,6 @@ public abstract class BaseListJugglerFragment<I, Adapter extends BaseRecyclerVie
         recyclerScrollableController = null;
 
         getContext().unregisterReceiver(networkReceiver);
-    }
-
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        unlisten();
     }
 
     @Nullable
