@@ -1,8 +1,8 @@
 // ':utilstest',
 //':commonutils',
 //        'customcontentprovider',
-include ':tasksutils'
-//        ':networkutils',
+// ':tasksutils'
+include        ':networkutils'
 //        'devicewatchers',
 //        ':recyclerview-lib',
-//        ':jugglerhelper'
+//include        ':jugglerhelper'
