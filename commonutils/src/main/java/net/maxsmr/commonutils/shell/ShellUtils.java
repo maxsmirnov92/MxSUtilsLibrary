@@ -2,6 +2,9 @@ package net.maxsmr.commonutils.shell;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
+
+import net.maxsmr.commonutils.data.FileHelper;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,37 +20,16 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 
-import net.maxsmr.commonutils.data.FileHelper;
-
-public class ShellUtils {
+public final class ShellUtils {
 
     private final static Logger logger = LoggerFactory.getLogger(ShellUtils.class);
 
     public static final int PROCESS_EXIT_CODE_SUCCESS = 0;
 
-    public static final String SU_PROCESS_NAME = "su";
+    public static final String SU_BINARY_NAME = "su";
 
-    public interface ShellCallback {
-
-        enum StreamType {
-            CMD("cmd"), OUT("out"), ERR("err");
-
-            public final String name;
-
-            StreamType(String name) {
-                this.name = name;
-            }
-        }
-
-        boolean needToLogCommands();
-
-        void shellOut(@NonNull StreamType from, String shellLine);
-
-        void processComplete(int exitValue);
-    }
-
-    public interface ThreadsCallback {
-        void onThreadsStarted(List<Thread> threads);
+    public ShellUtils() {
+        throw new AssertionError("no instances.");
     }
 
     @Nullable
@@ -59,10 +41,12 @@ public class ShellUtils {
 
         ProcessBuilder pb = new ProcessBuilder(cmds);
 
-        if (FileHelper.isDirExists(workingDir)) {
-            pb.directory(new File(workingDir));
-        } else {
-            logger.warn("working directory " + workingDir + " not exists");
+        if (!TextUtils.isEmpty(workingDir)) {
+            if (FileHelper.isDirExists(workingDir)) {
+                pb.directory(new File(workingDir));
+            } else {
+                logger.warn("working directory " + workingDir + " not exists");
+            }
         }
 
         if (sc != null && sc.needToLogCommands()) {
@@ -79,8 +63,9 @@ public class ShellUtils {
         try {
             process = pb.start();
         } catch (IOException e) {
-            logger.error("an IOException occurred during start()", e);
-            e.printStackTrace();
+            if (sc != null) {
+                sc.processStartFailed(e);
+            }
             return null;
         }
 
@@ -90,7 +75,7 @@ public class ShellUtils {
         (errThread = new StreamConsumeThread(process.getErrorStream(), ShellCallback.StreamType.ERR, sc)).start();
 
         if (tc != null) {
-            tc.onThreadsStarted(new ArrayList<>(Arrays.asList(new Thread[]{outThread, errThread})));
+            tc.onThreadsStarted(new ArrayList<>(Arrays.asList(outThread, errThread)));
         }
 
         return process;
@@ -117,38 +102,26 @@ public class ShellUtils {
      */
     public static int execProcess(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable final ThreadsCallback tc, final boolean waitForEndOutput) {
         logger.debug("execProcess(), cmds=" + cmds + ", workingDir=" + workingDir + ", sc=" + sc + ", tc=" + tc);
-        Process process = createAndStartProcess(cmds, workingDir, sc, new ThreadsCallback() {
-            @Override
-            public void onThreadsStarted(List<Thread> threads) {
-                if (waitForEndOutput) {
-                    for (Thread t : threads) {
-                        if (t != null && t.isAlive() && !t.isInterrupted()) {
-                            try {
-                                t.join();
-                            } catch (InterruptedException e) {
-                                e.printStackTrace();
-                                Thread.currentThread().interrupt();
-                            }
-                        }
-                    }
-                    if (tc != null) {
-                        tc.onThreadsStarted(threads);
-                    }
-                }
-            }
-        });
+        Process process = createAndStartProcess(cmds, workingDir, sc, tc);
         int exitCode = -1;
         try {
-            return exitCode = process != null ?  process.waitFor() : -1;
+            return exitCode = process != null ? process.waitFor() : -1;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             e.printStackTrace();
             return exitCode;
         } finally {
+            if (process != null) {
+                process.destroy();
+            }
             if (sc != null) {
                 sc.processComplete(exitCode);
             }
         }
+    }
+
+    public static boolean isRootAvailable() {
+        return (FileHelper.searchByNameWithStat(SU_BINARY_NAME, null, null)).size() > 0;
     }
 
     private static class StreamConsumeThread extends Thread {
@@ -185,7 +158,7 @@ public class ShellUtils {
         }
     }
 
-    private static class ProcessWaitThread extends Thread {
+    static class ProcessWaitThread extends Thread {
 
         @NonNull
         final Process process;
@@ -212,10 +185,37 @@ public class ShellUtils {
                 e.printStackTrace();
             }
 
+            process.destroy();
+
             if (sc != null) {
                 sc.processComplete(exitVal);
             }
 
         }
+    }
+
+    public interface ShellCallback {
+
+        enum StreamType {
+            CMD("cmd"), OUT("out"), ERR("err");
+
+            public final String name;
+
+            StreamType(String name) {
+                this.name = name;
+            }
+        }
+
+        boolean needToLogCommands();
+
+        void shellOut(@NonNull StreamType from, String shellLine);
+
+        void processStartFailed(Throwable t);
+
+        void processComplete(int exitValue);
+    }
+
+    public interface ThreadsCallback {
+        void onThreadsStarted(List<Thread> threads);
     }
 }

@@ -1,6 +1,11 @@
 package net.maxsmr.commonutils.data;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Random;
+import java.util.Set;
 
 public class MathUtils {
 
@@ -50,5 +55,42 @@ public class MathUtils {
 
     public static long randLong(long min, long max) {
         return (new Random().nextLong() % (max - min)) + min;
+    }
+
+    public static Integer generateNumber(Collection<? extends Number> excludeNumbers, int minValue, int maxValue) {
+
+        if (minValue > maxValue) {
+            throw new IllegalArgumentException("minValue (" + minValue + ") > maxValue (" + maxValue + ")");
+        }
+
+        int rangeSize = maxValue - minValue;
+        Set<Integer> checkedCodes = new LinkedHashSet<>();
+
+        boolean found = true;
+        int newCode = minValue;
+
+        if (excludeNumbers != null && !excludeNumbers.isEmpty()) {
+            excludeNumbers = new ArrayList<>(excludeNumbers);
+            found = false;
+            int iterations = 0;
+            List<? extends Number> usedCodesCopy = new ArrayList<>(excludeNumbers);
+            for (int i = 0; i < usedCodesCopy.size() && iterations <= rangeSize; i++) {
+                Number code = usedCodesCopy.get(i);
+                if (code != null && code.intValue() == newCode) {
+                    newCode = randInt(minValue, maxValue);
+                    if (!checkedCodes.contains(newCode)) {
+                        checkedCodes.add(newCode);
+                        i = 0;
+                        iterations++;
+                    }
+                } else {
+                    if (i == excludeNumbers.size() - 1) {
+                        found = true;
+                    }
+                }
+            }
+        }
+
+        return found ? newCode : null;
     }
 }

@@ -6,16 +6,16 @@ import android.net.ConnectivityManager;
 import android.os.PowerManager;
 import android.provider.Settings;
 
+import net.maxsmr.commonutils.data.MathUtils;
+import net.maxsmr.networkutils.NETWORK_TYPE;
+import net.maxsmr.networkutils.NetworkHelper;
+import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetAddress;
 import java.util.LinkedList;
-
-import net.maxsmr.commonutils.data.MathUtils;
-import net.maxsmr.networkutils.NETWORK_TYPE;
-import net.maxsmr.networkutils.NetworkHelper;
-import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 
 public class NetworkWatcher {
 
@@ -258,7 +258,7 @@ public class NetworkWatcher {
 
                 hostPingExecutor.addRunnableTask(hostPingTask = new HostPingTask(pingInetAddress, pingCount, timeout >= 0 ? timeout
                         : HostPingTask.DEFAULT_TIMEOUT));
-                hostPingExecutor.start(0, period > 0 ? period : DEFAULT_HOST_PING_PERIOD);
+                hostPingExecutor.restart(period > 0 ? period : DEFAULT_HOST_PING_PERIOD);
             }
 
         }).start();

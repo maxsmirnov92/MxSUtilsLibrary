@@ -5,11 +5,14 @@ import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-
 import net.maxsmr.networkutils.loadstorage.LoadInfo;
+
+import java.util.Iterator;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
+
+import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.NO_ID;
 
 public abstract class AbstractLoadStorage<I extends LoadInfo> {
 
@@ -20,28 +23,7 @@ public abstract class AbstractLoadStorage<I extends LoadInfo> {
         void onStorageRestored(int restoredElementsCount);
     }
 
-    protected final LinkedList<StorageListener> storageListeners = new LinkedList<>();
-
-    public void addStorageListener(StorageListener listener) throws NullPointerException {
-
-        if (listener == null) {
-            throw new NullPointerException();
-        }
-
-        synchronized (storageListeners) {
-            if (!storageListeners.contains(listener)) {
-                storageListeners.add(listener);
-            }
-        }
-    }
-
-    public void removeStorageListener(StorageListener listener) {
-        synchronized (storageListeners) {
-            if (storageListeners.contains(listener)) {
-                storageListeners.remove(listener);
-            }
-        }
-    }
+    protected final Set<StorageListener> storageListeners = new LinkedHashSet<>();
 
     @NonNull
     protected final Class<I> loadInfoClass;
@@ -49,6 +31,24 @@ public abstract class AbstractLoadStorage<I extends LoadInfo> {
     public AbstractLoadStorage(@NonNull Class<I> loadInfoClass) {
         this.loadInfoClass = loadInfoClass;
     }
+
+    @NonNull
+    public Class<I> getLoadInfoClass() {
+        return loadInfoClass;
+    }
+
+    public void addStorageListener(@NonNull StorageListener listener) throws NullPointerException {
+        synchronized (storageListeners) {
+            storageListeners.add(listener);
+        }
+    }
+
+    public void removeStorageListener(@NonNull StorageListener listener) {
+        synchronized (storageListeners) {
+            storageListeners.remove(listener);
+        }
+    }
+
 
     protected abstract boolean isDisposed();
 
@@ -65,13 +65,42 @@ public abstract class AbstractLoadStorage<I extends LoadInfo> {
 
     public abstract int getSize();
 
-    @Nullable
-    public I findById(int id) {
+    public int getMaxId() {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
-        List<I> infos = getAll();
-        for (I i : infos) {
+        int maxId = NO_ID;
+        Iterator<I> it = iterator();
+        while (it.hasNext()) {
+            I elem = it.next();
+            if (elem != null && elem.id > maxId) {
+                maxId = elem.id;
+            }
+        }
+        return maxId;
+    }
+
+    public int getMinId() {
+        if (isDisposed()) {
+            throw new IllegalStateException("release() was called");
+        }
+        int minId = NO_ID;
+        Iterator<I> it = iterator();
+        while (it.hasNext()) {
+            I elem = it.next();
+            if (elem != null && (elem.id < minId || minId == NO_ID)) {
+                minId = elem.id;
+            }
+        }
+        return minId;
+    }
+
+    @Nullable
+    public final I findById(int id) {
+        if (isDisposed()) {
+            throw new IllegalStateException("release() was called");
+        }
+        for (I i : getAll()) {
             if (i != null && i.id == id) {
                 return i;
             }
@@ -79,14 +108,12 @@ public abstract class AbstractLoadStorage<I extends LoadInfo> {
         return null;
     }
 
-    public boolean contains(@Nullable I info) {
-        if (info != null) {
-            for (I i : getAll()) {
-                if (i != null && i.id == info.id)
-                    return true;
-            }
-        }
-        return false;
+    public synchronized final boolean contains(int id) {
+        return findById(id) != null;
+    }
+
+    public synchronized final boolean contains(@Nullable I info) {
+        return info != null && contains(info.id);
     }
 
     @NonNull
@@ -117,7 +144,7 @@ public abstract class AbstractLoadStorage<I extends LoadInfo> {
         checkRangeAdd(pos);
         int size = getSize();
         int maxSize = getMaxSize();
-        return findById(info.id) == null && (size < maxSize || maxSize == MAX_SIZE_UNLIMITED);
+        return !contains(info) && (size < maxSize || maxSize == MAX_SIZE_UNLIMITED);
     }
 
     protected boolean checkSetElement(@NonNull I info, int pos) {
@@ -128,16 +155,8 @@ public abstract class AbstractLoadStorage<I extends LoadInfo> {
         return findById(info.id) == null;
     }
 
-    @SuppressWarnings("ConstantConditions")
     @NonNull
-    @CallSuper
-    public final I get(int index) {
-        if (isDisposed()) {
-            throw new IllegalStateException("release() was called");
-        }
-        checkRange(index);
-        return null;
-    }
+    public abstract I get(int index);
 
     /**
      * @return retrieved and removed first storage element

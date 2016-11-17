@@ -12,6 +12,8 @@ import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Patterns;
 
+import net.maxsmr.commonutils.data.MathUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,8 +33,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
-
-import net.maxsmr.commonutils.data.MathUtils;
 
 public class NetworkHelper {
 

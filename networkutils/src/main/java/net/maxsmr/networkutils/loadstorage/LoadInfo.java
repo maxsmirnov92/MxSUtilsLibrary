@@ -1,24 +1,37 @@
 package net.maxsmr.networkutils.loadstorage;
 
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
-
-import java.io.File;
-import java.io.Serializable;
 
 import net.maxsmr.commonutils.data.ChecksumHelper;
 import net.maxsmr.commonutils.data.model.InstanceManager;
+import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
 
-public class LoadInfo implements Serializable {
+import java.io.Serializable;
+
+public class LoadInfo<B extends LoadRunnableInfo.Body> implements Serializable {
 
     private static final long serialVersionUID = 3809033529460650154L;
 
     public final int id;
 
-    @Nullable
-    public final File uploadFile;
+    /**
+     * name for serialized file
+     */
+    @NonNull
+    public final String name;
 
-//    @Nullable
-//    public final String uploadName;
+    @NonNull
+    public final B body;
+
+    public LoadInfo(int id, @NonNull String name, @NonNull B body) {
+//        if (id < 0) {
+//            throw new IllegalArgumentException("incorrect id: " + id);
+//        }
+        this.id = id;
+        this.name = name;
+        this.body = body;
+    }
 
     public String getMD5Hash() {
         return ChecksumHelper.getMD5Hash(this.toByteArray());
@@ -29,33 +42,24 @@ public class LoadInfo implements Serializable {
         return InstanceManager.asByteArray(this);
     }
 
-    @Nullable
-    public static <I extends LoadInfo> I fromByteArray(byte[] byteArray, Class<I> clazz) throws IllegalArgumentException {
-        return InstanceManager.fromByteArray(clazz, byteArray);
-    }
-
-    public LoadInfo(int id, @Nullable File uploadFile/*, @Nullable String uploadName*/) {
-        this.id = id;
-        this.uploadFile = uploadFile;
-//        this.uploadName = uploadName;
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        LoadInfo that = (LoadInfo) o;
+        LoadInfo<?> loadInfo = (LoadInfo<?>) o;
 
-        if (id != that.id) return false;
-        return !(uploadFile != null ? !uploadFile.equals(that.uploadFile) : that.uploadFile != null);
+        if (id != loadInfo.id) return false;
+        if (!name.equals(loadInfo.name)) return false;
+        return body.equals(loadInfo.body);
 
     }
 
     @Override
     public int hashCode() {
         int result = id;
-        result = 31 * result + (uploadFile != null ? uploadFile.hashCode() : 0);
+        result = 31 * result + name.hashCode();
+        result = 31 * result + body.hashCode();
         return result;
     }
 
@@ -63,7 +67,13 @@ public class LoadInfo implements Serializable {
     public String toString() {
         return "LoadInfo{" +
                 "id=" + id +
-                ", uploadFile=" + uploadFile +
+                ", name='" + name + '\'' +
+                ", body=" + body +
                 '}';
+    }
+
+    @Nullable
+    public static <I extends LoadInfo> I fromByteArray(byte[] byteArray, Class<I> clazz) throws IllegalArgumentException {
+        return InstanceManager.fromByteArray(clazz, byteArray);
     }
 }

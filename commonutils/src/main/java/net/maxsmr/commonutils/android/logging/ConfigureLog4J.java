@@ -19,7 +19,7 @@ public class ConfigureLog4J {
 //        if (minFileSize <= 0) {
 //            throw new IllegalArgumentException("incorrect minFileSize: " + minFileSize);
 //        }
-        FileHelper.testFile(filePath);
+        FileHelper.checkFile(filePath);
         this.minFileSize = minFileSize <= 0? DEFAULT_MIN_FILE_SIZE : minFileSize;
         this.filePath = filePath;
     }

@@ -21,7 +21,7 @@ public abstract class InstanceManager<T> {
     protected final File file;
 
     public InstanceManager(String fileName) {
-        FileHelper.testFile(file = new File(fileName));
+        FileHelper.checkFile(file = new File(fileName));
     }
 
     @Nullable
@@ -113,7 +113,7 @@ public abstract class InstanceManager<T> {
     }
 
     public T loadFromString() {
-        List<String> data = FileHelper.readLinesFromFile(file);
+        List<String> data = FileHelper.readStringsFromFile(file);
         if (data != null && data.size() > 0) {
             return deserializeFromString(data.get(0));
         }

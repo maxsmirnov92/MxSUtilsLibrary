@@ -3,41 +3,37 @@ package net.maxsmr.networkutils.loadutil.requests;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.CallSuper;
-import android.support.annotation.MainThread;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.networkutils.loadutil.managers.LoadListener;
+import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
+import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
 
-import java.net.MalformedURLException;
+import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import net.maxsmr.networkutils.loadutil.executors.base.LoadFileListener;
-import net.maxsmr.networkutils.loadutil.executors.base.LoadRunnableInfo;
-import net.maxsmr.networkutils.loadutil.executors.base.upload.UploadExecutor;
-import net.maxsmr.networkutils.loadutil.executors.base.upload.UploadRunnableInfo;
-import net.maxsmr.tasksutils.taskrunnable.RunnableInfo;
-
 public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractRequest.class);
+    @Nullable
+    protected final Handler handler;
 
     @NonNull
-    protected final UploadExecutor executor;
+    protected final NetworkLoadManager manager;
 
     @Nullable
     private C callback;
 
-    public AbstractRequest(@NonNull UploadExecutor executor) {
-        this.executor = executor;
+    public AbstractRequest(@NonNull NetworkLoadManager manager) {
+        this.manager = manager;
+        this.handler = Looper.myLooper() != null ? new Handler(Looper.myLooper()) : new Handler(Looper.getMainLooper());
     }
 
     @NonNull
-    public UploadExecutor getExecutor() {
-        return executor;
+    public NetworkLoadManager getManager() {
+        return manager;
     }
 
     @Nullable
@@ -45,247 +41,237 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
         return callback;
     }
 
-    public static Integer[] defaultAcceptableResponseCodes() {
+    public static List<Integer> defaultAcceptableResponseCodes() {
         List<Integer> codes = new ArrayList<>();
         for (int c = 200; c <= 299; c++) {
             codes.add(c);
         }
-        return codes.toArray(new Integer[codes.size()]);
+        return codes;
     }
 
     public final boolean isRunning() {
-        RunnableInfo runnableInfo = executor.findRunnableInfoById(getId());
-        return runnableInfo != null /*&& !runnableInfo.isCancelled()*/;
+        return manager.isLoadRunning(getId());
     }
 
     public final boolean isCancelled() {
-        UploadRunnableInfo runnableInfo = executor.findRunnableInfoById(getId());
-        return runnableInfo != null && runnableInfo.isCancelled();
+        return manager.isLoadCancelled(getId());
     }
 
     public final void cancel() {
         if (isRunning()) {
-            executor.cancelLoad(getId());
+            manager.cancelLoad(getId());
         }
     }
 
     protected abstract int getId();
 
-    @Nullable
+    @NonNull
     protected abstract URL getUrl();
 
     @NonNull
     protected abstract LoadRunnableInfo.LoadSettings getLoadSettings();
 
     @Nullable
-    protected abstract List<UploadRunnableInfo.Field> getHeaders();
+    protected abstract List<LoadRunnableInfo.NameValuePair> getHeaders();
 
     @Nullable
-    protected abstract List<UploadRunnableInfo.Field> getFormFields();
+    protected abstract List<LoadRunnableInfo.NameValuePair> getFormFields();
 
     @NonNull
-    protected Integer[] getAcceptableResponseCodes() {
+    protected List<Integer> getAcceptableResponseCodes() {
         return defaultAcceptableResponseCodes();
     }
 
-    protected abstract UploadRunnableInfo.FileFormField getFileFormField();
+    @Nullable
+    protected abstract LoadRunnableInfo.FileBody getFileFormField();
 
-    public void execute(@Nullable C callback) {
+    @Nullable
+    protected abstract File getDownloadFile();
+
+
+    public void enqueue(@Nullable C callback) {
 
         this.callback = callback;
         if (callback != null) {
-            executor.addLoadListener(callback);
+            callback.handler = handler;
+            callback.manager = manager;
+            manager.addLoadListener(callback);
         }
 
-        UploadRunnableInfo runnableInfo = null;
-        try {
-            runnableInfo = new UploadRunnableInfo(getId(), getUrl(), getLoadSettings(), getHeaders(), getFormFields(), getFileFormField(), getAcceptableResponseCodes());
-        } catch (MalformedURLException e) {
-            e.printStackTrace();
-            logger.error("a MalformedURLException occurred", e);
-        }
-        if (runnableInfo != null) {
-            executor.upload(runnableInfo);
-        } else {
-            if (callback != null) {
-                callback.onFailed(Callback.RESPONSE_CODE_UNKNOWN, null, new ArrayList<LoadRunnableInfo.Field>(), new ArrayList<String>());
-            }
-        }
+        LoadRunnableInfo.Builder builder = new LoadRunnableInfo.Builder(getId(), getUrl(), getLoadSettings());
+        builder.addAcceptableResponseCodes(getAcceptableResponseCodes());
+        builder.addHeaders(getHeaders());
+        builder.addFormFields(getFormFields());
+        builder.body(getFileFormField());
+        builder.downloadFile(getDownloadFile());
+
+        manager.enqueueLoad(builder.build());
     }
 
-    public abstract static class Callback implements LoadFileListener<UploadRunnableInfo> {
-
-        public static final int RESPONSE_CODE_UNKNOWN = -1;
-
-        private final int id;
+    public abstract static class Callback implements LoadListener<LoadRunnableInfo> {
 
         public Callback(int id) {
             this.id = id;
         }
 
-        long estimatedTime = 0;
-        float currentKBytes = 0;
-        float totalKBytes = 0;
+        final int id;
 
-        int responseCode = RESPONSE_CODE_UNKNOWN;
-        String responseMessage = null;
-        List<LoadRunnableInfo.Field> responseHeaders = null;
-        List<String> responseBody = null;
+        @Nullable
+        Handler handler;
+
+        @Nullable
+        NetworkLoadManager manager;
+
+        @Nullable
+        NetworkLoadManager.LoadProcessInfo loadProcessInfo;
+
+        @Nullable
+        NetworkLoadManager.Response response;
+
+        @Nullable
+        public NetworkLoadManager.LoadProcessInfo getLoadProcessInfo() {
+            return loadProcessInfo;
+        }
+
+        @Nullable
+        public NetworkLoadManager.Response getResponse() {
+            return response;
+        }
 
         @Override
-        public final int getId(@NonNull UploadRunnableInfo info) {
+        public final int getId(@NonNull LoadRunnableInfo info) {
             return id;
         }
 
         @Override
-        public long getProcessingNotifyInterval(@NonNull UploadRunnableInfo info) {
+        public long getProcessingNotifyInterval(@NonNull LoadRunnableInfo info) {
             return DEFAULT_PROCESSING_NOTIFY_INTERVAL;
         }
 
-        public long getEstimatedTime() {
-            return estimatedTime;
-        }
-
-        public float getCurrentKBytes() {
-            return currentKBytes;
-        }
-
-        public float getTotalKBytes() {
-            return totalKBytes;
-        }
-
-        public int getResponseCode() {
-            return responseCode;
-        }
-
-        public String getResponseMessage() {
-            return responseMessage;
-        }
-
-        public List<LoadRunnableInfo.Field> getResponseHeaders() {
-            return responseHeaders;
-        }
-
-        public List<String> getResponseBody() {
-            return responseBody;
-        }
-
         @Override
-        public final void onUpdateState(@NonNull STATE state, @NonNull UploadRunnableInfo loadInfo, final long estimatedTime, final float currentKBytes, final float totalKBytes, @Nullable Throwable t) {
-            logger.debug("onUpdateState(), state=" + state + ", loadInfo=" + loadInfo + ", estimatedTime=" + estimatedTime + ", currentKBytes=" + currentKBytes + ", totalKBytes=" + totalKBytes + ", t=" + t);
+        public final void onUpdateState(@NonNull STATE state, @NonNull LoadRunnableInfo loadInfo, @NonNull final NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
 
-            this.estimatedTime = estimatedTime;
-            this.currentKBytes = currentKBytes;
-            this.totalKBytes = totalKBytes;
+            this.loadProcessInfo = loadProcessInfo;
 
             switch (state) {
 
                 case STARTING:
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            onStarting();
-                        }
-                    });
-                    break;
-
-                case FAILED_NOT_STARTED:
-                case FAILED_RETRIES_EXCEEDED:
-                    if (responseCode == RESPONSE_CODE_UNKNOWN) {
-                        onFailed(responseCode, null, new ArrayList<LoadRunnableInfo.Field>(), new ArrayList<String>());
+                    if (handler != null) {
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                onStarting();
+                            }
+                        });
+                    } else {
+                        onStarting();
                     }
                     break;
 
-                case CANCELLED:
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            onCancelled();
-                        }
-                    });
+                case FAILED_RETRIES_EXCEEDED:
+                    onFailed(null, loadProcessInfo);
                     break;
 
-                case PROCESSING:
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            onProcessing(estimatedTime, currentKBytes, totalKBytes);
-                        }
-                    });
+                case CANCELLED:
+                    if (handler != null) {
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                onCancelled();
+                            }
+                        });
+                    } else {
+                        onCancelled();
+                    }
+                    break;
+
+                case UPLOADING:
+                case DOWNLOADING:
+                    if (handler != null) {
+                        handler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                onProcessing(loadProcessInfo);
+                            }
+                        });
+                    } else {
+                        onProcessing(loadProcessInfo);
+                    }
                     break;
             }
         }
 
         @Override
-        public final void onActiveLoadsCountChanged(int activeDownloads) {
+        public void onLoadAddedToQueue(int id, int waitingLoads, int activeLoads) {
 
         }
 
         @Override
-        public final void onResponseCode(@NonNull ResponseStatus status, @NonNull UploadRunnableInfo loadInfo, int code, String responseMessage) {
-            this.responseCode = code;
-            this.responseMessage = responseMessage;
+        public void onLoadRemovedFromQueue(int id, int waitingLoads, int activeLoads) {
+
         }
 
         @Override
-        public final void onResponseHeaders(@NonNull ResponseStatus status, @NonNull UploadRunnableInfo loadInfo, @NonNull List<LoadRunnableInfo.Field> fields) {
-            this.responseHeaders = fields;
-        }
-
-        @Override
-        public final void onResponseBody(@NonNull ResponseStatus status, @NonNull UploadRunnableInfo loadInfo, @NonNull List<String> response) {
-            this.responseBody = response;
-
-            switch (status) {
+        public void onResponse(@NonNull LoadRunnableInfo loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NonNull NetworkLoadManager.Response response) {
+            this.loadProcessInfo = loadProcessInfo;
+            this.response = response;
+            switch (response.getStatus()) {
                 case ACCEPTED:
-                    onSuccess(responseCode, responseMessage, responseHeaders, responseBody);
+                    onSuccess(response, loadProcessInfo);
                     break;
 
                 case DECLINED:
-                    onFailed(responseCode, responseMessage, responseHeaders, responseBody);
+                    onFailed(response, loadProcessInfo);
                     break;
             }
         }
 
-        @MainThread
         protected void onStarting() {
 
         }
 
-        @MainThread
-        protected void onProcessing(long estimatedTime, float currentKBytes, float totalKBytes) {
-
-        }
-
-        @MainThread
-        protected void onFinished(long estimatedTime, float currentKBytes, float totalKBytes) {
+        protected void onProcessing(@NonNull NetworkLoadManager.LoadProcessInfo currentLoadProcessInfo) {
 
         }
 
         @CallSuper
-        protected void onSuccess(int code, String responseMessage, @NonNull List<LoadRunnableInfo.Field> responseHeaders, @NonNull List<String> response) {
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @Override
-                public void run() {
-                    onFinished(estimatedTime, currentKBytes, totalKBytes);
-                }
-            });
+        protected void onFinished() {
+            if (manager != null) {
+                manager.removeLoadListener(this);
+            }
         }
 
         @CallSuper
-        protected void onFailed(int code, String responseMessage, @NonNull List<LoadRunnableInfo.Field> responseHeaders, @NonNull List<String> response) {
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @Override
-                public void run() {
-                    onFinished(estimatedTime, currentKBytes, totalKBytes);
-                }
-            });
+        protected void onSuccess(@Nullable NetworkLoadManager.Response response, @NonNull NetworkLoadManager.LoadProcessInfo info) {
+            if (handler != null) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        onFinished();
+                    }
+                });
+            } else {
+                onFinished();
+            }
         }
 
         @CallSuper
-        @MainThread
+        protected void onFailed(@Nullable NetworkLoadManager.Response response, @NonNull NetworkLoadManager.LoadProcessInfo info) {
+            if (handler != null) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        onFinished();
+                    }
+                });
+            } else {
+                onFinished();
+            }
+        }
+
+        @CallSuper
         protected void onCancelled() {
-            onFinished(estimatedTime, currentKBytes, totalKBytes);
+            onFinished();
         }
     }
 

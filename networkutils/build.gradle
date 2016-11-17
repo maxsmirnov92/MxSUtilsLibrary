@@ -77,6 +77,6 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
 
-//    compile project(":tasksutils")
-    compile 'net.maxsmr:tasksutils:1.0.1.2'
+    compile project(":tasksutils")
+//    compile 'net.maxsmr:tasksutils:1.0.1.2'
 }

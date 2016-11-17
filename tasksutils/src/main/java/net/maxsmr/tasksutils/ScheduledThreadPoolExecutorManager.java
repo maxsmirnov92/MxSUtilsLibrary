@@ -1,10 +1,15 @@
 package net.maxsmr.tasksutils;
 
+import android.support.annotation.NonNull;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -12,7 +17,37 @@ public class ScheduledThreadPoolExecutorManager {
 
     private final static Logger logger = LoggerFactory.getLogger(ScheduledThreadPoolExecutorManager.class);
 
-    private final List<Runnable> runnableList = new ArrayList<Runnable>();
+    private final List<Runnable> runnableList = new ArrayList<>();
+
+    private final List<ScheduledFuture<?>> currentScheduledFutures = new ArrayList<>();
+
+    private final String poolName;
+
+    private ScheduledThreadPoolExecutor executor;
+
+    private long delayMs = 0;
+
+    private long intervalMs = 0;
+
+    private int workersCount = 1;
+
+    public ScheduledThreadPoolExecutorManager(String poolName) {
+        logger.debug("ScheduledThreadPoolExecutorManager(), poolName=" + poolName);
+        this.poolName = poolName;
+    }
+
+
+    public List<Runnable> getRunnableList() {
+        return Collections.unmodifiableList(runnableList);
+    }
+
+    public void addRunnableTasks(Collection<Runnable> runnables) {
+        if (runnables != null) {
+            for (Runnable r : runnables) {
+                addRunnableTask(r);
+            }
+        }
+    }
 
     public void addRunnableTask(Runnable runnable) throws NullPointerException {
         logger.debug("addRunnableTask(), runnable=" + runnable);
@@ -22,14 +57,11 @@ public class ScheduledThreadPoolExecutorManager {
         }
 
         synchronized (runnableList) {
-            if (runnableList.contains(runnable)) {
-                return;
-            }
             runnableList.add(runnable);
         }
 
         if (isRunning()) {
-            start(delayMs, intervalMs);
+            restart(delayMs, intervalMs, workersCount);
         }
     }
 
@@ -43,7 +75,7 @@ public class ScheduledThreadPoolExecutorManager {
         }
 
         if (isRunning()) {
-            start(delayMs, intervalMs);
+            restart(delayMs, intervalMs, workersCount);
         }
     }
 
@@ -58,34 +90,43 @@ public class ScheduledThreadPoolExecutorManager {
         }
     }
 
-    private final String poolName;
-
-    public ScheduledThreadPoolExecutorManager(String poolName) {
-        logger.debug("ScheduledThreadPoolExecutorManager(), poolName=" + poolName);
-        this.poolName = poolName;
+    public List<ScheduledFuture<?>> getCurrentScheduledFutures() {
+        return Collections.unmodifiableList(currentScheduledFutures);
     }
-
-    private ScheduledThreadPoolExecutor executor;
 
     public boolean isRunning() {
         return executor != null && (!executor.isShutdown() || !executor.isTerminated());
 
     }
 
-    private long delayMs = 0;
-
     public long getDelayMs() {
         return delayMs;
     }
-
-    private long intervalMs = 0;
 
     public long getIntervalMs() {
         return intervalMs;
     }
 
-    public synchronized void start(long delayMs, long intervalMs) {
-        logger.debug("start(), intervalMs=" + intervalMs);
+    public int getWorkersCount() {
+        return workersCount;
+    }
+
+    public synchronized void start(long intervalMs) {
+        start(0, intervalMs, 1);
+    }
+
+    public synchronized void start(long delayMs, long intervalMs, int workersCount) {
+        if (!isRunning()) {
+            restart(delayMs, intervalMs, workersCount);
+        }
+    }
+
+    public synchronized void restart(long intervalMs) {
+        restart(0, intervalMs, 1);
+    }
+
+    public synchronized void restart(long delayMs, long intervalMs, int workersCount) {
+        logger.debug("start(), delayMs=" + delayMs + ", intervalMs=" + intervalMs + ", workersCount=" + workersCount);
 
         if (intervalMs <= 0)
             throw new IllegalArgumentException("can't start executor: incorrect intervalMs: " + intervalMs);
@@ -93,16 +134,19 @@ public class ScheduledThreadPoolExecutorManager {
         if (delayMs < 0)
             throw new IllegalArgumentException("can't start executor: incorrect delayMs: " + delayMs);
 
+        if (workersCount < 1)
+            throw new IllegalArgumentException("can't start executor: incorrect workersCount: " + workersCount);
+
         if (runnableList.isEmpty())
             throw new RuntimeException("no runnables to schedule");
 
         stop(false, 0);
 
-        executor = new ScheduledThreadPoolExecutor(runnableList.size(), new NamedThreadFactory(poolName));
+        executor = new ScheduledThreadPoolExecutor(workersCount, new NamedThreadFactory(poolName));
 
         for (Runnable runnable : runnableList) {
             logger.debug("scheduling runnable " + runnable + " with interval " + intervalMs + " ms...");
-            executor.scheduleAtFixedRate(new WrappedRunnable(runnable), this.delayMs = delayMs, this.intervalMs = intervalMs, TimeUnit.MILLISECONDS);
+            currentScheduledFutures.add(executor.scheduleAtFixedRate(new WrappedRunnable(runnable), this.delayMs = delayMs, this.intervalMs = intervalMs, TimeUnit.MILLISECONDS));
         }
     }
 
@@ -118,7 +162,6 @@ public class ScheduledThreadPoolExecutorManager {
         // executor.purge();
 
         executor.shutdown();
-
         if (await) {
             try {
                 executor.awaitTermination(timeoutMs >= 0 ? timeoutMs : 0, TimeUnit.MILLISECONDS);
@@ -127,20 +170,18 @@ public class ScheduledThreadPoolExecutorManager {
                 Thread.currentThread().interrupt();
             }
         }
-
         executor = null;
-        intervalMs = 0;
+
+        currentScheduledFutures.clear();
     }
 
-    static class WrappedRunnable implements Runnable {
+    static final class WrappedRunnable implements Runnable {
 
+        @NonNull
         final Runnable command;
 
-        WrappedRunnable(Runnable command) {
+        WrappedRunnable(@NonNull Runnable command) {
             this.command = command;
-            if (command == null) {
-                throw new NullPointerException("command is null");
-            }
         }
 
         @Override

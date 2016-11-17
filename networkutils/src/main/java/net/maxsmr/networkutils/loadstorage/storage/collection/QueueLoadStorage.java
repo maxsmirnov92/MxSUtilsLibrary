@@ -3,44 +3,45 @@ package net.maxsmr.networkutils.loadstorage.storage.collection;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import net.maxsmr.networkutils.loadstorage.LoadInfo;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Deque;
 import java.util.Iterator;
 import java.util.List;
 import java.util.concurrent.LinkedBlockingDeque;
-
-import net.maxsmr.networkutils.loadstorage.LoadInfo;
 
 
 public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadStorage<I> {
 
     private final static Logger logger = LoggerFactory.getLogger(QueueLoadStorage.class);
 
-    private LinkedBlockingDeque<I> loadQueue;
+    private final int maxSize;
+
+    private ArrayDeque<I> loadQueue;
 
     /**
      * @param maxSize                max loadQueue elements
      * @param sync                   is synchronization needed when adding and removing to loadQueue
-     * @param allowDeleteFiles       allow delete files to upload when clearing loadQueue
+     * @param allowDeleteFiles       allow delete files to load when clearing loadQueue
      * @param queueDirPath           path when serialized {@link LoadInfo} files stored
-     * @param restoreQueuesFromFiles allow restore {@link LoadInfo} from files on create
+//     * @param restoreQueuesFromFiles allow restore {@link LoadInfo} from files on create
      */
-    public QueueLoadStorage(Class<I> clazz, int maxSize, boolean sync, boolean allowDeleteFiles, @Nullable String queueDirPath, boolean restoreQueuesFromFiles, @Nullable StorageListener listener) {
+    public QueueLoadStorage(Class<I> clazz, int maxSize, boolean sync, boolean allowDeleteFiles, @Nullable String queueDirPath, @Nullable StorageListener listener) {
         super(clazz, sync, allowDeleteFiles, queueDirPath);
-        init(maxSize);
-
-        addStorageListener(listener);
-
-        if (restoreQueuesFromFiles) {
-            startRestoreThread();
+        if (maxSize <= 0 && maxSize != MAX_SIZE_UNLIMITED) {
+            throw new IllegalArgumentException("incorrect max size: " + maxSize);
         }
-    }
-
-    private void init(int maxQueueSize) {
-        logger.debug("init(), maxQueueSize=" + maxQueueSize);
-        loadQueue = maxQueueSize > 0 ? new LinkedBlockingDeque<I>(maxQueueSize) : new LinkedBlockingDeque<I>();
+        this.maxSize = maxSize;
+        this.loadQueue = new ArrayDeque<>();
+        if (listener != null) {
+            addStorageListener(listener);
+        }
     }
 
     @Override
@@ -49,27 +50,27 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
     }
 
     @Override
-    public int getMaxSize() {
+    public synchronized int getMaxSize() {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
-        return loadQueue.size() + loadQueue.remainingCapacity();
+        return maxSize;
     }
 
-    public int getSize() {
+    public synchronized int getSize() {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
         return loadQueue.size();
     }
 
-    @Override
-    public boolean contains(@Nullable I info) {
-        if (isDisposed()) {
-            throw new IllegalStateException("release() was called");
-        }
-        return loadQueue.contains(info);
-    }
+//    @Override
+//    public boolean contains(@Nullable I info) {
+//        if (isDisposed()) {
+//            throw new IllegalStateException("release() was called");
+//        }
+//        return loadQueue.contains(info);
+//    }
 
     @Override
     @NonNull
@@ -80,6 +81,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
         return new WrappedIterator(loadQueue.iterator());
     }
 
+    /** copy of queue */
     @Override
     @NonNull
     public synchronized List<I> getAll() {
@@ -94,11 +96,17 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
         while (it.hasNext()) {
             list.add(it.next());
         }
-        return list;
+        return Collections.unmodifiableList(list);
     }
 
     @NonNull
-    private I poll(boolean first) {
+    @Override
+    public I get(int index) {
+        throw new UnsupportedOperationException("get from specified position is not supported");
+    }
+
+    @NonNull
+    private synchronized I poll(boolean first) {
 
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
@@ -112,14 +120,14 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
 
         int prev = getSize();
 
-        I uploadInfo = first ? loadQueue.pollFirst() : loadQueue.pollLast();
+        I info = first ? loadQueue.pollFirst() : loadQueue.pollLast();
         // logger.info("this loadQueue size: " + loadQueue.size());
         // logger.info("all queues size: " + getUploadDequesSize());
-        if (!deleteFileByLoadInfo(uploadInfo)) {
-            logger.error("can't delete file by upload info with upload file " + uploadInfo.uploadFile);
+        if (!deleteFileByLoadInfo(info)) {
+            logger.error("can't delete file by info " + info);
         }
         dispatchStorageSizeChanged(prev);
-        return uploadInfo;
+        return info;
     }
 
     /**
@@ -127,7 +135,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
      */
     @NonNull
     @Override
-    public I pollFirst() {
+    public synchronized I pollFirst() {
         return poll(true);
     }
 
@@ -136,12 +144,12 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
      */
     @NonNull
     @Override
-    public I pollLast() {
+    public synchronized I pollLast() {
         return poll(false);
     }
 
     @NonNull
-    private I peek(boolean first) {
+    private synchronized I peek(boolean first) {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
@@ -154,7 +162,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
 
     @NonNull
     @Override
-    public I peekFirst() {
+    public synchronized I peekFirst() {
         return peek(true);
     }
 
@@ -165,10 +173,10 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
     }
 
     @Override
-    protected boolean addNoSerialize(@NonNull I info, int pos) {
+    protected synchronized boolean addNoSerialize(@NonNull I info, int pos) {
         if (super.addNoSerialize(info, pos)) {
-            if (loadQueue.remainingCapacity() > 0) {
-                logger.debug("adding upload info to loadQueue (file: " + info.uploadFile + ")...");
+            if (getMaxSize() == MAX_SIZE_UNLIMITED || getMaxSize() - getSize() > 0) {
+                logger.debug("adding info to loadQueue (file: " + info + ")...");
                 int prev = getSize();
                 final boolean addResult = loadQueue.add(info);
                 if (addResult) {
@@ -183,7 +191,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
     }
 
     @Override
-    public boolean add(@NonNull I info, int pos) {
+    public synchronized boolean add(@NonNull I info, int pos) {
         int size = getSize();
         if (pos != (size > 0 ? size - 1 : 0)) {
             throw new UnsupportedOperationException("adding to specified position is not supported");
@@ -192,22 +200,19 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
             return false;
         }
         if (!writeLoadInfoToFile(info)) {
-            logger.error("can't write upload info with file " + info.uploadFile + " to file");
+            logger.error("can't write info " + info + " to file");
         }
         return true;
     }
 
     @Override
     public boolean set(@NonNull I info, int pos) {
-        if (!super.set(info, pos)) {
-            return false;
-        }
         throw new UnsupportedOperationException("setting element at specified position is not supported");
     }
 
     @Override
     @Nullable
-    public I remove(@Nullable I info) {
+    public synchronized I remove(@Nullable I info) {
 
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
@@ -223,9 +228,20 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
         }
 
         int prev = getSize();
-        if (loadQueue.remove(info)) {
+        boolean removed = false;
+        Iterator<I> iterator = loadQueue.iterator();
+        while (iterator.hasNext()) {
+            I it = iterator.next();
+            if (it.id == info.id) {
+                iterator.remove();
+                removed = true;
+                break;
+            }
+        }
+
+        if (removed) {
             if (!deleteFileByLoadInfo(info)) {
-                logger.error("can't delete file by upload info " + info);
+                logger.error("can't delete file by info " + info);
             }
             dispatchStorageSizeChanged(prev);
             return info;
@@ -235,12 +251,12 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
     }
 
     @Override
-    public void clear() {
+    public synchronized void clear() {
         clear(false, false);
     }
 
     @Override
-    protected void clearNoDelete() {
+    protected synchronized void clearNoDelete() {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
@@ -250,6 +266,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
     @Override
     public synchronized void release() {
         super.release();
+        clearNoDelete();
         loadQueue = null;
     }
 
@@ -278,7 +295,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
             int prev = getSize();
             iterator.remove();
             if (!deleteFileByLoadInfo(next)) {
-                logger.error("can't delete file by upload info " + next);
+                logger.error("can't delete file by info " + next);
             }
             dispatchStorageSizeChanged(prev);
             next = null;

@@ -4,15 +4,17 @@ import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.networkutils.loadstorage.LoadInfo;
+import net.maxsmr.networkutils.loadstorage.storage.AbstractLoadStorage;
+import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
-import java.util.List;
-
-import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.networkutils.loadstorage.LoadInfo;
-import net.maxsmr.networkutils.loadstorage.storage.AbstractLoadStorage;
+import java.util.Collections;
+import java.util.Set;
 
 public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends AbstractLoadStorage<I> {
 
@@ -20,32 +22,40 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
 
     protected final static String FILE_EXT_DAT = "dat";
 
-    protected boolean syncWithFiles = true;
+    protected final boolean syncWithFiles;
 
-    protected boolean allowDeleteFiles = true;
+    protected final boolean allowDeleteFiles;
 
-    protected String storageDirPath;
+    protected final String storageDirPath;
+
+    private boolean isRestoreCompleted = false;
 
     /**
      * @param sync             is synchronization needed when adding and removing to storage
-     * @param allowDeleteFiles allow delete files to upload when clearing queue
+     * @param allowDeleteFiles allow delete files to load when clearing queue
      * @param storageDirPath   path when serialized {@link LoadInfo} files stored
      */
     protected AbstractCollectionLoadStorage(Class<I> clazz, boolean sync, boolean allowDeleteFiles, @Nullable String storageDirPath) {
         super(clazz);
-        init(sync, allowDeleteFiles, storageDirPath);
-    }
+        logger.debug("AbstractCollectionLoadStorage(), sync=" + sync + ", allowDeleteFiles=" + allowDeleteFiles + ", storageDirPath=" + storageDirPath);
 
-    private void init(boolean sync, boolean allowDeleteFiles, @Nullable String storageDirPath) {
-        logger.debug("init(), sync=" + sync + ", allowDeleteFiles=" + allowDeleteFiles + ", storageDirPath=" + storageDirPath);
-
-        if (sync && !FileHelper.testDirNoThrow(storageDirPath)) {
+        if (sync && !FileHelper.checkDirNoThrow(storageDirPath)) {
             throw new RuntimeException("incorrect queue dir path: " + storageDirPath);
         }
 
         this.syncWithFiles = sync;
         this.allowDeleteFiles = allowDeleteFiles;
         this.storageDirPath = storageDirPath;
+
+        if (syncWithFiles) {
+            startRestoreThread();
+        } else {
+            isRestoreCompleted = true;
+        }
+    }
+
+    public boolean isRestoreCompleted() {
+        return isRestoreCompleted;
     }
 
     private Thread restoreThread;
@@ -55,10 +65,8 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
     }
 
     protected void startRestoreThread() {
-        logger.debug("startRestoreThread()");
 
         if (isRestoreThreadRunning()) {
-            logger.debug("restoreThread is already running");
             return;
         }
 
@@ -74,10 +82,8 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
     }
 
     protected void stopRestoreThread() {
-        logger.debug("stopRestoreThread()");
 
         if (!isRestoreThreadRunning()) {
-            logger.debug("restoreThread is not running");
             return;
         }
 
@@ -90,19 +96,9 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
         return addNoSerialize(info, size > 0 ? size - 1 : 0);
     }
 
-    protected static <I extends LoadInfo> boolean checkUploadFile(@NonNull I info) {
-        if (!FileHelper.isFileCorrect(info.uploadFile)) {
-            logger.error("uploadFile is incorrect: " + info.uploadFile);
-            return false;
-        } else {
-            logger.debug("uploadFile: " + info.uploadFile + " | size: " + info.uploadFile.length());
-            return true;
-        }
-    }
-
     @CallSuper
     protected boolean addNoSerialize(@NonNull I info, int pos) {
-        return checkUploadFile(info);
+        return checkLoadInfo(info);
     }
 
     /**
@@ -111,117 +107,123 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
     protected synchronized boolean restoreFromFiles() {
         logger.debug("restoreFromFiles()");
 
-        List<File> filesList = FileHelper.getFiles(new File(storageDirPath), false, null);
-
-        if (filesList.isEmpty()) {
-            logger.error("filesList is null or empty");
-            return false;
-        }
-
-        FileHelper.sortFilesByLastModified(filesList, true, false);
+        isRestoreCompleted = false;
 
         int restoredCount = 0;
 
         final long startTime = System.currentTimeMillis();
 
-        logger.info("restoring LoadInfo objects by files...");
+        try {
 
-        for (File f : filesList) {
+            Set<File> files = FileHelper.getFiles(Collections.singleton(new File(storageDirPath)), FileHelper.GetMode.FILES, false, null, null);
 
-            if (Thread.currentThread().isInterrupted()) {
+            if (files.isEmpty()) {
+                logger.info("no files to restore");
                 return false;
             }
 
-            if (f == null || f.isDirectory()) {
-                continue;
-            }
+            FileHelper.sortFilesByLastModified(files, true, false);
 
-            final String ext = FileHelper.getFileExtension(f.getName());
+            logger.info("restoring LoadInfo objects by files...");
 
-            if (f.isFile() && f.length() > 0 && ext.equalsIgnoreCase(FILE_EXT_DAT)) {
+            for (File f : files) {
 
-                I uploadInfo = null;
-
-                try {
-                    uploadInfo = LoadInfo.fromByteArray(FileHelper.readBytesFromFile(f), loadInfoClass);
-                } catch (IllegalArgumentException e) {
-                    logger.error("an IllegalArgumentException occured", e);
+                if (Thread.currentThread().isInterrupted()) {
+                    return false;
                 }
 
-                logger.debug("uploadInfo from byte array: " + uploadInfo);
-                if (uploadInfo != null && addNoSerialize(uploadInfo)) {
-                    restoredCount++;
+                if (f == null || f.isDirectory()) {
+                    continue;
+                }
+
+                final String ext = FileHelper.getFileExtension(f.getName());
+
+                if (f.isFile() && f.length() > 0 && ext.equalsIgnoreCase(FILE_EXT_DAT)) {
+
+                    I uploadInfo = null;
+
+                    try {
+                        byte[] b = FileHelper.readBytesFromFile(f);
+                        if (b != null && b.length > 0) {
+                            uploadInfo = LoadInfo.fromByteArray(b, loadInfoClass);
+                        }
+                    } catch (RuntimeException e) {
+                        logger.error("an Exception occurred", e);
+                    }
+
+                    logger.debug("uploadInfo from byte array: " + uploadInfo);
+                    if (uploadInfo != null && addNoSerialize(uploadInfo)) {
+                        restoredCount++;
+                    } else {
+                        logger.error("uploadInfo " + uploadInfo + " was not added to deque, deleting file " + f + "...");
+                        if (!FileHelper.deleteFile(f)) {
+                            logger.error("can't delete file");
+                        }
+                    }
+
                 } else {
-                    logger.error("uploadInfo " + uploadInfo + " was not added to deque, deleting file " + f + "...");
-                    if (!f.delete()) {
-                        logger.error("can't delete file");
+                    logger.error("incorrect queue file: " + f + ", deleting...");
+                    if (!FileHelper.deleteFile(f)) {
+                        logger.error("can't delete file: " + f);
                     }
                 }
-
-            } else {
-                logger.error("incorrect queue file: " + f + ", deleting...");
-                if (!f.delete()) {
-                    logger.error("can't delete file: " + f);
-                }
             }
+
+
+
+            return true;
+
+        } finally {
+            isRestoreCompleted = true;
+            logger.info("restoring complete, time: " + (System.currentTimeMillis() - startTime) + " ms");
+            logger.info("restored LoadInfo objects count: " + restoredCount + ", queues total size: " + getSize());
+            dispatchStorageRestored(restoredCount);
         }
 
-        logger.info("restoring complete, time: " + (System.currentTimeMillis() - startTime) + " ms");
-        logger.info("restored LoadInfo objects count: " + restoredCount + ", queues total size: " + getSize());
-        dispatchStorageRestored(restoredCount);
-        return true;
     }
 
-    protected boolean writeLoadInfoToFile(@Nullable I uploadInfo) {
-        logger.debug("writeLoadInfoToFile(), uploadInfo=" + uploadInfo);
+    protected boolean writeLoadInfoToFile(@Nullable I loadInfo) {
+        logger.debug("writeLoadInfoToFile(), loadInfo=" + loadInfo);
 
         if (syncWithFiles) {
 
-            if (uploadInfo == null) {
-                logger.error("uploadInfo is null");
+            if (loadInfo == null) {
+                logger.error("loadInfo is null");
                 return false;
             }
 
-            if (uploadInfo.uploadFile == null) {
-                logger.error("uploadFile is null");
-                return false;
-            }
-
-            if (!FileHelper.testDirNoThrow(storageDirPath)) {
+            if (!FileHelper.checkDirNoThrow(storageDirPath)) {
                 logger.error("incorrect storage dir path: " + storageDirPath);
+                return false;
             }
 
-            final String uploadInfoFileName = uploadInfo.uploadFile.getName() + "." + FILE_EXT_DAT;
+            final String uploadInfoFileName = loadInfo.name + "." + FILE_EXT_DAT;
 
-            // logger.debug("writing upload info (queue type: " + uploadInfo.getQueueType() + ", upload file: "
-            // + uploadInfo.getUploadFile().getName() + ") to file...");
+            // logger.debug("writing upload info (queue type: " + loadInfo.getQueueType() + ", upload file: "
+            // + loadInfo.getUploadFile().getName() + ") to file...");
 
-            return (FileHelper.writeBytesToFile(uploadInfo.toByteArray(), uploadInfoFileName, storageDirPath, false) != null);
+            byte[] b = loadInfo.toByteArray();
+            return b != null && b.length > 0 && FileHelper.writeBytesToFile(b, uploadInfoFileName, storageDirPath, false) != null;
         }
 
         return false;
     }
 
-    protected boolean deleteFileByLoadInfo(@Nullable I uploadInfo) {
-        logger.debug("deleteFileByLoadInfo(), uploadInfo=" + uploadInfo);
+    protected boolean deleteFileByLoadInfo(@Nullable I loadInfo) {
+        logger.debug("deleteFileByLoadInfo(), loadInfo=" + loadInfo);
 
         if (syncWithFiles) {
 
-            if (uploadInfo == null) {
-                logger.error("uploadInfo is null");
+            if (loadInfo == null) {
+                logger.error("loadInfo is null");
                 return false;
             }
 
-            if (uploadInfo.uploadFile == null) {
-                logger.error("uploadFile is null");
-                return false;
-            }
+            final String uploadInfoFileName = loadInfo.name + "." + FILE_EXT_DAT;
 
-            final String uploadInfoFileName = uploadInfo.uploadFile.getName() + "." + FILE_EXT_DAT;
-
-            // logger.debug("deleting file with upload info (queue type: " + uploadInfo.getQueueType() +
+            // logger.debug("deleting file with upload info (queue type: " + loadInfo.getQueueType() +
             // ", upload file: "
-            // + uploadInfo.getUploadFile().getName() + ")...");
+            // + loadInfo.getUploadFile().getName() + ")...");
 
             return FileHelper.deleteFile(uploadInfoFileName, storageDirPath);
         }
@@ -236,9 +238,12 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
         }
         while (!isEmpty()) {
             I info = sync && syncWithFiles ? pollFirst() : peekFirst();
-            if (deleteFiles && allowDeleteFiles && info.uploadFile != null && info.uploadFile.isFile() && info.uploadFile.exists()) {
-                if (!info.uploadFile.delete()) {
-                    logger.error("can't delete file: " + info.uploadFile);
+            if (info.body instanceof LoadRunnableInfo.FileBody) {
+                File uploadFile = ((LoadRunnableInfo.FileBody) info.body).getSourceFile();
+                if (deleteFiles && allowDeleteFiles && uploadFile.isFile() && uploadFile.exists()) {
+                    if (!uploadFile.delete()) {
+                        logger.error("can't delete file: " + uploadFile);
+                    }
                 }
             }
         }
@@ -251,5 +256,28 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
         super.release();
         logger.debug("release()");
         stopRestoreThread();
+    }
+
+    protected static <B extends LoadRunnableInfo.Body, I extends LoadInfo<B>> boolean checkLoadInfo(@NonNull I info) {
+        if (info.body instanceof LoadRunnableInfo.StringBody) {
+            if (((LoadRunnableInfo.StringBody) info.body).isEmpty()) {
+                logger.error("empty body: " + info.body);
+                return false;
+            } else {
+                logger.debug("body " + info.body + " is correct");
+                return true;
+            }
+        } else if (info.body instanceof LoadRunnableInfo.FileBody) {
+            File loadFile = ((LoadRunnableInfo.FileBody) info.body).getSourceFile();
+            if (!FileHelper.isFileCorrect(loadFile)) {
+                logger.error("file is incorrect: " + loadFile);
+                return false;
+            } else {
+                logger.debug("loadFile: " + loadFile + " | size: " + loadFile.length());
+                return true;
+            }
+        } else {
+            throw new UnsupportedOperationException("unsupported body type: " + info.body);
+        }
     }
 }

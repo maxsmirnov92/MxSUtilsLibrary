@@ -1,13 +1,13 @@
 package net.maxsmr.tasksutils;
 
+import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
+import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.LinkedList;
-
-import net.maxsmr.tasksutils.taskrunnable.RunnableInfo;
-import net.maxsmr.tasksutils.taskrunnable.TaskRunnable;
-import net.maxsmr.commonutils.data.FileHelper;
 
 public abstract class AbstractWorkQueue {
 

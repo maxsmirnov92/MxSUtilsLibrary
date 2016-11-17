@@ -3,14 +3,15 @@ package net.maxsmr.networkutils.loadstorage.storage.collection;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import net.maxsmr.networkutils.loadstorage.LoadInfo;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
-
-import net.maxsmr.networkutils.loadstorage.LoadInfo;
 
 
 public class ListLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadStorage<I> {
@@ -24,7 +25,7 @@ public class ListLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadS
     /**
      * @param maxSize                max list elements
      * @param sync                   is synchronization needed when adding and removing polto queue
-     * @param allowDeleteFiles       allow delete files to upload when clearing queue
+     * @param allowDeleteFiles       allow delete files to load when clearing queue
      * @param listDirPath            path when serialized {@link LoadInfo} files stored
      * @param restoreQueuesFromFiles allow restore {@link LoadInfo} from files on create
      */
@@ -33,10 +34,6 @@ public class ListLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadS
         init(maxSize);
 
         addStorageListener(listener);
-
-        if (restoreQueuesFromFiles) {
-            startRestoreThread();
-        }
     }
 
     private void init(int maxListSize) {
@@ -65,13 +62,13 @@ public class ListLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadS
         return loadList.size();
     }
 
-    @Override
-    public synchronized boolean contains(@Nullable I info) {
-        if (isDisposed()) {
-            throw new IllegalStateException("release() was called");
-        }
-        return loadList.contains(info);
-    }
+//    @Override
+//    public synchronized boolean contains(@Nullable I info) {
+//        if (isDisposed()) {
+//            throw new IllegalStateException("release() was called");
+//        }
+//        return loadList.contains(info);
+//    }
 
     @NonNull
     @Override
@@ -88,7 +85,14 @@ public class ListLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadS
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
-        return new ArrayList<>(loadList);
+        return Collections.unmodifiableList(loadList);
+    }
+
+    @NonNull
+    @Override
+    public synchronized I get(int index) {
+        checkRange(index);
+        return loadList.get(index);
     }
 
     @NonNull
@@ -144,7 +148,7 @@ public class ListLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadS
             return false;
         }
         if (!writeLoadInfoToFile(info)) {
-            logger.error("can't write upload info " + info.uploadFile + " to file");
+            logger.error("can't write info " + info + " to file");
         }
         return true;
     }
@@ -156,10 +160,10 @@ public class ListLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadS
         }
         I previous = loadList.set(pos, info);
         if (!deleteFileByLoadInfo(previous)) {
-            logger.error("can't delete file by upload info " + info);
+            logger.error("can't delete file by info " + info);
         }
         if (!writeLoadInfoToFile(info)) {
-            logger.error("can't write upload info " + info + " to file");
+            logger.error("can't write info " + info + " to file");
         }
         return true;
     }
@@ -184,7 +188,7 @@ public class ListLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadS
         int prev = getSize();
         if (loadList.remove(info)) {
             if (!deleteFileByLoadInfo(info)) {
-                logger.error("can't delete file by upload info " + (info != null ? info.uploadFile : null));
+                logger.error("can't delete file by info " + info);
             }
             dispatchStorageSizeChanged(prev);
             return info;

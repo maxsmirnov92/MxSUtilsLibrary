@@ -39,6 +39,10 @@ android {
         // will be marked as failed, and Jenkins won't analyse the Lint output
         abortOnError false
     }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
 }
 
 

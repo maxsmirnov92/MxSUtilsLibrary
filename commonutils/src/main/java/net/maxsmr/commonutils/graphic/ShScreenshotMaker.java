@@ -3,6 +3,9 @@ package net.maxsmr.commonutils.graphic;
 
 import android.support.annotation.Nullable;
 
+import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.shell.ShellUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -11,9 +14,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
-
-import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.shell.ShellUtils;
 
 public final class ShScreenshotMaker {
 
@@ -57,7 +57,7 @@ public final class ShScreenshotMaker {
             return false;
         }
 
-        return ShellUtils.execProcessAsync(new ArrayList<>(Arrays.asList(new String[]{ShellUtils.SU_PROCESS_NAME, "-c", SCREENCAP_PROCESS_NAME, destFile.getName()})), destFile.getParent(), sc, watcher);
+        return ShellUtils.execProcessAsync(new ArrayList<>(Arrays.asList(new String[]{ShellUtils.SU_BINARY_NAME, "-c", SCREENCAP_PROCESS_NAME, destFile.getName()})), destFile.getParent(), sc, watcher);
     }
 
     /**
@@ -79,7 +79,7 @@ public final class ShScreenshotMaker {
             return null;
         }
 
-        return ShellUtils.execProcess(new ArrayList<>(Arrays.asList(new String[]{ShellUtils.SU_PROCESS_NAME, "-c", SCREENCAP_PROCESS_NAME, destFile.getName()})), destFile.getParent(), sc, watcher, false) == 0 ? destFile : null;
+        return ShellUtils.execProcess(new ArrayList<>(Arrays.asList(new String[]{ShellUtils.SU_BINARY_NAME, "-c", SCREENCAP_PROCESS_NAME, destFile.getName()})), destFile.getParent(), sc, watcher, false) == 0 ? destFile : null;
     }
 
     private static class ThreadsWatcher implements ShellUtils.ThreadsCallback {
