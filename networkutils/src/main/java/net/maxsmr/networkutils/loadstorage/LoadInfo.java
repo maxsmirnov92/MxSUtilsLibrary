@@ -34,7 +34,7 @@ public class LoadInfo<B extends LoadRunnableInfo.Body> implements Serializable {
     }
 
     public String getMD5Hash() {
-        return ChecksumHelper.getMD5Hash(this.toByteArray());
+        return ChecksumHelper.md5Hash(this.toByteArray());
     }
 
     @Nullable

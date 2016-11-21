@@ -7,7 +7,7 @@ import android.text.TextUtils;
 import com.google.gson.JsonElement;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.networkutils.IBuilder;
+import net.maxsmr.commonutils.data.model.IBuilder;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 
 import java.io.ByteArrayInputStream;

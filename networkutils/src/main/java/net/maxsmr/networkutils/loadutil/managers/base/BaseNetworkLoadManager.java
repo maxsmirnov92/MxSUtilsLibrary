@@ -2,6 +2,7 @@ package net.maxsmr.networkutils.loadutil.managers.base;
 
 import android.support.annotation.NonNull;
 
+import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;
 import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
@@ -17,9 +18,7 @@ import java.io.IOException;
 import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 
@@ -32,7 +31,7 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
 
     protected final AbsTaskRunnableExecutor mExecutor;
 
-    protected final Set<LoadListener<I>> mLoadListeners = new LinkedHashSet<>();
+    protected final LoadObservable<I> mLoadObservable = new LoadObservable<>();
 
     public BaseNetworkLoadManager(int limit, int concurrentDownloadsCount) {
         mExecutor = new AbsTaskRunnableExecutor(limit, concurrentDownloadsCount, AbsTaskRunnableExecutor.DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS, getClass().getName(), false, null) {
@@ -60,49 +59,20 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
 
     public final void addLoadListener(@NonNull LoadListener<I> listener) {
         checkReleased();
-        synchronized (mLoadListeners) {
-            mLoadListeners.add(listener);
+        synchronized (mLoadObservable) {
+            mLoadObservable.registerObserver(listener);
         }
     }
 
     public final void removeLoadListener(@NonNull LoadListener<I> listener) {
-        synchronized (mLoadListeners) {
-            mLoadListeners.remove(listener);
+        synchronized (mLoadObservable) {
+            mLoadObservable.unregisterObserver(listener);
         }
     }
 
     private void clearLoadListeners() {
-        synchronized (mLoadListeners) {
-            mLoadListeners.clear();
-        }
-    }
-
-    protected final void notifyStateChanged(@NonNull LoadListener.STATE state, @NonNull I info, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, Throwable t) {
-        synchronized (mLoadListeners) {
-            if (mLoadListeners.size() > 0) {
-                for (LoadListener<I> l : mLoadListeners) {
-                    int id = l.getId(info);
-                    if (id == RunnableInfo.NO_ID || id == info.id) {
-                        l.onUpdateState(state, info, loadProcessInfo, t);
-                    }
-                }
-            }
-        }
-    }
-
-    private void notifyLoadAddedToQueue(@NonNull I info, int waitingLoads, int activeLoads) {
-        synchronized (mLoadListeners) {
-            for (LoadListener<I> l : mLoadListeners) {
-                l.onLoadAddedToQueue(info.id, waitingLoads, activeLoads);
-            }
-        }
-    }
-
-    private void notifyLoadRemovedFromQueue(@NonNull I info, int waitingLoads, int activeLoads) {
-        synchronized (mLoadListeners) {
-            for (LoadListener<I> l : mLoadListeners) {
-                l.onLoadRemovedFromQueue(info.id, waitingLoads, activeLoads);
-            }
+        synchronized (mLoadObservable) {
+            mLoadObservable.unregisterAll();
         }
     }
 
@@ -123,7 +93,7 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
 
     @Override
     public void onAddedToQueue(TaskRunnable<?> r, int waitingLoads, int activeLoads) {
-        notifyLoadAddedToQueue((I) r.rInfo, waitingLoads, activeLoads);
+        mLoadObservable.notifyLoadAddedToQueue((I) r.rInfo, waitingLoads, activeLoads);
     }
 
     @Override
@@ -133,7 +103,7 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
 
     @Override
     public void onAfterExecute(TaskRunnable<?> r, Throwable t, @NonNull ExecInfo execInfo) {
-        notifyLoadRemovedFromQueue((I) r.rInfo, mExecutor.getWaitingTasksCount(), mExecutor.getActiveTasksCount());
+        mLoadObservable.notifyLoadRemovedFromQueue((I) r.rInfo, mExecutor.getWaitingTasksCount(), mExecutor.getActiveTasksCount());
     }
 
     @NonNull
@@ -254,4 +224,33 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
         return 200 <= responseCode && responseCode <= 299;
     }
 
+    protected static class LoadObservable<I extends LoadRunnableInfo> extends Observable<LoadListener<I>> {
+
+        public final void notifyLoadAddedToQueue(@NonNull I info, int waitingLoads, int activeLoads) {
+            synchronized (mObservers) {
+                for (LoadListener<I> l : copyOfObservers()) {
+                    l.onLoadAddedToQueue(info.id, waitingLoads, activeLoads);
+                }
+            }
+        }
+
+        public final void notifyLoadRemovedFromQueue(@NonNull I info, int waitingLoads, int activeLoads) {
+            synchronized (mObservers) {
+                for (LoadListener<I> l : copyOfObservers()) {
+                    l.onLoadRemovedFromQueue(info.id, waitingLoads, activeLoads);
+                }
+            }
+        }
+
+        public final void notifyStateChanged(@NonNull LoadListener.STATE state, @NonNull I info, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, Throwable t) {
+            synchronized (mObservers) {
+                    for (LoadListener<I> l : copyOfObservers()) {
+                        int id = l.getId(info);
+                        if (id == RunnableInfo.NO_ID || id == info.id) {
+                            l.onUpdateState(state, info, loadProcessInfo, t);
+                        }
+                    }
+            }
+        }
+    }
 }

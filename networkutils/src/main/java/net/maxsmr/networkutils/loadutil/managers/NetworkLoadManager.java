@@ -157,7 +157,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                     return;
                 }
             }
-            notifyStateChanged(lastState = state, rInfo, currentLoadInfo, lastException);
+            mLoadObservable.notifyStateChanged(lastState = state, rInfo, currentLoadInfo, lastException);
             if (lastState == LoadListener.STATE.FAILED || lastState == LoadListener.STATE.FAILED_FILE_REASON) {
                 lastNotifiedByFail = true;
             }
@@ -392,10 +392,10 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                                 currentLoadInfo.leftUploadTime = currentLoadInfo.uploadSpeed > 0 ? (long) ((float) (currentLoadInfo.totalUploadBytesCount - currentLoadInfo.uploadedBytesCount) / currentLoadInfo.uploadSpeed) : 0;
 
                                 if (rInfo.settings.notifyWrite) {
-                                    synchronized (mLoadListeners) {
-                                        if (mLoadListeners.size() > 0) {
+                                    synchronized (mLoadObservable) {
+                                        if (mLoadObservable.getObservers().size() > 0) {
                                             boolean notified = false;
-                                            for (LoadListener<LoadRunnableInfo> l : mLoadListeners) {
+                                            for (LoadListener<LoadRunnableInfo> l : mLoadObservable.copyOfObservers()) {
                                                 final int id = l.getId(rInfo);
                                                 if (id == RunnableInfo.NO_ID || id == rInfo.id) {
                                                     final long interval = System.currentTimeMillis() - lastProcessingNotifyTime;
@@ -549,10 +549,10 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                                     currentLoadInfo.leftDownloadTime = 0;
                                 }
 
-                                synchronized (mLoadListeners) {
-                                    if (mLoadListeners.size() > 0) {
+                                synchronized (mLoadObservable) {
+                                    if (mLoadObservable.getObservers().size() > 0) {
                                         boolean notified = false;
-                                        for (LoadListener<LoadRunnableInfo> l : mLoadListeners) {
+                                        for (LoadListener<LoadRunnableInfo> l : mLoadObservable.copyOfObservers()) {
                                             final int id = l.getId(rInfo);
                                             if (id == RunnableInfo.NO_ID || id == rInfo.id) {
                                                 final long interval = System.currentTimeMillis() - lastProcessingNotifyTime;
@@ -632,8 +632,8 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                             logger.debug("headers: " + lastResponse.headers);
                         }
 
-                        synchronized (mLoadListeners) {
-                            for (LoadListener<LoadRunnableInfo> l : mLoadListeners) {
+                        synchronized (mLoadObservable) {
+                            for (LoadListener<LoadRunnableInfo> l : mLoadObservable.copyOfObservers()) {
                                 final int id = l.getId(rInfo);
                                 if (id == RunnableInfo.NO_ID || id == rInfo.id) {
                                     l.onResponse(rInfo, currentLoadInfo, lastResponse);
