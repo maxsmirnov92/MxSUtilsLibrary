@@ -16,6 +16,13 @@ public abstract class Observable<T> {
         return Collections.unmodifiableSet(mObservers);
     }
 
+    @NonNull
+    public Set<T> copyOfObservers() {
+        synchronized (mObservers) {
+            return new LinkedHashSet<>(mObservers);
+        }
+    }
+
     public boolean registerObserver(@NonNull T observer) {
         synchronized (mObservers) {
             return mObservers.add(observer);

@@ -1,12 +1,11 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
-import android.database.Observable;
 import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import net.maxsmr.commonutils.android.SynchronizedObservable;
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.tasksutils.NamedThreadFactory;
 
 import org.slf4j.Logger;
@@ -462,7 +461,7 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
         return FileHelper.deleteFile(infoFileName, parentPath);
     }
 
-    private class CallbacksObservable extends SynchronizedObservable<Callbacks> {
+    private class CallbacksObservable extends Observable<Callbacks> {
 
         private void dispatchAddedToQueue(TaskRunnable<?> r, int waitingCount, int activeCount) {
             synchronized (mObservers) {
