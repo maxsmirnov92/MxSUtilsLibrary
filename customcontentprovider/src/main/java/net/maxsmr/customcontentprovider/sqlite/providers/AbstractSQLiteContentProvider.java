@@ -13,6 +13,14 @@ import android.provider.BaseColumns;
 import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.StringUtils;
+import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation;
+import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation.SQLiteOperation;
+import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher;
+import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher.URI_MATCH;
+import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher.UriMatcherPair;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -21,14 +29,6 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
-import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.data.StringUtils;
-import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation;
-import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation.SQLiteOperation;
-import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher;
-import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher.URI_MATCH;
-import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher.UriMatcherPair;
 
 public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
@@ -82,7 +82,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
             throw new RuntimeException("databaseName is empty");
 
         if (!TextUtils.isEmpty(databasePath)) {
-            if (!FileHelper.testDirNoThrow(databasePath))
+            if (!FileHelper.checkDirNoThrow(databasePath))
                 throw new RuntimeException("can't create database directory: " + databasePath);
         }
 

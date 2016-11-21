@@ -311,7 +311,7 @@ public class UsbDeviceWatcher {
                     logger.error("processStartFailed(), t=" + t);
                 }
 
-            }, null, true);
+            }, null);
 
         }
 
@@ -477,7 +477,7 @@ public class UsbDeviceWatcher {
                     logger.error("processStartFailed(), t=" + t);
                 }
 
-            }, null, true);
+            }, null);
 
 
         }
