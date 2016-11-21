@@ -78,5 +78,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
 
 //    compile project(":commonutils")
-    compile 'net.maxsmr:commonutils:1.0.2.5'
+    compile 'net.maxsmr:commonutils:1.0.2.6'
 }
