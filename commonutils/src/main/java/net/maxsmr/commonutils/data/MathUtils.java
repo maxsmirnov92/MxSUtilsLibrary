@@ -1,5 +1,7 @@
 package net.maxsmr.commonutils.data;
 
+import android.support.annotation.NonNull;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -92,5 +94,42 @@ public class MathUtils {
         }
 
         return found ? newCode : null;
+    }
+
+    @SuppressWarnings("unchecked")
+    @NonNull
+    public static <N extends Number> N valueOf(String str, @NonNull Class<N> numberClass) {
+        if (numberClass.isAssignableFrom(Byte.class)) {
+            try {
+                return (N) Byte.valueOf(str);
+            } catch (NumberFormatException e) {
+                return (N) Byte.valueOf("0");
+            }
+        } else if (numberClass.isAssignableFrom(Integer.class)) {
+            try {
+                return (N) Integer.valueOf(str);
+            } catch (NumberFormatException e) {
+                return (N) Integer.valueOf(0);
+            }
+        } else if (numberClass.isAssignableFrom(Long.class)) {
+            try {
+                return (N) Long.valueOf(str);
+            } catch (NumberFormatException e) {
+                return (N) Long.valueOf(0L);
+            }
+        } else if (numberClass.isAssignableFrom(Float.class)) {
+            try {
+                return (N) Float.valueOf(str);
+            } catch (NumberFormatException e) {
+                return (N) Float.valueOf(0f);
+            }
+        } else if (numberClass.isAssignableFrom(Double.class)) {
+            try {
+                return (N) Double.valueOf(str);
+            } catch (NumberFormatException e) {
+                return (N) Double.valueOf(0d);
+            }
+        }
+        throw new IllegalArgumentException("incorrect number class: " + numberClass);
     }
 }

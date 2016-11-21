@@ -10,20 +10,6 @@ public class ConfigureLog4J {
 
     private static ConfigureLog4J mInstance = null;
 
-    public static final long DEFAULT_MIN_FILE_SIZE = 1024 * 1024;
-
-    private final long minFileSize;
-    private final String filePath;
-
-    private ConfigureLog4J(long minFileSize, String filePath) {
-//        if (minFileSize <= 0) {
-//            throw new IllegalArgumentException("incorrect minFileSize: " + minFileSize);
-//        }
-        FileHelper.checkFile(filePath);
-        this.minFileSize = minFileSize <= 0? DEFAULT_MIN_FILE_SIZE : minFileSize;
-        this.filePath = filePath;
-    }
-
     public static void initInstance(long minFileSize, String filePath) {
         if (mInstance == null) {
             synchronized (ConfigureLog4J.class) {
@@ -37,6 +23,20 @@ public class ConfigureLog4J {
             throw new IllegalStateException("initInstance() was not called");
         }
         return mInstance;
+    }
+
+    public static final long DEFAULT_MIN_FILE_SIZE = 1024 * 1024;
+
+    private final long minFileSize;
+    private final String filePath;
+
+    private ConfigureLog4J(long minFileSize, String filePath) {
+        if (minFileSize <= 0) {
+            throw new IllegalArgumentException("incorrect minFileSize: " + minFileSize);
+        }
+        FileHelper.checkFile(filePath);
+        this.minFileSize = minFileSize;
+        this.filePath = filePath;
     }
 
     /**

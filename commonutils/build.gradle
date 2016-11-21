@@ -3,7 +3,7 @@ apply plugin: 'maven'
 
 def groupId = "net.maxsmr"
 def artifactId = "commonutils"
-def version = "1.0.2.4"
+def version = "1.0.2.5"
 
 def releaseDir = "${buildDir}/release"
 
@@ -19,6 +19,7 @@ android {
         targetSdkVersion 23
         versionCode 1
         versionName version
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
         release {
@@ -108,17 +109,28 @@ artifacts {
 
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
+
     compile 'com.android.support:support-annotations:23.1.1'
     compile 'com.android.support:palette-v7:23.1.1'
     compile 'com.android.support:design:23.1.1'
+    javadocDependencies 'com.android.support:appcompat-v7:23.4.0'
+    javadocDependencies 'com.android.support:support-annotations:23.4.0'
 
     compile 'de.mindpipe.android:android-logging-log4j:1.0.3'
     compile group: 'io.github.rockerhieu', name: 'emojicon', version: '1.4.0'
 
+    compile 'commons-net:commons-net:3.3'
+
     compile 'org.slf4j:slf4j-log4j12:1.7.21'
     compile 'com.google.code.gson:gson:2.4'
 
-    javadocDependencies 'com.android.support:appcompat-v7:23.4.0'
-    javadocDependencies 'com.android.support:support-annotations:23.4.0'
+
+    testCompile 'junit:junit:4.12'
+
+    androidTestCompile 'com.android.support:support-annotations:23.1.1'
+    androidTestCompile 'com.android.support.test:runner:0.5'
+    androidTestCompile 'com.android.support.test:rules:0.5'
+    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+        exclude group: 'com.android.support', module: 'support-annotations'
+    })
 }

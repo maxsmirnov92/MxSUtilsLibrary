@@ -3,32 +3,32 @@ package net.maxsmr.commonutils.data.sort;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
-import java.util.LinkedHashSet;
-import java.util.Set;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public abstract class AbsOptionableComparator<O extends ISortOption, T> implements Comparator<T> {
 
     @NonNull
-    private final Set<SortOptionPair<O>> sortOptionPairs = new LinkedHashSet<>();
+    private final Map<O, Boolean> sortOptions = new LinkedHashMap<>();
 
-    protected AbsOptionableComparator(@Nullable Collection<SortOptionPair<O>> sortOptionPairs) {
-        if (sortOptionPairs != null) {
-            this.sortOptionPairs.addAll(sortOptionPairs);
+    protected AbsOptionableComparator(@Nullable Map<O, Boolean> sortOptions) {
+        if (sortOptions != null) {
+            this.sortOptions.putAll(sortOptions);
         }
     }
 
     @NonNull
-    public Set<SortOptionPair<O>> getSortOptionPairs() {
-        return new LinkedHashSet<>(sortOptionPairs);
+    public final Map<O, Boolean> getSortOptions() {
+        return Collections.unmodifiableMap(sortOptions);
     }
 
     @Override
     public final int compare(T lhs, T rhs) {
         int result = 0;
-        for (SortOptionPair<O> p : getSortOptionPairs()) {
-            result = compare(lhs, rhs, p.option, p.ascending);
+        for (Map.Entry<O, Boolean> e : sortOptions.entrySet()) {
+            result = compare(lhs, rhs, e.getKey(), e.getValue());
             if (result != 0) {
                 break;
             }

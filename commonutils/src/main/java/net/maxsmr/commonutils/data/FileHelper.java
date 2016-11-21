@@ -20,7 +20,6 @@ import android.text.TextUtils;
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.sort.AbsOptionableComparator;
 import net.maxsmr.commonutils.data.sort.ISortOption;
-import net.maxsmr.commonutils.data.sort.SortOptionPair;
 import net.maxsmr.commonutils.shell.ShellUtils;
 
 import org.slf4j.Logger;
@@ -52,13 +51,13 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import static net.maxsmr.commonutils.data.CompareUtils.compareForNull;
-import static net.maxsmr.commonutils.data.FileHelper.FileComparator.SortOption.LAST_MODIFIED;
 
 public final class FileHelper {
 
@@ -514,12 +513,18 @@ public final class FileHelper {
         return lines;
     }
 
+    @Nullable
+    public static String readStringFromFile(File file) {
+        List<String> strings = readStringsFromFile(file);
+        return !strings.isEmpty() ? TextUtils.join(System.getProperty("line.separator"), strings) : null;
+    }
+
     @NonNull
     public static Collection<String> readStringsFromAsset(@NonNull Context context, String assetName) {
         try {
             return readStringsFromInputStream(context, context.getAssets().open(assetName));
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("an IOException occurred during open()", e);
             return Collections.emptyList();
         }
     }
@@ -529,7 +534,7 @@ public final class FileHelper {
         try {
             return readStringFromInputStream(context, context.getAssets().open(assetName));
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error("an IOException occurred during open()", e);
             return null;
         }
     }
@@ -539,7 +544,7 @@ public final class FileHelper {
         try {
             return readStringsFromInputStream(context, context.getResources().openRawResource(resId));
         } catch (Resources.NotFoundException e) {
-            e.printStackTrace();
+            logger.error("an IOException occurred during openRawResource()", e);
             return Collections.emptyList();
         }
     }
@@ -549,7 +554,7 @@ public final class FileHelper {
         try {
             return readStringFromInputStream(context, context.getResources().openRawResource(resId));
         } catch (Resources.NotFoundException e) {
-            e.printStackTrace();
+            logger.error("an IOException occurred during openRawResource()", e);
             return null;
         }
     }
@@ -567,13 +572,13 @@ public final class FileHelper {
                 }
                 return Collections.unmodifiableCollection(out);
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("an IOException occurred", e);
             } finally {
                 if (in != null) {
                     try {
                         in.close();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        logger.error("an IOException occurred during close()", e);
                     }
                 }
             }
@@ -986,15 +991,15 @@ public final class FileHelper {
     }
 
     public static Collection<File> sortFilesByName(Collection<File> filesList, boolean ascending, boolean allowModifyList) {
-        return sortFiles(filesList, allowModifyList, new FileComparator(Collections.singleton(new SortOptionPair<>(FileComparator.SortOption.NAME, ascending))));
+        return sortFiles(filesList, allowModifyList, new FileComparator(Collections.singletonMap(FileComparator.SortOption.NAME, ascending)));
     }
 
     public static Collection<File> sortFilesBySize(Collection<File> filesList, boolean ascending, boolean allowModifyList) {
-        return sortFiles(filesList, allowModifyList, new FileComparator(Collections.singleton(new SortOptionPair<>(FileComparator.SortOption.SIZE, ascending))));
+        return sortFiles(filesList, allowModifyList, new FileComparator(Collections.singletonMap(FileComparator.SortOption.SIZE, ascending)));
     }
 
     public static Collection<File> sortFilesByLastModified(Collection<File> filesList, boolean ascending, boolean allowModifyList) {
-        return sortFiles(filesList, allowModifyList, new FileComparator(Collections.singleton(new SortOptionPair<>(LAST_MODIFIED, ascending))));
+        return sortFiles(filesList, allowModifyList, new FileComparator(Collections.singletonMap(FileComparator.SortOption.LAST_MODIFIED, ascending)));
     }
 
     /**
@@ -1257,7 +1262,7 @@ public final class FileHelper {
                 public void processComplete(int exitValue) {
                 }
 
-            }, null, false);
+            }, null);
         }
 
         if (!foundFiles.isEmpty()) {
@@ -1926,7 +1931,7 @@ public final class FileHelper {
         }
 
         @SuppressWarnings("unchecked")
-        public FileComparator(@Nullable Collection<SortOptionPair<SortOption>> sortOptions) {
+        public FileComparator(@Nullable Map<FileComparator.SortOption, Boolean> sortOptions) {
             super(sortOptions);
         }
 
@@ -1934,6 +1939,7 @@ public final class FileHelper {
         protected int compare(@Nullable File lhs, @Nullable File rhs, SortOption option, boolean ascending) {
 
             int result = compareForNull(lhs, rhs, ascending);
+
             if (result != 0) {
                 return result;
             }

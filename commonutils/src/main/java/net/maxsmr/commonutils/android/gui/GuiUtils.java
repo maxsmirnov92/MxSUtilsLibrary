@@ -19,6 +19,7 @@ import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
+import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.Spanned;
@@ -174,6 +175,24 @@ public final class GuiUtils {
 
     public static void toggleKeyboard(Context context) {
         ((InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE)).toggleSoftInput(2, 0);
+    }
+
+    private void setHomeButtonEnabled(@NonNull AppCompatActivity activity, boolean toggle) {
+        if (activity.getSupportActionBar() != null) {
+            activity.getSupportActionBar().setDisplayShowHomeEnabled(toggle);
+            activity.getSupportActionBar().setDisplayHomeAsUpEnabled(toggle);
+        }
+    }
+
+    private static void setFullScreen(Activity activity, boolean toggle) {
+        if (toggle) {
+            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+            activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+        } else {
+            activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
+            activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
+        }
+        activity.getWindow().getDecorView().requestLayout();
     }
 
 
@@ -340,104 +359,6 @@ public final class GuiUtils {
         }
     }
 
-    public static class DisableErrorTextWatcher implements TextWatcher {
-
-        private boolean isClearingEnabled = true;
-
-        private final List<TextInputLayout> layouts = new ArrayList<>();
-
-        /**
-         * @param layouts TextInputLayouts to clear on editing
-         */
-        public DisableErrorTextWatcher(TextInputLayout... layouts) {
-            if (layouts != null && layouts.length > 0) {
-                this.layouts.addAll(new ArrayList<>(Arrays.asList(layouts)));
-            }
-        }
-
-        public void setClearingEnabled(boolean enable) {
-            isClearingEnabled = enable;
-        }
-
-        private static void clearLayout(TextInputLayout l) {
-            if (l != null) {
-                clearError(false, l);
-            }
-        }
-
-        @Override
-        public void onTextChanged(CharSequence s, int start, int before, int count) {
-            for (TextInputLayout l : layouts) {
-                if (isClearingEnabled) {
-                    clearLayout(l);
-                }
-            }
-        }
-
-        @Override
-        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
-
-        }
-
-        @Override
-        public void afterTextChanged(Editable s) {
-
-        }
-    }
-
-    public static class EditTextKeyLimiter implements View.OnKeyListener {
-
-        @NonNull
-        final EditText et;
-
-        final int linesLimit;
-
-        public EditTextKeyLimiter(@NonNull EditText et, int linesLimit) {
-
-            if (linesLimit <= 0) {
-                throw new IllegalArgumentException("incorrect linesLimit: " + linesLimit);
-            }
-
-            this.et = et;
-            this.linesLimit = linesLimit;
-        }
-
-        @Override
-        public boolean onKey(View v, int keyCode, KeyEvent event) {
-
-            if (et == v) {
-
-                // if enter is pressed start calculating
-                if (keyCode == KeyEvent.KEYCODE_ENTER
-                        && event.getAction() == KeyEvent.ACTION_UP) {
-                    String text = et.getText().toString().trim();
-
-                    // find how many rows it cointains
-                    int editTextRowCount = text.split("\\n").length;
-
-                    // user has input more than limited - lets do something
-                    // about that
-                    if (editTextRowCount >= linesLimit) {
-
-                        // find the last break
-                        int lastBreakIndex = text.lastIndexOf("\n");
-
-                        // compose new text
-                        String newText = text.substring(0, lastBreakIndex);
-
-                        // add new text - delete old one and append new one
-                        // (append because I want the cursor to be at the end)
-                        et.setText("");
-                        et.append(newText);
-                    }
-
-                    return true;
-                }
-            }
-
-            return false;
-        }
-    }
 
     public static AlertDialog showAlertDialog(Context ctx, String title, String message, boolean cancelable, DialogInterface.OnClickListener posClickListener, DialogInterface.OnClickListener negClickListener, DialogInterface.OnCancelListener cancelListener) {
         AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
@@ -606,6 +527,105 @@ public final class GuiUtils {
                 return source.length() == 0 ? dest.subSequence(dstart, dend) : "";
 
             return source;
+        }
+    }
+
+    public static class DisableErrorTextWatcher implements TextWatcher {
+
+        private boolean isClearingEnabled = true;
+
+        private final List<TextInputLayout> layouts = new ArrayList<>();
+
+        /**
+         * @param layouts TextInputLayouts to clear on editing
+         */
+        public DisableErrorTextWatcher(TextInputLayout... layouts) {
+            if (layouts != null && layouts.length > 0) {
+                this.layouts.addAll(new ArrayList<>(Arrays.asList(layouts)));
+            }
+        }
+
+        public void setClearingEnabled(boolean enable) {
+            isClearingEnabled = enable;
+        }
+
+        private static void clearLayout(TextInputLayout l) {
+            if (l != null) {
+                clearError(false, l);
+            }
+        }
+
+        @Override
+        public void onTextChanged(CharSequence s, int start, int before, int count) {
+            for (TextInputLayout l : layouts) {
+                if (isClearingEnabled) {
+                    clearLayout(l);
+                }
+            }
+        }
+
+        @Override
+        public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+        }
+
+        @Override
+        public void afterTextChanged(Editable s) {
+
+        }
+    }
+
+    public static class EditTextKeyLimiter implements View.OnKeyListener {
+
+        @NonNull
+        final EditText et;
+
+        final int linesLimit;
+
+        public EditTextKeyLimiter(@NonNull EditText et, int linesLimit) {
+
+            if (linesLimit <= 0) {
+                throw new IllegalArgumentException("incorrect linesLimit: " + linesLimit);
+            }
+
+            this.et = et;
+            this.linesLimit = linesLimit;
+        }
+
+        @Override
+        public boolean onKey(View v, int keyCode, KeyEvent event) {
+
+            if (et == v) {
+
+                // if enter is pressed start calculating
+                if (keyCode == KeyEvent.KEYCODE_ENTER
+                        && event.getAction() == KeyEvent.ACTION_UP) {
+                    String text = et.getText().toString().trim();
+
+                    // find how many rows it cointains
+                    int editTextRowCount = text.split("\\n").length;
+
+                    // user has input more than limited - lets do something
+                    // about that
+                    if (editTextRowCount >= linesLimit) {
+
+                        // find the last break
+                        int lastBreakIndex = text.lastIndexOf("\n");
+
+                        // compose new text
+                        String newText = text.substring(0, lastBreakIndex);
+
+                        // add new text - delete old one and append new one
+                        // (append because I want the cursor to be at the end)
+                        et.setText("");
+                        et.append(newText);
+                    }
+
+                    return true;
+                }
+            }
+
+            return false;
         }
     }
 

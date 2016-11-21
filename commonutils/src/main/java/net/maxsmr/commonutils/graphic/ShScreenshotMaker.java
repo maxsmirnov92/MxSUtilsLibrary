@@ -43,7 +43,7 @@ public final class ShScreenshotMaker {
      * @return true if started successfully, false - otherwise
      */
     public boolean makeScreenshotAsync(String folderName, String fileName, @Nullable ShellUtils.ShellCallback sc) {
-        logger.debug("makeScreenshotAsync(), folderName=" + folderName + ", fileName=" + fileName + ", sc=" + sc);
+        logger.debug("makeScreenshotAsync(), folderName=" + folderName + ", fileName=" + fileName);
 
         if (watcher.isRunning()) {
             logger.error(SCREENCAP_PROCESS_NAME + " is running at the moment");
@@ -53,7 +53,7 @@ public final class ShScreenshotMaker {
         final File destFile = FileHelper.createNewFile(fileName, folderName);
 
         if (destFile == null) {
-            logger.error("can't create file: " + destFile);
+            logger.error("can't create file: " + folderName + File.separator + fileName);
             return false;
         }
 
@@ -65,7 +65,7 @@ public final class ShScreenshotMaker {
      */
     @Nullable
     public File makeScreenshot(String folderName, String fileName, @Nullable ShellUtils.ShellCallback sc) {
-        logger.debug("makeScreenshot(), folderName=" + folderName + ", fileName=" + fileName + ", sc=" + sc);
+        logger.debug("makeScreenshot(), folderName=" + folderName + ", fileName=" + fileName);
 
         if (watcher.isRunning()) {
             logger.error("process " + SCREENCAP_PROCESS_NAME + " is running at the moment");
@@ -75,11 +75,11 @@ public final class ShScreenshotMaker {
         final File destFile = FileHelper.createNewFile(fileName, folderName);
 
         if (destFile == null) {
-            logger.error("can't create file: " + destFile);
+            logger.error("can't create file: " + folderName + File.separator + fileName);
             return null;
         }
 
-        return ShellUtils.execProcess(new ArrayList<>(Arrays.asList(new String[]{ShellUtils.SU_BINARY_NAME, "-c", SCREENCAP_PROCESS_NAME, destFile.getName()})), destFile.getParent(), sc, watcher, false) == 0 ? destFile : null;
+        return ShellUtils.execProcess(new ArrayList<>(Arrays.asList(new String[]{ShellUtils.SU_BINARY_NAME, "-c", SCREENCAP_PROCESS_NAME, destFile.getAbsolutePath()})), null, sc, watcher) == 0 ? destFile : null;
     }
 
     private static class ThreadsWatcher implements ShellUtils.ThreadsCallback {

@@ -100,7 +100,7 @@ public final class ShellUtils {
     /**
      * @return result code; -1 if start failed or interrupted
      */
-    public static int execProcess(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable final ThreadsCallback tc, final boolean waitForEndOutput) {
+    public static int execProcess(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable final ThreadsCallback tc) {
         logger.debug("execProcess(), cmds=" + cmds + ", workingDir=" + workingDir + ", sc=" + sc + ", tc=" + tc);
         Process process = createAndStartProcess(cmds, workingDir, sc, tc);
         int exitCode = -1;

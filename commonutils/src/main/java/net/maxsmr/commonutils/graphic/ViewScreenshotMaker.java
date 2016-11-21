@@ -6,13 +6,13 @@ import android.support.annotation.Nullable;
 import android.view.View;
 import android.view.Window;
 
+import net.maxsmr.commonutils.data.FileHelper;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.FileOutputStream;
-
-import net.maxsmr.commonutils.data.FileHelper;
 
 public final class ViewScreenshotMaker {
 
@@ -27,7 +27,7 @@ public final class ViewScreenshotMaker {
         final File destFile = FileHelper.createNewFile(fileName, folderName);
 
         if (destFile == null) {
-            logger.error("can't create file: " + destFile);
+            logger.error("can't create file: " + folderName + File.separator + fileName);
             return null;
         }
 

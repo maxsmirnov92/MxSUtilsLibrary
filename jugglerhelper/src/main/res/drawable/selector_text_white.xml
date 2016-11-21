@@ -1,7 +1,0 @@
-<?xml version="1.0" encoding="utf-8"?>
-<selector xmlns:android="http://schemas.android.com/apk/res/android" android:enterFadeDuration="@integer/anim_selector_enter" android:exitFadeDuration="@integer/anim_selector_exit">
-    <item android:color="@android:color/white" android:state_checked="true" android:state_enabled="true" android:state_pressed="false" />
-    <item android:color="@android:color/white" android:state_checked="false" android:state_enabled="true" android:state_pressed="false" />
-    <item android:color="@color/white_pressed" android:state_enabled="true" android:state_pressed="true" />
-    <item android:color="@color/gray_middle" android:state_enabled="false" />
-</selector>

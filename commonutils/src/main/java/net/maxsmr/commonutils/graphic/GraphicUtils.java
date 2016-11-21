@@ -26,7 +26,6 @@ import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.StateListDrawable;
 import android.media.ExifInterface;
-import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
@@ -38,7 +37,6 @@ import android.support.annotation.XmlRes;
 import android.support.v7.graphics.Palette;
 import android.text.TextUtils;
 import android.util.DisplayMetrics;
-import android.util.Pair;
 import android.util.TypedValue;
 import android.view.WindowManager;
 
@@ -58,7 +56,9 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Random;
 
 public final class GraphicUtils {
@@ -69,6 +69,7 @@ public final class GraphicUtils {
 
     private static final Logger logger = LoggerFactory.getLogger(GraphicUtils.class);
 
+    @Nullable
     public static String getFileExtByCompressFormat(Bitmap.CompressFormat compressFormat) {
 
         if (compressFormat == null) {
@@ -88,67 +89,6 @@ public final class GraphicUtils {
             default:
                 return null;
         }
-    }
-
-    public static long getVideoDuration(File videoFile) {
-
-        if (!(FileHelper.isFileCorrect(videoFile) && FileHelper.isVideo(FileHelper.getFileExtension(videoFile.getName())))) {
-            logger.error("incorrect video file: " + videoFile);
-            return 0;
-        }
-
-        Integer duration = MetadataRetriever.extractMetaDataField(videoFile, MediaMetadataRetriever.METADATA_KEY_DURATION, Integer.class);
-        return duration != null ? duration : 0;
-    }
-
-    public static Bitmap getVideoFrameAtPosition(File videoFile, long positionMs) {
-
-        if (!(FileHelper.isFileCorrect(videoFile) && FileHelper.isVideo(FileHelper.getFileExtension(videoFile.getName())))) {
-            logger.error("incorrect video file: " + videoFile);
-            return null;
-        }
-
-        if (positionMs <= 0 || positionMs > getVideoDuration(videoFile)) {
-            logger.error("incorrect position: " + positionMs);
-            return null;
-        }
-
-        return MetadataRetriever.extractFrame(videoFile, positionMs);
-    }
-
-    public static List<Pair<Long, Bitmap>> getVideoFrames(File videoFile, int framesCount) {
-        // logger.debug("getVideoFrames(), videoFile=" + videoFile + ", framesCount=" + framesCount);
-
-        if (framesCount <= 0) {
-            logger.error("incorrect framesCount: " + framesCount);
-            return null;
-        }
-
-        final long duration = getVideoDuration(videoFile);
-        // logger.debug("video durationMs: " + durationMs + " ms");
-
-        if (duration == 0) {
-            logger.error("duration of video file " + videoFile + " is 0");
-            return null;
-        }
-
-        final long interval = duration / framesCount;
-        // logger.debug("interval between frames: " + interval + " ms");
-        long lastPosition = 1;
-
-        ArrayList<Pair<Long, Bitmap>> videoFrames = new ArrayList<>(framesCount);
-
-        while (lastPosition <= duration) { // (durationMs - interval)
-
-            // logger.debug("getting frame at position: " + lastPosition + " ms");
-            final Pair<Long, Bitmap> frame = new Pair<>(lastPosition, getVideoFrameAtPosition(videoFile, lastPosition));
-            videoFrames.add(frame);
-
-            lastPosition += interval;
-            // logger.debug("next position: " + lastPosition + " ms");
-        }
-
-        return videoFrames;
     }
 
     public static Bitmap writeTextOnBitmap(Bitmap bitmap, String text, int textColor) {
@@ -237,27 +177,16 @@ public final class GraphicUtils {
             return null;
         }
 
-        final List<Pair<Long, Bitmap>> videoFramesList = getVideoFrames(videoFile, gridSize * gridSize);
-        if (videoFramesList == null || videoFramesList.isEmpty()) {
-            logger.error("videoFramesList is null or empty");
+        final Map<Long, Bitmap> videoFrames = MetadataRetriever.extractFrames(videoFile, gridSize * gridSize);
+        if (videoFrames.isEmpty()) {
+            logger.error("videoFrames is empty");
             return null;
         }
-        ArrayList<Bitmap> bitmapsList = new ArrayList<>(videoFramesList.size());
 
-        for (Pair<Long, Bitmap> videoFrame : videoFramesList) {
-            bitmapsList.add(videoFrame.second);
-        }
-
-        final Bitmap resultImage = combineImagesToOne(bitmapsList, gridSize);
-
-        for (Bitmap chunk : bitmapsList) {
-            if (chunk != null) {
-                chunk.recycle();
-            }
-        }
+        final Bitmap resultImage = combineImagesToOne(videoFrames.values(), gridSize, true);
 
         if (writeDuration) {
-            return writeTextOnBitmap(resultImage, "duration: " + getVideoDuration(videoFile) + " ms", Color.WHITE);
+            return writeTextOnBitmap(resultImage, "duration: " + MetadataRetriever.extractMediaDuration(videoFile) + " ms", Color.WHITE);
         }
 
         return resultImage;
@@ -275,8 +204,8 @@ public final class GraphicUtils {
 
         String ext = getFileExtByCompressFormat(format);
 
-        if (ext == null) {
-            logger.error("file ext is null");
+        if (TextUtils.isEmpty(ext)) {
+            logger.error("file extension is empty");
             return null;
         }
 
@@ -292,7 +221,6 @@ public final class GraphicUtils {
             fos = new FileOutputStream(file);
             data.compress(format, 100, fos);
             fos.flush();
-            fos.close();
             return file;
         } catch (IOException e) {
             logger.error("an IOException occurred : " + e.getMessage());
@@ -312,10 +240,10 @@ public final class GraphicUtils {
     /**
      * @param gridSize number of width or height chunks in result image
      */
-    public static Bitmap combineImagesToOne(List<Bitmap> chunkImagesList, int gridSize) {
+    public static Bitmap combineImagesToOne(Collection<Bitmap> chunkImages, int gridSize, boolean recycle) {
 
-        if (chunkImagesList == null || chunkImagesList.size() == 0) {
-            logger.error("chunkImagesList is null or empty");
+        if (chunkImages == null || chunkImages.size() == 0) {
+            logger.error("chunkImages is null or empty");
             return null;
         }
 
@@ -324,53 +252,60 @@ public final class GraphicUtils {
             return null;
         }
 
+        List<Bitmap> chunkImagesList = new ArrayList<>(chunkImages);
+
         if (gridSize * gridSize < chunkImagesList.size()) {
-            // logger.warn("grid dimension is less than number of chunks, removing excessive chunks...");
+            logger.warn("grid dimension is less than number of chunks, removing excessive chunks...");
             for (int i = chunkImagesList.size() - 1; i > gridSize * gridSize - 1; i--) {
-                // logger.debug(" _ remove chunk with index " + i);
-                chunkImagesList.remove(i);
+                Bitmap b = chunkImagesList.remove(i);
+                if (recycle && b != null) {
+                    b.recycle();
+                }
+                i = chunkImagesList.size() - 1;
             }
         }
 
         int chunkWidth = 0;
         int chunkHeight = 0;
 
-        for (int i = 0; i < chunkImagesList.size(); i++) {
-            if (chunkImagesList.get(i) != null) {
+        for (int i = 0; i < chunkImages.size(); i++) {
 
-                // logger.debug("chunk at index " + i + ": " + chunkImagesList.get(i).getWidth() + "x" +
-                // chunkImagesList.get(i).getHeight());
+            Bitmap chunk = chunkImagesList.get(i);
+
+            if (chunk != null) {
 
                 if (chunkWidth > 0 && chunkHeight > 0) {
 
-                    if (chunkImagesList.get(i).getWidth() != chunkWidth || chunkImagesList.get(i).getHeight() != chunkHeight) {
+                    if (chunk.getWidth() != chunkWidth || chunk.getHeight() != chunkHeight) {
                         logger.error("chunk images in list have different dimensions, previous: " + chunkWidth + "x" + chunkHeight
-                                + ", current: " + chunkImagesList.get(i).getWidth() + "x" + chunkImagesList.get(i).getHeight());
+                                + ", current: " + chunk.getWidth() + "x" + chunk.getHeight());
                         return null;
                     }
 
                 } else {
-                    chunkWidth = chunkImagesList.get(i).getWidth();
-                    chunkHeight = chunkImagesList.get(i).getHeight();
+                    chunkWidth = chunk.getWidth();
+                    chunkHeight = chunk.getHeight();
                 }
+
             } else {
                 logger.error("chunk at index " + i + " is null");
-                // chunkImagesList.remove(i);
+                chunkImagesList.remove(i);
+                i = 0;
             }
         }
 
         logger.debug("chunk: " + chunkWidth + " x " + chunkHeight);
 
-        if (chunkWidth == 0 || chunkHeight == 0) {
+        if (chunkWidth <= 0 || chunkHeight <= 0) {
             logger.error("incorrect chunk dimensions");
             return null;
         }
 
         // create a bitmap of a size which can hold the complete image after merging
-        Bitmap resultBitmap = null;
+        Bitmap resultBitmap;
 
         try {
-            resultBitmap = Bitmap.createBitmap(chunkWidth * gridSize, chunkHeight * gridSize, Bitmap.Config.RGB_565);
+            resultBitmap = Bitmap.createBitmap(chunkWidth * gridSize, chunkHeight * gridSize, Bitmap.Config.ARGB_8888);
         } catch (OutOfMemoryError e) {
             logger.error("an OutOfMemoryError error occurred during createBitmap()", e);
             return null;
@@ -381,12 +316,16 @@ public final class GraphicUtils {
         int counter = 0;
         for (int rows = 0; rows < gridSize; rows++) {
             for (int cols = 0; cols < gridSize; cols++) {
-                if (counter >= chunkImagesList.size() || chunkImagesList.get(counter) == null) {
-                    logger.error("chunk with index " + counter + " is null");
-                    counter++;
+                if (counter >= chunkImagesList.size()) {
                     continue;
                 }
-                canvas.drawBitmap(chunkImagesList.get(counter), chunkWidth * cols, chunkHeight * rows, null);
+                Bitmap image = chunkImagesList.get(counter);
+                if (image != null) {
+                    canvas.drawBitmap(image, chunkWidth * cols, chunkHeight * rows, null);
+                    if (recycle) {
+                        image.recycle();
+                    }
+                }
                 counter++;
             }
         }
@@ -540,13 +479,14 @@ public final class GraphicUtils {
         if (!FileHelper.isFileCorrect(file) || !FileHelper.isVideo(FileHelper.getFileExtension(file.getName()))) {
             return false;
         }
-        return getVideoDuration(file) > 0;
+        return MetadataRetriever.extractMediaDuration(file) > 0;
     }
 
     public static Bitmap createBitmapFromStream(InputStream is, int scale) {
         return createBitmapByByteArray(FileHelper.readBytesFromInputStream(is), scale);
     }
 
+    @Nullable
     public static Bitmap createBitmapFromUri(@NonNull Context context, Uri uri, int scale) {
 
         if (!(uri != null && (uri.getScheme() == null || uri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_FILE)))) {
@@ -561,6 +501,7 @@ public final class GraphicUtils {
         }
     }
 
+    @Nullable
     public static Bitmap createBitmapFromFile(File file, int scale) {
 
         if (!FileHelper.isFileCorrect(file) || !FileHelper.isPicture(FileHelper.getFileExtension(file.getName()))) {
@@ -571,6 +512,7 @@ public final class GraphicUtils {
         return createBitmapByByteArray(FileHelper.readBytesFromFile(file), scale);
     }
 
+    @Nullable
     public static Bitmap createBitmapByByteArray(byte[] data, int scale) {
 
         if (data == null || data.length == 0) {
@@ -602,28 +544,31 @@ public final class GraphicUtils {
     /**
      * Определяет поворот картинки
      *
-     * @param context
-     * @param photoUri
-     * @return
      */
     public static int getOrientation(Context context, Uri photoUri) {
     /* it's on the external media. */
         Cursor cursor = context.getContentResolver().query(photoUri,
                 new String[]{MediaStore.Images.ImageColumns.ORIENTATION}, null, null, null);
 
-        if (cursor == null || cursor.getCount() != 1) {
-            return -1;
+        int orientation;
+        try {
+            if (cursor == null || cursor.getCount() != 1) {
+                orientation = -1;
+            } else {
+                cursor.moveToFirst();
+                orientation = cursor.getInt(0);
+            }
+        } finally {
+            if (cursor != null) {
+                cursor.close();
+            }
         }
-
-        cursor.moveToFirst();
-        return cursor.getInt(0);
+        return orientation;
     }
 
     /**
      * Определяем угол для поворота http://sylvana.net/jpegcrop/exif_orientation.html
      *
-     * @param orientation
-     * @return
      */
     public static int getRotateAngleByOrientation(int orientation) {
         switch (orientation) {
@@ -649,7 +594,7 @@ public final class GraphicUtils {
                 int rotateAngle = getRotateAngleByOrientation(orientation);
                 return rotateBitmap(sourceBitmap, rotateAngle, recycleSource);
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error("an Exception occurred", e);
             }
         }
         return null;
@@ -704,6 +649,7 @@ public final class GraphicUtils {
         return srcBitmap;
     }
 
+    @Nullable
     public static Bitmap rotateBitmap(Bitmap sourceBitmap, int angle, boolean recycleSource) {
 
         if (!isBitmapCorrect(sourceBitmap)) {
@@ -728,6 +674,7 @@ public final class GraphicUtils {
         }
     }
 
+    @Nullable
     public static Bitmap mirrorBitmap(Bitmap sourceBitmap, boolean recycleSource) {
 
         if (!isBitmapCorrect(sourceBitmap)) {
@@ -766,6 +713,7 @@ public final class GraphicUtils {
         }
     }
 
+    @Nullable
     public static byte[] getBitmapData(Bitmap b) {
         if (!isBitmapCorrect(b)) {
             logger.error("incorrect bitmap");
@@ -776,6 +724,7 @@ public final class GraphicUtils {
         return buffer.hasArray() ? buffer.array() : null;
     }
 
+    @Nullable
     public static Bitmap setBitmapData(byte[] data, int width, int height, Bitmap.Config config) {
 
         if (data == null || data.length == 0) {
@@ -806,6 +755,7 @@ public final class GraphicUtils {
      * @param b can be immutable
      * @return newly created bitmap with given config
      */
+    @Nullable
     public static Bitmap createBitmap(Bitmap b, Bitmap.Config c) {
 
         if (!isBitmapCorrect(b)) {
@@ -836,8 +786,8 @@ public final class GraphicUtils {
 
     /**
      * @param b must be mutable
-     * @return
      */
+    @Nullable
     @TargetApi(Build.VERSION_CODES.KITKAT)
     public static Bitmap reconfigureBitmap(Bitmap b, Bitmap.Config c) {
 
@@ -888,7 +838,7 @@ public final class GraphicUtils {
             return bitmap;
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("an Exception occurred", e);
             return null;
         }
     }
@@ -1022,7 +972,7 @@ public final class GraphicUtils {
         try {
             return ColorStateList.createFromXml(context.getResources(), parser);
         } catch (XmlPullParserException | IOException e) {
-            e.printStackTrace();
+            logger.error("an Exception occurred", e);
             return null;
         }
     }
@@ -1048,7 +998,7 @@ public final class GraphicUtils {
             int index = (int) getStateDrawableIndex.invoke(stateListDrawable, state);
             return (Drawable) getStateDrawable.invoke(stateListDrawable, index);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error("an Exception occurred", e);
         }
         return null;
     }
@@ -1057,7 +1007,7 @@ public final class GraphicUtils {
     public static Drawable cloneDrawable(@Nullable Drawable d) {
         Drawable cloned = d;
         if (d != null) {
-            cloned = d.getConstantState() != null? (d.getConstantState().newDrawable()) : null;
+            cloned = d.getConstantState() != null ? (d.getConstantState().newDrawable()) : null;
             if (cloned != null) {
                 cloned = cloned.mutate(); // mutate() -> not affecting other instances, for e.g. after setting color filter
             } else {
@@ -1099,6 +1049,7 @@ public final class GraphicUtils {
         void onPaletteColorsGenerated(@NonNull PaletteColors colors);
     }
 
+    @NonNull
     private static PaletteColors makePaletteColors(Palette palette, @ColorInt final int defaultColor, final Swatch sw) {
         final PaletteColors colors = new PaletteColors();
         if (palette != null && sw != null) {

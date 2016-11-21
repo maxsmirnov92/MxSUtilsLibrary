@@ -14,14 +14,19 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.graphic.GraphicUtils;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.io.FileDescriptor;
+import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.graphic.GraphicUtils;
+import static android.os.Build.VERSION_CODES.M;
 
 public final class MetadataRetriever {
 
@@ -32,7 +37,7 @@ public final class MetadataRetriever {
     }
 
     @NonNull
-    private static MediaMetadataRetriever createMediaMetadataRetriever(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers) throws RuntimeException {
+    public static MediaMetadataRetriever createMediaMetadataRetriever(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers) throws RuntimeException {
 
         MediaMetadataRetriever retriever;
 
@@ -44,10 +49,10 @@ public final class MetadataRetriever {
                 if (TextUtils.isEmpty(resourceUri.getScheme()) || resourceUri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_FILE)) {
                     retriever.setDataSource(resourceUri.getPath());
                 } else {
-                    if (context == null && (headers == null || headers.isEmpty())) {
+                    if (context == null && (headers == null)) {
                         throw new NullPointerException("scheme is not empty or " + ContentResolver.SCHEME_FILE + " and context was not specified");
                     }
-                    if (headers == null || headers.isEmpty()) {
+                    if (headers == null) {
                         retriever.setDataSource(context, resourceUri);
                     } else {
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
@@ -67,99 +72,96 @@ public final class MetadataRetriever {
         return retriever;
     }
 
+    @NonNull
+    public static MediaMetadataRetriever createMediaMetadataRetriever(@Nullable FileDescriptor fileDescriptor) throws RuntimeException {
+
+        MediaMetadataRetriever retriever;
+
+        if (fileDescriptor != null && fileDescriptor.valid()) {
+
+            retriever = new MediaMetadataRetriever();
+
+            try {
+                retriever.setDataSource(fileDescriptor);
+            } catch (RuntimeException e) {
+                throw new RuntimeException("can't set data source", e);
+            }
+        } else {
+            throw new IllegalArgumentException("fileDescriptor is null or not valid: " + fileDescriptor);
+        }
+
+        return retriever;
+    }
+
     @Nullable
-    private static MediaMetadataRetriever createMediaMetadataRetrieverNoThrow(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers) {
+    public static MediaMetadataRetriever createMediaMetadataRetrieverNoThrow(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers) {
         try {
             return createMediaMetadataRetriever(context, resourceUri, headers);
         } catch (RuntimeException e) {
-            e.printStackTrace();
+            logger.error("a RuntimeException occurred during createMediaMetadataRetriever()", e);
             return null;
         }
     }
 
     @Nullable
-    public static Bitmap extractFrame(@NonNull Context context, @Nullable Uri resourceUri, long positionMs) {
-        return extractFrame(context, resourceUri, null, positionMs);
+    public static MediaMetadataRetriever createMediaMetadataRetrieverNoThrow(@Nullable FileDescriptor fileDescriptor) {
+        try {
+            return createMediaMetadataRetriever(fileDescriptor);
+        } catch (RuntimeException e) {
+            logger.error("a RuntimeException occurred during createMediaMetadataRetriever()", e);
+            return null;
+        }
     }
 
     @Nullable
-    public static Bitmap extractFrame(@Nullable File file, long positionMs) {
-        return FileHelper.isFileCorrect(file) ? extractFrame(file.getAbsolutePath(), positionMs) : null;
+    public static <M> M extractMetadataField(@NonNull Context context, @Nullable Uri resourceUri, int keyCode, @NonNull Class<M> clazz) {
+        return extractMetadataField(context, resourceUri, keyCode, clazz, null);
     }
 
     @Nullable
-    public static Bitmap extractFrame(@Nullable String filePath, long positionMs) {
-        return !TextUtils.isEmpty(filePath) ? extractFrame(null, Uri.parse(filePath), null, positionMs) : null;
+    public static <M> M extractMetadataField(@NonNull Context context, @Nullable Uri resourceUri, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
+        return extractMetadataField(context, resourceUri, null, keyCode, clazz, defaultValue);
     }
 
     @Nullable
-    public static Bitmap extractFrame(@Nullable String url, @Nullable Map<String, String> headers, long positionMs) {
-        return !TextUtils.isEmpty(url) ? extractFrame(null, Uri.parse(url), headers, positionMs) : null;
+    public static <M> M extractMetadataField(@Nullable File file, int keyCode, @NonNull Class<M> clazz) {
+        return extractMetadataField(file, keyCode, clazz, null);
+    }
+
+    @Nullable
+    public static <M> M extractMetadataField(@Nullable File file, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
+        return FileHelper.isFileCorrect(file) ? extractMetadataField(file.getAbsolutePath(), keyCode, clazz, defaultValue) : null;
+    }
+
+    @Nullable
+    public static <M> M extractMetadataField(@Nullable String filePath, int keyCode, @NonNull Class<M> clazz) {
+        return extractMetadataField(filePath, keyCode, clazz, null);
+    }
+
+    @Nullable
+    public static <M> M extractMetadataField(@Nullable String filePath, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
+        return !TextUtils.isEmpty(filePath) ? extractMetadataField(null, Uri.parse(filePath), null, keyCode, clazz, defaultValue) : null;
+    }
+
+    @Nullable
+    public static <M> M extractMetadataField(@Nullable String url, @Nullable Map<String, String> headers, int keyCode, @NonNull Class<M> clazz) {
+        return extractMetadataField(url, headers, keyCode, clazz, null);
+    }
+
+    @Nullable
+    public static <M> M extractMetadataField(@Nullable String url, @Nullable Map<String, String> headers, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
+        return !TextUtils.isEmpty(url) ? extractMetadataField(null, Uri.parse(url), headers, keyCode, clazz, defaultValue) : null;
     }
 
     @SuppressWarnings("ConstantConditions")
     @Nullable
-    public static Bitmap extractFrame(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers, long positionMs) {
+    public static <M> M extractMetadataField(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers, int keyCode, @NonNull Class<M> clazz) {
         MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(context, resourceUri, headers);
         if (retriever == null) {
             return null;
         }
         try {
-            return retriever.getFrameAtTime(positionMs * 1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
-        } finally {
-            retriever.release();
-        }
-    }
-
-    @Nullable
-    public static <M> M extractMetaDataField(@NonNull Context context, @Nullable Uri resourceUri, int keyCode, @NonNull Class<M> clazz) {
-        return extractMetaDataField(context, resourceUri, keyCode, clazz, null);
-    }
-
-    @Nullable
-    public static <M> M extractMetaDataField(@NonNull Context context, @Nullable Uri resourceUri, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
-        return extractMetaDataField(context, resourceUri, null, keyCode, clazz, defaultValue);
-    }
-
-    @Nullable
-    public static <M> M extractMetaDataField(@Nullable File file, int keyCode, @NonNull Class<M> clazz) {
-        return extractMetaDataField(file, keyCode, clazz, null);
-    }
-
-    @Nullable
-    public static <M> M extractMetaDataField(@Nullable File file, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
-        return FileHelper.isFileCorrect(file) ? extractMetaDataField(file.getAbsolutePath(), keyCode, clazz, defaultValue) : null;
-    }
-
-    @Nullable
-    public static <M> M extractMetaDataField(@Nullable String filePath, int keyCode, @NonNull Class<M> clazz) {
-        return extractMetaDataField(filePath, keyCode, clazz, null);
-    }
-
-    @Nullable
-    public static <M> M extractMetaDataField(@Nullable String filePath, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
-        return !TextUtils.isEmpty(filePath) ? extractMetaDataField(null, Uri.parse(filePath), null, keyCode, clazz, defaultValue) : null;
-    }
-
-    @Nullable
-    public static <M> M extractMetaDataField(@Nullable String url, @Nullable Map<String, String> headers, int keyCode, @NonNull Class<M> clazz) {
-        return extractMetaDataField(url, headers, keyCode, clazz, null);
-    }
-
-    @Nullable
-    public static <M> M extractMetaDataField(@Nullable String url, @Nullable Map<String, String> headers, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
-        return !TextUtils.isEmpty(url) ? extractMetaDataField(null, Uri.parse(url), headers, keyCode, clazz, defaultValue) : null;
-    }
-
-    @SuppressWarnings("ConstantConditions")
-    @Nullable
-    public static <M> M extractMetaDataField(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers, int keyCode, @NonNull Class<M> clazz) {
-        MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(context, resourceUri, headers);
-        if (retriever == null) {
-            return null;
-        }
-        try {
-            return extractMetadataFieldNoThrow(retriever, keyCode, clazz, null);
+            return extractMetadataField(retriever, keyCode, clazz, null);
         } finally {
             retriever.release();
         }
@@ -167,91 +169,97 @@ public final class MetadataRetriever {
 
     @SuppressWarnings("ConstantConditions")
     @Nullable
-    public static <M> M extractMetaDataField(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
+    public static <M> M extractMetadataField(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
         MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(context, resourceUri, headers);
         if (retriever == null) {
             return null;
         }
-        return extractMetadataFieldNoThrow(retriever, keyCode, clazz, defaultValue);
+        return extractMetadataField(retriever, keyCode, clazz, defaultValue);
     }
 
     @NonNull
-    public static MediaMetadata extractMetaData(@NonNull Context context, @Nullable Uri resourceUri) {
-        return extractMetaData(context, resourceUri, null);
+    public static MediaMetadata extractMetadata(@NonNull Context context, @Nullable Uri resourceUri) {
+        return extractMetadata(context, resourceUri, null);
     }
 
     @NonNull
-    public static MediaMetadata extractMetaData(@Nullable File file) {
-        return FileHelper.isFileCorrect(file) ? extractMetaData(file.getAbsolutePath()) : new MediaMetadata();
+    public static MediaMetadata extractMetadata(@Nullable File file) {
+        return FileHelper.isFileCorrect(file) ? extractMetadata(file.getAbsolutePath()) : new MediaMetadata();
     }
 
     @NonNull
-    public static MediaMetadata extractMetaData(@Nullable String filePath) {
-        return !TextUtils.isEmpty(filePath) ? extractMetaData(null, Uri.parse(filePath), null) : new MediaMetadata();
+    public static MediaMetadata extractMetadata(@Nullable String filePath) {
+        return !TextUtils.isEmpty(filePath) ? extractMetadata(null, Uri.parse(filePath), null) : new MediaMetadata();
     }
 
     @NonNull
-    public static MediaMetadata extractMetaData(@Nullable String url, @Nullable Map<String, String> headers) {
-        return !TextUtils.isEmpty(url) ? extractMetaData(null, Uri.parse(url), headers) : new MediaMetadata();
+    public static MediaMetadata extractMetadata(@Nullable String url, @Nullable Map<String, String> headers) {
+        return !TextUtils.isEmpty(url) ? extractMetadata(null, Uri.parse(url), headers) : new MediaMetadata();
     }
 
     @SuppressWarnings("ConstantConditions")
     @NonNull
-    public static MediaMetadata extractMetaData(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers) {
+    public static MediaMetadata extractMetadata(@NonNull MediaMetadataRetriever retriever) {
 
         MediaMetadata metadata = new MediaMetadata();
 
-        MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(context, resourceUri, headers);
-
-        if (retriever == null) {
-            return metadata;
-        }
-
-        metadata.durationMs = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_DURATION, Integer.class);
-        metadata.cdTrackNumber = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER, String.class);
-        metadata.album = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_ALBUM, String.class);
-        metadata.artist = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_ARTIST, String.class);
-        metadata.author = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_AUTHOR, String.class);
-        metadata.composer = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_COMPOSER, String.class);
-        metadata.date = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_DATE, String.class);
-        metadata.genre = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_GENRE, String.class);
-        metadata.title = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_TITLE, String.class);
-        metadata.year = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_YEAR, Integer.class);
-        metadata.numTracks = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_NUM_TRACKS, Integer.class);
-        metadata.writer = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_WRITER, String.class);
-        metadata.mimeType = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_MIMETYPE, String.class);
-        metadata.albumArtist = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST, String.class);
-        metadata.compilation = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_COMPILATION, String.class);
-        metadata.isDrm = extractMetadataFieldNoThrow(retriever, 22, Boolean.class);
+        metadata.durationMs = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_DURATION, Integer.class);
+        metadata.cdTrackNumber = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_CD_TRACK_NUMBER, String.class);
+        metadata.album = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_ALBUM, String.class);
+        metadata.artist = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_ARTIST, String.class);
+        metadata.author = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_AUTHOR, String.class);
+        metadata.composer = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_COMPOSER, String.class);
+        metadata.date = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_DATE, String.class);
+        metadata.genre = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_GENRE, String.class);
+        metadata.title = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_TITLE, String.class);
+        metadata.year = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_YEAR, Integer.class);
+        metadata.numTracks = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_NUM_TRACKS, Integer.class);
+        metadata.writer = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_WRITER, String.class);
+        metadata.mimeType = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_MIMETYPE, String.class);
+        metadata.albumArtist = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_ALBUMARTIST, String.class);
+        metadata.compilation = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_COMPILATION, String.class);
+        metadata.isDrm = extractMetadataField(retriever, 22, Boolean.class);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
-            metadata.hasAudio = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO, Boolean.class);
-            metadata.hasVideo = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO, Boolean.class);
-            metadata.videoSize = new Point(extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH, Integer.class), extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT, Integer.class));
-            metadata.bitrate = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_BITRATE, Integer.class);
-            metadata.timedTextLanguages = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_BITRATE, String.class);
+            metadata.hasAudio = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_HAS_AUDIO, Boolean.class);
+            metadata.hasVideo = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_HAS_VIDEO, Boolean.class);
+            metadata.videoSize = new Point(extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_VIDEO_WIDTH, Integer.class), extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_VIDEO_HEIGHT, Integer.class));
+            metadata.bitrate = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_BITRATE, Integer.class);
+            metadata.timedTextLanguages = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_BITRATE, String.class);
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH_MR1) {
-            metadata.location = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_LOCATION, String.class);
+            metadata.location = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_LOCATION, String.class);
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            metadata.videoRotation = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION, Integer.class);
+            metadata.videoRotation = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION, Integer.class);
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            metadata.captureFrameRate = extractMetadataFieldNoThrow(retriever, MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE, Integer.class);
+        if (Build.VERSION.SDK_INT >= M) {
+            metadata.captureFrameRate = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE, Integer.class);
         }
 
         retriever.release();
         return metadata;
     }
 
+    @SuppressWarnings("ConstantConditions")
+    @NonNull
+    public static MediaMetadata extractMetadata(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers) {
+        return extractMetadata(createMediaMetadataRetriever(context, resourceUri, headers));
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @NonNull
+    public static MediaMetadata extractMetadata(@Nullable FileDescriptor fileDescriptor) {
+        return extractMetadata(createMediaMetadataRetriever(fileDescriptor));
+    }
+
     @Nullable
-    private static <M> M extractMetadataFieldNoThrow(@NonNull MediaMetadataRetriever retriever, int keyCode, @NonNull Class<M> clazz) {
-        return extractMetadataFieldNoThrow(retriever, keyCode, clazz, null);
+    public static <M> M extractMetadataField(@NonNull MediaMetadataRetriever retriever, int keyCode, @NonNull Class<M> clazz) {
+        return extractMetadataField(retriever, keyCode, clazz, null);
     }
 
     @SuppressWarnings("unchecked")
     @Nullable
-    private static <M> M extractMetadataFieldNoThrow(@NonNull MediaMetadataRetriever retriever, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
+    public static <M> M extractMetadataField(@NonNull MediaMetadataRetriever retriever, int keyCode, @NonNull Class<M> clazz, @Nullable M defaultValue) {
         final String value = retriever.extractMetadata(keyCode);
         final boolean isEmpty = TextUtils.isEmpty(value);
         try {
@@ -336,6 +344,157 @@ public final class MetadataRetriever {
 
         MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(context, resourceUri, null);
         return retriever != null ? GraphicUtils.createBitmapByByteArray(retriever.getEmbeddedPicture(), 1) : null;
+    }
+
+    public static long extractMediaDuration(@NonNull Context context, @Nullable Uri resourceUri) {
+        return extractMediaDuration(context, resourceUri, null);
+    }
+
+    public static long extractMediaDuration(@Nullable File file) {
+        return FileHelper.isFileCorrect(file) ? extractMediaDuration(file.getAbsolutePath()) : 0;
+    }
+
+    public static long extractMediaDuration(@Nullable String filePath) {
+        return !TextUtils.isEmpty(filePath) ? extractMediaDuration(null, Uri.parse(filePath), null) : 0;
+    }
+
+    public static long extractMediaDuration(@Nullable String uri, @Nullable Map<String, String> headers) {
+        return !TextUtils.isEmpty(uri) ? extractMediaDuration(null, Uri.parse(uri), headers) : 0;
+    }
+
+    public static long extractMediaDuration(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers) {
+        MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(context, resourceUri, headers);
+        return retriever != null ? extractMediaDuration(retriever, true) : 0;
+    }
+
+    public static long extractMediaDuration(@Nullable FileDescriptor fileDescriptor) {
+        MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(fileDescriptor);
+        return retriever != null ? extractMediaDuration(retriever, true) : 0;
+    }
+
+    public static long extractMediaDuration(@NonNull MediaMetadataRetriever retriever, boolean release) {
+        Long duration = extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_DURATION, Long.class);
+        try {
+            return duration != null ? duration : 0;
+        } finally {
+            if (release) {
+                retriever.release();
+            }
+        }
+    }
+
+    @Nullable
+    public static Bitmap extractFrameAtPosition(@NonNull Context context, @Nullable Uri resourceUri, long positionMs) {
+        return extractFrameAtPosition(context, resourceUri, null, positionMs);
+    }
+
+    @Nullable
+    public static Bitmap extractFrameAtPosition(@Nullable File file, long positionMs) {
+        return FileHelper.isFileCorrect(file) ? extractFrameAtPosition(file.getAbsolutePath(), positionMs) : null;
+    }
+
+    @Nullable
+    public static Bitmap extractFrameAtPosition(@Nullable String filePath, long positionMs) {
+        return !TextUtils.isEmpty(filePath) ? extractFrameAtPosition(null, Uri.parse(filePath), null, positionMs) : null;
+    }
+
+    @Nullable
+    public static Bitmap extractFrameAtPosition(@Nullable String uri, @Nullable Map<String, String> headers, long positionMs) {
+        return !TextUtils.isEmpty(uri) ? extractFrameAtPosition(null, Uri.parse(uri), headers, positionMs) : null;
+    }
+
+    @Nullable
+    public static Bitmap extractFrameAtPosition(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers, long positionMs) {
+        MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(context, resourceUri, headers);
+        return retriever != null ? extractFrameAtPosition(retriever, positionMs, true) : null;
+    }
+
+    @Nullable
+    public static Bitmap extractFrameAtPosition(@Nullable FileDescriptor fileDescriptor, long positionMs) {
+        MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(fileDescriptor);
+        return retriever != null ? extractFrameAtPosition(retriever, positionMs, true) : null;
+    }
+
+    @Nullable
+    public static Bitmap extractFrameAtPosition(@NonNull MediaMetadataRetriever retriever, long positionMs, boolean release) {
+        try {
+            if (positionMs <= 0 || positionMs > extractMediaDuration(retriever, false)) {
+                logger.error("incorrect position: " + positionMs);
+                return null;
+            }
+            return retriever.getFrameAtTime(positionMs * 1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
+        } finally {
+            if (release) {
+                retriever.release();
+            }
+        }
+    }
+
+    @NonNull
+    public static Map<Long, Bitmap> extractFrames(@NonNull Context context, @Nullable Uri resourceUri, int framesCount) {
+        return extractFrames(context, resourceUri, null, framesCount);
+    }
+
+    @NonNull
+    public static Map<Long, Bitmap> extractFrames(@Nullable File file, int framesCount) {
+        return FileHelper.isFileCorrect(file) ? extractFrames(file.getAbsolutePath(), framesCount) : Collections.<Long, Bitmap>emptyMap();
+    }
+
+    @NonNull
+    public static Map<Long, Bitmap> extractFrames(@Nullable String filePath, int framesCount) {
+        return !TextUtils.isEmpty(filePath) ? extractFrames(null, Uri.parse(filePath), null, framesCount) : Collections.<Long, Bitmap>emptyMap();
+    }
+
+    @NonNull
+    public static Map<Long, Bitmap> extractFrames(@Nullable String uri, @Nullable Map<String, String> headers, int framesCount) {
+        return !TextUtils.isEmpty(uri) ? extractFrames(null, Uri.parse(uri), headers, framesCount) : Collections.<Long, Bitmap>emptyMap();
+    }
+
+    @NonNull
+    public static Map<Long, Bitmap> extractFrames(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers, int framesCount) {
+        MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(context, resourceUri, headers);
+        return retriever != null ? extractFrames(retriever, framesCount, true) : Collections.<Long, Bitmap>emptyMap();
+    }
+
+    @NonNull
+    public static Map<Long, Bitmap> extractFrames(@Nullable FileDescriptor fileDescriptor, int framesCount) {
+        MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(fileDescriptor);
+        return retriever != null ? extractFrames(retriever, framesCount, true) : Collections.<Long, Bitmap>emptyMap();
+    }
+
+    @NonNull
+    public static Map<Long, Bitmap> extractFrames(@NonNull MediaMetadataRetriever retriever, int framesCount, boolean release) {
+
+        try {
+
+            if (framesCount <= 0) {
+                logger.error("incorrect framesCount: " + framesCount);
+                return Collections.emptyMap();
+            }
+
+            final long duration = extractMediaDuration(retriever, false);
+            // logger.debug("video durationMs: " + durationMs + " ms");
+
+            final long interval = duration / framesCount;
+            // logger.debug("interval between frames: " + interval + " ms");
+            long lastPosition = 1;
+
+            Map<Long, Bitmap> videoFrames = new LinkedHashMap<>(framesCount);
+
+            while (lastPosition <= duration && videoFrames.size() < framesCount) { // (durationMs - interval)
+                // logger.debug("getting frame at position: " + lastPosition + " ms");
+                videoFrames.put(lastPosition, extractFrameAtPosition(retriever, lastPosition, false));
+                lastPosition += interval;
+                // logger.debug("next position: " + lastPosition + " ms");
+            }
+
+            return videoFrames;
+
+        } finally {
+            if (release) {
+                retriever.release();
+            }
+        }
     }
 
     public static class MediaMetadata {

@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils.data.sort;
 
+@Deprecated
 public class SortOptionPair<O extends ISortOption> {
 
     public final O option;
