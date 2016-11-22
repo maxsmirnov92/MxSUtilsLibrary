@@ -143,9 +143,9 @@ public final class StorageStateWatcher {
         private void doStateWatch(boolean notify) {
             logger.debug("doStateWatch(), notify=" + notify);
 
-            final int totalKb = FileHelper.getPartitionTotalSpaceKb(settings.targetPath);
-            final int freeKb = FileHelper.getPartitionFreeSpaceKb(settings.targetPath);
-            final int usedKb = totalKb - freeKb;
+            final long totalKb = FileHelper.getPartitionTotalSpaceKb(settings.targetPath);
+            final long freeKb = FileHelper.getPartitionFreeSpaceKb(settings.targetPath);
+            final long usedKb = totalKb - freeKb;
 
             logger.info("=== storage total space: " + totalKb + " kB, free: " + freeKb + " kB, used: " + usedKb + " kB ===");
 
@@ -238,7 +238,12 @@ public final class StorageStateWatcher {
                                     }
 
                                     @Override
-                                    public boolean onGet(@NonNull File file) {
+                                    public boolean onGetFile(@NonNull File file) {
+                                        return true;
+                                    }
+
+                                    @Override
+                                    public boolean onGetFolder(@NonNull File folder) {
                                         return true;
                                     }
                                 });
@@ -300,7 +305,12 @@ public final class StorageStateWatcher {
                                                 }
 
                                                 @Override
-                                                public boolean confirmDelete(File file) {
+                                                public boolean confirmDeleteFile(File file) {
+                                                    return true;
+                                                }
+
+                                                @Override
+                                                public boolean confirmDeleteFolder(File folder) {
                                                     return true;
                                                 }
                                             }).size();
@@ -344,9 +354,9 @@ public final class StorageStateWatcher {
 
     public interface WatchListener {
 
-        void onLimitExceeded(int totalKb, int freeKb, int usedKb, StorageWatchSettings settings, double howMuchExceeded);
+        void onLimitExceeded(long totalKb, long freeKb, long usedKb, StorageWatchSettings settings, double howMuchExceeded);
 
-        void onLimitNotExceeded(int totalKb, int freeKb, int usedKb, StorageWatchSettings settings);
+        void onLimitNotExceeded(long totalKb, long freeKb, long usedKb, StorageWatchSettings settings);
 
         void onPartitionReadError(StorageWatchSettings settings);
     }

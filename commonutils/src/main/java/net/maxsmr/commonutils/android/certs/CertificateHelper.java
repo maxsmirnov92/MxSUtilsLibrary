@@ -29,9 +29,13 @@ import java.util.Set;
 import javax.net.ssl.TrustManagerFactory;
 
 
-public class CertificateHelper {
+public final class CertificateHelper {
 
     private static final Logger logger = LoggerFactory.getLogger(CertificateHelper.class);
+
+    private CertificateHelper() {
+        throw new AssertionError("no instances.");
+    }
 
     public static Certificate generateCertificate(@NonNull Context context, @RawRes int certResId) throws RuntimeException {
         return generateCertificate(context.getResources().openRawResource(certResId));

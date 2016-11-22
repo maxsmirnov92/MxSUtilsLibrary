@@ -34,6 +34,7 @@ public final class ProviderUtils {
 
     public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NonNull Context context, @Nullable String packageName, @NonNull Class<P> providerClass, int flags)
             throws PackageManager.NameNotFoundException {
+
         return context.getPackageManager().getProviderInfo(new ComponentName(packageName, providerClass.getName()), flags);
     }
 

@@ -50,6 +50,11 @@ public final class ChecksumHelper {
 
     @Nullable
     public static String md5Hash(String st, String charsetName) {
+        return ChecksumHelper.md5Hash(st, Charset.defaultCharset().name());
+    }
+
+    @Nullable
+    public static String md5Hash(String st, String charsetName) {
         charsetName = TextUtils.isEmpty(charsetName)? "UTF-8" : charsetName;
         try {
             return !TextUtils.isEmpty(st)? md5Hash(st.getBytes(charsetName)) : null;
