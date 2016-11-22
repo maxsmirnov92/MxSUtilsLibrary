@@ -7,12 +7,12 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.FileHelper;
+
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-
-import net.maxsmr.commonutils.data.FileHelper;
 
 public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
 
@@ -20,6 +20,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
      * @param databasePath if null or empty - default location will be used, otherwise - path on sdcard (for e.g.
      *                     Android/data/com.example.database)
      */
+    @NonNull
     public static SQLiteOpenHelperImpl createFrom(@NonNull Context context, @NonNull String databaseName, @Nullable String databasePath, int databaseVersion,
                                                   @NonNull Set<AbstractSQLiteTableProvider> tables) {
 
@@ -39,7 +40,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
         String targetName;
 
         if (!TextUtils.isEmpty(databasePath)) {
-            targetName = FileHelper.testPath(databasePath, databaseName).getAbsolutePath();
+            targetName = FileHelper.checkPath(databasePath, databaseName).getAbsolutePath();
         } else {
             targetName = databaseName;
         }
