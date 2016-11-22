@@ -58,7 +58,12 @@ public class Tests {
             }
 
             @Override
-            public boolean onGet(@NonNull File file) {
+            public boolean onGetFile(@NonNull File file) {
+                return true;
+            }
+
+            @Override
+            public boolean onGetFolder(@NonNull File folder) {
                 return true;
             }
         });

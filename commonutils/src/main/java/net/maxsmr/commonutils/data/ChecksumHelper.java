@@ -9,6 +9,7 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.io.UnsupportedEncodingException;
 import java.math.BigInteger;
+import java.nio.charset.Charset;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
@@ -49,7 +50,7 @@ public final class ChecksumHelper {
     }
 
     @Nullable
-    public static String md5Hash(String st, String charsetName) {
+    public static String md5Hash(String st) {
         return ChecksumHelper.md5Hash(st, Charset.defaultCharset().name());
     }
 

@@ -21,7 +21,12 @@ public class FileHelperTest {
             }
 
             @Override
-            public boolean onGet(@NonNull File file) {
+            public boolean onGetFile(@NonNull File file) {
+                return true;
+            }
+
+            @Override
+            public boolean onGetFolder(@NonNull File folder) {
                 return true;
             }
         });
@@ -31,7 +36,7 @@ public class FileHelperTest {
     //    @Test
     public void testSearch() {
         Set<File> result = FileHelper.searchByName("opencv", Collections.singleton(new File(System.getenv("HOME") + File.separator + "Documents" + File.separator + "AndroidStudioProjects" /*+ File.separator + "OpenCvDetectorExample-android"*/)),
-                FileHelper.GetMode.ALL, CompareUtils.MatchStringOption.STARTS_WITH_IGNORE_CASE.flag, true,
+                FileHelper.GetMode.ALL, CompareUtils.MatchStringOption.STARTS_WITH_IGNORE_CASE.flag, true, true,
                 new FileHelper.FileComparator(Collections.singletonMap(FileHelper.FileComparator.SortOption.LAST_MODIFIED, false)),
                 new FileHelper.ISearchNotifier() {
                     @Override
@@ -41,7 +46,12 @@ public class FileHelperTest {
                     }
 
                     @Override
-                    public boolean onFound(@NonNull File File) {
+                    public boolean onFoundFile(@NonNull File file) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onFoundFolder(@NonNull File folder) {
                         return true;
                     }
                 });
@@ -51,7 +61,7 @@ public class FileHelperTest {
     //    @Test
     public void testSearchFirst() {
         File result = FileHelper.searchByNameFirst("opencv", Collections.singleton(new File(System.getenv("HOME") + File.separator + "Documents" + File.separator + "AndroidStudioProjects")),
-                FileHelper.GetMode.ALL, CompareUtils.MatchStringOption.STARTS_WITH_IGNORE_CASE.flag, true,
+                FileHelper.GetMode.ALL, CompareUtils.MatchStringOption.STARTS_WITH_IGNORE_CASE.flag, true, true,
                 null,
                 new FileHelper.ISearchNotifier() {
                     @Override
@@ -61,7 +71,12 @@ public class FileHelperTest {
                     }
 
                     @Override
-                    public boolean onFound(@NonNull File File) {
+                    public boolean onFoundFile(@NonNull File File) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onFoundFolder(@NonNull File folder) {
                         return true;
                     }
                 });
@@ -80,7 +95,12 @@ public class FileHelperTest {
                     }
 
                     @Override
-                    public boolean onFound(@NonNull File File) {
+                    public boolean onFoundFile(@NonNull File File) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onFoundFolder(@NonNull File folder) {
                         return true;
                     }
                 });
