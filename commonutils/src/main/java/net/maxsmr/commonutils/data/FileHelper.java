@@ -69,12 +69,12 @@ public final class FileHelper {
         throw new AssertionError("no instances.");
     }
 
-    public static int getPartitionTotalSpaceKb(String path) {
-        return isDirExists(path) ? (int) (new File(path).getTotalSpace() / 1024L) : 0;
+    public static long getPartitionTotalSpaceKb(String path) {
+        return isDirExists(path) ? new File(path).getTotalSpace() / 1024L : 0L;
     }
 
-    public static int getPartitionFreeSpaceKb(String path) {
-        return isDirExists(path) ? (int) (new File(path).getFreeSpace() / 1024L) : 0;
+    public static long getPartitionFreeSpaceKb(String path) {
+        return isDirExists(path) ? new File(path).getFreeSpace() / 1024L : 0L;
     }
 
     public static boolean isSizeCorrect(File file) {
@@ -234,7 +234,7 @@ public final class FileHelper {
         return null;
     }
 
-    public static File testPath(String parent, String fileName) {
+    public static File checkPath(String parent, String fileName) {
         File f = checkPathNoThrow(parent, fileName);
         if (f == null) {
             throw new IllegalArgumentException("incorrect path: " + parent + File.separator + fileName);
@@ -266,17 +266,17 @@ public final class FileHelper {
                     f = FileHelper.createNewFile(f.getName(), f.getParent());
 
                     if (f == null) {
-                        logger.error("can't create new file " + fileName + " in directory " + parentPath);
+                        logger.error("can't create new file " + parentPath + File.separator + fileName);
                         return null;
                     }
 
                 } else {
-                    logger.error("can't delete existing file");
+                    logger.error("can't delete existing file: " + f);
                     return f;
                 }
 
             } else {
-                logger.error("not overwriting, existing");
+                logger.error("not overwriting, file exists: " + f);
                 return f;
             }
 
@@ -285,7 +285,7 @@ public final class FileHelper {
             f = FileHelper.createNewFile(f.getName(), f.getParent());
 
             if (f == null) {
-                logger.error("can't create new file " + fileName + " in directory " + parentPath);
+                logger.error("can't create new file " + parentPath + File.separator + fileName);
                 return null;
             }
         }
@@ -318,7 +318,7 @@ public final class FileHelper {
 
             if (newFile.exists() && newFile.isFile()) {
                 if (!newFile.delete()) {
-                    logger.error("can't delete");
+                    logger.error("can't delete: " + newFile);
                     return null;
                 }
             }
@@ -878,13 +878,13 @@ public final class FileHelper {
 
                 if (e.isDirectory()) {
                     if (!checkDirNoThrow(path.getAbsolutePath())) {
-                        logger.error("can't create directory: " + path.toString());
+                        logger.error("can't create directory: " + path);
                         return false;
                     }
 
                 } else {
                     if (createNewFile(path.getName(), path.getParent()) == null) {
-                        logger.error("can't create new file: " + path.toString());
+                        logger.error("can't create new file: " + path);
                         return false;
                     }
 
@@ -1003,6 +1003,8 @@ public final class FileHelper {
     }
 
     /**
+     * not adding source collection
+     *
      * @param fromDirs directories
      * @return collected set of files or directories from specified directories
      */
@@ -1024,11 +1026,11 @@ public final class FileHelper {
                 }
             }
 
-            if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
-                if (notifier == null || notifier.onGet(fromDir)) {
-                    collected.add(fromDir);
-                }
-            }
+//            if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
+//                if (notifier == null || notifier.onGet(fromDir)) {
+//                    collected.add(fromDir);
+//                }
+//            }
 
             File[] files = fromDir.listFiles();
 
@@ -1043,7 +1045,7 @@ public final class FileHelper {
 
                     if (f.isDirectory()) {
                         if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
-                            if (notifier == null || notifier.onGet(f)) {
+                            if (notifier == null || notifier.onGetFolder(f)) {
                                 collected.add(f);
                             }
                         }
@@ -1053,7 +1055,7 @@ public final class FileHelper {
 
                     } else if (f.isFile()) {
                         if (getMode == GetMode.FILES || getMode == GetMode.ALL) {
-                            if (notifier == null || notifier.onGet(f)) {
+                            if (notifier == null || notifier.onGetFile(f)) {
                                 collected.add(f);
                             }
                         }
@@ -1079,7 +1081,7 @@ public final class FileHelper {
      * @return found set of files or directories with matched name
      */
     @NonNull
-    public static Set<File> searchByName(String name, @NonNull Collection<File> searchFiles, @NonNull GetMode getMode, int searchFlags, boolean recursiveSearch, @Nullable Comparator<? super File> comparator, @Nullable ISearchNotifier notifier) {
+    public static Set<File> searchByName(String name, @NonNull Collection<File> searchFiles, @NonNull GetMode getMode, int searchFlags, boolean recursiveSearch, boolean searchInGiven, @Nullable Comparator<? super File> comparator, @Nullable ISearchNotifier notifier) {
 
         Set<File> foundFiles = new LinkedHashSet<>();
 
@@ -1097,10 +1099,12 @@ public final class FileHelper {
 
             if (root.isDirectory()) {
 
-                if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
-                    if (CompareUtils.stringMatches(root.getName(), name, searchFlags)) {
-                        if (notifier == null || notifier.onFound(root)) {
-                            foundFiles.add(root);
+                if (searchInGiven) {
+                    if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
+                        if (CompareUtils.stringMatches(root.getName(), name, searchFlags)) {
+                            if (notifier == null || notifier.onFoundFolder(root)) {
+                                foundFiles.add(root);
+                            }
                         }
                     }
                 }
@@ -1126,13 +1130,13 @@ public final class FileHelper {
                         if (f.isDirectory()) {
                             if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
                                 if (CompareUtils.stringMatches(f.getName(), name, searchFlags)) {
-                                    if (notifier == null || notifier.onFound(f)) {
+                                    if (notifier == null || notifier.onFoundFolder(f)) {
                                         foundFiles.add(f);
                                     }
                                 }
                             }
                             if (recursiveSearch) {
-                                final Set<File> recursiveFound = searchByName(name, Collections.singleton(f), getMode, searchFlags, true, comparator, notifier);
+                                final Set<File> recursiveFound = searchByName(name, Collections.singleton(f), getMode, searchFlags, true, false, comparator, notifier);
                                 if (!recursiveFound.isEmpty()) {
                                     foundFiles.addAll(recursiveFound);
                                 }
@@ -1140,7 +1144,7 @@ public final class FileHelper {
                         } else if (f.isFile()) {
                             if (getMode == GetMode.FILES || getMode == GetMode.ALL) {
                                 if (CompareUtils.stringMatches(f.getName(), name, searchFlags)) {
-                                    if (notifier == null || notifier.onFound(f)) {
+                                    if (notifier == null || notifier.onFoundFile(f)) {
                                         foundFiles.add(f);
                                     }
                                 }
@@ -1153,10 +1157,12 @@ public final class FileHelper {
 
             } else if (root.isFile()) {
 
-                if (getMode == GetMode.FILES || getMode == GetMode.ALL) {
-                    if (CompareUtils.stringMatches(root.getName(), name, searchFlags)) {
-                        if (notifier == null || notifier.onFound(root)) {
-                            foundFiles.add(root);
+                if (searchInGiven) {
+                    if (getMode == GetMode.FILES || getMode == GetMode.ALL) {
+                        if (CompareUtils.stringMatches(root.getName(), name, searchFlags)) {
+                            if (notifier == null || notifier.onFoundFile(root)) {
+                                foundFiles.add(root);
+                            }
                         }
                     }
                 }
@@ -1177,16 +1183,21 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static File searchByNameFirst(String name, @NonNull Collection<File> searchFiles, @NonNull GetMode getMode, int searchFlags, boolean recursiveSearch, @Nullable Comparator<? super File> comparator, @Nullable final ISearchNotifier notifier) {
-        Set<File> found = searchByName(name, searchFiles, getMode, searchFlags, recursiveSearch, comparator, new ISearchNotifier() {
+    public static File searchByNameFirst(String name, @NonNull Collection<File> searchFiles, @NonNull GetMode getMode, int searchFlags, boolean recursiveSearch, boolean searchInGiven, @Nullable Comparator<? super File> comparator, @Nullable final ISearchNotifier notifier) {
+        Set<File> found = searchByName(name, searchFiles, getMode, searchFlags, recursiveSearch, searchInGiven, comparator, new ISearchNotifier() {
             @Override
             public boolean onProcessing(@NonNull File current, @NonNull Set<File> found) {
                 return (notifier == null || notifier.onProcessing(current, found)) && found.size() == 0;
             }
 
             @Override
-            public boolean onFound(@NonNull File file) {
-                return notifier == null || notifier.onFound(file);
+            public boolean onFoundFile(@NonNull File file) {
+                return notifier == null || notifier.onFoundFile(file);
+            }
+
+            @Override
+            public boolean onFoundFolder(@NonNull File folder) {
+                return notifier == null || notifier.onFoundFolder(folder);
             }
         });
         return !found.isEmpty() ? new ArrayList<>(found).get(0) : null;
@@ -1207,28 +1218,13 @@ public final class FileHelper {
         final Set<File> foundFiles = new LinkedHashSet<>();
 
         if (searchFiles == null || searchFiles.isEmpty()) {
-            searchFiles = new HashSet<>();
-            String[] paths = System.getenv("PATH").split(":");
-            if (paths.length == 0) {
-                return Collections.emptySet();
-            }
-            for (String path : paths) {
-                if (isDirExists(path)) {
-                    searchFiles.add(new File(path));
-                }
-            }
+            searchFiles = getEnvPathFiles();
         }
 
         for (File file : searchFiles) {
 
             if (file == null) {
                 continue;
-            }
-
-            if (file.getName().contains(name)) {
-                if (notifier == null || notifier.onFound(file)) {
-                    foundFiles.add(file);
-                }
             }
 
             String path = file.getAbsolutePath();
@@ -1267,7 +1263,7 @@ public final class FileHelper {
 
         if (!foundFiles.isEmpty()) {
 
-            for (File file : searchFiles) {
+            for (File file : foundFiles) {
 
                 if (notifier != null) {
                     if (!notifier.onProcessing(file, Collections.unmodifiableSet(foundFiles))) {
@@ -1281,10 +1277,16 @@ public final class FileHelper {
                     path += File.separator;
                 }
 
-                if (FileHelper.isFileExists(path)) {
-                    if (notifier == null || notifier.onFound(file)) {
+                file = new File(path);
+
+                if (notifier != null) {
+                    if (file.isFile() && notifier.onFoundFile(file)) {
+                        foundFiles.add(file);
+                    } else if (file.isDirectory() && notifier.onFoundFolder(file)) {
                         foundFiles.add(file);
                     }
+                } else {
+                    foundFiles.add(file);
                 }
             }
         }
@@ -1299,6 +1301,18 @@ public final class FileHelper {
         return foundFiles;
     }
 
+
+    public static Set<File> getEnvPathFiles() {
+        Set<File> searchFiles = new HashSet<>();
+        String[] paths = System.getenv("PATH").split(":");
+        if (paths.length == 0) {
+            return Collections.emptySet();
+        }
+        for (String path : paths) {
+            searchFiles.add(new File(path));
+        }
+        return searchFiles;
+    }
 
     public static boolean deleteDir(File dir) {
         return dir != null && dir.isDirectory() && (dir.listFiles() == null || dir.listFiles().length == 0) && dir.delete();
@@ -1370,22 +1384,38 @@ public final class FileHelper {
                                 deleted.addAll(delete(Collections.singleton(f), deleteEmptyDirs, true, excludeFiles, comparator, notifier));
                             }
                             if (deleteEmptyDirs) {
-                                if (notifier == null || notifier.confirmDelete(f)) {
+                                if (notifier == null || notifier.confirmDeleteFolder(f)) {
                                     if (f.delete()) {
                                         deleted.add(f);
                                     }
                                 }
                             }
-                        } else {
-                            if (notifier == null || notifier.confirmDelete(f)) {
+                        } else if (f.isFile()) {
+                            if (notifier == null || notifier.confirmDeleteFile(f)) {
                                 if (f.delete()) {
                                     deleted.add(f);
                                 }
+                            }
+                        } else {
+                            logger.error("incorrect file or folder: " + f);
+                        }
+                    }
+                }
+
+                File[] remainFiles = fromDir.listFiles();
+
+                if (remainFiles == null || remainFiles.length == 0) {
+                    if (deleteEmptyDirs) {
+                        if (notifier == null || notifier.confirmDeleteFolder(fromDir)) {
+                            if (fromDir.delete()) {
+                                deleted.add(fromDir);
                             }
                         }
                     }
                 }
             }
+
+
         }
         return deleted;
     }
@@ -1427,7 +1457,7 @@ public final class FileHelper {
 
                         if (file.isFile()) {
                             if (getMode == GetMode.FILES || getMode == GetMode.ALL) {
-                                if (notifier == null || notifier.confirmDelete(file)) {
+                                if (notifier == null || notifier.confirmDeleteFile(file)) {
                                     if (file.delete()) {
                                         deleted.add(file);
                                         if (howMuch > 0 && deleted.size() == howMuch) {
@@ -1439,8 +1469,10 @@ public final class FileHelper {
                             }
 
                         } else if (file.isDirectory()) {
+
                             if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
-                                if (file.listFiles().length != 0) {
+                                File[] listFiles = file.listFiles();
+                                if (listFiles != null && listFiles.length > 0) {
                                     if (!deleteFoldersOnlyIfEmpty) {
                                         delete(Collections.singleton(file), true, true, excludeFiles, comparator, new IDeleteNotifier() {
                                             @Override
@@ -1450,21 +1482,19 @@ public final class FileHelper {
                                             }
 
                                             @Override
-                                            public boolean confirmDelete(File file) {
-                                                return (notifier == null || notifier.confirmDelete(file)) && (howMuch == 0 || deleted.size() < howMuch);
+                                            public boolean confirmDeleteFile(File file) {
+                                                return (notifier == null || notifier.confirmDeleteFile(file)) && (howMuch == 0 || deleted.size() < howMuch);
+                                            }
+
+                                            @Override
+                                            public boolean confirmDeleteFolder(File folder) {
+                                                return false;
                                             }
                                         });
-                                        if (notifier == null || notifier.confirmDelete(file)) {
-                                            if (file.delete()) {
-                                                if (howMuch > 0 && deleted.size() == howMuch) {
-                                                    break;
-                                                }
-                                            }
-                                        }
                                     }
                                 } else {
                                     if (excludeFiles == null || !excludeFiles.contains(file)) {
-                                        if (notifier == null || notifier.confirmDelete(file)) {
+                                        if (notifier == null || notifier.confirmDeleteFolder(file)) {
                                             if (file.delete()) {
                                                 if (howMuch > 0 && deleted.size() == howMuch) {
                                                     break;
@@ -1495,10 +1525,13 @@ public final class FileHelper {
     public static long getFolderSize(File f) {
         long size = 0;
         if (f.isDirectory()) {
-            for (File file : f.listFiles()) {
-                size += getFolderSize(file);
+            File[] files = f.listFiles();
+            if (files != null && files.length > 0) {
+                for (File file : files) {
+                    size += getFolderSize(file);
+                }
             }
-        } else {
+        } else if (f.isFile()) {
             size = f.length();
         }
         return size;
@@ -1720,24 +1753,26 @@ public final class FileHelper {
     /**
      * @return dest file
      */
-    public static File copyFile(File sourceFile, String destDir, boolean rewrite) {
+    public static File copyFile(File sourceFile, String destName, String destDir, boolean rewrite) {
 
         if (!isFileCorrect(sourceFile)) {
             logger.error("incorrect source file: " + sourceFile);
             return null;
         }
 
-        File destFile = createNewFile(sourceFile.getName(), destDir, rewrite);
+        String targetName = TextUtils.isEmpty(destName) ? sourceFile.getName() : destName;
+
+        File destFile = createNewFile(targetName, destDir, rewrite);
 
         if (destFile == null) {
-            logger.error("can't create dest file");
+            logger.error("can't create dest file: " + destDir + File.separator + targetName);
             return null;
         }
 
         destFile = writeBytesToFile(readBytesFromFile(sourceFile), destFile.getName(), destFile.getParent(), !rewrite);
 
         if (destFile == null) {
-            logger.error("can't write to dest file");
+            logger.error("can't write to dest file: " + destDir + File.separator + targetName);
         }
 
         return destFile;
@@ -1748,22 +1783,24 @@ public final class FileHelper {
      */
     public static File copyFileWithBuffering(File sourceFile, String destName, String destDir, boolean rewrite) {
 
-        if (!net.maxsmr.commonutils.data.FileHelper.isFileCorrect(sourceFile)) {
+        if (!isFileCorrect(sourceFile)) {
             logger.error("incorrect source file: " + sourceFile);
             return null;
         }
 
-        File destFile = net.maxsmr.commonutils.data.FileHelper.createNewFile(TextUtils.isEmpty(destName) ? sourceFile.getName() : destName, destDir, rewrite);
+        String targetName = TextUtils.isEmpty(destName) ? sourceFile.getName() : destName;
+
+        File destFile = createNewFile(targetName, destDir, rewrite);
 
         if (destFile == null) {
-            logger.error("can't create dest file");
+            logger.error("can't create dest file: " + destDir + File.separator + targetName);
             return null;
         }
 
         try {
             destFile = writeFromStreamToFile(new FileInputStream(sourceFile), destFile.getName(), destFile.getParent(), !rewrite);
             if (destFile == null) {
-                logger.error("can't write to dest file");
+                logger.error("can't write to dest file" + destDir + File.separator + targetName);
             }
         } catch (FileNotFoundException e) {
             logger.error("a FileNotFoundException occurred", e);
@@ -1880,9 +1917,15 @@ public final class FileHelper {
         boolean onProcessing(@NonNull File current, @NonNull Set<File> collected);
 
         /**
-         * @return false if client code doesn't want to append this file or folder to result
+         * @return false if client code doesn't want to append this file to result
          */
-        boolean onGet(@NonNull File file);
+        boolean onGetFile(@NonNull File file);
+
+
+        /**
+         * @return false if client code doesn't want to append this folder to result
+         */
+        boolean onGetFolder(@NonNull File folder);
     }
 
     public interface ISearchNotifier {
@@ -1893,9 +1936,14 @@ public final class FileHelper {
         boolean onProcessing(@NonNull File current, @NonNull Set<File> found);
 
         /**
-         * @return false if client code doesn't want to append this file or folder to result
+         * @return false if client code doesn't want to append this file to result
          */
-        boolean onFound(@NonNull File File);
+        boolean onFoundFile(@NonNull File file);
+
+        /**
+         * @return false if client code doesn't want to append this folder to result
+         */
+        boolean onFoundFolder(@NonNull File folder);
     }
 
     public interface IDeleteNotifier {
@@ -1906,9 +1954,14 @@ public final class FileHelper {
         boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted);
 
         /**
-         * @return false if client code doesn't want to delete this file or folder
+         * @return false if client code doesn't want to delete this file
          */
-        boolean confirmDelete(File file);
+        boolean confirmDeleteFile(File file);
+
+        /**
+         * @return false if client code doesn't want to delete this folder
+         */
+        boolean confirmDeleteFolder(File folder);
     }
 
 
@@ -1936,7 +1989,7 @@ public final class FileHelper {
         }
 
         @Override
-        protected int compare(@Nullable File lhs, @Nullable File rhs, SortOption option, boolean ascending) {
+        protected int compare(@Nullable File lhs, @Nullable File rhs, @NonNull SortOption option, boolean ascending) {
 
             int result = compareForNull(lhs, rhs, ascending);
 

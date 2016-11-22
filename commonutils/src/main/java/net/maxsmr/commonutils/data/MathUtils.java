@@ -1,6 +1,7 @@
 package net.maxsmr.commonutils.data;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -9,7 +10,11 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 
-public class MathUtils {
+public final class MathUtils {
+
+    public MathUtils() {
+        throw new AssertionError("no instances.");
+    }
 
     public static int safeLongToInt(long l) {
         if (l < Integer.MIN_VALUE || l > Integer.MAX_VALUE) {
@@ -59,6 +64,7 @@ public class MathUtils {
         return (new Random().nextLong() % (max - min)) + min;
     }
 
+    @Nullable
     public static Integer generateNumber(Collection<? extends Number> excludeNumbers, int minValue, int maxValue) {
 
         if (minValue > maxValue) {
@@ -75,9 +81,9 @@ public class MathUtils {
             excludeNumbers = new ArrayList<>(excludeNumbers);
             found = false;
             int iterations = 0;
-            List<? extends Number> usedCodesCopy = new ArrayList<>(excludeNumbers);
-            for (int i = 0; i < usedCodesCopy.size() && iterations <= rangeSize; i++) {
-                Number code = usedCodesCopy.get(i);
+            List<? extends Number> excludeNumbersCopy = new ArrayList<>(excludeNumbers);
+            for (int i = 0; i < excludeNumbersCopy.size() && iterations <= rangeSize * 2; i++) {
+                Number code = excludeNumbersCopy.get(i);
                 if (code != null && code.intValue() == newCode) {
                     newCode = randInt(minValue, maxValue);
                     if (!checkedCodes.contains(newCode)) {

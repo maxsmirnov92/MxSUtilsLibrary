@@ -28,7 +28,15 @@ public abstract class AbsOptionableComparator<O extends ISortOption, T> implemen
     public final int compare(T lhs, T rhs) {
         int result = 0;
         for (Map.Entry<O, Boolean> e : sortOptions.entrySet()) {
-            result = compare(lhs, rhs, e.getKey(), e.getValue());
+            O option = e.getKey();
+            Boolean ascending = e.getValue();
+            if (option == null) {
+                throw new RuntimeException("sort option can't be null");
+            }
+            if (ascending == null) {
+                throw new RuntimeException("ascending can't be null");
+            }
+            result = compare(lhs, rhs, option, ascending);
             if (result != 0) {
                 break;
             }
@@ -36,5 +44,5 @@ public abstract class AbsOptionableComparator<O extends ISortOption, T> implemen
         return result;
     }
 
-    protected abstract int compare(@Nullable T lhs, @Nullable T rhs, O option, boolean ascending);
+    protected abstract int compare(@Nullable T lhs, @Nullable T rhs, @NonNull O option, boolean ascending);
 }

@@ -96,7 +96,7 @@ public final class DeviceUtils {
         // kl.disableKeyguard();
     }
 
-    private void turnOnScreen(@NonNull Activity activity) {
+    public static void turnOnScreen(@NonNull Activity activity) {
         activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                 | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
                 | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
@@ -104,7 +104,7 @@ public final class DeviceUtils {
                 | WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
     }
 
-    private void turnOffScreen(@NonNull Activity activity) {
+    public static void turnOffScreen(@NonNull Activity activity) {
         activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                 | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
                 | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON

@@ -136,7 +136,7 @@ public final class ServiceUtils {
     }
 
     @Nullable
-    private static Notification startServiceForeground(@NonNull Service service, int id, @Nullable Intent contentIntent, @Nullable String ticker, @Nullable String title, @Nullable String text, @DrawableRes int iconResId, NotificationActionInfo... actionInfos) {
+    public static Notification startServiceForeground(@NonNull Service service, int id, @Nullable Intent contentIntent, @Nullable String ticker, @Nullable String title, @Nullable String text, @DrawableRes int iconResId, NotificationActionInfo... actionInfos) {
         if (!ServiceUtils.isServiceForeground(service, service.getClass())) {
             NotificationController.getInstance().removeNotification(id);
             NotificationInfo info = new NotificationInfo();

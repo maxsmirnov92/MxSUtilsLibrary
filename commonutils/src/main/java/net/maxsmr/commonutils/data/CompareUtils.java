@@ -17,7 +17,11 @@ import static net.maxsmr.commonutils.data.CompareUtils.MatchStringOption.EQUALS_
 import static net.maxsmr.commonutils.data.CompareUtils.MatchStringOption.STARTS_WITH;
 import static net.maxsmr.commonutils.data.CompareUtils.MatchStringOption.STARTS_WITH_IGNORE_CASE;
 
-public class CompareUtils {
+public final class CompareUtils {
+
+    public CompareUtils() {
+        throw new AssertionError("no instances.");
+    }
 
     public static boolean objectsEqual(@Nullable Object one, @Nullable Object another) {
         return one != null ? one.equals(another) : another == null;

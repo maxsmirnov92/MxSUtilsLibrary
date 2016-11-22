@@ -177,14 +177,14 @@ public final class GuiUtils {
         ((InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE)).toggleSoftInput(2, 0);
     }
 
-    private void setHomeButtonEnabled(@NonNull AppCompatActivity activity, boolean toggle) {
+    public static void setHomeButtonEnabled(@NonNull AppCompatActivity activity, boolean toggle) {
         if (activity.getSupportActionBar() != null) {
             activity.getSupportActionBar().setDisplayShowHomeEnabled(toggle);
             activity.getSupportActionBar().setDisplayHomeAsUpEnabled(toggle);
         }
     }
 
-    private static void setFullScreen(Activity activity, boolean toggle) {
+    public static void setFullScreen(Activity activity, boolean toggle) {
         if (toggle) {
             activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
             activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN);
