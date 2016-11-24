@@ -24,8 +24,6 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
 
     protected final boolean syncWithFiles;
 
-    protected final boolean allowDeleteFiles;
-
     protected final String storageDirPath;
 
     private boolean isRestoreCompleted = false;
@@ -44,7 +42,6 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
         }
 
         this.syncWithFiles = sync;
-        this.allowDeleteFiles = allowDeleteFiles;
         this.storageDirPath = storageDirPath;
 
         if (syncWithFiles) {
@@ -170,14 +167,13 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
             }
 
 
-
             return true;
 
         } finally {
             isRestoreCompleted = true;
             logger.info("restoring complete, time: " + (System.currentTimeMillis() - startTime) + " ms");
             logger.info("restored LoadInfo objects count: " + restoredCount + ", queues total size: " + getSize());
-            dispatchStorageRestored(restoredCount);
+            storageObservable.dispatchStorageRestored(restoredCount);
         }
 
     }
@@ -232,16 +228,16 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
     }
 
 
-    public synchronized void clear(boolean sync, boolean deleteFiles) {
+    public synchronized void clear(boolean deleteFiles) {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
         while (!isEmpty()) {
-            I info = sync && syncWithFiles ? pollFirst() : peekFirst();
+            I info = pollFirst();
             if (info.body instanceof LoadRunnableInfo.FileBody) {
                 File uploadFile = ((LoadRunnableInfo.FileBody) info.body).getSourceFile();
-                if (deleteFiles && allowDeleteFiles && uploadFile.isFile() && uploadFile.exists()) {
-                    if (!uploadFile.delete()) {
+                if (deleteFiles) {
+                    if (!FileHelper.deleteFile(uploadFile)) {
                         logger.error("can't delete file: " + uploadFile);
                     }
                 }
@@ -259,15 +255,13 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
     }
 
     protected static <B extends LoadRunnableInfo.Body, I extends LoadInfo<B>> boolean checkLoadInfo(@NonNull I info) {
-        if (info.body instanceof LoadRunnableInfo.StringBody) {
-            if (((LoadRunnableInfo.StringBody) info.body).isEmpty()) {
-                logger.error("empty body: " + info.body);
-                return false;
-            } else {
-                logger.debug("body " + info.body + " is correct");
-                return true;
-            }
-        } else if (info.body instanceof LoadRunnableInfo.FileBody) {
+
+        if (info.body.isEmpty()) {
+            logger.error("empty body: " + info.body);
+            return false;
+        }
+
+        if (info.body instanceof LoadRunnableInfo.FileBody) {
             File loadFile = ((LoadRunnableInfo.FileBody) info.body).getSourceFile();
             if (!FileHelper.isFileCorrect(loadFile)) {
                 logger.error("file is incorrect: " + loadFile);
@@ -276,8 +270,8 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
                 logger.debug("loadFile: " + loadFile + " | size: " + loadFile.length());
                 return true;
             }
-        } else {
-            throw new UnsupportedOperationException("unsupported body type: " + info.body);
         }
+
+        return true;
     }
 }

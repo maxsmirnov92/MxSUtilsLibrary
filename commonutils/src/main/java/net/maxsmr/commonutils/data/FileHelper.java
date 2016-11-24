@@ -1016,7 +1016,7 @@ public final class FileHelper {
         for (File fromDir : fromDirs) {
 
             if (fromDir == null || !isDirExists(fromDir.getAbsolutePath())) {
-                logger.error("directory " + fromDir + " not exists");
+                logger.debug("directory " + fromDir + " not exists");
                 continue;
             }
 
@@ -1087,7 +1087,7 @@ public final class FileHelper {
 
         for (File root : searchFiles) {
 
-            if (root == null) {
+            if (root == null || !root.exists()) {
                 continue;
             }
 
@@ -1350,7 +1350,7 @@ public final class FileHelper {
         for (File fromDir : fromDirs) {
 
             if (fromDir == null || !isDirExists(fromDir.getAbsolutePath())) {
-                logger.error("directory " + fromDir + " not exists");
+                logger.debug("directory " + fromDir + " not exists");
                 continue;
             }
 

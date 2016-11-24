@@ -43,6 +43,9 @@ public final class LoadManagersFacade<DP extends AbsIdHolder, UP extends AbsIdHo
     private DP downloadIdsPool;
     private NetworkLoadManager downloadManager;
 
+    private UP uploadIdsPool;
+    private NetworkLoadManager uploadManager;
+
     public DP getDownloadIdsPool() {
         return downloadIdsPool;
     }
@@ -73,10 +76,6 @@ public final class LoadManagersFacade<DP extends AbsIdHolder, UP extends AbsIdHo
             downloadIdsPool = null;
         }
     }
-
-
-    private UP uploadIdsPool;
-    private NetworkLoadManager uploadManager;
 
     public UP getUploadIdsPool() {
         return uploadIdsPool;

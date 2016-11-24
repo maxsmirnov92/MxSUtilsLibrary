@@ -124,7 +124,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
         if (!deleteFileByLoadInfo(info)) {
             logger.error("can't delete file by info " + info);
         }
-        dispatchStorageSizeChanged(prev);
+        storageObservable.dispatchStorageSizeChanged(getSize(), prev);
         return info;
     }
 
@@ -178,7 +178,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
                 int prev = getSize();
                 final boolean addResult = loadQueue.add(info);
                 if (addResult) {
-                    dispatchStorageSizeChanged(prev);
+                    storageObservable.dispatchStorageSizeChanged(getSize(), prev);
                 }
                 return addResult;
             } else {
@@ -205,6 +205,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
 
     @Override
     public boolean set(@NonNull I info, int pos) {
+        super.set(info, pos);
         throw new UnsupportedOperationException("setting element at specified position is not supported");
     }
 
@@ -241,7 +242,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
             if (!deleteFileByLoadInfo(info)) {
                 logger.error("can't delete file by info " + info);
             }
-            dispatchStorageSizeChanged(prev);
+            storageObservable.dispatchStorageSizeChanged(getSize(), prev);
             return info;
         }
 
@@ -250,7 +251,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
 
     @Override
     public synchronized void clear() {
-        clear(false, false);
+        clear(false);
     }
 
     @Override
@@ -295,7 +296,7 @@ public class QueueLoadStorage<I extends LoadInfo> extends AbstractCollectionLoad
             if (!deleteFileByLoadInfo(next)) {
                 logger.error("can't delete file by info " + next);
             }
-            dispatchStorageSizeChanged(prev);
+            storageObservable.dispatchStorageSizeChanged(getSize(), prev);
             next = null;
         }
     }

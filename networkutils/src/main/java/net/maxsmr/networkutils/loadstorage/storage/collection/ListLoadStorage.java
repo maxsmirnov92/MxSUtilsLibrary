@@ -136,7 +136,7 @@ public class ListLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadS
         if (super.addNoSerialize(info, pos)) {
             int prev = getSize();
             loadList.add(pos, info);
-            dispatchStorageSizeChanged(prev);
+            storageObservable.dispatchStorageSizeChanged(getSize(), prev);
             return contains(info);
         }
         return false;
@@ -186,11 +186,12 @@ public class ListLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadS
         }
 
         int prev = getSize();
+
         if (loadList.remove(info)) {
             if (!deleteFileByLoadInfo(info)) {
                 logger.error("can't delete file by info " + info);
             }
-            dispatchStorageSizeChanged(prev);
+            storageObservable.dispatchStorageSizeChanged(getSize(), prev);
             return info;
         }
 
@@ -199,7 +200,7 @@ public class ListLoadStorage<I extends LoadInfo> extends AbstractCollectionLoadS
 
     @Override
     public synchronized void clear() {
-        clear(false, false);
+        clear(false);
     }
 
     @Override

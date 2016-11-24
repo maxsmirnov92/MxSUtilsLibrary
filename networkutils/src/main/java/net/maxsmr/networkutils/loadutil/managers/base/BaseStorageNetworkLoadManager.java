@@ -219,8 +219,8 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
     }
 
     @Override
-    public void onStorageSizeChanged(int size) {
-        logger.debug("onStorageSizeChanged(), size=" + size);
+    public void onStorageSizeChanged(int currentSize, int previousSize) {
+        logger.debug("onStorageSizeChanged(), currentSize=" + currentSize + ", previousSize=" + previousSize);
     }
 
     @Override

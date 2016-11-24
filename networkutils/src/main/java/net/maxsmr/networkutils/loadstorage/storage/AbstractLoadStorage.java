@@ -5,12 +5,11 @@ import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.networkutils.loadstorage.LoadInfo;
 
 import java.util.Iterator;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.NO_ID;
 
@@ -18,12 +17,12 @@ public abstract class AbstractLoadStorage<I extends LoadInfo> {
 
     public interface StorageListener {
 
-        void onStorageSizeChanged(int size);
-
         void onStorageRestored(int restoredElementsCount);
+
+        void onStorageSizeChanged(int currentSize, int previousSize);
     }
 
-    protected final Set<StorageListener> storageListeners = new LinkedHashSet<>();
+    protected final StorageObservable storageObservable = new StorageObservable();
 
     @NonNull
     protected final Class<I> loadInfoClass;
@@ -37,16 +36,12 @@ public abstract class AbstractLoadStorage<I extends LoadInfo> {
         return loadInfoClass;
     }
 
-    public void addStorageListener(@NonNull StorageListener listener) throws NullPointerException {
-        synchronized (storageListeners) {
-            storageListeners.add(listener);
-        }
+    public void addStorageListener(@NonNull StorageListener listener) {
+        storageObservable.registerObserver(listener);
     }
 
     public void removeStorageListener(@NonNull StorageListener listener) {
-        synchronized (storageListeners) {
-            storageListeners.remove(listener);
-        }
+        storageObservable.unregisterObserver(listener);
     }
 
 
@@ -226,31 +221,30 @@ public abstract class AbstractLoadStorage<I extends LoadInfo> {
             throw new IllegalStateException("release() was called");
         }
         clear();
-        synchronized (storageListeners) {
-            storageListeners.clear();
-        }
+        storageObservable.unregisterAll();
     }
 
-    protected final void dispatchStorageRestored(int elemCount) {
-        synchronized (storageListeners) {
-            if (storageListeners.size() > 0) {
-                for (StorageListener l : storageListeners) {
+    protected static class StorageObservable extends Observable<StorageListener> {
+
+        public final void dispatchStorageRestored(int elemCount) {
+            synchronized (mObservers) {
+                for (StorageListener l : copyOfObservers()) {
                     l.onStorageRestored(elemCount);
                 }
             }
         }
-    }
 
-    protected final void dispatchStorageSizeChanged(int previousSize) {
-        if (previousSize < 0) {
-            throw new IllegalArgumentException("incorrect previousSize: " + previousSize);
-        }
-        int size = getSize();
-        if (previousSize != size) {
-            synchronized (storageListeners) {
-                if (storageListeners.size() > 0) {
-                    for (StorageListener l : storageListeners) {
-                        l.onStorageSizeChanged(size);
+        public final void dispatchStorageSizeChanged(int currentSize, int previousSize) {
+            if (currentSize < 0) {
+                throw new IllegalArgumentException("incorrect currentSize: " + currentSize);
+            }
+            if (previousSize < 0) {
+                throw new IllegalArgumentException("incorrect previousSize: " + previousSize);
+            }
+            if (currentSize != previousSize) {
+                synchronized (mObservers) {
+                    for (StorageListener l : copyOfObservers()) {
+                        l.onStorageSizeChanged(currentSize, previousSize);
                     }
                 }
             }
