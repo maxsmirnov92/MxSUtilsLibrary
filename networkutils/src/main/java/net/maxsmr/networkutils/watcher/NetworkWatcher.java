@@ -231,7 +231,7 @@ public class NetworkWatcher {
 
     public final static long DEFAULT_HOST_PING_PERIOD = 10000;
 
-    private final ScheduledThreadPoolExecutorManager hostPingExecutor = new ScheduledThreadPoolExecutorManager("HostPingTask");
+    private final ScheduledThreadPoolExecutorManager hostPingExecutor = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, "HostPingTask");
     private HostPingTask hostPingTask;
 
     public boolean isHostPingTaskRunning() {

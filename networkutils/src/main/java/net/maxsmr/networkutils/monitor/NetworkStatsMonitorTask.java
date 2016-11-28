@@ -2,17 +2,17 @@ package net.maxsmr.networkutils.monitor;
 
 import android.net.TrafficStats;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.LinkedList;
-
 import net.maxsmr.commonutils.data.MathUtils;
 import net.maxsmr.networkutils.NetworkHelper;
 import net.maxsmr.networkutils.monitor.stats.NetworkTrafficStats;
 import net.maxsmr.networkutils.monitor.stats.TRAFFIC_DIRECTION;
 import net.maxsmr.networkutils.watcher.NetworkWatcher;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.util.LinkedList;
 
 public class NetworkStatsMonitorTask extends ScheduledThreadPoolExecutorManager {
 
@@ -21,7 +21,7 @@ public class NetworkStatsMonitorTask extends ScheduledThreadPoolExecutorManager 
     // private final int appUid;
 
     public NetworkStatsMonitorTask(/* int appUid */) {
-        super(NetworkStatsMonitorTask.class.getSimpleName());
+        super(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, NetworkStatsMonitorTask.class.getSimpleName());
         addRunnableTask(networkStatsUpdateRunnable);
         // this.appUid = appUid;
     }

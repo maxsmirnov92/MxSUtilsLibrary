@@ -3,7 +3,7 @@ apply plugin: 'maven'
 
 def groupId = "net.maxsmr"
 def artifactId = "networkutils"
-def version = "1.0.3.2"
+def version = "1.0.3.3"
 
 def releaseDir = "${buildDir}/release"
 
@@ -78,5 +78,5 @@ dependencies {
     testCompile 'junit:junit:4.12'
 
 //    compile project(":tasksutils")
-    compile 'net.maxsmr:tasksutils:1.0.2.1'
+    compile 'net.maxsmr:tasksutils:1.0.2.2'
 }

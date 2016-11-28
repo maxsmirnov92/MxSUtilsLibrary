@@ -38,7 +38,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
     @NonNull
     protected final QueueLoadStorage<I> uploadStorage;
 
-    private final ScheduledThreadPoolExecutorManager uploadListSynchronizer = new ScheduledThreadPoolExecutorManager(getClass().getSimpleName() + "Synchronizer");
+    private final ScheduledThreadPoolExecutorManager uploadListSynchronizer = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, getClass().getSimpleName() + "Synchronizer");
 
     public BaseStorageNetworkLoadManager(@NonNull NetworkLoadManager loadManager, @NonNull Class<I> clazzInstance, String path) {
         logger.debug("BaseStorageNetworkLoadManager(), loadManager=" + loadManager + ", clazzInstance=" + clazzInstance + ", path=" + path);
