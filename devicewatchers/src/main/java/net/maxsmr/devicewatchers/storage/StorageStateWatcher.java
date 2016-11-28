@@ -42,7 +42,7 @@ public final class StorageStateWatcher {
 
     public static final int DEFAULT_WATCH_INTERVAL = 20000;
 
-    private final ScheduledThreadPoolExecutorManager executor = new ScheduledThreadPoolExecutorManager(StorageStateWatcher.class.getSimpleName());
+    private final ScheduledThreadPoolExecutorManager executor = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, StorageStateWatcher.class.getSimpleName());
 
     @NonNull
     private final StorageWatchSettings settings;

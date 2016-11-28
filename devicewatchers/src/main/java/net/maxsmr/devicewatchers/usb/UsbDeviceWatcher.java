@@ -67,7 +67,7 @@ public class UsbDeviceWatcher {
         watchListeners.remove(l);
     }
 
-    private final ScheduledThreadPoolExecutorManager deviceListWatcher = new ScheduledThreadPoolExecutorManager(UsbDeviceWatcher.class.getSimpleName());
+    private final ScheduledThreadPoolExecutorManager deviceListWatcher = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, UsbDeviceWatcher.class.getSimpleName());
     private DeviceWatcherRunnable deviceListRunnable;
 
     public boolean isDeviceListWatcherRunning() {
@@ -121,7 +121,7 @@ public class UsbDeviceWatcher {
         }
     }
 
-    private final ScheduledThreadPoolExecutorManager deviceFinder = new ScheduledThreadPoolExecutorManager("UsbDeviceFinder");
+    private final ScheduledThreadPoolExecutorManager deviceFinder = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, "UsbDeviceFinder");
     private DeviceFinderRunnable deviceFinderRunnable;
 
     public boolean isDeviceFinderRunning() {
