@@ -21,18 +21,22 @@ public class ScheduledThreadPoolExecutorManager {
 
     private final List<ScheduledFuture<?>> currentScheduledFutures = new ArrayList<>();
 
-    private final String poolName;
+    @NonNull
+    protected final ScheduleMode scheduleMode;
+
+    protected final String poolName;
 
     private ScheduledThreadPoolExecutor executor;
 
-    private long delayMs = 0;
+    private long initialDelayMs = 0;
 
     private long intervalMs = 0;
 
     private int workersCount = 1;
 
-    public ScheduledThreadPoolExecutorManager(String poolName) {
-        logger.debug("ScheduledThreadPoolExecutorManager(), poolName=" + poolName);
+    public ScheduledThreadPoolExecutorManager(@NonNull ScheduleMode scheduleMode, String poolName) {
+        logger.debug("ScheduledThreadPoolExecutorManager(), scheduleMode=" + scheduleMode + ", poolName=" + poolName);
+        this.scheduleMode = scheduleMode;
         this.poolName = poolName;
     }
 
@@ -61,7 +65,7 @@ public class ScheduledThreadPoolExecutorManager {
         }
 
         if (isRunning()) {
-            restart(delayMs, intervalMs, workersCount);
+            restart(initialDelayMs, intervalMs, workersCount);
         }
     }
 
@@ -75,7 +79,7 @@ public class ScheduledThreadPoolExecutorManager {
         }
 
         if (isRunning()) {
-            restart(delayMs, intervalMs, workersCount);
+            restart(initialDelayMs, intervalMs, workersCount);
         }
     }
 
@@ -99,8 +103,8 @@ public class ScheduledThreadPoolExecutorManager {
 
     }
 
-    public long getDelayMs() {
-        return delayMs;
+    public long getInitialDelayMs() {
+        return initialDelayMs;
     }
 
     public long getIntervalMs() {
@@ -126,13 +130,13 @@ public class ScheduledThreadPoolExecutorManager {
     }
 
     public synchronized void restart(long delayMs, long intervalMs, int workersCount) {
-        logger.debug("start(), delayMs=" + delayMs + ", intervalMs=" + intervalMs + ", workersCount=" + workersCount);
+        logger.debug("start(), initialDelayMs=" + delayMs + ", intervalMs=" + intervalMs + ", workersCount=" + workersCount);
 
         if (intervalMs <= 0)
             throw new IllegalArgumentException("can't start executor: incorrect intervalMs: " + intervalMs);
 
         if (delayMs < 0)
-            throw new IllegalArgumentException("can't start executor: incorrect delayMs: " + delayMs);
+            throw new IllegalArgumentException("can't start executor: incorrect initialDelayMs: " + delayMs);
 
         if (workersCount < 1)
             throw new IllegalArgumentException("can't start executor: incorrect workersCount: " + workersCount);
@@ -145,8 +149,16 @@ public class ScheduledThreadPoolExecutorManager {
         executor = new ScheduledThreadPoolExecutor(workersCount, new NamedThreadFactory(poolName));
 
         for (Runnable runnable : runnableList) {
-            logger.debug("scheduling runnable " + runnable + " with interval " + intervalMs + " ms...");
-            currentScheduledFutures.add(executor.scheduleAtFixedRate(new WrappedRunnable(runnable), this.delayMs = delayMs, this.intervalMs = intervalMs, TimeUnit.MILLISECONDS));
+            switch (scheduleMode) {
+                case FIXED_RATE:
+                    logger.debug("scheduling runnable " + runnable + " with fixed interval " + intervalMs + " ms...");
+                    currentScheduledFutures.add(executor.scheduleAtFixedRate(new WrappedRunnable(runnable), this.initialDelayMs = delayMs, this.intervalMs = intervalMs, TimeUnit.MILLISECONDS));
+                    break;
+                case FIXED_DELAY:
+                    logger.debug("scheduling runnable " + runnable + " with fixed delay " + intervalMs + " ms...");
+                    currentScheduledFutures.add(executor.scheduleWithFixedDelay(new WrappedRunnable(runnable), this.initialDelayMs = delayMs, this.intervalMs = intervalMs, TimeUnit.MILLISECONDS));
+                    break;
+            }
         }
     }
 
@@ -193,6 +205,10 @@ public class ScheduledThreadPoolExecutorManager {
                 throw new RuntimeException("an exception was occurred during run()", e);
             }
         }
+    }
+
+    public enum ScheduleMode {
+        FIXED_RATE, FIXED_DELAY
     }
 
 }
