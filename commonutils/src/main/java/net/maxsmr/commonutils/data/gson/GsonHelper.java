@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
 import org.slf4j.Logger;
@@ -84,7 +85,7 @@ public class GsonHelper {
     @NonNull
     public static <P extends Number> P getPrimitiveNumber(JsonElement element, Class<P> clazz) {
         JsonPrimitive obj = element instanceof JsonPrimitive ? (JsonPrimitive) element : null;
-        return obj != null && clazz.isAssignableFrom(obj.getAsNumber().getClass()) ? (P) obj.getAsNumber() : (P) Integer.valueOf(0);
+        return obj != null && obj.isNumber() && clazz.isAssignableFrom(obj.getAsNumber().getClass()) ? (P) obj.getAsNumber() : (P) Integer.valueOf(0);
     }
 
     @SuppressWarnings("unchecked")
@@ -109,5 +110,31 @@ public class GsonHelper {
     public static boolean getPrimitiveBoolean(JsonElement object) {
         JsonPrimitive obj = object instanceof JsonPrimitive ? (JsonPrimitive) object : null;
         return (obj != null && obj.isBoolean()) && obj.getAsBoolean();
+    }
+
+    @Nullable
+    public static <V> V getJsonPrimitiveValueIn(@Nullable JsonElement inElement, String memberName, Class<V> clazz) {
+        V value = null;
+        if (inElement != null) {
+            if (inElement.isJsonObject()) {
+                JsonObject object = inElement.getAsJsonObject();
+                value = getJsonPrimitiveValueFor(object.get(memberName), clazz);
+            }
+        }
+        return value;
+    }
+
+    @Nullable
+    public static <V> V getJsonPrimitiveValueFor(@Nullable JsonElement forElement, Class<V> clazz) {
+        V value = null;
+        if (forElement != null && forElement.isJsonPrimitive()) {
+            JsonPrimitive primitive = forElement.getAsJsonPrimitive();
+            if (primitive.isString() && clazz.isAssignableFrom(String.class)) {
+                value = (V) primitive.getAsString();
+            } else if (primitive.isNumber() && clazz.isAssignableFrom(Number.class)) {
+                value = (V) primitive.getAsNumber();
+            }
+        }
+        return value;
     }
 }

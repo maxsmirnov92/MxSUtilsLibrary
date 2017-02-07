@@ -6,6 +6,7 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
+import android.content.res.TypedArray;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
@@ -67,6 +68,16 @@ public final class GuiUtils {
             } else {
                 view.setBackgroundDrawable(background);
             }
+        }
+    }
+
+    public int getDimensionFromAttr(@NonNull Context context, int attr) {
+        final TypedArray styledAttributes = context.getTheme().obtainStyledAttributes(
+                new int[] { attr });
+        try {
+            return (int) styledAttributes.getDimension(0, 0);
+        } finally {
+            styledAttributes.recycle();
         }
     }
 
@@ -477,6 +488,35 @@ public final class GuiUtils {
         }
 
         return new Point(newWidth, newHeight);
+    }
+
+
+    @NonNull
+    public static android.support.v4.util.Pair<Integer, Integer> calcAspectRatioFor(int width, int height) {
+        double aspectRatio = (double) width / (double) height;
+        int dividend = width > height? width : height;
+        int divider = width > height? height : width;
+        int scale = 2;
+        while (scale <= 9) {
+            double scaledDividend = (double) dividend / (double) scale;
+            double scaledDivider = (double) divider / (double) scale;
+            double diff1 = (int) scaledDividend - scaledDividend;
+            double diff2 = (int) scaledDivider - scaledDivider;
+            if (diff1 == 0 && diff2 == 0) {
+                dividend = (int) scaledDividend;
+                divider = (int) scaledDivider;
+                scale = 2;
+            } else {
+                scale++;
+            }
+        }
+        android.support.v4.util.Pair<Integer, Integer> result;
+        if (width > height) {
+            result = new android.support.v4.util.Pair<>(dividend, divider);
+        } else {
+            result = new android.support.v4.util.Pair<>(divider, dividend);
+        }
+        return result;
     }
 
     public enum FitSize {

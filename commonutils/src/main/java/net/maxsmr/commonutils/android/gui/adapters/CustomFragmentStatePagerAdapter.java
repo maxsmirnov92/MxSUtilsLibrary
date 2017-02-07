@@ -9,12 +9,12 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentStatePagerAdapter;
 import android.view.ViewGroup;
 
+import net.maxsmr.commonutils.data.CompareUtils;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import net.maxsmr.commonutils.data.CompareUtils;
 
 public class CustomFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
 
@@ -83,6 +83,10 @@ public class CustomFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
             }
         }
         return null;
+    }
+
+    public int fragmentIndexOf(String title) {
+        return fragmentIndexOf(findFragmentByTitle(title));
     }
 
     /** @return {@link FragmentStatePagerAdapter#POSITION_NONE} if not found */

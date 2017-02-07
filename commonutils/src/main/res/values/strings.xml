@@ -2,6 +2,12 @@
     <string name="app_name">Common Utils</string>
     <string name="no_data">No data</string>
     <string name="b">b</string>
+
     <string name="mb">Mb</string>
     <string name="kb">Kb</string>
+
+    <string name="suffix_bytes">Bytes</string>
+    <string name="suffix_kbytes">KBytes</string>
+    <string name="suffix_mbytes">MBytes</string>
+    <string name="suffix_gbytes">GBytes</string>
 </resources>

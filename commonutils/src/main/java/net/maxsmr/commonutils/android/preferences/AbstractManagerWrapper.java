@@ -1,0 +1,44 @@
+package net.maxsmr.commonutils.android.preferences;
+
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
+
+public abstract class AbstractManagerWrapper {
+
+    @NonNull
+    protected final PreferencesManager manager;
+
+    protected AbstractManagerWrapper(@NonNull PreferencesManager manager) {
+        this.manager = manager;
+    }
+
+    public boolean has(String key) {
+//        if (Number.class.isAssignableFrom(clazz)) {
+//            Object v = get(key, clazz);
+//            return v != null && !CompareUtils.objectsEqual(v, 0.0);
+//        } else {
+//            return get(key, clazz) != null;
+//        }
+        return manager.hasKey(key);
+    }
+
+    public <V> V get(String key, @NonNull Class<V> clazz) {
+        return manager.getValue(key, clazz);
+    }
+
+    public <V> V get(String key, @NonNull Class<V> clazz, @Nullable V defaultValue) {
+        return manager.getValue(key, clazz, defaultValue);
+    }
+
+    public boolean set(String key, Object value) {
+        return manager.setValue(key, value);
+    }
+
+    public void remove(String key) {
+        manager.clearValue(key);
+    }
+
+    public void clear() {
+        manager.clear();
+    }
+}

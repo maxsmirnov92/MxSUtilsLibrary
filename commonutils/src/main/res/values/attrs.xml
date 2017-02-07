@@ -43,4 +43,9 @@
         <attr name="text_anim_start" format="boolean"/>
     </declare-styleable>
 
+    <declare-styleable name="PatternedEditText">
+        <attr name="pattern" format="string" />
+        <attr name="alwaysVisibleCharCount" format="integer" />
+    </declare-styleable>
+
 </resources>

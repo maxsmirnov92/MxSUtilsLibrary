@@ -4,7 +4,10 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import java.util.Arrays;
 import java.util.Date;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 import static net.maxsmr.commonutils.data.CompareUtils.MatchStringOption.AUTO;
 import static net.maxsmr.commonutils.data.CompareUtils.MatchStringOption.AUTO_IGNORE_CASE;
@@ -46,47 +49,44 @@ public final class CompareUtils {
     }
 
     public static <C extends Comparable<C>> int compareObjects(@Nullable C one, @Nullable C another, boolean ascending) {
-        if (one == null || another == null) {
-            return one == null ? (another == null ? 0 : -1) : 1;
-        }
-        return ascending ? one.compareTo(another) : another.compareTo(one);
+        return one != null ? (another != null ? ascending ? one.compareTo(another) : another.compareTo(one) : 1) : another == null ? 0 : -1;
     }
 
     public static int compareInts(@Nullable Integer one, @Nullable Integer another, boolean ascending) {
-        return one != null ? (another != null ? !ascending ? (int) Math.signum(another - one) : (int) Math.signum(one - another) : 1) : -1;
+        return one != null ? (another != null ? !ascending ? (int) Math.signum(another - one) : (int) Math.signum(one - another) : 1) : another == null ? 0 : -1;
     }
 
     public static int compareLongs(@Nullable Long one, @Nullable Long another, boolean ascending) {
-        return one != null ? (another != null ? !ascending ? (int) Math.signum(another - one) : (int) Math.signum(one - another) : 1) : -1;
+        return one != null ? (another != null ? !ascending ? (int) Math.signum(another - one) : (int) Math.signum(one - another) : 1) : another == null ? 0 : -1;
     }
 
     public static int compareFloats(@Nullable Float one, @Nullable Float another, boolean ascending) {
-        return one != null ? (another != null ? !ascending ? (int) Math.signum(another - one) : (int) Math.signum(one - another) : 1) : -1;
+        return one != null ? (another != null ? !ascending ? (int) Math.signum(another - one) : (int) Math.signum(one - another) : 1) : another == null ? 0 : -1;
     }
 
     public static int compareDouble(@Nullable Double one, @Nullable Double another, boolean ascending) {
-        return one != null ? (another != null ? !ascending ? (int) Math.signum(another - one) : (int) Math.signum(one - another) : 1) : -1;
+        return one != null ? (another != null ? !ascending ? (int) Math.signum(another - one) : (int) Math.signum(one - another) : 1) : another == null ? 0 : -1;
     }
 
     public static int compareChars(@Nullable Character one, @Nullable Character another, boolean ascending, boolean ignoreCase) {
         if (charsEqual(one, another, ignoreCase)) {
             return 0;
         }
-        return one != null ? (another != null ? !ascending ? (int) Math.signum(another - one) : (int) Math.signum(one - another) : 1) : -1;
+        return one != null ? (another != null ? !ascending ? (int) Math.signum(another - one) : (int) Math.signum(one - another) : 1) : another == null ? 0 : -1;
     }
 
     public static int compareStrings(@Nullable String one, @Nullable String another, boolean ascending, boolean ignoreCase) {
         if (stringsEqual(one, another, ignoreCase)) {
             return 0;
         }
-        return one != null ? (another != null ? !ascending ? one.compareTo(another) : another.compareTo(one) : 1) : -1;
+        return one != null ? another != null ? !ascending ? one.compareTo(another) : another.compareTo(one) : 1 : -1;
     }
 
     public static int compareDates(@Nullable Date one, @Nullable Date another, boolean ascending) {
         return compareLongs(one != null ? one.getTime() : 0, another != null ? another.getTime() : 0, ascending);
     }
 
-    public static boolean stringMatches(@NonNull String one, @NonNull String another, int matchFlags) {
+    public static boolean stringMatches(@NonNull String one, @NonNull String another, int matchFlags, String... separators) {
 
         boolean match = false;
 
@@ -132,16 +132,24 @@ public final class CompareUtils {
         }
         if (!match && (MatchStringOption.contains(AUTO, matchFlags) || MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags))) {
             if (!TextUtils.isEmpty(one)) {
-                String valueText = one.toLowerCase().trim();
-                if (stringsEqual(valueText, another, MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags)) || valueText.startsWith(another)) { // endsWith()
+                one = MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags) ? one.toLowerCase().trim() : one;
+                another = MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags) ? another.toLowerCase().trim() : another;
+                if (stringsEqual(one, another, false)) {
                     match = true;
                 } else {
-                    final String[] parts = valueText.split("[ ]+");
+                    final String[] parts = one.split("[" + (separators != null && separators.length > 0? TextUtils.join("", separators) : " ") + "]+");
                     if (parts.length > 0) {
                         for (String word : parts) {
-                            if (word.startsWith(another)) {
-                                match = true;
-                                break;
+                            if (!MatchStringOption.containsAny(matchFlags, MatchStringOption.valuesExceptOf(AUTO, AUTO_IGNORE_CASE).toArray(new MatchStringOption[]{}))) {
+                                if (word.startsWith(another)) {
+                                    match = true;
+                                    break;
+                                }
+                            } else {
+                                if (stringMatches(one, another, MatchStringOption.resetFlags(matchFlags, AUTO, AUTO_IGNORE_CASE))) {
+                                    match = true;
+                                    break;
+                                }
                             }
                         }
                     }
@@ -166,6 +174,45 @@ public final class CompareUtils {
             return (flags & option.flag) == option.flag;
         }
 
-    }
+        public static boolean containsAny(int flags, MatchStringOption... options) {
+            boolean contains = false;
+            if (options != null) {
+                for (MatchStringOption o : options) {
+                    if (o != null && contains(o, flags)) {
+                        contains = true;
+                        break;
+                    }
+                }
+            }
+            return contains;
+        }
 
+        public static int resetFlag(@NonNull MatchStringOption option, int flags) {
+            flags &= ~option.flag;
+            return flags;
+        }
+
+        public static int resetFlags(int flags, MatchStringOption... options) {
+            if (options != null) {
+                for (MatchStringOption o : options) {
+                    if (o != null) {
+                        flags = resetFlag(o, flags);
+                    }
+                }
+            }
+            return flags;
+        }
+
+
+        public static Set<MatchStringOption> valuesExceptOf(MatchStringOption... exclude) {
+            Set<MatchStringOption> result = new LinkedHashSet<>();
+            result.addAll(Arrays.asList(values()));
+            if (exclude != null) {
+                result.removeAll(Arrays.asList(exclude));
+            }
+            return result;
+        }
+
+
+    }
 }

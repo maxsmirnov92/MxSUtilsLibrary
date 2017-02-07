@@ -26,6 +26,7 @@ import java.util.Map;
 /**
  * Created by maxsmirnov on 10.09.15.
  */
+@Deprecated
 public class NotificationController {
 
     private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);

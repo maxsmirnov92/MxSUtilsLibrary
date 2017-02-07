@@ -7,50 +7,42 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
-import java.util.LinkedHashSet;
-import java.util.Set;
+import net.maxsmr.commonutils.data.Observable;
 
-public final class PreferencesManager {
+public class PreferencesManager {
 
     @NonNull
-    private final Context context;
+    protected final Context context;
 
-    private SharedPreferences preferences;
-    private String preferencesName;
+    protected final SharedPreferences preferences;
+    protected final String preferencesName;
+
+    private final ChangeObservable changeObservable = new ChangeObservable();
+
 
     public PreferencesManager(@NonNull Context ctx, @Nullable String preferencesName) {
         this(ctx, preferencesName, Context.MODE_PRIVATE);
     }
 
     public PreferencesManager(@NonNull Context ctx, @Nullable String preferencesName, int mode) {
-        context = ctx;
-        init(preferencesName, mode);
-    }
-
-    private void init(String name, int mode) {
         if (!(mode == Context.MODE_PRIVATE || mode == Context.MODE_WORLD_READABLE || mode == Context.MODE_WORLD_WRITEABLE || mode == Context.MODE_APPEND)) {
             throw new IllegalArgumentException("incorrect mode value: " + mode);
         }
-        preferences = !TextUtils.isEmpty(name) ? context.getSharedPreferences(name, mode) : android.preference.PreferenceManager.getDefaultSharedPreferences(context);
-        preferencesName = !TextUtils.isEmpty(name) ? name : context.getPackageName() + "_preferences";
+        this.context = ctx;
+        this.preferences = !TextUtils.isEmpty(preferencesName) ? context.getSharedPreferences(preferencesName, mode) : android.preference.PreferenceManager.getDefaultSharedPreferences(context);
+        this.preferencesName = !TextUtils.isEmpty(preferencesName) ? preferencesName : context.getPackageName() + "_preferences";
     }
 
-    private final Set<PreferenceChangeListener> changeListeners = new LinkedHashSet<>();
-
     public void addPreferenceChangeListener(PreferenceChangeListener listener) throws NullPointerException {
-
-        if (listener == null) {
-            throw new NullPointerException("listener is null");
-        }
-        synchronized (changeListeners) {
-            changeListeners.add(listener);
-        }
+        changeObservable.registerObserver(listener);
     }
 
     public void removePreferenceChangeListener(PreferenceChangeListener listener) {
-        synchronized (changeListeners) {
-            changeListeners.remove(listener);
-        }
+        changeObservable.unregisterObserver(listener);
+    }
+
+    public synchronized boolean hasKey(@NonNull String key) {
+        return preferences.contains(key);
     }
 
     public synchronized <V> V getValue(@NonNull String key, @NonNull Class<V> clazz) {
@@ -85,6 +77,7 @@ public final class PreferencesManager {
      */
     public synchronized <V> boolean setValue(@NonNull String key, @Nullable V value) {
         final V oldValue = value != null ? getValue(key, (Class<V>) value.getClass(), null) : null;
+
         final SharedPreferences.Editor editor = preferences.edit();
         try {
             if (value != null) {
@@ -110,12 +103,9 @@ public final class PreferencesManager {
         if (editor.commit()) {
 
             if (value != null && !value.equals(oldValue)) {
-                synchronized (changeListeners) {
-                    for (PreferenceChangeListener l : changeListeners) {
-                        l.onPreferenceChanged(preferencesName, key, oldValue, value);
-                    }
-                }
+                changeObservable.dispatchChanged(preferencesName, key, oldValue, value);
             }
+
             return true;
         }
 
@@ -128,11 +118,7 @@ public final class PreferencesManager {
     public synchronized boolean clearValue(@NonNull String key) {
         boolean b = preferences.edit().remove(key).commit();
         if (b) {
-            synchronized (changeListeners) {
-                for (PreferenceChangeListener l : changeListeners) {
-                    l.onPreferenceRemoved(preferencesName, key);
-                }
-            }
+            changeObservable.dispatchRemoved(preferencesName, key);
         }
         return b;
     }
@@ -144,13 +130,36 @@ public final class PreferencesManager {
     public synchronized boolean clear() {
         boolean b = preferences.edit().clear().commit();
         if (b) {
-            synchronized (changeListeners) {
-                for (PreferenceChangeListener l : changeListeners) {
-                    l.onAllPreferencesRemoved(preferencesName);
+            changeObservable.dispatchAllRemoved(preferencesName);
+        }
+        return b;
+    }
+
+    protected static class ChangeObservable extends Observable<PreferenceChangeListener> {
+
+        protected <T> void dispatchChanged(String name, String key, @Nullable T oldValue, @Nullable T newValue) {
+            synchronized (mObservers) {
+                for (PreferenceChangeListener l : copyOfObservers()) {
+                    l.onPreferenceChanged(name, key, oldValue, newValue);
                 }
             }
         }
-        return b;
+
+        protected <T> void dispatchRemoved(String name, String key) {
+            synchronized (mObservers) {
+                for (PreferenceChangeListener l : copyOfObservers()) {
+                    l.onPreferenceRemoved(name, key);
+                }
+            }
+        }
+
+        protected void dispatchAllRemoved(String name) {
+            synchronized (mObservers) {
+                for (PreferenceChangeListener l : copyOfObservers()) {
+                    l.onAllPreferencesRemoved(name);
+                }
+            }
+        }
     }
 
 }

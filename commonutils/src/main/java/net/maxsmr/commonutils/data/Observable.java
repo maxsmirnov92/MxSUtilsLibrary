@@ -23,16 +23,22 @@ public abstract class Observable<T> {
         }
     }
 
-    public boolean registerObserver(@NonNull T observer) {
-        synchronized (mObservers) {
-            return mObservers.add(observer);
+    public boolean registerObserver(T observer) {
+        if (observer != null) {
+            synchronized (mObservers) {
+                return mObservers.add(observer);
+            }
         }
+        return false;
     }
 
-    public boolean unregisterObserver(@NonNull T observer) {
+    public boolean unregisterObserver(T observer) {
         synchronized (mObservers) {
-            return mObservers.remove(observer);
+            if (mObservers.contains(observer)) {
+                return mObservers.remove(observer);
+            }
         }
+        return false;
     }
 
     public void unregisterAll() {

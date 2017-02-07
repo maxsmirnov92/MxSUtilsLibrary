@@ -24,9 +24,6 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
 
     private ProgressDialog progressDialog;
 
-//    @LayoutRes
-//    private int customLayoutId = 0;
-
     //    private final String defaultTitle;
     private String title;
 
@@ -52,9 +49,8 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
 //        this(context, null, context.getString(R.string.loading), indeterminate, max, cancelable);
 //    }
 
-    public DialogProgressable(@NonNull Context context/*, @LayoutRes int customLayoutId, */, @Nullable String title, @Nullable String message, boolean indeterminate, int max, boolean cancelable) {
+    public DialogProgressable(@NonNull Context context, @Nullable String title, @Nullable String message, boolean indeterminate, int max, boolean cancelable) {
         this.context = context;
-//        setCustomLayoutId(customLayoutId);
         setTitle(title);
         setMessage(message);
         setIndeterminate(indeterminate);

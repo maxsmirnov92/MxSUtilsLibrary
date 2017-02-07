@@ -1,26 +1,24 @@
 package net.maxsmr.commonutils.android.gui.views.font;
 
+
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Typeface;
-import android.support.v7.widget.AppCompatTextView;
 import android.util.AttributeSet;
 
-import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
+import net.maxsmr.commonutils.android.gui.views.PatternedEditText;
+public class FontPatternedEditText extends PatternedEditText {
 
-
-public class FontTextView extends AppCompatTextView implements ITypefaceChangeable {
-
-    public FontTextView(Context context) {
+    public FontPatternedEditText(Context context) {
         this(context, null);
     }
 
-    public FontTextView(Context context, AttributeSet attrs) {
-        this(context, attrs, 0);
+    public FontPatternedEditText(Context context, AttributeSet attrs) {
+        this(context, attrs, context.getResources().getIdentifier("editTextStyle", "attr", "android"));
     }
 
-    public FontTextView(Context context, AttributeSet attrs, int defStyleAttr) {
+    public FontPatternedEditText(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         if (!isInEditMode()) {
             setTypefaceByName(getTypeFaceNameFromAttrs(attrs));
@@ -29,9 +27,9 @@ public class FontTextView extends AppCompatTextView implements ITypefaceChangeab
 
     private String getTypeFaceNameFromAttrs(AttributeSet attrs) {
         if (attrs != null) {
-            TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.FontTextView, 0, 0);
+            TypedArray a = getContext().obtainStyledAttributes(attrs, net.maxsmr.commonutils.R.styleable.FontEditText, 0, 0);
             try {
-                return a.getString(R.styleable.FontTextView_custom_typeface);
+                return a.getString(net.maxsmr.commonutils.R.styleable.FontEditText_custom_typeface);
             } finally {
                 a.recycle();
             }

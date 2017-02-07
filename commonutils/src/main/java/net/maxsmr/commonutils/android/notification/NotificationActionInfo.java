@@ -8,6 +8,7 @@ import android.support.annotation.NonNull;
 /**
  * Created by maxsmirnov on 10.09.15.
  */
+@Deprecated
 public class NotificationActionInfo {
 
     public enum NotificationAction {

@@ -138,4 +138,18 @@ public final class MathUtils {
         }
         throw new IllegalArgumentException("incorrect number class: " + numberClass);
     }
+
+    public static double mergeDecimals(Collection<? extends Number> numbers) {
+        double result = 0;
+        int currentMultiplier = 1;
+        if (numbers != null) {
+            for (Number n : numbers) {
+                if (n != null) {
+                    result += (n.doubleValue() * (double) currentMultiplier);
+                    currentMultiplier *= 10;
+                }
+            }
+        }
+        return result;
+    }
 }

@@ -49,6 +49,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -58,6 +59,7 @@ import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
 import static net.maxsmr.commonutils.data.CompareUtils.compareForNull;
+import static net.maxsmr.commonutils.shell.ShellUtils.execProcess;
 
 public final class FileHelper {
 
@@ -801,7 +803,7 @@ public final class FileHelper {
             try {
                 int zippedFiles = 0;
 
-                for (File srcFile : srcFiles) {
+                for (File srcFile : new ArrayList<>(srcFiles)) {
 
                     if (!isFileCorrect(srcFile)) {
                         logger.error("incorrect file to zip: " + srcFile);
@@ -1009,11 +1011,11 @@ public final class FileHelper {
      * @return collected set of files or directories from specified directories
      */
     @NonNull
-    public static Set<File> getFiles(@NonNull Collection<File> fromDirs, @NonNull GetMode getMode, boolean recursive, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier) {
+    public static Set<File> getFiles(@NonNull Collection<File> fromDirs, @NonNull GetMode mode, boolean recursive, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier) {
 
         final Set<File> collected = new LinkedHashSet<>();
 
-        for (File fromDir : fromDirs) {
+        for (File fromDir : new LinkedHashSet<>(fromDirs)) {
 
             if (fromDir == null || !isDirExists(fromDir.getAbsolutePath())) {
                 logger.debug("directory " + fromDir + " not exists");
@@ -1026,7 +1028,7 @@ public final class FileHelper {
                 }
             }
 
-//            if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
+//            if (mode == GetMode.FOLDERS || mode == GetMode.ALL) {
 //                if (notifier == null || notifier.onGet(fromDir)) {
 //                    collected.add(fromDir);
 //                }
@@ -1044,17 +1046,17 @@ public final class FileHelper {
                     }
 
                     if (f.isDirectory()) {
-                        if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
+                        if (mode == GetMode.FOLDERS || mode == GetMode.ALL) {
                             if (notifier == null || notifier.onGetFolder(f)) {
                                 collected.add(f);
                             }
                         }
                         if (recursive) {
-                            collected.addAll(getFiles(Collections.singleton(f), getMode, true, comparator, notifier));
+                            collected.addAll(getFiles(Collections.singleton(f), mode, true, comparator, notifier));
                         }
 
                     } else if (f.isFile()) {
-                        if (getMode == GetMode.FILES || getMode == GetMode.ALL) {
+                        if (mode == GetMode.FILES || mode == GetMode.ALL) {
                             if (notifier == null || notifier.onGetFile(f)) {
                                 collected.add(f);
                             }
@@ -1081,11 +1083,11 @@ public final class FileHelper {
      * @return found set of files or directories with matched name
      */
     @NonNull
-    public static Set<File> searchByName(String name, @NonNull Collection<File> searchFiles, @NonNull GetMode getMode, int searchFlags, boolean recursiveSearch, boolean searchInGiven, @Nullable Comparator<? super File> comparator, @Nullable ISearchNotifier notifier) {
+    public static Set<File> searchByName(String name, @NonNull Collection<File> searchFiles, @NonNull GetMode mode, int searchFlags, boolean recursiveSearch, boolean searchInGiven, @Nullable Comparator<? super File> comparator, @Nullable ISearchNotifier notifier) {
 
         Set<File> foundFiles = new LinkedHashSet<>();
 
-        for (File root : searchFiles) {
+        for (File root : new ArrayList<>(searchFiles)) {
 
             if (root == null || !root.exists()) {
                 continue;
@@ -1100,7 +1102,7 @@ public final class FileHelper {
             if (root.isDirectory()) {
 
                 if (searchInGiven) {
-                    if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
+                    if (mode == GetMode.FOLDERS || mode == GetMode.ALL) {
                         if (CompareUtils.stringMatches(root.getName(), name, searchFlags)) {
                             if (notifier == null || notifier.onFoundFolder(root)) {
                                 foundFiles.add(root);
@@ -1128,7 +1130,7 @@ public final class FileHelper {
                         }
 
                         if (f.isDirectory()) {
-                            if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
+                            if (mode == GetMode.FOLDERS || mode == GetMode.ALL) {
                                 if (CompareUtils.stringMatches(f.getName(), name, searchFlags)) {
                                     if (notifier == null || notifier.onFoundFolder(f)) {
                                         foundFiles.add(f);
@@ -1136,13 +1138,13 @@ public final class FileHelper {
                                 }
                             }
                             if (recursiveSearch) {
-                                final Set<File> recursiveFound = searchByName(name, Collections.singleton(f), getMode, searchFlags, true, false, comparator, notifier);
+                                final Set<File> recursiveFound = searchByName(name, Collections.singleton(f), mode, searchFlags, true, false, comparator, notifier);
                                 if (!recursiveFound.isEmpty()) {
                                     foundFiles.addAll(recursiveFound);
                                 }
                             }
                         } else if (f.isFile()) {
-                            if (getMode == GetMode.FILES || getMode == GetMode.ALL) {
+                            if (mode == GetMode.FILES || mode == GetMode.ALL) {
                                 if (CompareUtils.stringMatches(f.getName(), name, searchFlags)) {
                                     if (notifier == null || notifier.onFoundFile(f)) {
                                         foundFiles.add(f);
@@ -1158,7 +1160,7 @@ public final class FileHelper {
             } else if (root.isFile()) {
 
                 if (searchInGiven) {
-                    if (getMode == GetMode.FILES || getMode == GetMode.ALL) {
+                    if (mode == GetMode.FILES || mode == GetMode.ALL) {
                         if (CompareUtils.stringMatches(root.getName(), name, searchFlags)) {
                             if (notifier == null || notifier.onFoundFile(root)) {
                                 foundFiles.add(root);
@@ -1221,7 +1223,7 @@ public final class FileHelper {
             searchFiles = getEnvPathFiles();
         }
 
-        for (File file : searchFiles) {
+        for (File file : new ArrayList<>(searchFiles)) {
 
             if (file == null) {
                 continue;
@@ -1235,7 +1237,7 @@ public final class FileHelper {
 
             final String currentPath = path;
 
-            ShellUtils.execProcess(Arrays.asList("stat", currentPath + name), null, new ShellUtils.ShellCallback() {
+            execProcess(Arrays.asList("stat", currentPath + name), null, new ShellUtils.ShellCallback() {
 
                 @Override
                 public boolean needToLogCommands() {
@@ -1347,7 +1349,7 @@ public final class FileHelper {
 
         Set<File> deleted = new LinkedHashSet<>();
 
-        for (File fromDir : fromDirs) {
+        for (File fromDir : new LinkedHashSet<>(fromDirs)) {
 
             if (fromDir == null || !isDirExists(fromDir.getAbsolutePath())) {
                 logger.debug("directory " + fromDir + " not exists");
@@ -1424,8 +1426,8 @@ public final class FileHelper {
      * @param howMuch if 0 - deletes all
      * @return deleted files
      */
-    public static Set<File> deleteFromCollection(@NonNull Collection<File> files, @NonNull GetMode getMode, boolean deleteFoldersOnlyIfEmpty, boolean fromStart, final int howMuch, @Nullable Collection<File> excludeFiles, @Nullable Comparator<? super File> comparator, @Nullable final IDeleteNotifier notifier) {
-        logger.debug("deleteFromCollection(), files=" + files + ", getMode=" + getMode + ", deleteFoldersOnlyIfEmpty=" + deleteFoldersOnlyIfEmpty + ", fromStart=" + fromStart + ", howMuch=" + howMuch + ", excludeFiles=" + excludeFiles);
+    public static Set<File> deleteFromCollection(@NonNull Collection<File> files, @NonNull GetMode mode, boolean deleteFoldersOnlyIfEmpty, boolean fromStart, final int howMuch, @Nullable Collection<File> excludeFiles, @Nullable Comparator<? super File> comparator, @Nullable final IDeleteNotifier notifier) {
+        logger.debug("deleteFromCollection(), files=" + files + ", mode=" + mode + ", deleteFoldersOnlyIfEmpty=" + deleteFoldersOnlyIfEmpty + ", fromStart=" + fromStart + ", howMuch=" + howMuch + ", excludeFiles=" + excludeFiles);
 
         final Set<File> deleted = new LinkedHashSet<>();
 
@@ -1456,7 +1458,7 @@ public final class FileHelper {
                     if (excludeFiles == null || !excludeFiles.contains(file)) {
 
                         if (file.isFile()) {
-                            if (getMode == GetMode.FILES || getMode == GetMode.ALL) {
+                            if (mode == GetMode.FILES || mode == GetMode.ALL) {
                                 if (notifier == null || notifier.confirmDeleteFile(file)) {
                                     if (file.delete()) {
                                         deleted.add(file);
@@ -1470,7 +1472,7 @@ public final class FileHelper {
 
                         } else if (file.isDirectory()) {
 
-                            if (getMode == GetMode.FOLDERS || getMode == GetMode.ALL) {
+                            if (mode == GetMode.FOLDERS || mode == GetMode.ALL) {
                                 File[] listFiles = file.listFiles();
                                 if (listFiles != null && listFiles.length > 0) {
                                     if (!deleteFoldersOnlyIfEmpty) {
@@ -2010,6 +2012,576 @@ public final class FileHelper {
             }
 
             return result;
+        }
+    }
+
+    @NonNull
+    public static Map<File, Long> suListFiles(@NonNull Collection<File> fromDirs, @Nullable Comparator<? super File> comparator, @Nullable final ISuGetNotifier notifier) {
+        final Map<File, Long> collectedMap = new LinkedHashMap<>();
+        final Set<File> collected = new LinkedHashSet<>();
+        for (final File dir : new LinkedHashSet<>(fromDirs)) { // TODO collection copy
+
+            if (dir != null/* && FileHelper.isDirExists(dir.getAbsolutePath())*/) {
+                execProcess(Arrays.asList("su", "-c", "ls", dir.getAbsolutePath()), null, new ShellUtils.ShellCallback() {
+                    @Override
+                    public boolean needToLogCommands() {
+                        return true;
+                    }
+
+                    @Override
+                    public void shellOut(@NonNull StreamType from, String shellLine) {
+                        if (from == StreamType.OUT && !TextUtils.isEmpty(shellLine)) {
+                            File current = new File(dir, shellLine);
+                            if (notifier != null) {
+                                notifier.onProcessing(current, collected);
+                            }
+                            if (notifier == null || notifier.onGetFile(current)) {
+                                collected.add(current);
+                            }
+                        }
+                    }
+
+                    @Override
+                    public void processStartFailed(Throwable t) {
+
+                    }
+
+                    @Override
+                    public void processComplete(int exitValue) {
+
+                    }
+                }, null);
+            }
+        }
+        if (comparator != null) {
+            List<File> sortedList = new ArrayList<>(collected);
+            Collections.sort(sortedList, comparator);
+            collected.clear();
+            collected.addAll(sortedList);
+        }
+        for (final File current : collected) {
+            // option "-b" is not supported on android version
+            execProcess(Arrays.asList("su", "-c", "du", "-s", current.getAbsolutePath()), null, new ShellUtils.ShellCallback() {
+
+                        @Override
+                        public boolean needToLogCommands() {
+                            return true;
+                        }
+
+                        @Override
+                        public void shellOut(@NonNull StreamType from, String shellLine) {
+                            if (from == StreamType.OUT && !TextUtils.isEmpty(shellLine)) {
+                                long size = 0;
+                                String[] parts = shellLine.split("\\t");
+                                if (parts.length > 1) {
+                                    try {
+                                        size = Long.parseLong(parts[0]);
+                                    } catch (NumberFormatException e) {
+                                        e.printStackTrace();
+                                    }
+                                }
+                                collectedMap.put(current, SizeUnit.KBYTES.toBytes(size));
+                            }
+                        }
+
+                        @Override
+                        public void processStartFailed(Throwable t) {
+                            if (notifier != null) {
+                                notifier.onStartFailed(t, current);
+                            }
+                        }
+
+                        @Override
+                        public void processComplete(int exitValue) {
+                            if (exitValue != ShellUtils.PROCESS_EXIT_CODE_SUCCESS && notifier != null) {
+                                notifier.onNonSuccessExitCode(exitValue, current);
+                            }
+                        }
+                    }
+
+                    , null);
+        }
+
+        return Collections.unmodifiableMap(collectedMap);
+    }
+
+    public interface ISuGetNotifier extends FileHelper.IGetNotifier {
+
+        void onStartFailed(Throwable t, File forFile);
+
+        void onNonSuccessExitCode(int exitCode, File forFile);
+    }
+
+    public static String filesToString(@NonNull Context context, Collection<File> files) {
+        StringBuilder sb = new StringBuilder();
+        if (files != null) {
+            for (File f : files) {
+                if (f != null) {
+                    sb.append(f.getAbsolutePath());
+                    sb.append(" : ");
+                    sb.append(sizeToString(context, getSize(f), SizeUnit.BYTES));
+                    sb.append(" ");
+                    sb.append(System.getProperty("line.separator"));
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * @param files file <-> size in bytes </->
+     */
+    public static String filesWithSizeToString(@NonNull Context context, Collection<Map.Entry<File, Long>> files) {
+        StringBuilder sb = new StringBuilder();
+        if (files != null) {
+            for (Map.Entry<File, Long> f : files) {
+                if (f != null && f.getKey() != null) {
+                    sb.append(f.getKey().getAbsolutePath());
+                    sb.append(" : ");
+                    sb.append(f.getValue() != null ? sizeToString(context, f.getValue(), SizeUnit.BYTES) : 0);
+                    sb.append("  ");
+                    sb.append(System.getProperty("line.separator"));
+                }
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * @param s size in bytes
+     */
+    public static String sizeToString(@NonNull Context context, long s, @NonNull SizeUnit sizeUnit) {
+        if (s < 0) {
+            throw new IllegalArgumentException("incorrect size: " + s);
+        }
+        s = sizeUnit.toBytes(s);
+        StringBuilder sb = new StringBuilder();
+        if (s < SizeUnit.C1) {
+            sb.append(s);
+            sb.append(" ");
+            sb.append(context.getString(R.string.suffix_bytes));
+        } else if (s >= SizeUnit.C1 && s < SizeUnit.C2) {
+            long kbytes = SizeUnit.BYTES.toKBytes(s);
+            sb.append(kbytes);
+            sb.append(" ");
+            sb.append(context.getString(R.string.suffix_kbytes));
+            long restBytes = s - SizeUnit.KBYTES.toBytes(kbytes);
+            if (restBytes > 0) {
+                sb.append(", ");
+                sb.append(sizeToString(context, restBytes, SizeUnit.BYTES));
+            }
+        } else if (s >= SizeUnit.C2 && s < SizeUnit.C3) {
+            long mbytes = SizeUnit.BYTES.toMBytes(s);
+            sb.append(mbytes);
+            sb.append(" ");
+            sb.append(context.getString(R.string.suffix_mbytes));
+            long restBytes = s - SizeUnit.MBYTES.toBytes(mbytes);
+            if (restBytes > 0) {
+                sb.append(", ");
+                sb.append(sizeToString(context, restBytes, SizeUnit.BYTES));
+            }
+        } else {
+            long gbytes = SizeUnit.BYTES.toGBytes(s);
+            sb.append(gbytes);
+            sb.append(" ");
+            sb.append(context.getString(R.string.suffix_gbytes));
+            long restBytes = s - SizeUnit.GBYTES.toBytes(gbytes);
+            if (restBytes > 0) {
+                sb.append(", ");
+                sb.append(sizeToString(context, restBytes, SizeUnit.BYTES));
+            }
+        }
+        return sb.toString();
+    }
+
+    public static long getSize(@Nullable File f) {
+        if (f != null) {
+            if (f.isFile()) {
+                return f.length();
+            } else if (f.isDirectory()) {
+                return FileHelper.getFolderSize(f);
+            }
+        }
+        return 0;
+    }
+
+    public static double sum(Collection<? extends Number> numbers) {
+        double result = 0;
+        if (numbers != null) {
+            for (Number n : numbers) {
+                if (n != null) {
+                    result += n.doubleValue();
+                }
+            }
+        }
+        return result;
+    }
+
+    public enum SizeUnit {
+
+        BYTES {
+            @Override
+            public long toBytes(long s) {
+                return s;
+            }
+
+            @Override
+            public long toKBytes(long s) {
+                return s / C1;
+            }
+
+            @Override
+            public long toMBytes(long s) {
+                return s / C2;
+            }
+
+            @Override
+            public long toGBytes(long s) {
+                return s / C3;
+            }
+
+            @Override
+            public long toBits(long s) {
+                return toBitsFromBytes(s);
+            }
+
+            @Override
+            public long toKBits(long s) {
+                return toBitsFromBytes(toKBytes(s));
+            }
+
+            @Override
+            public long toMBits(long s) {
+                return toBitsFromBytes(toMBytes(s));
+            }
+
+            @Override
+            public long toGBits(long s) {
+                return toBitsFromBytes(toGBytes(s));
+            }
+        },
+
+        KBYTES {
+            @Override
+            public long toBytes(long s) {
+                return s * C1;
+            }
+
+            @Override
+            public long toKBytes(long s) {
+                return s;
+            }
+
+            @Override
+            public long toMBytes(long s) {
+                return s / C1;
+            }
+
+            @Override
+            public long toGBytes(long s) {
+                return s / C2;
+            }
+
+            @Override
+            public long toBits(long s) {
+                return toBitsFromBytes(toBytes(s));
+            }
+
+            @Override
+            public long toKBits(long s) {
+                return toBitsFromBytes(toKBytes(s));
+            }
+
+            @Override
+            public long toMBits(long s) {
+                return toBitsFromBytes(toMBytes(s));
+            }
+
+            @Override
+            public long toGBits(long s) {
+                return toBitsFromBytes(toGBytes(s));
+            }
+        },
+
+        MBYTES {
+            @Override
+            public long toBytes(long s) {
+                return s * C2;
+            }
+
+            @Override
+            public long toKBytes(long s) {
+                return s * C1;
+            }
+
+            @Override
+            public long toMBytes(long s) {
+                return s;
+            }
+
+            @Override
+            public long toGBytes(long s) {
+                return s / C1;
+            }
+
+            @Override
+            public long toBits(long s) {
+                return toBitsFromBytes(toBytes(s));
+            }
+
+            @Override
+            public long toKBits(long s) {
+                return toBitsFromBytes(toKBytes(s));
+            }
+
+            @Override
+            public long toMBits(long s) {
+                return toBitsFromBytes(toMBytes(s));
+            }
+
+            @Override
+            public long toGBits(long s) {
+                return toBitsFromBytes(toGBytes(s));
+            }
+        },
+
+        GBYTES {
+            @Override
+            public long toBytes(long s) {
+                return s * C3;
+            }
+
+            @Override
+            public long toKBytes(long s) {
+                return s * C2;
+            }
+
+            @Override
+            public long toMBytes(long s) {
+                return s * C1;
+            }
+
+            @Override
+            public long toGBytes(long s) {
+                return s;
+            }
+
+            @Override
+            public long toBits(long s) {
+                return toBitsFromBytes(toBytes(s));
+            }
+
+            @Override
+            public long toKBits(long s) {
+                return toBitsFromBytes(toKBytes(s));
+            }
+
+            @Override
+            public long toMBits(long s) {
+                return toBitsFromBytes(toMBytes(s));
+            }
+
+            @Override
+            public long toGBits(long s) {
+                return toBitsFromBytes(toGBytes(s));
+            }
+        },
+
+        BITS {
+            @Override
+            public long toBytes(long s) {
+                return toBytesFromBits(s);
+            }
+
+            @Override
+            public long toKBytes(long s) {
+                return toBytesFromBits(toKBits(s));
+            }
+
+            @Override
+            public long toMBytes(long s) {
+                return toBytesFromBits(toMBits(s));
+            }
+
+            @Override
+            public long toGBytes(long s) {
+                return toBytesFromBits(toGBits(s));
+            }
+
+            @Override
+            public long toBits(long s) {
+                return s;
+            }
+
+            @Override
+            public long toKBits(long s) {
+                return s / C1;
+            }
+
+            @Override
+            public long toMBits(long s) {
+                return s / C2;
+            }
+
+            @Override
+            public long toGBits(long s) {
+                return s / C3;
+            }
+        },
+
+        KBITS {
+            @Override
+            public long toBytes(long s) {
+                return toBytesFromBits(s);
+            }
+
+            @Override
+            public long toKBytes(long s) {
+                return toBytesFromBits(toKBits(s));
+            }
+
+            @Override
+            public long toMBytes(long s) {
+                return toBytesFromBits(toMBits(s));
+            }
+
+            @Override
+            public long toGBytes(long s) {
+                return toBytesFromBits(toGBits(s));
+            }
+
+            @Override
+            public long toBits(long s) {
+                return s * C1;
+            }
+
+            @Override
+            public long toKBits(long s) {
+                return s;
+            }
+
+            @Override
+            public long toMBits(long s) {
+                return s / C2;
+            }
+
+            @Override
+            public long toGBits(long s) {
+                return s / C3;
+            }
+        },
+
+        MBITS {
+            @Override
+            public long toBytes(long s) {
+                return toBytesFromBits(s);
+            }
+
+            @Override
+            public long toKBytes(long s) {
+                return toBytesFromBits(toKBits(s));
+            }
+
+            @Override
+            public long toMBytes(long s) {
+                return toBytesFromBits(toMBits(s));
+            }
+
+            @Override
+            public long toGBytes(long s) {
+                return toBytesFromBits(toGBits(s));
+            }
+
+            @Override
+            public long toBits(long s) {
+                return s * C2;
+            }
+
+            @Override
+            public long toKBits(long s) {
+                return s * C1;
+            }
+
+            @Override
+            public long toMBits(long s) {
+                return s;
+            }
+
+            @Override
+            public long toGBits(long s) {
+                return s / C1;
+            }
+        },
+
+        GBITS {
+            @Override
+            public long toBytes(long s) {
+                return toBytesFromBits(s);
+            }
+
+            @Override
+            public long toKBytes(long s) {
+                return toBytesFromBits(toKBits(s));
+            }
+
+            @Override
+            public long toMBytes(long s) {
+                return toBytesFromBits(toMBits(s));
+            }
+
+            @Override
+            public long toGBytes(long s) {
+                return toBytesFromBits(toGBits(s));
+            }
+
+            @Override
+            public long toBits(long s) {
+                return s * C3;
+            }
+
+            @Override
+            public long toKBits(long s) {
+                return s * C2;
+            }
+
+            @Override
+            public long toMBits(long s) {
+                return s * C1;
+            }
+
+            @Override
+            public long toGBits(long s) {
+                return s;
+            }
+        };
+
+        static final long C0 = 8;
+        static final long C1 = 1L * 1024L;
+        static final long C2 = C1 * 1024L;
+        static final long C3 = C2 * 1024L;
+
+        public abstract long toBytes(long s);
+
+        public abstract long toKBytes(long s);
+
+        public abstract long toMBytes(long s);
+
+        public abstract long toGBytes(long s);
+
+        public abstract long toBits(long s);
+
+        public abstract long toKBits(long s);
+
+        public abstract long toMBits(long s);
+
+        public abstract long toGBits(long s);
+
+        private static long toBitsFromBytes(long s) {
+            return s * C0;
+        }
+
+        static long toBytesFromBits(long s) {
+            return s / C0;
         }
     }
 

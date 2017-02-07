@@ -14,10 +14,10 @@ public class ContentDialogProgressable extends DialogProgressable {
         boolean onResult();
     }
 
-    private IResultCallback callback;
+    private final IResultCallback callback;
 
-    private View data;
-    private View placeholder;
+    private final View data;
+    private final View placeholder;
 
     public ContentDialogProgressable(Context context, View rootView, @IdRes int dataContainerResId, @IdRes int placeholderContainerResId, IResultCallback callback) {
         super(context);

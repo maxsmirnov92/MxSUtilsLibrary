@@ -1,0 +1,117 @@
+package net.maxsmr.commonutils.android.hardware;
+
+import android.content.BroadcastReceiver;
+import android.content.Context;
+import android.content.Intent;
+import android.os.Build;
+import android.os.Bundle;
+import android.provider.Telephony;
+import android.support.annotation.Nullable;
+import android.support.v4.content.LocalBroadcastManager;
+import android.telephony.SmsMessage;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+public class SmsBroadcastReceiver extends BroadcastReceiver {
+
+    protected static final Logger logger = LoggerFactory.getLogger(SmsBroadcastReceiver.class);
+
+    public static final String ACTION_SMS_RECEIVED = SmsBroadcastReceiver.class.getSimpleName() + ".ACTION_SMS_RECEIVED";
+    public static final String EXTRA_SMS_DATA = SmsBroadcastReceiver.class.getSimpleName() + ".EXTRA_SMS_DATA";
+
+    private final Set<String> senders = new LinkedHashSet<>();
+
+    public SmsBroadcastReceiver() {
+    }
+
+    public SmsBroadcastReceiver(Collection<String> senders) {
+        this.senders.addAll(senders);
+    }
+
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        logger.debug("onReceive(), intent=" + intent);
+        if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equalsIgnoreCase(intent.getAction())) {
+            SmsMessage smsMessage = get(intent);
+            if (isFromSpecifiedSender(smsMessage)) {
+                notify(context, smsMessage);
+            }
+        }
+    }
+
+    private boolean isFromSpecifiedSender(@Nullable SmsMessage smsMessage) {
+        return smsMessage != null && (senders.isEmpty() || senders.contains(smsMessage.getOriginatingAddress()));
+    }
+
+    private void notify(Context context, SmsMessage sms) {
+        Intent broadcast = new Intent();
+        broadcast.setAction(ACTION_SMS_RECEIVED);
+        broadcast.putExtra(EXTRA_SMS_DATA, SmsData.fromMessage(sms));
+        LocalBroadcastManager.getInstance(context).sendBroadcast(broadcast);
+    }
+
+
+    @Nullable
+    private SmsMessage get(Intent intent) {
+        SmsMessage result = null;
+        Bundle bundle = intent.getExtras();
+        if (bundle != null) {
+            Object[] pdus = (Object[])bundle.get("pdus");
+            if (pdus != null) {
+                final SmsMessage[] messages = new SmsMessage[pdus.length];
+                for (int i = 0; i < pdus.length; i++) {
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                        messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i], intent.getStringExtra("format"));
+                    } else {
+                        //noinspection deprecation
+                        messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i]);
+                    }
+                }
+                if (messages.length >= 1) {
+                    result = messages[0];
+                }
+            }
+        }
+        return result;
+    }
+
+    public static class SmsData implements Serializable {
+
+        public String serviceCenterAddress;
+
+        public String originatingAddress;
+
+        public String body;
+
+        public String emailBody;
+
+        @Nullable
+        public static SmsData fromMessage(@Nullable SmsMessage message) {
+            if (message != null) {
+                SmsData data = new SmsData();
+                data.serviceCenterAddress = message.getServiceCenterAddress();
+                data.originatingAddress = message.getOriginatingAddress();
+                data.body = message.getDisplayMessageBody();
+                data.emailBody = message.getEmailBody();
+                return data;
+            }
+            return null;
+        }
+
+        @Override
+        public String toString() {
+            return "SmsData{" +
+                    "serviceCenterAddress='" + serviceCenterAddress + '\'' +
+                    ", originatingAddress='" + originatingAddress + '\'' +
+                    ", body='" + body + '\'' +
+                    ", emailBody='" + emailBody + '\'' +
+                    '}';
+        }
+    }
+}

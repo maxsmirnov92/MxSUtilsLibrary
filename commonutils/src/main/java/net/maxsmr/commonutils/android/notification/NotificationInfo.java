@@ -9,6 +9,7 @@ import java.util.Arrays;
 /**
  * Created by maxsmirnov on 10.09.15.
  */
+@Deprecated
 public class NotificationInfo {
 
     public final static int PROGRESS_NOT_SET = -1;
