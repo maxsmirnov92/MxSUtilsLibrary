@@ -1,5 +1,6 @@
-include ':commonutils'
-//':devicewatchers', ':tasksutils', ':networkutils'
+include ':tasksutils'
+//':devicewatchers', , ':networkutils'
+//':commonutils'
 //
 //'devicewatchers'
 // 'customcontentprovider'
