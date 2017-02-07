@@ -59,21 +59,15 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
 
     public final void addLoadListener(@NonNull LoadListener<I> listener) {
         checkReleased();
-        synchronized (mLoadObservable) {
-            mLoadObservable.registerObserver(listener);
-        }
+        mLoadObservable.registerObserver(listener);
     }
 
     public final void removeLoadListener(@NonNull LoadListener<I> listener) {
-        synchronized (mLoadObservable) {
             mLoadObservable.unregisterObserver(listener);
-        }
     }
 
     private void clearLoadListeners() {
-        synchronized (mLoadObservable) {
             mLoadObservable.unregisterAll();
-        }
     }
 
     public final void enqueueLoad(@NonNull I rInfo) {
@@ -173,6 +167,8 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
         }
     }
 
+
+
     public boolean isLoadRunning(int id) {
         synchronized (mExecutor) {
             checkReleased();
@@ -207,10 +203,10 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
         logger.debug("release()");
         synchronized (mExecutor) {
             if (!isReleased()) {
+                clearLoadListeners();
                 mExecutor.cancelAllTasks();
                 mExecutor.shutdown();
                 mExecutor.getCallbacksObservable().unregisterObserver(this);
-                clearLoadListeners();
             }
         }
     }
@@ -244,12 +240,12 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
 
         public final void notifyStateChanged(@NonNull LoadListener.STATE state, @NonNull I info, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, Throwable t) {
             synchronized (mObservers) {
-                    for (LoadListener<I> l : copyOfObservers()) {
-                        int id = l.getId(info);
-                        if (id == RunnableInfo.NO_ID || id == info.id) {
-                            l.onUpdateState(state, info, loadProcessInfo, t);
-                        }
+                for (LoadListener<I> l : copyOfObservers()) {
+                    int id = l.getId(info);
+                    if (id == RunnableInfo.NO_ID || id == info.id) {
+                        l.onUpdateState(state, info, loadProcessInfo, t);
                     }
+                }
             }
         }
     }

@@ -1,3 +1,5 @@
 include ':commonutils'
+//':devicewatchers', ':tasksutils', ':networkutils'
+//
 //'devicewatchers'
-//':networkutils', ':tasksutils', , , , 'devicewatchers', 'customcontentprovider'
+// 'customcontentprovider'

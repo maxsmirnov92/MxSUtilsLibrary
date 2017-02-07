@@ -55,12 +55,13 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         super(limit, concurrentDownloadsCount);
     }
 
-    @NonNull
+    @Nullable
     private LoadRunnable findLoadRunnableById(int loadId) {
         checkReleased();
         TaskRunnable r = mExecutor.findRunnableById(loadId);
         if (r == null) {
-            throw new RuntimeException("no load with id " + loadId);
+            logger.error("no load with id " + loadId);
+            return null;
         }
         if (!(r instanceof LoadRunnable)) {
             throw new RuntimeException("incorrect runnable class " + r.getClass() + ", must be " + LoadRunnable.class);
@@ -68,24 +69,28 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         return (LoadRunnable) r;
     }
 
-    @NonNull
+
+    @Nullable
     public LoadProcessInfo getCurrentLoadProcessInfoForId(int loadId) {
         synchronized (mExecutor) {
-            return findLoadRunnableById(loadId).getCurrentLoadInfo();
+            LoadRunnable runnable = findLoadRunnableById(loadId);
+            return runnable != null? runnable.getCurrentLoadInfo() : null;
         }
     }
 
     @NonNull
     public LoadListener.STATE getLastStateForId(int loadId) {
         synchronized (mExecutor) {
-            return findLoadRunnableById(loadId).getLastState();
+            LoadRunnable runnable = findLoadRunnableById(loadId);
+            return runnable != null? runnable.getLastState() : LoadListener.STATE.UNKNOWN;
         }
     }
 
     @Nullable
     public Response getLastResponseForId(int loadId) {
         synchronized (mExecutor) {
-            return findLoadRunnableById(loadId).getLastResponse();
+            LoadRunnable runnable = findLoadRunnableById(loadId);
+            return runnable != null? runnable.getLastResponse() : null;
         }
     }
 
