@@ -7,6 +7,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.Observable;
 
 public class PreferencesManager {
@@ -102,7 +103,7 @@ public class PreferencesManager {
         }
         if (editor.commit()) {
 
-            if (value != null && !value.equals(oldValue)) {
+            if (!CompareUtils.objectsEqual(value, oldValue)) {
                 changeObservable.dispatchChanged(preferencesName, key, oldValue, value);
             }
 

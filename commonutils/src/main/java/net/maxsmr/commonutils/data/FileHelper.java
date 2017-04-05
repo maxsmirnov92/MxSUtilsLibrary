@@ -2019,7 +2019,7 @@ public final class FileHelper {
     public static Map<File, Long> suListFiles(@NonNull Collection<File> fromDirs, @Nullable Comparator<? super File> comparator, @Nullable final ISuGetNotifier notifier) {
         final Map<File, Long> collectedMap = new LinkedHashMap<>();
         final Set<File> collected = new LinkedHashSet<>();
-        for (final File dir : new LinkedHashSet<>(fromDirs)) { // TODO collection copy
+        for (final File dir : new LinkedHashSet<>(fromDirs)) {
 
             if (dir != null/* && FileHelper.isDirExists(dir.getAbsolutePath())*/) {
                 execProcess(Arrays.asList("su", "-c", "ls", dir.getAbsolutePath()), null, new ShellUtils.ShellCallback() {

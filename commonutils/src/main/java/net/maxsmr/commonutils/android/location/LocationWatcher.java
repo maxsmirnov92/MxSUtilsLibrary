@@ -1,21 +1,27 @@
 package net.maxsmr.commonutils.android.location;
 
 import android.content.Context;
+import android.content.Intent;
 import android.database.Observable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
+import android.os.Handler;
+
+import net.maxsmr.commonutils.android.location.info.TrackingStatus;
+import net.maxsmr.commonutils.android.location.info.LocationInfo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import net.maxsmr.commonutils.android.hardware.DeviceUtils;
-import net.maxsmr.commonutils.android.location.info.LocStatus;
-import net.maxsmr.commonutils.android.location.info.LocationInfo;
+import java.util.Collection;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
-public class LocationWatcher {
+public final class LocationWatcher {
 
     private static final Logger logger = LoggerFactory.getLogger(LocationWatcher.class);
 
@@ -36,28 +42,46 @@ public class LocationWatcher {
         return sInstance;
     }
 
-    private final Context mContext;
+    public static final long DEFAULT_LOCATION_UPDATE_TIME = 5000;
+    public static final float DEFAULT_LOCATION_UPDATE_DISTANCE = 0;
 
     private LocationWatcher(Context ctx) {
         mContext = ctx;
     }
 
-    private final LocationObservable locationObservable = new LocationObservable();
+    private final Context mContext;
 
-    public Observable<LocationTrackingListener> getLocationObservable() {
-        return locationObservable;
-    }
+    private final LocationObservable mLocationObservable = new LocationObservable();
+
+    private final Set<String> mPreferredProviders = new LinkedHashSet<>();
+
+    private DeviceLocationListener mLocationListener = null;
 
     private Location mLastLocation;
+
+    private LocationInfo mLastLocationInfo;
+
+    private long mLocationUpdateTime = DEFAULT_LOCATION_UPDATE_TIME;
+
+    private float mLocationUpdateDistance = DEFAULT_LOCATION_UPDATE_DISTANCE;
+
+    public Observable<LocationTrackingListener> getLocationObservable() {
+        return mLocationObservable;
+    }
 
     public Location getLastLocation() {
         return mLastLocation;
     }
 
-    private LocationInfo mLastLocationInfo;
-
     public LocationInfo getLastLocationInfo() {
         return mLastLocationInfo;
+    }
+
+    public void setPreferredProviders(Collection<String> providers) {
+        mPreferredProviders.clear();
+        if (providers != null) {
+            mPreferredProviders.addAll(providers);
+        }
     }
 
     private boolean updateLocation(Location loc) {
@@ -87,24 +111,17 @@ public class LocationWatcher {
             mLastLocationInfo = locationInfo;
             logger.info("last location info has been changed: " + mLastLocationInfo);
 
-            locationObservable.dispatchLocationUpdated(mLastLocation, mLastLocationInfo);
-            locationObservable.dispatchLocationTrackingStatusChanged(LocStatus.NEW_LOCATION);
+            mLocationObservable.dispatchLocationUpdated(mLastLocation, mLastLocationInfo);
+            mLocationObservable.dispatchLocationTrackingStatusChanged(TrackingStatus.NEW_LOCATION);
             return true;
         }
 
         return false;
     }
 
-
-
-
-    private long mLocationUpdateTime = Defaults.DEFAULT_LOCATION_UPDATE_TIME;
-
-    private float mLocationUpdateDistance = Defaults.DEFAULT_LOCATION_UPDATE_DISTANCE;
-
     @SuppressWarnings("MissingPermission")
     private static boolean addLocationListener(Context ctx, boolean openGpsActivity, final long minTime,
-                                               final float minDistance, final LocationListener locationListener) {
+                                               final float minDistance, Collection<String> preferredProviders, final LocationListener locationListener) {
 
         if (ctx == null)
             throw new NullPointerException("context is null");
@@ -121,24 +138,47 @@ public class LocationWatcher {
 
         final LocationManager locationManager = (LocationManager) ctx.getSystemService(Context.LOCATION_SERVICE);
 
-        if (!LocationUtils.isProviderEnabled(ctx)) {
-            logger.error("gps/network provider is not enabled");
+        boolean result = false;
 
+        if (preferredProviders != null) {
+            Set<String> disabledProviders = new LinkedHashSet<>();
+            result = true;
+            for (String provider : preferredProviders) {
+                if (!locationManager.isProviderEnabled(provider)) {
+                    result = false;
+                    disabledProviders.add(provider);
+                }
+            }
+            if (!result) {
+                logger.error("providers " + disabledProviders + " is not enabled");
+                if (openGpsActivity)
+                    H.startGpsSettingsActivity(ctx);
+                return false;
+            }
+        }
+
+
+        List<String> providers = locationManager.getProviders(true);
+        if (providers != null) {
+            for (final String provider : providers) {
+                if (preferredProviders == null || preferredProviders.isEmpty() || preferredProviders.contains(provider)) {
+                    if (LocationManager.GPS_PROVIDER.equals(provider)
+                            || LocationManager.PASSIVE_PROVIDER.equals(provider)
+                            || LocationManager.NETWORK_PROVIDER.equals(provider)) {
+                        locationManager.requestLocationUpdates(provider, minTime, minDistance, locationListener, ctx.getMainLooper());
+                        result = true;
+                    }
+                }
+            }
+        }
+
+        if (!result) {
+            logger.error("no enabled providers");
             if (openGpsActivity)
-                LocationUtils.startGpsSettingsActivity(ctx);
-
-            return false;
+                H.startGpsSettingsActivity(ctx);
         }
 
-        if (DeviceUtils.checkPermission(ctx, "android.permission.ACCESS_FINE_LOCATION") && DeviceUtils.checkPermission(ctx, "android.permission.ACCESS_COARSE_LOCATION")) {
-            locationManager.requestLocationUpdates(LocationManager.GPS_PROVIDER, minTime, minDistance, locationListener, ctx.getMainLooper());
-            locationManager.requestLocationUpdates(LocationManager.NETWORK_PROVIDER, minTime, minDistance, locationListener, ctx.getMainLooper());
-            return true;
-
-        } else {
-            logger.error("location permissions are not allowed");
-            return false;
-        }
+        return result;
     }
 
     @SuppressWarnings("MissingPermission")
@@ -147,14 +187,8 @@ public class LocationWatcher {
         if (locationListener == null)
             throw new NullPointerException("locationListener is null");
 
-        if (DeviceUtils.checkPermission(ctx, "android.permission.ACCESS_FINE_LOCATION") && DeviceUtils.checkPermission(ctx, "android.permission.ACCESS_COARSE_LOCATION")) {
-            ((LocationManager) ctx.getSystemService(Context.LOCATION_SERVICE)).removeUpdates(locationListener);
-        } else {
-            logger.error("location permissions are not allowed");
-        }
+        ((LocationManager) ctx.getSystemService(Context.LOCATION_SERVICE)).removeUpdates(locationListener);
     }
-
-    private DeviceLocationListener mLocationListener = null;
 
     private class DeviceLocationListener implements LocationListener {
 
@@ -215,7 +249,7 @@ public class LocationWatcher {
             mLastLocationInfo = null;
         }
 
-        locationObservable.dispatchLocationTrackingStatusChanged(LocStatus.STOP_TRACKING);
+        mLocationObservable.dispatchLocationTrackingStatusChanged(TrackingStatus.STOP_TRACKING);
         logger.debug("tracking stopped");
     }
 
@@ -233,10 +267,10 @@ public class LocationWatcher {
 
         stopTracking(resetLastLoc);
 
-        if (addLocationListener(mContext, openGpsActivity, minTime, minDistance, mLocationListener = new DeviceLocationListener())) {
+        if (addLocationListener(mContext, openGpsActivity, minTime, minDistance, mPreferredProviders, mLocationListener = new DeviceLocationListener())) {
             mLocationUpdateTime = minTime;
             mLocationUpdateDistance = minDistance;
-            locationObservable.dispatchLocationTrackingStatusChanged(LocStatus.START_TRACKING);
+            mLocationObservable.dispatchLocationTrackingStatusChanged(TrackingStatus.START_TRACKING);
             logger.debug("tracking started");
         }
     }
@@ -244,7 +278,7 @@ public class LocationWatcher {
 
     private static class LocationObservable extends Observable<LocationTrackingListener> {
 
-        private void dispatchLocationTrackingStatusChanged(LocStatus status) {
+        private void dispatchLocationTrackingStatusChanged(TrackingStatus status) {
             for (LocationTrackingListener l : mObservers) {
                 l.onLocationTrackingStatusChanged(status);
             }
@@ -257,9 +291,37 @@ public class LocationWatcher {
         }
     }
 
-    public interface Defaults {
-        long DEFAULT_LOCATION_UPDATE_TIME = 5000; // 10000;
-        float DEFAULT_LOCATION_UPDATE_DISTANCE = 0;
+    public static class H {
+
+        public static final float
+                GAIA_CIRC_X = 40075.017f,
+                GAIA_CIRC_Y = 40007.860f;
+
+        /**
+         * Very poor math function for converting Earth's degrees to kilometers.
+         */
+        public static double angularDistanceToKilometers(double x1, double y1, double x2, double y2) {
+            x1 = x1 / 360.0 * GAIA_CIRC_X;
+            x2 = x2 / 360.0 * GAIA_CIRC_X;
+            y1 = y1 / 360.0 * GAIA_CIRC_Y;
+            y2 = y2 / 360.0 * GAIA_CIRC_Y;
+
+            double dX = Math.pow(x1 - x2, 2);
+            double dY = Math.pow(y1 - y2, 2);
+
+            return Math.sqrt(dX + dY);
+        }
+
+        public static void startGpsSettingsActivity(final Context ctx) {
+            new Handler(ctx.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    Intent gpsIntent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                    gpsIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+                    ctx.startActivity(gpsIntent);
+                }
+            });
+        }
     }
 
 }

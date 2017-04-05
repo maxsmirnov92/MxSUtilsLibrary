@@ -7,7 +7,6 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.hardware.usb.UsbAccessory;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
@@ -79,10 +78,6 @@ public final class DeviceUtils {
             wakeLock.acquire();
         }
         return wakeLock;
-    }
-
-    public static boolean checkPermission(@NonNull Context context, String permission) {
-        return (context.checkCallingOrSelfPermission(permission) == PackageManager.PERMISSION_GRANTED);
     }
 
     public static void showKeyguard(@NonNull Activity activity) {

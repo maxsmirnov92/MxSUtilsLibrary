@@ -86,67 +86,76 @@ public final class CompareUtils {
         return compareLongs(one != null ? one.getTime() : 0, another != null ? another.getTime() : 0, ascending);
     }
 
-    public static boolean stringMatches(@NonNull String one, @NonNull String another, int matchFlags, String... separators) {
+
+    public static boolean stringMatches(String one, String another, int matchFlags, String... separators) {
+
+        if (one == null) {
+            one = "";
+        }
+
+        if (another == null) {
+            another = "";
+        }
 
         boolean match = false;
 
-        if (MatchStringOption.contains(EQUALS, matchFlags)) {
+        if (CompareUtils.MatchStringOption.contains(EQUALS, matchFlags)) {
             if (one.equals(another)) {
                 match = true;
             }
         }
-        if (!match && MatchStringOption.contains(EQUALS_IGNORE_CASE, matchFlags)) {
+        if (!match && CompareUtils.MatchStringOption.contains(EQUALS_IGNORE_CASE, matchFlags)) {
             if (one.equalsIgnoreCase(another)) {
                 match = true;
             }
         }
-        if (!match && MatchStringOption.contains(CONTAINS, matchFlags)) {
+        if (!match && CompareUtils.MatchStringOption.contains(CONTAINS, matchFlags)) {
             if (one.contains(another)) {
                 match = true;
             }
         }
-        if (!match && MatchStringOption.contains(CONTAINS_IGNORE_CASE, matchFlags)) {
+        if (!match && CompareUtils.MatchStringOption.contains(CONTAINS_IGNORE_CASE, matchFlags)) {
             if (one.toLowerCase().contains(another.toLowerCase())) {
                 match = true;
             }
         }
-        if (!match && MatchStringOption.contains(STARTS_WITH, matchFlags)) {
+        if (!match && CompareUtils.MatchStringOption.contains(STARTS_WITH, matchFlags)) {
             if (one.startsWith(another)) {
                 match = true;
             }
         }
-        if (!match && MatchStringOption.contains(STARTS_WITH_IGNORE_CASE, matchFlags)) {
+        if (!match && CompareUtils.MatchStringOption.contains(STARTS_WITH_IGNORE_CASE, matchFlags)) {
             if (one.toLowerCase().startsWith(another.toLowerCase())) {
                 match = true;
             }
         }
-        if (!match && MatchStringOption.contains(END_WITH, matchFlags)) {
+        if (!match && CompareUtils.MatchStringOption.contains(END_WITH, matchFlags)) {
             if (one.startsWith(another)) {
                 match = true;
             }
         }
-        if (!match && MatchStringOption.contains(END_WITH_IGNORE_CASE, matchFlags)) {
+        if (!match && CompareUtils.MatchStringOption.contains(END_WITH_IGNORE_CASE, matchFlags)) {
             if (one.toLowerCase().startsWith(another.toLowerCase())) {
                 match = true;
             }
         }
-        if (!match && (MatchStringOption.contains(AUTO, matchFlags) || MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags))) {
+        if (!match && (CompareUtils.MatchStringOption.contains(AUTO, matchFlags) || CompareUtils.MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags))) {
             if (!TextUtils.isEmpty(one)) {
-                one = MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags) ? one.toLowerCase().trim() : one;
-                another = MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags) ? another.toLowerCase().trim() : another;
+                one = CompareUtils.MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags) ? one.toLowerCase().trim() : one;
+                another = CompareUtils.MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags) ? another.toLowerCase().trim() : another;
                 if (stringsEqual(one, another, false)) {
                     match = true;
                 } else {
-                    final String[] parts = one.split("[" + (separators != null && separators.length > 0? TextUtils.join("", separators) : " ") + "]+");
+                    final String[] parts = one.split("[" + (separators != null && separators.length > 0 ? TextUtils.join("", separators) : " ") + "]+");
                     if (parts.length > 0) {
                         for (String word : parts) {
-                            if (!MatchStringOption.containsAny(matchFlags, MatchStringOption.valuesExceptOf(AUTO, AUTO_IGNORE_CASE).toArray(new MatchStringOption[]{}))) {
+                            if (!CompareUtils.MatchStringOption.containsAny(matchFlags, CompareUtils.MatchStringOption.valuesExceptOf(AUTO, AUTO_IGNORE_CASE).toArray(new CompareUtils.MatchStringOption[]{}))) {
                                 if (word.startsWith(another)) {
                                     match = true;
                                     break;
                                 }
                             } else {
-                                if (stringMatches(one, another, MatchStringOption.resetFlags(matchFlags, AUTO, AUTO_IGNORE_CASE))) {
+                                if (stringMatches(word, another, CompareUtils.MatchStringOption.resetFlags(matchFlags, AUTO, AUTO_IGNORE_CASE))) {
                                     match = true;
                                     break;
                                 }

@@ -1,4 +1,4 @@
-package ru.gokidgo.gui.views.decoration;
+package net.maxsmr.commonutils.android.gui.views.decoration;
 
 import android.content.Context;
 import android.content.res.TypedArray;
@@ -16,10 +16,10 @@ import android.view.View;
 
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
-
 
 public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
@@ -124,7 +124,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
             final int childCount = parent.getChildCount();
             for (int i = 0; i < childCount; i++) {
                 final View child = parent.getChildAt(i);
-                if (isDecorated(child, parent)) {
+                if (isDecorated(child, parent, true)) {
                     final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child
                             .getLayoutParams();
                     final int top = child.getBottom() + params.bottomMargin;
@@ -144,7 +144,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
             final int childCount = parent.getChildCount();
             for (int i = 0; i < childCount; i++) {
                 final View child = parent.getChildAt(i);
-                if (isDecorated(child, parent)) {
+                if (isDecorated(child, parent, true)) {
                     final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child
                             .getLayoutParams();
                     final int left = child.getRight() + params.rightMargin;
@@ -159,7 +159,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
     @Override
     public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
         super.getItemOffsets(outRect, view, parent, state);
-        if (isDecorated(view, parent)) {
+        if (isDecorated(view, parent, false)) {
             if (mDivider != null && mSpace == 0) {
                 if (mOrientation == VERTICAL_LIST) {
                     outRect.set(0, 0, 0, mDivider.getIntrinsicHeight());
@@ -182,7 +182,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
     }
 
-    protected boolean isDecorated(View view, RecyclerView parent) {
+    protected boolean isDecorated(View view, RecyclerView parent, boolean dividerOrSpacing) {
 
         int childPos = parent.getChildAdapterPosition(view);
 
@@ -196,7 +196,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
                 result = childPos < parent.getAdapter().getItemCount() - 1;
                 break;
             case CUSTOM:
-                result = settings.getPositions().contains(childPos);
+                result = dividerOrSpacing ? settings.getDividerPositions().contains(childPos) : settings.getSpacingPositions().contains(childPos);
                 break;
             default:
                 throw new IllegalArgumentException("incorrect " + DecorationSettings.Mode.class.getSimpleName() + ": " + settings.getMode());
@@ -211,7 +211,9 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
         private final Mode mode;
 
         @NonNull
-        private final Set<Integer> positions = new LinkedHashSet<>();
+        private final Set<Integer> dividerPositions = new LinkedHashSet<>();
+
+        private final Set<Integer> spacingPositions = new LinkedHashSet<>();
 
         @NonNull
         public Mode getMode() {
@@ -219,8 +221,12 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
         }
 
         @NonNull
-        public Set<Integer> getPositions() {
-            return Collections.unmodifiableSet(positions);
+        public Set<Integer> getDividerPositions() {
+            return Collections.unmodifiableSet(dividerPositions);
+        }
+
+        public Set<Integer> getSpacingPositions() {
+            return Collections.unmodifiableSet(spacingPositions);
         }
 
         public DecorationSettings() {
@@ -228,18 +234,21 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
         }
 
         public DecorationSettings(@NonNull Mode mode) {
-            this.mode = mode;
+            this(mode, null, null);
         }
 
-        public DecorationSettings(@NonNull Mode mode, @Nullable Set<Integer> positions) {
+        public DecorationSettings(@NonNull Mode mode, @Nullable Collection<Integer> dividerPositions, @Nullable Collection<Integer> spacingPositions) {
             this.mode = mode;
-            if (positions != null) {
-                this.positions.addAll(positions);
+            if (dividerPositions != null) {
+                this.dividerPositions.addAll(dividerPositions);
+            }
+            if (spacingPositions != null) {
+                this.spacingPositions.addAll(spacingPositions);
             }
         }
 
         public enum Mode {
-            ALL, ALL_EXCEPT_LAST, CUSTOM;
+            ALL, ALL_EXCEPT_LAST, CUSTOM
         }
     }
 }

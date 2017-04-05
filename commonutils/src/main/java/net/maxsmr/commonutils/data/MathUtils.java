@@ -6,6 +6,7 @@ import android.support.annotation.Nullable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -139,7 +140,7 @@ public final class MathUtils {
         throw new IllegalArgumentException("incorrect number class: " + numberClass);
     }
 
-    public static double mergeDecimals(Collection<? extends Number> numbers) {
+    public static double mergeDigits(Collection<? extends Number> numbers) {
         double result = 0;
         int currentMultiplier = 1;
         if (numbers != null) {
@@ -148,6 +149,18 @@ public final class MathUtils {
                     result += (n.doubleValue() * (double) currentMultiplier);
                     currentMultiplier *= 10;
                 }
+            }
+        }
+        return result;
+    }
+
+    public static List<Integer> splitNumberToDigits(Number number) {
+        List<Integer> result = new LinkedList<>();
+        if (number != null) {
+            int n = number.intValue();
+            while (n > 0) {
+                result.add(0, n % 10);
+                n = n / 10;
             }
         }
         return result;

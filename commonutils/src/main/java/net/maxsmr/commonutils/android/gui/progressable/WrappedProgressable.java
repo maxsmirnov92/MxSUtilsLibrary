@@ -1,12 +1,12 @@
 package net.maxsmr.commonutils.android.gui.progressable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
-public class WrappedProgressable implements Progressable {
+public abstract class WrappedProgressable implements Progressable {
 
-    private final List<Progressable> progressables = new ArrayList<>();
+    private final Set<Progressable> progressables = new LinkedHashSet<>();
 
     public WrappedProgressable(Progressable... progressables) {
         if (progressables != null) {
@@ -16,19 +16,25 @@ public class WrappedProgressable implements Progressable {
 
     @Override
     public void onStart() {
-        for (Progressable p : progressables) {
-            if (p != null) {
-                p.onStart();
+        if (isAlive()) {
+            for (Progressable p : progressables) {
+                if (p != null) {
+                    p.onStart();
+                }
             }
         }
     }
 
     @Override
     public void onStop() {
-        for (Progressable p : progressables) {
-            if (p != null) {
-                p.onStop();
+        if (isAlive()) {
+            for (Progressable p : progressables) {
+                if (p != null) {
+                    p.onStop();
+                }
             }
         }
     }
+
+    protected abstract boolean isAlive();
 }

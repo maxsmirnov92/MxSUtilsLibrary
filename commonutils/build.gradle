@@ -3,20 +3,20 @@ apply plugin: 'maven'
 
 def groupId = "net.maxsmr"
 def artifactId = "commonutils"
-def version = "1.0.3"
+def version = "1.0.3.1"
 
 def releaseDir = "${buildDir}/release"
 
 android {
-    compileSdkVersion 24
-    buildToolsVersion "24.0.3"
+    compileSdkVersion 25
+    buildToolsVersion "25.0.2"
 
     sourceCompatibility = 1.7
     targetCompatibility = 1.7
 
     defaultConfig {
         minSdkVersion 10
-        targetSdkVersion 24
+        targetSdkVersion 25
         versionCode 1
         versionName version
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
@@ -110,11 +110,12 @@ artifacts {
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
 
-    compile 'com.android.support:support-annotations:24.2.1'
-    compile 'com.android.support:palette-v7:24.2.1'
-    compile 'com.android.support:design:24.2.1'
-    javadocDependencies 'com.android.support:appcompat-v7:24.2.1'
-    javadocDependencies 'com.android.support:support-annotations:24.4.0'
+
+    compile 'com.android.support:support-annotations:25.3.1'
+    compile 'com.android.support:palette-v7:25.3.1'
+    compile 'com.android.support:design:25.3.1'
+    javadocDependencies 'com.android.support:appcompat-v7:25.3.1'
+    javadocDependencies 'com.android.support:support-annotations:25.3.1'
 
     compile 'de.mindpipe.android:android-logging-log4j:1.0.3'
     compile group: 'io.github.rockerhieu', name: 'emojicon', version: '1.4.0'
@@ -122,12 +123,12 @@ dependencies {
     compile 'commons-net:commons-net:3.3'
 
     compile 'org.slf4j:slf4j-log4j12:1.7.21'
-    compile 'com.google.code.gson:gson:2.4'
+    compile 'com.google.code.gson:gson:2.8.0'
 
 
     testCompile 'junit:junit:4.12'
 
-    androidTestCompile 'com.android.support:support-annotations:24.1.1'
+    androidTestCompile 'com.android.support:support-annotations:25.3.1'
     androidTestCompile 'com.android.support.test:runner:0.5'
     androidTestCompile 'com.android.support.test:rules:0.5'
     androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {

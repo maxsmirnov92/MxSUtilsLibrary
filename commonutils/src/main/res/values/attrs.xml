@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+
     <declare-styleable name="MaskedEditText">
         <attr name="mask" format="string"/>
         <attr name="allowed_chars" format="string"/>
         <attr name="denied_chars" format="string"/>
         <attr name="char_representation" format="string"/>
     </declare-styleable>
+
     <attr name="custom_typeface" format="string"/>
     <declare-styleable name="FontButton">
         <attr name="custom_typeface"/>
@@ -28,6 +30,7 @@
     <declare-styleable name="FontTextView">
         <attr name="custom_typeface"/>
     </declare-styleable>
+
     <declare-styleable name="ViewPagerIndicator">
         <attr name="normal_drawable" format="integer"/>
         <attr name="selected_drawable" format="integer"/>
@@ -46,6 +49,23 @@
     <declare-styleable name="PatternedEditText">
         <attr name="pattern" format="string" />
         <attr name="alwaysVisibleCharCount" format="integer" />
+    </declare-styleable>
+
+    <declare-styleable name="FrameLayoutMaxSize">
+        <attr name="max_width" />
+        <attr name="max_height" />
+    </declare-styleable>
+    <declare-styleable name="LinearLayoutMaxSize">
+        <attr name="max_width" />
+        <attr name="max_height" />
+    </declare-styleable>
+    <declare-styleable name="RelativeLayoutMaxSize">
+        <attr name="max_width" />
+        <attr name="max_height" />
+    </declare-styleable>
+    <declare-styleable name="ScrollViewMaxSize">
+        <attr name="max_width" />
+        <attr name="max_height" />
     </declare-styleable>
 
 </resources>

@@ -1,4 +1,4 @@
-package ru.gokidgo.gui.views.size;
+package net.maxsmr.commonutils.android.gui.views.size;
 
 
 import android.content.Context;
@@ -6,7 +6,8 @@ import android.content.res.TypedArray;
 import android.util.AttributeSet;
 import android.widget.LinearLayout;
 
-import ru.gokidgo.R;
+import net.maxsmr.commonutils.R;
+
 
 public class LinearLayoutMaxSize extends LinearLayout {
 

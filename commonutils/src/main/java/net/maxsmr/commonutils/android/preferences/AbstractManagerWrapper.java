@@ -12,6 +12,14 @@ public abstract class AbstractManagerWrapper {
         this.manager = manager;
     }
 
+    public void addPreferenceChangeListener(PreferenceChangeListener l) {
+        manager.addPreferenceChangeListener(l);
+    }
+
+    public void removePreferenceChangeListener(PreferenceChangeListener l) {
+        manager.removePreferenceChangeListener(l);
+    }
+
     public boolean has(String key) {
 //        if (Number.class.isAssignableFrom(clazz)) {
 //            Object v = get(key, clazz);
@@ -20,6 +28,24 @@ public abstract class AbstractManagerWrapper {
 //            return get(key, clazz) != null;
 //        }
         return manager.hasKey(key);
+    }
+
+    public <V> V getOrCreate(String key, @NonNull Class<V> clazz, @Nullable V defaultValue) {
+        V value = defaultValue;
+        boolean has = false;
+        if (manager.hasKey(key)) {
+            has = true;
+            value = manager.getValue(key, clazz, defaultValue);
+            if (value == null) {
+                has = false;
+            }
+        }
+        if (!has) {
+            manager.setValue(key, defaultValue);
+            return defaultValue;
+        } else {
+            return value;
+        }
     }
 
     public <V> V get(String key, @NonNull Class<V> clazz) {

@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.android.location.info;
 
-public enum LocStatus {
+public enum TrackingStatus {
 
     STOP_TRACKING(0),
 
@@ -10,7 +10,7 @@ public enum LocStatus {
 
     public final int value;
 
-    LocStatus(int value) {
+    TrackingStatus(int value) {
         this.value = value;
     }
 }

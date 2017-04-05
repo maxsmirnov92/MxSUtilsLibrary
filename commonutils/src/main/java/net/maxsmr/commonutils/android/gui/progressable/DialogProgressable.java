@@ -36,20 +36,35 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
 
     private boolean cancelable = false;
 
+    private int theme;
+
     private OnBackPressedListener backPressedListener;
     private DialogInterface.OnCancelListener cancelListener;
     private DialogInterface.OnDismissListener dismissListener;
 
 
     public DialogProgressable(@NonNull Context context) {
-        this(context, null, null, true, 0, false);
+        this(context, null, null, false);
     }
 
 //    public DialogProgressable(@NonNull Context context, boolean indeterminate, int max, boolean cancelable) {
 //        this(context, null, context.getString(R.string.loading), indeterminate, max, cancelable);
 //    }
 
+    public DialogProgressable(@NonNull Context context, @Nullable String title, @Nullable String message, boolean cancelable) {
+        this(context, title, message, true, 0, cancelable, 0);
+    }
+
+
+    public DialogProgressable(@NonNull Context context, @Nullable String title, @Nullable String message, boolean cancelable, int theme) {
+        this(context, title, message, true, 0, cancelable, theme);
+    }
+
     public DialogProgressable(@NonNull Context context, @Nullable String title, @Nullable String message, boolean indeterminate, int max, boolean cancelable) {
+        this(context, title, message, indeterminate, max, cancelable, 0);
+    }
+
+    public DialogProgressable(@NonNull Context context, @Nullable String title, @Nullable String message, boolean indeterminate, int max, boolean cancelable, int theme) {
         this.context = context;
         setTitle(title);
         setMessage(message);
@@ -63,9 +78,9 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
     }
 
     @MainThread
-    private void begin() {
+    private void start() {
         if (!isStarted()) {
-            progressDialog = new ProgressDialog(context);
+            progressDialog = new ProgressDialog(context, theme);
             if (!indeterminate) {
                 progressDialog.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
             } else {
@@ -84,8 +99,13 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
     }
 
     @MainThread
-    private void end() {
+    private void stop() {
         dismiss();
+    }
+
+    private void restart() {
+        stop();
+        start();
     }
 
     public void notifyProgress(int progress) {
@@ -189,6 +209,14 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
         return this;
     }
 
+    public DialogProgressable setTheme(int theme) {
+        this.theme = theme;
+        if (isStarted()) {
+            restart();
+        }
+        return this;
+    }
+
     public boolean cancel() {
         if (isStarted()) {
             if (cancelable) {
@@ -248,13 +276,13 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
     @Override
     @MainThread
     public void onStart() {
-        begin();
+        start();
     }
 
     @Override
     @MainThread
     public void onStop() {
-        end();
+        stop();
     }
 
     public interface OnBackPressedListener {

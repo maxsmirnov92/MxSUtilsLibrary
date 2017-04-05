@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.android.gui.views;
+package net.maxsmr.commonutils.android.gui.views.recycler;
 
 import android.content.Context;
 import android.support.v7.widget.LinearLayoutManager;

@@ -1,6 +1,8 @@
 package net.maxsmr.commonutils.android.gui.views.checkable;
 
 import android.content.Context;
+import android.os.Build;
+import android.support.annotation.RequiresApi;
 import android.util.AttributeSet;
 import android.widget.Checkable;
 import android.widget.LinearLayout;
@@ -19,8 +21,17 @@ public class CheckableLinearLayout extends LinearLayout implements Checkable {
 
     private boolean mChecked = false;
 
+    public CheckableLinearLayout(Context context) {
+        super(context);
+    }
+
     public CheckableLinearLayout(Context context, AttributeSet attrs) {
         super(context, attrs);
+    }
+
+    @RequiresApi(api = Build.VERSION_CODES.HONEYCOMB)
+    public CheckableLinearLayout(Context context, AttributeSet attrs, int defStyleAttr) {
+        super(context, attrs, defStyleAttr);
     }
 
     public boolean isChecked() {

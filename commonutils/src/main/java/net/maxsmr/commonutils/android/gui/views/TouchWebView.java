@@ -13,6 +13,7 @@ import android.support.annotation.Nullable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.webkit.ConsoleMessage;
 import android.webkit.JsResult;
 import android.webkit.SslErrorHandler;
@@ -44,6 +45,8 @@ public class TouchWebView extends WebView implements Handler.Callback {
     private TouchWebViewClient webViewClient;
 
     private TouchWebChromeClient webChromeClient;
+
+    private View.OnClickListener clickListener;
 
     public TouchWebView(Context context) {
         this(context, null);
@@ -171,12 +174,25 @@ public class TouchWebView extends WebView implements Handler.Callback {
 //        return /* event.getAction() == MotionEvent.ACTION_UP && */  gestureDetector.onTouchEvent(event);
     }
 
-    private View.OnClickListener clickListener;
-
     @Override
     public void setOnClickListener(@Nullable OnClickListener l) {
         super.setOnClickListener(l);
         clickListener = l;
+    }
+
+    // http://stackoverflow.com/questions/5267639/how-to-safely-turn-webview-zooming-on-and-off-as-needed
+    @Override
+    public void destroy() {
+        mWebViewHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                TouchWebView.this.providerDestroy();
+            }
+        }, ViewConfiguration.getZoomControlsTimeout());
+    }
+
+    private void providerDestroy() {
+        super.destroy();
     }
 
     public static class TouchWebViewClient extends WebViewClient {
@@ -333,18 +349,16 @@ public class TouchWebView extends WebView implements Handler.Callback {
     public static String WebResourceRequestToString(WebResourceRequest request) {
         if (request != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("uri=");
-                sb.append(request.getUrl());
-                sb.append(", isForMainFrame=");
-                sb.append(request.isForMainFrame());
-                sb.append(", hasGesture=");
-                sb.append(request.hasGesture());
-                sb.append(", method=");
-                sb.append(request.getMethod());
-                sb.append(", requestHeaders=");
-                sb.append(request.getRequestHeaders());
-                return sb.toString();
+                return "uri=" +
+                        request.getUrl() +
+                        ", isForMainFrame=" +
+                        request.isForMainFrame() +
+                        ", hasGesture=" +
+                        request.hasGesture() +
+                        ", method=" +
+                        request.getMethod() +
+                        ", requestHeaders=" +
+                        request.getRequestHeaders();
             } else {
                 return request.toString();
             }
@@ -355,12 +369,10 @@ public class TouchWebView extends WebView implements Handler.Callback {
     public static String WebResourceErrorToString(WebResourceError error) {
         if (error != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("errorCode=");
-                sb.append(error.getErrorCode());
-                sb.append(", description=");
-                sb.append(error.getDescription());
-                return sb.toString();
+                return "errorCode=" +
+                        error.getErrorCode() +
+                        ", description=" +
+                        error.getDescription();
             } else {
                 return error.toString();
             }
@@ -371,14 +383,12 @@ public class TouchWebView extends WebView implements Handler.Callback {
     public static String WebResourceResponseToString(WebResourceResponse response) {
         if (response != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                StringBuilder sb = new StringBuilder();
-                sb.append("statusCode=");
-                sb.append(response.getStatusCode());
-                sb.append(", reasonPhrase=");
-                sb.append(response.getReasonPhrase());
-                sb.append(", responseHeaders=");
-                sb.append(response.getResponseHeaders());
-                return sb.toString();
+                return "statusCode=" +
+                        response.getStatusCode() +
+                        ", reasonPhrase=" +
+                        response.getReasonPhrase() +
+                        ", responseHeaders=" +
+                        response.getResponseHeaders();
             } else {
                 return response.toString();
             }
@@ -387,16 +397,14 @@ public class TouchWebView extends WebView implements Handler.Callback {
     }
 
     public static String ConsoleMessageToString(ConsoleMessage message) {
-        StringBuilder sb = new StringBuilder();
-        sb.append("level=");
-        sb.append(message.messageLevel());
-        sb.append(", sourceId=");
-        sb.append(message.sourceId());
-        sb.append(", lineNumber=");
-        sb.append(message.lineNumber());
-        sb.append(", message=");
-        sb.append(message.message());
-        return sb.toString();
+        return "level=" +
+                message.messageLevel() +
+                ", sourceId=" +
+                message.sourceId() +
+                ", lineNumber=" +
+                message.lineNumber() +
+                ", message=" +
+                message.message();
     }
 
     public enum ScrollState {

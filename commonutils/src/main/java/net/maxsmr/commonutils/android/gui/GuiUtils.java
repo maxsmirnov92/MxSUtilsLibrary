@@ -17,6 +17,8 @@ import android.support.annotation.IdRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.AppBarLayout;
+import android.support.design.widget.BottomSheetBehavior;
+import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.TextInputLayout;
 import android.support.v7.app.AlertDialog;
@@ -37,6 +39,7 @@ import android.view.Window;
 import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -147,6 +150,29 @@ public final class GuiUtils {
                 progressBar.setSecondaryProgressTintList(stateList);
                 progressBar.setIndeterminateTintList(stateList);
                 // new ColorStateList(new int[][]{new int[]{android.R.attr.state_enabled}}, new int[]{color})
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    public static void setBottomSheetHideable(@NonNull BottomSheetDialog dialog, boolean toggle) {
+        Class<BottomSheetDialog> clazz = (Class<BottomSheetDialog>) dialog.getClass();
+        Field behaviourField = null;
+        try {
+            behaviourField = clazz.getDeclaredField("mBehavior");
+        } catch (NoSuchFieldException e) {
+            e.printStackTrace();
+        }
+        if (behaviourField != null) {
+            behaviourField.setAccessible(true);
+            BottomSheetBehavior<FrameLayout> behavior = null;
+            try {
+                behavior = (BottomSheetBehavior<FrameLayout>) behaviourField.get(dialog);
+            } catch (IllegalAccessException e) {
+                e.printStackTrace();
+            }
+            if (behavior != null) {
+                behavior.setHideable(toggle);
             }
         }
     }
