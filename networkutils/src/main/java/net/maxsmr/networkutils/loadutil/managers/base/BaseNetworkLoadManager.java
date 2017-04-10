@@ -1,8 +1,9 @@
 package net.maxsmr.networkutils.loadutil.managers.base;
 
+
+import android.database.Observable;
 import android.support.annotation.NonNull;
 
-import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;
 import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;

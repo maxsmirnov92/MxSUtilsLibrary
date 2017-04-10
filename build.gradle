@@ -19,7 +19,7 @@ allprojects {
     repositories {
         jcenter()
         mavenCentral()
-        maven { url 'https://dl.bintray.com/maxsmirnov92/maven-libs' }
+        maven { url 'https://dl.bintray.com/maxsmirnov92/maven' }
     }
 
 }

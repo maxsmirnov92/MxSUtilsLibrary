@@ -51,8 +51,8 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
     private static final String LINE_FEED = "\r\n";
     private static final String CHARSET = Charset.defaultCharset().name();
 
-    public NetworkLoadManager(int limit, int concurrentDownloadsCount) {
-        super(limit, concurrentDownloadsCount);
+    public NetworkLoadManager(int limit, int concurrentLoadsCount) {
+        super(limit, concurrentLoadsCount);
     }
 
     @Nullable

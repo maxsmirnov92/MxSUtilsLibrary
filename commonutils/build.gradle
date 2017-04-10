@@ -25,7 +25,7 @@ apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
 def groupIdName = "net.maxsmr"
-def artifactIdName = "commonutils"
+//def artifactIdName = "commonutils"
 def artifactVersionName = "1.0.3.1"
 
 def siteUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary'
@@ -107,9 +107,8 @@ dependencies {
     javadocDependencies 'com.android.support:appcompat-v7:25.3.1'
     javadocDependencies 'com.android.support:support-annotations:25.3.1'
     compile 'de.mindpipe.android:android-logging-log4j:1.0.3'
-    compile 'io.github.rockerhieu:emojicon:1.4.0'
-    compile 'commons-net:commons-net:3.3'
     compile 'org.slf4j:slf4j-log4j12:1.7.21'
+    compile 'commons-net:commons-net:3.3'
     compile 'com.google.code.gson:gson:2.8.0'
     testCompile 'junit:junit:4.12'
     androidTestCompile 'com.android.support:support-annotations:25.3.1'
@@ -123,7 +122,7 @@ dependencies {
 uploadArchives {
     repositories.mavenDeployer {
         pom.groupId = groupIdName
-        pom.artifactId = artifactIdName
+        pom.artifactId = project.archivesBaseName
         pom.version = artifactVersionName
         repository(url: "file://${localReleaseDest}")
     }
@@ -145,7 +144,6 @@ bintray {
         vcsUrl = gitUrl
         version {
             name = artifactVersionName
-            desc = 'Common Utils'
         }
         publicDownloadNumbers = true
     }
@@ -154,16 +152,94 @@ bintray {
 publishing {
     publications {
         artifactPublication(MavenPublication) {
-            groupId = "net.maxsmr"
+
+            groupId = groupIdName
             artifactId = project.archivesBaseName
             version = artifactVersionName
-            artifact "${project.buildDir}/outputs/aar/${archivesBaseName}-release.aar"
+            artifact "${project.buildDir}/outputs/aar/${project.archivesBaseName}-release.aar"
             artifact sourcesJar
 //            artifact javadocsJar
+
+//            android.buildTypes.all { variant ->
+//                // Dynamically creating publications name
+//                "${variant.name}artifactPublication"(MavenPublication) {
+//
+//                    def manifest = new XmlSlurper().parse(project.android.sourceSets.main.manifest.srcFile);
+//                    def libVersion = manifest['@android:versionName'].text()
+//                    def artifactName = project.getName()
+//
+//                    // Artifact properties
+//                    groupId = groupIdName
+//                    artifactId = project.archivesBaseName
+//                    version = libVersion
+//                    artifactId variant.name == 'debug' ? artifactName + '-dev' : artifactName
+//
+//                    // Tell maven to prepare the generated "*.aar" file for publishing
+//                    artifact("$buildDir/outputs/aar/${project.getName()}-${variant.name}.aar")
+////                    artifact "${project.buildDir}/outputs/aar/${archivesBaseName}-release.aar"
+//
+//                    artifact sourcesJar
+////            artifact javadocsJar
+//
+//                    //The publication doesn't know about our dependencies, so we have to manually add them to the pom
+//                    pom.withXml {
+//                        //Creating additional node for dependencies
+//                        def dependenciesNode = asNode().appendNode('dependencies')
+//
+//                        //Defining configuration names from which dependencies will be taken (debugCompile or releaseCompile and compile)
+//                        def configurationNames = ["${variant.name}Compile", 'compile']
+//
+//                        configurationNames.each { configurationName ->
+//                            configurations[configurationName].allDependencies.each {
+//                                if (it.group != null && it.name != null) {
+//                                    def dependencyNode = dependenciesNode.appendNode('dependency')
+//                                    dependencyNode.appendNode('groupId', it.group)
+//                                    dependencyNode.appendNode('artifactId', it.name)
+//                                    dependencyNode.appendNode('version', it.version)
+//
+//                                    //If there are any exclusions in dependency
+//                                    if (it.excludeRules.size() > 0) {
+//                                        def exclusionsNode = dependencyNode.appendNode('exclusions')
+//                                        it.excludeRules.each { rule ->
+//                                            def exclusionNode = exclusionsNode.appendNode('exclusion')
+//                                            exclusionNode.appendNode('groupId', rule.group)
+//                                            exclusionNode.appendNode('artifactId', rule.module)
+//                                        }
+//                                    }
+//                                }
+//                            }
+//                        }
+
+//            pom.withXml {
+//                asNode().dependencies.'*'.findAll() {
+//                    it.scope.text() == 'runtime' && project.configurations.compile.allDependencies.find { dep ->
+//                        dep.name == it.artifactId.text()
+//                    }
+//                }.each() {
+//                    it.scope*.value = 'compile'
+//                }
+//            }
+
+            pom.withXml {
+                def dependenciesNode = asNode().appendNode('dependencies')
+
+                //Iterate over the compile dependencies (we don't want the test ones), adding a <dependency> node for each
+                configurations.compile.allDependencies.each {
+                    if (it.group != null) {
+                        def dependencyNode = dependenciesNode.appendNode('dependency')
+                        dependencyNode.appendNode('groupId', it.group)
+                        dependencyNode.appendNode('artifactId', it.name)
+                        dependencyNode.appendNode('version', it.version)
+                    }
+                }
+            }
         }
     }
 }
 
+//        }
+//    }
+//}
 
 //install {
 //    repositories.mavenInstaller {

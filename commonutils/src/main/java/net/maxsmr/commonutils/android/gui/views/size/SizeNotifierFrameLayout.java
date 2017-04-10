@@ -5,8 +5,7 @@
  *
  * Copyright Nikolai Kudashov, 2013-2016.
  */
-
-package ru.gokidgo.gui.views.size;
+package net.maxsmr.commonutils.android.gui.views.size;
 
 import android.content.Context;
 import android.util.AttributeSet;

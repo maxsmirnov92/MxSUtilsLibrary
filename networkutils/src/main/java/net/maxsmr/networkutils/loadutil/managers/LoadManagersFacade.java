@@ -57,10 +57,10 @@ public final class LoadManagersFacade<DP extends AbsIdHolder, UP extends AbsIdHo
         return downloadManager;
     }
 
-    public void initDownloadManager(@NonNull DP idsPool) {
+    public void initDownloadManager(@NonNull DP idsPool, int concurrentLoads) {
         if (downloadManager == null || downloadManager.isReleased()) {
             downloadIdsPool = idsPool;
-            downloadManager = new NetworkLoadManager(AbsTaskRunnableExecutor.DEFAULT_TASKS_LIMIT, 1);
+            downloadManager = new NetworkLoadManager(AbsTaskRunnableExecutor.DEFAULT_TASKS_LIMIT, concurrentLoads);
         }
     }
 
