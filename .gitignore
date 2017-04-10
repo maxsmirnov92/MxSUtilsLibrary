@@ -33,5 +33,5 @@ app/build
 
 .*
 !.gitignore
-!.travis.yml
+!.travis.yml.bak
 bintray.json
