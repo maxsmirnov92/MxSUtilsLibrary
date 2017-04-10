@@ -36,6 +36,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.DownloadWriteMode.RESUME_DOWNLOAD;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.ReadBodyMode.BYTE_ARRAY;
@@ -49,7 +50,6 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
     private static final Logger logger = LoggerFactory.getLogger(NetworkLoadManager.class);
 
     private static final String LINE_FEED = "\r\n";
-    private static final String CHARSET = Charset.defaultCharset().name();
 
     public NetworkLoadManager(int limit, int concurrentLoadsCount) {
         super(limit, concurrentLoadsCount);
@@ -74,7 +74,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
     public LoadProcessInfo getCurrentLoadProcessInfoForId(int loadId) {
         synchronized (mExecutor) {
             LoadRunnable runnable = findLoadRunnableById(loadId);
-            return runnable != null? runnable.getCurrentLoadInfo() : null;
+            return runnable != null ? runnable.getCurrentLoadInfo() : null;
         }
     }
 
@@ -82,7 +82,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
     public LoadListener.STATE getLastStateForId(int loadId) {
         synchronized (mExecutor) {
             LoadRunnable runnable = findLoadRunnableById(loadId);
-            return runnable != null? runnable.getLastState() : LoadListener.STATE.UNKNOWN;
+            return runnable != null ? runnable.getLastState() : LoadListener.STATE.UNKNOWN;
         }
     }
 
@@ -90,7 +90,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
     public Response getLastResponseForId(int loadId) {
         synchronized (mExecutor) {
             LoadRunnable runnable = findLoadRunnableById(loadId);
-            return runnable != null? runnable.getLastResponse() : null;
+            return runnable != null ? runnable.getLastResponse() : null;
         }
     }
 
@@ -370,7 +370,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                         logger.debug("writing request to output stream...");
                         final long startUploadTime = System.currentTimeMillis();
 
-                        requestStream = new DataOutputStream(connection.getOutputStream()); // new PrintWriter(new OutputStreamWriter(output, CHARSET), true);
+                        requestStream = new DataOutputStream(connection.getOutputStream()); // new PrintWriter(new OutputStreamWriter(output, DEFAULT_CHARSET), true);
 
                         final IWriteNotifier writeNotifier = new IWriteNotifier() {
 
@@ -449,7 +449,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                             case MULTIPART_FORM_DATA:
 
                                 for (LoadRunnableInfo.NameValuePair f : rInfo.getFormFields()) {
-                                    Utils.addFormFieldMultipart(requestStream, f.name, f.value, boundary, rInfo.settings.logRequestData);
+                                    Utils.addFormFieldMultipart(requestStream, f.name, f.value,  rInfo.settings.uploadCharset, boundary, rInfo.settings.logRequestData);
                                 }
 
                                 if (currentLoadInfo.totalUploadBytesCount > 0) {
@@ -591,7 +591,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                                     break;
 
                                 case STRING:
-                                    lastResponse.body = new LoadRunnableInfo.StringBody("", Utils.readResponseAsStringBuffered(connection, isResponseOk(lastResponse.code), readNotifier));
+                                    lastResponse.body = new LoadRunnableInfo.StringBody("", Utils.readResponseAsStringBuffered(connection, isResponseOk(lastResponse.code), rInfo.settings.downloadCharset, readNotifier), rInfo.settings.downloadCharset);
                                     break;
 
                                 default:
@@ -925,17 +925,17 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
          * @param name  field name
          * @param value field value
          */
-        static void addFormFieldMultipart(@NonNull DataOutputStream requestStream, @NonNull String name, @NonNull String value, String boundary, boolean log) throws IOException {
+        static void addFormFieldMultipart(@NonNull DataOutputStream requestStream, @NonNull String name, @NonNull String value, String charset, String boundary, boolean log) throws IOException {
             logger.debug("addFormField(), name=" + name + ", value=" + value + ", log=" + log);
 
             if (log)
-                logger.debug("formFieldMultipart=" + "--" + boundary + " LINE_FEED " + "Content-Disposition: form-data; name=" + name + " LINE_FEED " + "Content-Type: text/plain; charset=" + CHARSET + " LINE_FEED " + " LINE_FEED " + value + " LINE_FEED ");
+                logger.debug("formFieldMultipart=" + "--" + boundary + " LINE_FEED " + "Content-Disposition: form-data; name=" + name + " LINE_FEED " + "Content-Type: text/plain; charset=" + charset + " LINE_FEED " + " LINE_FEED " + value + " LINE_FEED ");
 
             requestStream.writeBytes("--" + boundary);
             requestStream.writeBytes(LINE_FEED);
             requestStream.writeBytes("Content-Disposition: form-data; name=\"" + name + "\"");
             requestStream.writeBytes(LINE_FEED);
-            requestStream.writeBytes("Content-Type: text/plain; charset=" + CHARSET);
+            requestStream.writeBytes("Content-Type: text/plain; charset=" + charset);
             requestStream.writeBytes(LINE_FEED);
             requestStream.writeBytes(LINE_FEED);
             requestStream.writeBytes(value);
@@ -1106,8 +1106,8 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         }
 
         @NonNull
-        static String readResponseAsStringBuffered(@NonNull HttpURLConnection connection, boolean inputOrError, @Nullable IReadBytesNotifier readNotifier) throws IOException {
-            return new String(readResponseAsByteArray(connection, inputOrError, readNotifier), Charset.forName("UTF-8"));
+        static String readResponseAsStringBuffered(@NonNull HttpURLConnection connection, boolean inputOrError, String charset, @Nullable IReadBytesNotifier readNotifier) throws IOException {
+            return new String(readResponseAsByteArray(connection, inputOrError, readNotifier), Charset.forName(charset));
         }
 
         @NonNull
@@ -1207,8 +1207,8 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         long leftUploadTime;
         long leftDownloadTime;
 
-        int uploadedBytesCount;
-        int downloadedBytesCount;
+        long uploadedBytesCount;
+        long downloadedBytesCount;
 
         long totalUploadBytesCount;
         long totalDownloadBytesCount;
@@ -1231,7 +1231,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         }
 
         public float getPassedUploadTimeS() {
-            return (float) passedUploadTime / 1000f;
+            return TimeUnit.MILLISECONDS.toSeconds(passedUploadTime);
         }
 
         public long getPassedDownloadTimeMs() {
@@ -1239,7 +1239,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         }
 
         public float getPassedDownloadTimeS() {
-            return (float) passedDownloadTime / 1000f;
+            return TimeUnit.MILLISECONDS.toSeconds(passedDownloadTime);
         }
 
         public long getLeftUploadTimeMsMs() {
@@ -1247,7 +1247,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         }
 
         public float getLeftUploadTimeS() {
-            return (float) leftUploadTime / 1000f;
+            return TimeUnit.MILLISECONDS.toSeconds(leftUploadTime);
         }
 
         public long getLeftDownloadTimeMs() {
@@ -1255,47 +1255,55 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         }
 
         public float getLeftDownloadTimeS() {
-            return (float) leftDownloadTime / 1000f;
+            return TimeUnit.MILLISECONDS.toSeconds(leftDownloadTime);
         }
 
-        public int getUploadedBytesCount() {
+        public long getUploadedBytesCount() {
             return uploadedBytesCount;
         }
 
-        public float getUploadedKBytesCount() {
-            return (float) uploadedBytesCount / 1024f;
+        public long getUploadedKBytesCount() {
+            return FileHelper.SizeUnit.BYTES.toKBytes(uploadedBytesCount);
         }
 
-        public float getUploadedMBytesCount() {
-            return getUploadedKBytesCount() / 1024f;
+        public long getUploadedMBytesCount() {
+            return FileHelper.SizeUnit.BYTES.toMBytes(uploadedBytesCount);
         }
 
-        public int getDownloadedBytesCount() {
+        public long getDownloadedBytesCount() {
             return downloadedBytesCount;
         }
 
-        public float getDownloadedKBytesCount() {
-            return (float) downloadedBytesCount / 1024f;
+        public long getDownloadedKBytesCount() {
+            return FileHelper.SizeUnit.BYTES.toKBytes(downloadedBytesCount);
         }
 
-        public float getDownloadedMBytesCount() {
-            return getDownloadedKBytesCount() / 1024f;
+        public long getDownloadedMBytesCount() {
+            return FileHelper.SizeUnit.BYTES.toMBytes(downloadedBytesCount);
         }
 
-        public float getTotalUploadKBytesCount() {
-            return (float) totalUploadBytesCount / 1024f;
+        public long getTotalUploadBytesCount() {
+            return totalUploadBytesCount;
         }
 
-        public float getTotalUploadMBytesCount() {
-            return getTotalUploadKBytesCount() / 1024f;
+        public long getTotalUploadKBytesCount() {
+            return FileHelper.SizeUnit.BYTES.toKBytes(totalUploadBytesCount);
         }
 
-        public float getTotalDownloadKBytesCount() {
-            return (float) totalDownloadBytesCount / 1024f;
+        public long getTotalUploadMBytesCount() {
+            return FileHelper.SizeUnit.BYTES.toMBytes(totalUploadBytesCount);
         }
 
-        public float getTotalDownloadMBytesCount() {
-            return getTotalDownloadKBytesCount() / 1024f;
+        public long getTotalDownloadBytesCount() {
+            return totalDownloadBytesCount;
+        }
+
+        public long getTotalDownloadKBytesCount() {
+            return FileHelper.SizeUnit.BYTES.toKBytes(totalDownloadBytesCount);
+        }
+
+        public long getTotalDownloadMBytesCount() {
+            return FileHelper.SizeUnit.BYTES.toMBytes(totalDownloadBytesCount);
         }
 
         /**
@@ -1312,6 +1320,21 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
             return uploadSpeed;
         }
 
+        public float getDownloadSpeedKBytesSec() {
+            return FileHelper.SizeUnit.BYTES.toKBytes((long) downloadSpeed) * 1000f;
+        }
+
+        public float getUploadSpeedKBytesSec() {
+            return FileHelper.SizeUnit.BYTES.toKBytes((long) uploadSpeed) * 1000f;
+        }
+
+        public float getUploadedPercentage() {
+            return totalUploadBytesCount > 0? (float) uploadedBytesCount / totalUploadBytesCount : 0;
+        }
+
+        public float getDownloadedPercentage() {
+            return totalDownloadBytesCount > 0? (float) downloadedBytesCount / totalDownloadBytesCount : 0;
+        }
 
         void setToInitial() {
             retriesCount = -1;

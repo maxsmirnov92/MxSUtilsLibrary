@@ -28,6 +28,8 @@ public class LoadRunnableInfo extends RunnableInfo {
 
     private static final long serialVersionUID = 2752232594822816967L;
 
+    public static final Charset DEFAULT_CHARSET = Charset.defaultCharset();
+
     protected LoadRunnableInfo(Builder<?> b) {
         super(b.id, LoadRunnableInfo.class.getSimpleName() + "_" + b.id);
         url = b.url;
@@ -183,6 +185,8 @@ public class LoadRunnableInfo extends RunnableInfo {
         @Nullable
         private File downloadDirectory;
 
+
+
         public Builder(int id, URL url, @NonNull LoadSettings settings) {
             if (id < 0) {
                 throw new IllegalArgumentException("incorrect id: " + id);
@@ -246,7 +250,6 @@ public class LoadRunnableInfo extends RunnableInfo {
             return (I) new LoadRunnableInfo(this);
         }
     }
-
 
     public static class NameValuePair implements Serializable {
 
@@ -353,7 +356,11 @@ public class LoadRunnableInfo extends RunnableInfo {
         protected String value;
 
         public StringBody(@NonNull String name, @Nullable String value) {
-            super(name, value != null? value.getBytes(Charset.forName("UTF-8")) : null);
+            this(name, value, DEFAULT_CHARSET.name());
+        }
+
+        public StringBody(@NonNull String name, @Nullable String value, @Nullable String charset) {
+            super(name, value != null? value.getBytes(TextUtils.isEmpty(charset)? DEFAULT_CHARSET : Charset.forName(charset)) : null);
             this.value = value;
         }
 
@@ -376,7 +383,11 @@ public class LoadRunnableInfo extends RunnableInfo {
         protected transient JsonElement jsonElement;
 
         public JsonBody(@NonNull String name, @Nullable JsonElement jsonElement) {
-            super(name, jsonElement != null? jsonElement.toString() : null);
+            this(name, jsonElement, DEFAULT_CHARSET.name());
+        }
+
+        public JsonBody(@NonNull String name, @Nullable JsonElement jsonElement, @Nullable String charset) {
+            super(name, jsonElement != null? jsonElement.toString() : null, charset);
             this.jsonElement = jsonElement;
         }
 
@@ -591,6 +602,10 @@ public class LoadRunnableInfo extends RunnableInfo {
         @NonNull
         public final ReadBodyMode readBodyMode;
 
+        public final String uploadCharset;
+
+        public final String downloadCharset;
+
         public LoadSettings(@NonNull Builder builder) {
             connectionTimeout = builder.connectionTimeout;
             readWriteTimeout = builder.readWriteTimeout;
@@ -604,6 +619,8 @@ public class LoadRunnableInfo extends RunnableInfo {
             allowDeleteDownloadFile = builder.allowDeleteDownloadFile;
             allowDeleteUploadFiles = builder.allowDeleteUploadFiles;
             readBodyMode = builder.readBodyMode;
+            uploadCharset = builder.uploadCharset;
+            downloadCharset = builder.downloadCharset;
         }
 
         @Override
@@ -697,6 +714,12 @@ public class LoadRunnableInfo extends RunnableInfo {
             @NonNull
             private ReadBodyMode readBodyMode = ReadBodyMode.STRING;
 
+            @NonNull
+            private String uploadCharset = DEFAULT_CHARSET.name();
+
+            @NonNull
+            private String downloadCharset = DEFAULT_CHARSET.name();
+
             public Builder() {
             }
 
@@ -773,6 +796,14 @@ public class LoadRunnableInfo extends RunnableInfo {
                     this.downloadWriteMode = DownloadWriteMode.DO_NOTING;
                 }
                 return this;
+            }
+
+            public void uploadCharset(@NonNull String uploadCharset) {
+                this.uploadCharset = uploadCharset;
+            }
+
+            public void downloadCharset(@NonNull String downloadCharset) {
+                this.downloadCharset = downloadCharset;
             }
 
             @NonNull

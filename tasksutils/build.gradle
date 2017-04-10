@@ -35,6 +35,14 @@ def gitUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary.git'
 def localReleaseDest = project.hasProperty("LOCAL_REPO") ? "${rootProject.projectDir}/${project.LOCAL_REPO}" : "${rootProject.buildDir}/release/repo"
 
 android {
+
+    signingConfigs {
+        release {
+            keyAlias 'maxsmirnov'
+            storeFile file('~/.android/release-key.keystore')
+        }
+    }
+
     compileSdkVersion 25
     buildToolsVersion "25.0.2"
 

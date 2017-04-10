@@ -17,8 +17,7 @@ import java.util.List;
 
 public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
 
-    @Nullable
-    protected final Handler handler;
+    protected final int id;
 
     @NonNull
     protected final NetworkLoadManager manager;
@@ -26,9 +25,9 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
     @Nullable
     private C callback;
 
-    public AbstractRequest(@NonNull NetworkLoadManager manager) {
+    public AbstractRequest(int id, @NonNull NetworkLoadManager manager) {
+        this.id = id;
         this.manager = manager;
-        this.handler = Looper.myLooper() != null ? new Handler(Looper.myLooper()) : new Handler(Looper.getMainLooper());
     }
 
     @NonNull
@@ -50,20 +49,23 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
     }
 
     public final boolean isRunning() {
-        return manager.isLoadRunning(getId());
+        return manager.isLoadRunning(id);
     }
 
     public final boolean isCancelled() {
-        return manager.isLoadCancelled(getId());
+        return manager.isLoadCancelled(id);
     }
 
     public final void cancel() {
         if (isRunning()) {
-            manager.cancelLoad(getId());
+            manager.cancelLoad(id);
         }
     }
 
-    protected abstract int getId();
+    @NonNull
+    protected List<Integer> getAcceptableResponseCodes() {
+        return defaultAcceptableResponseCodes();
+    }
 
     @NonNull
     protected abstract URL getUrl();
@@ -71,71 +73,79 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
     @NonNull
     protected abstract LoadRunnableInfo.LoadSettings getLoadSettings();
 
-    @Nullable
-    protected abstract List<LoadRunnableInfo.NameValuePair> getHeaders();
-
-    @Nullable
-    protected abstract List<LoadRunnableInfo.NameValuePair> getFormFields();
-
     @NonNull
-    protected List<Integer> getAcceptableResponseCodes() {
-        return defaultAcceptableResponseCodes();
+    protected abstract LoadRunnableInfo.ContentType getContentType();
+
+    @Nullable
+    protected List<LoadRunnableInfo.NameValuePair> getHeaders() {
+        return null;
     }
 
     @Nullable
-    protected abstract LoadRunnableInfo.FileBody getFileFormField();
+    protected List<LoadRunnableInfo.NameValuePair> getFormFields() {
+        return null;
+    }
 
     @Nullable
-    protected abstract File getDownloadFile();
+    protected LoadRunnableInfo.Body getBody() {
+        return null;
+    }
 
+    @Nullable
+    protected File getDownloadFile() {
+        return null;
+    }
 
     public void enqueue(@Nullable C callback) {
 
+        LoadRunnableInfo.Builder builder = new LoadRunnableInfo.Builder(id, getUrl(), getLoadSettings());
+        builder.addAcceptableResponseCodes(getAcceptableResponseCodes());
+        builder.contentType(getContentType());
+        builder.addHeaders(getHeaders());
+        builder.addFormFields(getFormFields());
+        builder.body(getBody());
+        builder.downloadFile(getDownloadFile());
+
+        LoadRunnableInfo info = builder.build();
+
         this.callback = callback;
         if (callback != null) {
-            callback.handler = handler;
+            callback.id = id;
             callback.manager = manager;
+            callback.loadRunnableInfo = info;
             manager.addLoadListener(callback);
         }
 
-        LoadRunnableInfo.Builder builder = new LoadRunnableInfo.Builder(getId(), getUrl(), getLoadSettings());
-        builder.addAcceptableResponseCodes(getAcceptableResponseCodes());
-        builder.addHeaders(getHeaders());
-        builder.addFormFields(getFormFields());
-        builder.body(getFileFormField());
-        builder.downloadFile(getDownloadFile());
-
-        manager.enqueueLoad(builder.build());
+        manager.enqueueLoad(info);
     }
 
     public abstract static class Callback implements LoadListener<LoadRunnableInfo> {
 
-        public Callback(int id) {
-            this.id = id;
+        @NonNull
+        protected final Handler uiHandler = new Handler(Looper.getMainLooper());
+
+        private final boolean callbacksOnUiThread;
+
+        protected int id;
+
+        protected NetworkLoadManager manager;
+
+        protected LoadRunnableInfo loadRunnableInfo;
+
+
+        public Callback(boolean callbacksOnUiThread) {
+//            this.uiHandler = Looper.myLooper() != null ? new Handler(Looper.myLooper()) : null;
+            this.callbacksOnUiThread = callbacksOnUiThread;
         }
-
-        final int id;
-
-        @Nullable
-        Handler handler;
-
-        @Nullable
-        NetworkLoadManager manager;
-
-        @Nullable
-        NetworkLoadManager.LoadProcessInfo loadProcessInfo;
-
-        @Nullable
-        NetworkLoadManager.Response response;
 
         @Nullable
         public NetworkLoadManager.LoadProcessInfo getLoadProcessInfo() {
-            return loadProcessInfo;
+            return manager.getCurrentLoadProcessInfoForId(id);
         }
 
         @Nullable
         public NetworkLoadManager.Response getResponse() {
-            return response;
+            return manager.getLastResponseForId(id);
         }
 
         @Override
@@ -151,54 +161,120 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
         @Override
         public final void onUpdateState(@NonNull STATE state, @NonNull LoadRunnableInfo loadInfo, @NonNull final NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
 
-            this.loadProcessInfo = loadProcessInfo;
+            if (manager == null) {
+                throw new IllegalStateException("manager was not initialized");
+            }
+
+            final NetworkLoadManager.Response response = manager.getLastResponseForId(id);
+
+            Runnable r;
 
             switch (state) {
 
                 case STARTING:
-                    if (handler != null) {
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                onStarting();
-                            }
-                        });
+
+                    r = new Runnable() {
+                        @Override
+                        public void run() {
+                            onStarting();
+                        }
+                    };
+
+                    if (callbacksOnUiThread) {
+                        uiHandler.post(r);
                     } else {
-                        onStarting();
+                        r.run();
+                    }
+                    break;
+
+                case FAILED:
+                    r = new Runnable() {
+                        @Override
+                        public void run() {
+                            int retriesCount = manager.getCurrentLoadProcessInfoForId(id).getRetriesCount();
+                            onFailedAttempt(response, loadProcessInfo, retriesCount, loadRunnableInfo.settings.retryLimit > 0? loadRunnableInfo.settings.retryLimit - retriesCount : loadRunnableInfo.settings.retryLimit);
+                        }
+                    };
+
+                    if (callbacksOnUiThread) {
+                        uiHandler.post(r);
+                    } else {
+                        r.run();
                     }
                     break;
 
                 case FAILED_RETRIES_EXCEEDED:
-                    onFailed(null, loadProcessInfo);
+
+                    r = new Runnable() {
+                        @Override
+                        public void run() {
+                            onFailed(response, loadProcessInfo);
+                        }
+                    };
+
+                    if (callbacksOnUiThread) {
+                        uiHandler.post(r);
+                    } else {
+                        r.run();
+                    }
                     break;
 
                 case CANCELLED:
-                    if (handler != null) {
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                onCancelled();
-                            }
-                        });
+
+                    r = new Runnable() {
+                        @Override
+                        public void run() {
+                            onCancelled();
+                        }
+                    };
+
+                    if (callbacksOnUiThread) {
+                        uiHandler.post(r);
                     } else {
-                        onCancelled();
+                        r.run();
                     }
                     break;
 
                 case UPLOADING:
                 case DOWNLOADING:
-                    if (handler != null) {
-                        handler.post(new Runnable() {
-                            @Override
-                            public void run() {
-                                onProcessing(loadProcessInfo);
-                            }
-                        });
+
+                    r = new Runnable() {
+                        @Override
+                        public void run() {
+                            onProcessing(loadProcessInfo);
+                        }
+                    };
+
+                    if (callbacksOnUiThread) {
+                        uiHandler.post(r);
                     } else {
-                        onProcessing(loadProcessInfo);
+                        r.run();
                     }
                     break;
+
+                case SUCCESS:
+
+                    r = new Runnable() {
+                        @Override
+                        public void run() {
+                            if (response != null) {
+                                onSuccess(response, loadProcessInfo);
+                            }
+                        }
+                    };
+                    if (callbacksOnUiThread) {
+                        uiHandler.post(r);
+                    } else {
+                        r.run();
+                    }
+
+                    break;
             }
+        }
+
+        @Override
+        public void onResponse(@NonNull LoadRunnableInfo loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NonNull NetworkLoadManager.Response response) {
+
         }
 
         @Override
@@ -211,21 +287,6 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
 
         }
 
-        @Override
-        public void onResponse(@NonNull LoadRunnableInfo loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NonNull NetworkLoadManager.Response response) {
-            this.loadProcessInfo = loadProcessInfo;
-            this.response = response;
-            switch (response.getStatus()) {
-                case ACCEPTED:
-                    onSuccess(response, loadProcessInfo);
-                    break;
-
-                case DECLINED:
-                    onFailed(response, loadProcessInfo);
-                    break;
-            }
-        }
-
         protected void onStarting() {
 
         }
@@ -236,42 +297,47 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
 
         @CallSuper
         protected void onFinished() {
-            if (manager != null) {
-                manager.removeLoadListener(this);
+            if (manager == null) {
+                throw new IllegalStateException("manager was not initialized");
             }
+            manager.removeLoadListener(this);
         }
 
         @CallSuper
-        protected void onSuccess(@Nullable NetworkLoadManager.Response response, @NonNull NetworkLoadManager.LoadProcessInfo info) {
-            if (handler != null) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        onFinished();
-                    }
-                });
-            } else {
-                onFinished();
-            }
+        protected void onSuccess(@NonNull NetworkLoadManager.Response response, @NonNull NetworkLoadManager.LoadProcessInfo info) {
+            onFinished();
         }
 
         @CallSuper
         protected void onFailed(@Nullable NetworkLoadManager.Response response, @NonNull NetworkLoadManager.LoadProcessInfo info) {
-            if (handler != null) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        onFinished();
-                    }
-                });
-            } else {
-                onFinished();
-            }
+            onFinished();
+        }
+
+        @CallSuper
+        protected void onFailedAttempt(@Nullable NetworkLoadManager.Response response, @NonNull NetworkLoadManager.LoadProcessInfo info, int attemptsMade,int attemptsLeft ) {
+
         }
 
         @CallSuper
         protected void onCancelled() {
-            onFinished();
+            Runnable r = new Runnable() {
+                @Override
+                public void run() {
+                    onFinished();
+                }
+            };
+            if (callbacksOnUiThread) {
+                uiHandler.post(r);
+            } else {
+                r.run();
+            }
+        }
+
+        public boolean hasLoad(int id) {
+            if (manager == null) {
+                throw new IllegalStateException("manager was not initialized");
+            }
+            return manager.getLastStateForId(id) != STATE.UNKNOWN;
         }
     }
 

@@ -36,8 +36,13 @@ public final class LoadManagersFacade<DP extends AbsIdHolder, UP extends AbsIdHo
     private static LoadManagersFacade<?, ?> sInstance;
 
     private LoadManagersFacade(@NonNull DP downloadIdsPool, @NonNull UP uploadIdsPool) {
-        initDownloadManager(downloadIdsPool);
-        initUploadExecutor(uploadIdsPool);
+        this(downloadIdsPool, 1, uploadIdsPool, 1);
+    }
+
+
+    private LoadManagersFacade(@NonNull DP downloadIdsPool, int concurrentDownloadsCount, @NonNull UP uploadIdsPool, int concurrentUploadsCount) {
+        initDownloadManager(downloadIdsPool, concurrentDownloadsCount);
+        initUploadExecutor(uploadIdsPool, concurrentUploadsCount);
     }
 
     private DP downloadIdsPool;
@@ -88,10 +93,10 @@ public final class LoadManagersFacade<DP extends AbsIdHolder, UP extends AbsIdHo
         return uploadManager;
     }
 
-    public void initUploadExecutor(@NonNull UP idsPool) {
+    public void initUploadExecutor(@NonNull UP idsPool, int concurrentLoadsCount) {
         if (uploadManager == null || uploadManager.isReleased()) {
             uploadIdsPool = idsPool;
-            uploadManager = new NetworkLoadManager(AbsTaskRunnableExecutor.DEFAULT_TASKS_LIMIT, 1);
+            uploadManager = new NetworkLoadManager(AbsTaskRunnableExecutor.DEFAULT_TASKS_LIMIT, concurrentLoadsCount);
         }
     }
 
