@@ -16,6 +16,14 @@ public final class LoadManagersFacade<DP extends AbsIdHolder, UP extends AbsIdHo
         }
     }
 
+    public static <DP extends AbsIdHolder, UP extends AbsIdHolder> void initInstance(@NonNull DP downloadIdsPool, int concurrentDownloadsCount, @NonNull UP uploadIdsPool, int concurrentUploadsCount) {
+        if (sInstance == null) {
+            synchronized (LoadManagersFacade.class) {
+                sInstance = new LoadManagersFacade<>(downloadIdsPool, concurrentDownloadsCount, uploadIdsPool, concurrentUploadsCount);
+            }
+        }
+    }
+
     @SuppressWarnings("unchecked")
     @NonNull
     public static <DP extends AbsIdHolder, UP extends AbsIdHolder> LoadManagersFacade<DP, UP> getInstance() {

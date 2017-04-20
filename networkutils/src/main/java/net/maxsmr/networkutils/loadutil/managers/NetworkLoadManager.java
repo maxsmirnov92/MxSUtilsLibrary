@@ -449,7 +449,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                             case MULTIPART_FORM_DATA:
 
                                 for (LoadRunnableInfo.NameValuePair f : rInfo.getFormFields()) {
-                                    Utils.addFormFieldMultipart(requestStream, f.name, f.value,  rInfo.settings.uploadCharset, boundary, rInfo.settings.logRequestData);
+                                    Utils.addFormFieldMultipart(requestStream, f.name, f.value, rInfo.settings.uploadCharset, boundary, rInfo.settings.logRequestData);
                                 }
 
                                 if (currentLoadInfo.totalUploadBytesCount > 0) {
@@ -482,13 +482,13 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                         requestStream = null;
                     }
 
-                    logger.debug("reading response...");
-                    lastResponse = new Response();
-                    lastResponse.code = connection.getResponseCode();
-                    lastResponse.message = connection.getResponseMessage();
-                    logger.debug("response acquired!");
-
                     if (!rInfo.isCancelled()) {
+
+                        logger.debug("reading response...");
+                        lastResponse = new Response();
+                        lastResponse.code = connection.getResponseCode();
+                        lastResponse.message = connection.getResponseMessage();
+                        logger.debug("response acquired!");
 
                         boolean accepted;
 
@@ -691,7 +691,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                         connection.disconnect();
                     }
 
-                    if (success) {
+                    if (success && !rInfo.isCancelled()) {
 
                         logger.info("load " + rInfo + " success");
                         lastException = null;
@@ -712,45 +712,53 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
 
                     } else {
 
-                        if (lastDownloadFile != null) {
-                            if (rInfo.settings.allowDeleteDownloadFile && FileHelper.isFileExists(lastDownloadFile.getAbsolutePath())) {
-                                logger.info("deleting unfinished download file: " + lastDownloadFile + "...");
-                                if (!FileHelper.deleteFile(lastDownloadFile)) {
-                                    logger.error("can't delete unfinished download file: " + lastDownloadFile);
+                        if (!success) {
+
+                            if (lastDownloadFile != null) {
+                                if (rInfo.settings.allowDeleteDownloadFile && FileHelper.isFileExists(lastDownloadFile.getAbsolutePath())) {
+                                    logger.info("deleting unfinished download file: " + lastDownloadFile + "...");
+                                    if (!FileHelper.deleteFile(lastDownloadFile)) {
+                                        logger.error("can't delete unfinished download file: " + lastDownloadFile);
+                                    }
                                 }
                             }
                         }
 
                         if (!rInfo.isCancelled()) {
 
-                            logger.error("load " + rInfo + " failed");
-                            if (rInfo.settings.retryLimit == LoadRunnableInfo.LoadSettings.RETRY_LIMIT_UNLIMITED ||
-                                    rInfo.settings.retryLimit != LoadRunnableInfo.LoadSettings.RETRY_LIMIT_NONE && currentLoadInfo.retriesCount < rInfo.settings.retryLimit) {
+                            if (!success) {
 
-                                int retriesLeft = rInfo.settings.retryLimit - currentLoadInfo.retriesCount;
-                                logger.error("retries left: " + retriesLeft);
+                                logger.error("load " + rInfo + " failed");
+                                if (rInfo.settings.retryLimit == LoadRunnableInfo.LoadSettings.RETRY_LIMIT_UNLIMITED ||
+                                        rInfo.settings.retryLimit != LoadRunnableInfo.LoadSettings.RETRY_LIMIT_NONE && currentLoadInfo.retriesCount < rInfo.settings.retryLimit) {
 
-                                lastException = new Throwable("load with id " + rInfo.id + " failed, retries left: " + retriesLeft, lastException);
-                                _notifyStateChanged(LoadListener.STATE.FAILED);
+                                    int retriesLeft = rInfo.settings.retryLimit - currentLoadInfo.retriesCount;
+                                    logger.error("retries left: " + retriesLeft);
 
-                                if (rInfo.settings.retryDelay > 0) {
-                                    try {
-                                        Thread.sleep(rInfo.settings.retryDelay);
-                                    } catch (InterruptedException e) {
-                                        e.printStackTrace();
-                                        Thread.currentThread().interrupt();
-                                        logger.warn("thread interrupted, cancelling upload...");
-                                        rInfo.cancel();
-                                        logger.error("load " + rInfo + " cancelled");
-                                        lastException = new Throwable("load with id " + rInfo.id + " was cancelled");
-                                        _notifyStateChanged(LoadListener.STATE.CANCELLED);
+                                    lastException = new Throwable("load with id " + rInfo.id + " failed, retries left: " + retriesLeft, lastException);
+                                    _notifyStateChanged(LoadListener.STATE.FAILED);
+
+                                    if (rInfo.settings.retryDelay > 0) {
+                                        try {
+                                            Thread.sleep(rInfo.settings.retryDelay);
+                                        } catch (InterruptedException e) {
+                                            e.printStackTrace();
+                                            Thread.currentThread().interrupt();
+                                            logger.warn("thread interrupted, cancelling upload...");
+                                            rInfo.cancel();
+                                            logger.error("load " + rInfo + " cancelled");
+                                            lastException = new Throwable("load with id " + rInfo.id + " was cancelled");
+                                            _notifyStateChanged(LoadListener.STATE.CANCELLED);
+                                        }
                                     }
+
+                                } else {
+                                    logger.error("no retries left");
+                                    _notifyStateChanged(LoadListener.STATE.FAILED_RETRIES_EXCEEDED);
                                 }
 
-                            } else {
-                                logger.error("no retries left");
-                                _notifyStateChanged(LoadListener.STATE.FAILED_RETRIES_EXCEEDED);
                             }
+
                         } else {
                             logger.error("load " + rInfo + " cancelled");
                             lastException = new Throwable("load with id " + rInfo.id + " was cancelled");
@@ -1329,11 +1337,11 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         }
 
         public float getUploadedPercentage() {
-            return totalUploadBytesCount > 0? (float) uploadedBytesCount / totalUploadBytesCount : 0;
+            return totalUploadBytesCount > 0 ? (float) uploadedBytesCount / totalUploadBytesCount : 0;
         }
 
         public float getDownloadedPercentage() {
-            return totalDownloadBytesCount > 0? (float) downloadedBytesCount / totalDownloadBytesCount : 0;
+            return totalDownloadBytesCount > 0 ? (float) downloadedBytesCount / totalDownloadBytesCount : 0;
         }
 
         void setToInitial() {
