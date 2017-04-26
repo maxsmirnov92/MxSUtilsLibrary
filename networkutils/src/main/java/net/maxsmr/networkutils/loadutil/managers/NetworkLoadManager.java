@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.ContentType.MULTIPART_FORM_DATA;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.DownloadWriteMode.RESUME_DOWNLOAD;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.ReadBodyMode.BYTE_ARRAY;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.ReadBodyMode.FILE;
@@ -143,14 +144,17 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
 
 
         protected boolean checkArgs() {
+            if (TextUtils.isEmpty(rInfo.contentType.value)) {
+                throw new IllegalArgumentException("content type might not be empty");
+            }
             if (rInfo.requestMethod == LoadRunnableInfo.RequestMethod.GET
                     && (rInfo.hasFormFields() || rInfo.hasBody())) {
-                throw new RuntimeException("request method can't be " + LoadRunnableInfo.RequestMethod.GET + " and has form fields / body");
+                throw new IllegalArgumentException("request method might not be " + LoadRunnableInfo.RequestMethod.GET + " and has form fields / body");
             }
 
             if (rInfo.settings.readBodyMode == LoadRunnableInfo.LoadSettings.ReadBodyMode.FILE) {
                 if (rInfo.downloadFile == null && rInfo.downloadDirectory == null)
-                    throw new RuntimeException("read body mode is " + rInfo.settings.readBodyMode + ", but neither file nor directory is specified");
+                    throw new IllegalArgumentException("read body mode is " + rInfo.settings.readBodyMode + ", but neither file nor directory is specified");
             }
 
             return true;
@@ -315,11 +319,15 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                         logger.debug("Cache-Control: " + "no-cache");
                     }
 
-                    for (LoadRunnableInfo.NameValuePair f : rInfo.getHeaders()) {
-//                        Utils.addHeaderField(requestStream, f.name, f.value, rInfo.settings.logRequestData);
-                        connection.setRequestProperty(f.name, f.value);
-                        if (rInfo.settings.logRequestData)
-                            logger.debug(f.name + ": " + f.value);
+                    for (LoadRunnableInfo.NameValuePair h : rInfo.getHeaders()) {
+                        if (!TextUtils.isEmpty(h.name)) {
+//                        Utils.addHeaderField(requestStream, h.name, h.value, rInfo.settings.logRequestData);
+                            connection.setRequestProperty(h.name, h.value);
+                            if (rInfo.settings.logRequestData)
+                                logger.debug(h.name + ": " + h.value);
+                        } else {
+                            throw new RuntimeException("header name might not be empty");
+                        }
                     }
 
                     if (rInfo.contentType != LoadRunnableInfo.ContentType.NOT_SPECIFIED) {
@@ -441,7 +449,13 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                             case APPLICATION_URLENCODED:
 
                                 for (LoadRunnableInfo.NameValuePair f : rInfo.getFormFields()) {
-                                    Utils.addFormFieldUrlEncoded(requestStream, f.name, f.value, rInfo.settings.logRequestData);
+
+                                    if (!TextUtils.isEmpty(f.name) && !TextUtils.isEmpty(f.value)) {
+                                        Utils.addFormFieldUrlEncoded(requestStream, f.name, f.value, rInfo.settings.logRequestData);
+                                    } else {
+                                        throw new RuntimeException("form field name or value might not be empty");
+                                    }
+
                                 }
                                 break;
 
@@ -449,7 +463,11 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                             case MULTIPART_FORM_DATA:
 
                                 for (LoadRunnableInfo.NameValuePair f : rInfo.getFormFields()) {
-                                    Utils.addFormFieldMultipart(requestStream, f.name, f.value, rInfo.settings.uploadCharset, boundary, rInfo.settings.logRequestData);
+                                    if (!TextUtils.isEmpty(f.name) && !TextUtils.isEmpty(f.value)) {
+                                        Utils.addFormFieldMultipart(requestStream, f.name, f.value, rInfo.settings.uploadCharset, boundary, rInfo.settings.logRequestData);
+                                    } else {
+                                        throw new RuntimeException("form field name or value might not be empty");
+                                    }
                                 }
 
                                 if (currentLoadInfo.totalUploadBytesCount > 0) {
@@ -697,7 +715,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                         lastException = null;
                         _notifyStateChanged(LoadListener.STATE.SUCCESS);
 
-                        if (currentLoadInfo.totalUploadBytesCount > 0 && rInfo.contentType == LoadRunnableInfo.ContentType.MULTIPART_FORM_DATA) {
+                        if (currentLoadInfo.totalUploadBytesCount > 0 && rInfo.contentType == MULTIPART_FORM_DATA) {
                             if (rInfo.settings.allowDeleteUploadFiles) {
                                 if (lastUploadFiles != null) {
                                     for (File uploadFile : lastUploadFiles) {
@@ -1337,11 +1355,11 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         }
 
         public float getUploadedPercentage() {
-            return totalUploadBytesCount > 0 ? (float) uploadedBytesCount / totalUploadBytesCount : 0;
+            return (totalUploadBytesCount > 0 ? (float) uploadedBytesCount / totalUploadBytesCount : 0f) * 100f;
         }
 
         public float getDownloadedPercentage() {
-            return totalDownloadBytesCount > 0 ? (float) downloadedBytesCount / totalDownloadBytesCount : 0;
+            return (totalDownloadBytesCount > 0 ? (float) downloadedBytesCount / totalDownloadBytesCount : 0f) * 100f;
         }
 
         void setToInitial() {
