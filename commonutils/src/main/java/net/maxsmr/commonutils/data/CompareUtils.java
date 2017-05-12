@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils.data;
 
+import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -84,6 +85,35 @@ public final class CompareUtils {
 
     public static int compareDates(@Nullable Date one, @Nullable Date another, boolean ascending) {
         return compareLongs(one != null ? one.getTime() : 0, another != null ? another.getTime() : 0, ascending);
+    }
+
+    public static boolean bundleEquals(@Nullable Bundle one, @Nullable Bundle two) {
+
+        if (one == null && two == null)
+            return false;
+
+        if ((one != null ? one.size() : 0) != (two != null ? two.size() : 0))
+            return false;
+
+        if (one != null) {
+            if (two != null) {
+                for (String key : one.keySet()) {
+                    Object valueOne = one.get(key);
+                    Object valueTwo = two.get(key);
+                    if (valueOne instanceof Bundle && valueTwo instanceof Bundle &&
+                            !bundleEquals((Bundle) valueOne, (Bundle) valueTwo)) {
+                        return false;
+                    } else if (valueOne == null) {
+                        if (valueTwo != null || !two.containsKey(key))
+                            return false;
+                    } else if (!valueOne.equals(valueTwo))
+                        return false;
+                }
+                return true;
+            }
+        }
+
+        return false;
     }
 
 

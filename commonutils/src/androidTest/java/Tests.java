@@ -31,8 +31,6 @@ public class Tests {
         Log.d(TAG, "registry context: " + context);
         Log.d(TAG, "registry target context: " + InstrumentationRegistry.getTargetContext());
         Log.d(TAG, "app dir: " + context.getFilesDir());
-        boolean b1 = DeviceUtils.checkPermission(context, "android.permission.READ_EXTERNAL_STORAGE");
-        boolean b2 = DeviceUtils.checkPermission(context, "android.permission.WRITE_EXTERNAL_STORAGE");
 //        Map<Long, Bitmap> frames = MetadataRetriever.extractFrames(context, Uri.parse("file:///android_asset/video/1.mp4"), null, 5);
 //        Map<Long, Bitmap> frames = null;
 //
@@ -48,24 +46,4 @@ public class Tests {
         Log.i(TAG, "frames: " + frames);
     }
 
-//    @Test
-    public void testGetFiles() {
-        FileHelper.getFiles(Collections.singleton(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES)), FileHelper.GetMode.ALL, true, null, new FileHelper.IGetNotifier() {
-            @Override
-            public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected) {
-                Log.d(TAG, "current: " + current);
-                return true;
-            }
-
-            @Override
-            public boolean onGetFile(@NonNull File file) {
-                return true;
-            }
-
-            @Override
-            public boolean onGetFolder(@NonNull File folder) {
-                return true;
-            }
-        });
-    }
 }

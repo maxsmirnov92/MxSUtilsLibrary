@@ -3,11 +3,10 @@
     <string name="no_data">No data</string>
     <string name="b">b</string>
 
-    <string name="mb">Mb</string>
-    <string name="kb">Kb</string>
+    <string name="size_unknown">Mb</string>
 
-    <string name="suffix_bytes">Bytes</string>
-    <string name="suffix_kbytes">KBytes</string>
-    <string name="suffix_mbytes">MBytes</string>
-    <string name="suffix_gbytes">GBytes</string>
+    <string name="size_suffix_bytes">Bytes</string>
+    <string name="size_suffix_kbytes">KBytes</string>
+    <string name="size_suffix_mbytes">MBytes</string>
+    <string name="size_suffix_gbytes">GBytes</string>
 </resources>

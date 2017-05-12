@@ -414,108 +414,103 @@ public final class GuiUtils {
     }
 
     @NonNull
-    public static Point getCorrectedSurfaceViewSizeByPreviewSize(@NonNull Point viewSize, @NonNull Point previewSize) {
-
-        if (viewSize.x <= 0 || viewSize.y <= 0) {
-            throw new IllegalArgumentException("incorrect view size: " + viewSize.x + "x" + viewSize.y);
-        }
-
-        if (previewSize.x <= 0 || previewSize.y <= 0) {
-            throw new IllegalArgumentException("incorrect preview size: " + previewSize.x + "x" + previewSize.y);
-        }
-
-        float ratio = (float) previewSize.x / (float) previewSize.y;
-
-        float camHeight = (int) (viewSize.x * ratio);
-        float newCamWidth;
-        float newCamHeight;
-
-        if (camHeight < viewSize.y) {
-            float newHeightRatio = (float) viewSize.y / (float) previewSize.y;
-            newCamWidth = viewSize.x * newHeightRatio;
-            newCamHeight = (newHeightRatio * camHeight);
-        } else {
-            newCamWidth = viewSize.x;
-            newCamHeight = camHeight;
-        }
-
-        return new Point((int) newCamWidth, (int) newCamHeight);
-    }
-
-    @NonNull
-    public static Point getCorrectedSurfaceViewSizeByDisplaySize(@NonNull Context context, float previewProportion) {
-
-        if (previewProportion <= 0) {
-            throw new IllegalArgumentException("incorrect previewProportion: " + previewProportion);
-        }
-
+    public static Point getFixedViewSizeByDisplay(@NonNull Context context, float targetScale) {
         Display display = ((WindowManager) (context.getSystemService(Context.WINDOW_SERVICE))).getDefaultDisplay();
         DisplayMetrics metrics = new DisplayMetrics();
         display.getMetrics(metrics);
-        return getCorrectedSurfaceViewSizeByPreviewProportion(previewProportion, metrics.heightPixels, FitSize.FIT_HEIGHT);
+        Point screenSize = new Point(metrics.widthPixels, metrics.heightPixels);
+        return getFixedViewSize(targetScale, screenSize, screenSize);
     }
 
     @NonNull
-    public static Point getCorrectedSurfaceViewSizeByPreviewSize(@NonNull Context context, @NonNull Point previewSize, @NonNull Point viewSize) {
-
-        if (previewSize.x <= 0 || previewSize.y <= 0) {
-            throw new IllegalArgumentException("incorrect preview size: " + previewSize.x + "x" + previewSize.y);
-        }
-
-        float previewProportion;
-        final GuiUtils.FitSize fitSize = GuiUtils.FitSize.FIT_HEIGHT;
-        final int limitSize = viewSize.y;
-
-        switch (context.getResources().getConfiguration().orientation) {
-            case Configuration.ORIENTATION_PORTRAIT:
-                previewProportion = (float) previewSize.y / (float) previewSize.x;
-                break;
-
-            case Configuration.ORIENTATION_LANDSCAPE:
-                previewProportion = (float) previewSize.x / (float) previewSize.y;
-                break;
-
-            default:
-                throw new UnsupportedOperationException("unknown orientation: " + context.getResources().getConfiguration().orientation);
-        }
-
-        return getCorrectedSurfaceViewSizeByPreviewProportion(previewProportion, limitSize, fitSize);
+    public static Point getFixedViewSize(Point targetSize, @Nullable Point measuredViewSize) {
+        return getFixedViewSize(targetSize, measuredViewSize, null);
     }
 
     @NonNull
-    public static Point getCorrectedSurfaceViewSizeByPreviewProportion(float previewProportion, int limitSize, @NonNull FitSize fitSize) {
-
-        if (limitSize <= 0) {
-            throw new IllegalArgumentException("incorrect limit size: " + limitSize);
-        }
-
-        if (previewProportion == 0) {
-            throw new IllegalArgumentException("incorrect preview proportion: " + previewProportion);
-        }
-
-        int newWidth;
-        int newHeight;
-
-        switch (fitSize) {
-            case FIT_WIDTH:
-                newWidth = limitSize;
-                newHeight = Math.round((float) newWidth / previewProportion);
-                break;
-
-            case FIT_HEIGHT:
-                newHeight = limitSize;
-                newWidth = Math.round((float) newHeight * previewProportion);
-                break;
-
-            default:
-                newWidth = 0;
-                newHeight = 0;
-                break;
-        }
-
-        return new Point(newWidth, newHeight);
+    public static Point getFixedViewSize(Point targetSize, @Nullable Point measuredViewSize, @Nullable Point maxViewSize) {
+        return getFixedViewSize(targetSize != null ? (float) targetSize.x / targetSize.y : 0, measuredViewSize, maxViewSize);
     }
 
+    @NonNull
+    public static Point getFixedViewSize(float targetScale, @Nullable Point measuredViewSize) {
+        return getFixedViewSize(targetScale, measuredViewSize, null);
+    }
+
+    @NonNull
+    public static Point getFixedViewSize(float targetScale, @Nullable Point measuredViewSize, @Nullable Point maxViewSize) {
+        if (targetScale < 0) {
+            throw new IllegalArgumentException("targetScale < 0");
+        }
+
+        Point newViewSize = new Point();
+
+        if (targetScale == 0) {
+            return newViewSize;
+        }
+
+        if (measuredViewSize == null) {
+            return newViewSize;
+        }
+        if (measuredViewSize.x < 0 || measuredViewSize.y < 0) {
+            throw new IllegalArgumentException("incorrect view size: " + measuredViewSize.x + "x" + measuredViewSize.y);
+        }
+
+        if (measuredViewSize.x == 0) {
+            if (maxViewSize == null || maxViewSize.x <= 0) {
+                return newViewSize;
+            }
+            measuredViewSize.x = maxViewSize.x;
+        }
+
+        if (measuredViewSize.y == 0) {
+            if (maxViewSize == null || maxViewSize.y <= 0) {
+                return newViewSize;
+            }
+            measuredViewSize.y = maxViewSize.y;
+        }
+
+        float viewScale = (float) measuredViewSize.x / measuredViewSize.y;
+
+        if (viewScale <= targetScale) {
+            newViewSize.x = measuredViewSize.x;
+            newViewSize.y = Math.round((float) newViewSize.x / targetScale);
+        } else {
+            newViewSize.y = measuredViewSize.y;
+            newViewSize.x = Math.round((float) newViewSize.y * targetScale);
+        }
+
+        return newViewSize;
+    }
+
+    @NonNull
+    public static Point fixViewSize(Point targetSize, @Nullable View view) {
+        return fixViewSize(targetSize, view, null);
+    }
+
+    @NonNull
+    public static Point fixViewSize(float targetScale, @Nullable View view) {
+        return fixViewSize(targetScale, view, null);
+    }
+
+    @NonNull
+    public static Point fixViewSize(Point targetSize, @Nullable View view, @Nullable Point maxViewSize) {
+        return fixViewSize(targetSize != null ? (float) targetSize.x / targetSize.y : 0, view, maxViewSize);
+    }
+
+    @NonNull
+    public static Point fixViewSize(float targetScale, @Nullable View view, @Nullable Point maxViewSize) {
+        Point fixedSize = new Point();
+        if (view != null) {
+            fixedSize = getFixedViewSize(targetScale, new Point(view.getMeasuredWidth(), view.getMeasuredHeight()), maxViewSize);
+        } else {
+            return fixedSize;
+        }
+        if (fixedSize.x > 0 && fixedSize.y > 0) {
+            GuiUtils.setViewSize(view, fixedSize);
+        }
+        return fixedSize;
+    }
 
     @NonNull
     public static android.support.v4.util.Pair<Integer, Integer> calcAspectRatioFor(int width, int height) {

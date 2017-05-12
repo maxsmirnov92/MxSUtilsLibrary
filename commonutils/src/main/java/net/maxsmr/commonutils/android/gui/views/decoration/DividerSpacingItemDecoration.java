@@ -21,6 +21,8 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import net.maxsmr.commonutils.graphic.GraphicUtils;
+
 public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
     private static final int[] ATTRS = new int[]{
@@ -36,6 +38,8 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
     @Orientation
     protected int mOrientation = VERTICAL_LIST;
+
+    protected boolean isReverse = false;
 
     @Nullable
     protected Drawable mDivider;
@@ -55,17 +59,22 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
     /**
      * Custom divider will be used
      */
-    public DividerSpacingItemDecoration(Context context, @Orientation int orientation, @DrawableRes int dividerResId, int space) {
-        this(context, orientation, ContextCompat.getDrawable(context, dividerResId), space);
+    public DividerSpacingItemDecoration(Context context, @Orientation int orientation, @DrawableRes int dividerResId, int space, boolean isReverse) {
+        this(context, orientation, ContextCompat.getDrawable(context, dividerResId), space, isReverse);
     }
 
     /**
      * Custom divider will be used
      */
-    public DividerSpacingItemDecoration(Context context, @Orientation int orientation, @Nullable Drawable divider, int space) {
+    public DividerSpacingItemDecoration(Context context, @Orientation int orientation, @Nullable Drawable divider, int space, boolean isReverse) {
         setOrientation(orientation);
         setDivider(divider);
         setSpace(space);
+        setReverse(isReverse);
+    }
+
+    public void setReverse(boolean reverse) {
+        isReverse = reverse;
     }
 
     @NonNull
@@ -90,7 +99,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
     }
 
     public void setDivider(@Nullable Drawable divider) {
-        mDivider = divider;
+        mDivider = GraphicUtils.cloneDrawable(divider);
     }
 
     public int getSpace() {
@@ -116,7 +125,6 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
 
     public void drawVertical(Canvas c, RecyclerView parent) {
-
         if (mDivider != null) {
             final int left = parent.getPaddingLeft();
             final int right = parent.getWidth() - parent.getPaddingRight();
@@ -127,8 +135,16 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
                 if (isDecorated(child, parent, true)) {
                     final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child
                             .getLayoutParams();
-                    final int top = child.getBottom() + params.bottomMargin;
-                    final int bottom = top + mDivider.getIntrinsicHeight();
+                    final int top;
+                    final int bottom;
+                    final int height = mDivider.getIntrinsicHeight() >= 0? mDivider.getIntrinsicHeight() : 0;
+                    if (!isReverse) {
+                        top = child.getBottom() + params.bottomMargin;
+                        bottom = top + height;
+                    } else {
+                        bottom = child.getTop() + params.topMargin;
+                        top = bottom + height;
+                    }
                     mDivider.setBounds(left, top, right, bottom);
                     mDivider.draw(c);
                 }
@@ -147,8 +163,16 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
                 if (isDecorated(child, parent, true)) {
                     final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child
                             .getLayoutParams();
-                    final int left = child.getRight() + params.rightMargin;
-                    final int right = left + mDivider.getIntrinsicHeight();
+                    final int left;
+                    final int right;
+                    final int width = mDivider.getIntrinsicWidth() >= 0? mDivider.getIntrinsicWidth() : 0;
+                    if (!isReverse) {
+                        left = child.getRight() + params.rightMargin;
+                        right = left + width;
+                    } else {
+                        right = child.getLeft() + params.leftMargin;
+                        left = right + width;
+                    }
                     mDivider.setBounds(left, top, right, bottom);
                     mDivider.draw(c);
                 }
@@ -168,9 +192,17 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
                 }
             } else if (mSpace >= 0) {
                 if (mOrientation == VERTICAL_LIST) {
-                    outRect.bottom = mSpace;
+                    if (!isReverse) {
+                        outRect.bottom = mSpace;
+                    } else {
+                        outRect.top = mSpace;
+                    }
                 } else {
-                    outRect.right = mSpace;
+                    if (!isReverse) {
+                        outRect.right = mSpace;
+                    } else {
+                        outRect.left = mSpace;
+                    }
                 }
             }
         }
@@ -186,7 +218,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
         int childPos = parent.getChildAdapterPosition(view);
 
-        boolean result = false;
+        boolean result;
 
         switch (settings.getMode()) {
             case ALL:
@@ -230,7 +262,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
         }
 
         public DecorationSettings() {
-            mode = Mode.ALL_EXCEPT_LAST;
+            this(Mode.ALL_EXCEPT_LAST);
         }
 
         public DecorationSettings(@NonNull Mode mode) {

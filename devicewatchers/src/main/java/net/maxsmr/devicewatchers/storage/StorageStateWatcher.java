@@ -21,24 +21,12 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static net.maxsmr.commonutils.data.CompareUtils.compareForNull;
-
 
 public final class StorageStateWatcher {
 
     private final static Logger logger = LoggerFactory.getLogger(StorageStateWatcher.class);
 
-    public static final Comparator<File> DEFAULT_FILE_COMPARATOR = new Comparator<File>() {
-
-        @Override
-        public int compare(@Nullable File lhs, @Nullable File rhs) {
-            int result = compareForNull(lhs, rhs, true);
-            if (result != 0) {
-                return result;
-            }
-            return CompareUtils.compareLongs(lhs != null ? lhs.lastModified() : 0, rhs != null ? rhs.lastModified() : 0, true);
-        }
-    };
+    public static final Comparator<File> DEFAULT_FILE_COMPARATOR = new FileHelper.FileComparator(Collections.singletonMap(FileHelper.FileComparator.SortOption.LAST_MODIFIED, true));
 
     public static final int DEFAULT_WATCH_INTERVAL = 20000;
 
