@@ -15,8 +15,6 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-import static net.maxsmr.networkutils.loadutil.managers.LoadListener.STATE.UPLOADING;
-
 public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
 
     protected final int id;
@@ -178,12 +176,20 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
             return loadRunnableInfo;
         }
 
+        @Override
         public int getId() {
             if (loadRunnableInfo == null) {
                 throw new IllegalStateException("loadRunnableInfo was not initialized");
             }
             return loadRunnableInfo.id;
         }
+
+        // template
+        @Override
+        public final int getId(@NonNull LoadRunnableInfo info) {
+            return getId();
+        }
+
 
         @NonNull
         public STATE getLastState() {
@@ -226,12 +232,6 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
         @Nullable
         public Throwable getLastThrowable() {
             return lastThrowable;
-        }
-
-        // template
-        @Override
-        public final int getId(@NonNull LoadRunnableInfo info) {
-            return getId();
         }
 
         @Override

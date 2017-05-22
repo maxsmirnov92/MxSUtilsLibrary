@@ -1,4 +1,5 @@
-include ':commonutils'
+include ':networkutils'
+//':commonutils'
 //':devicewatchers'
-//':networkutils'
+//
 //'customcontentprovider', ':networkutils', ':tasksutils'

@@ -44,7 +44,11 @@ public interface LoadListener<I extends LoadRunnableInfo> {
 
     void onLoadRemovedFromQueue(int id, int waitingLoads, int activeLoads);
 
-    /** @return {@link RunnableInfo#NO_ID} - notify for all */
+
+    /** @return personal id */
+    int getId();
+
+    /** @return {@link RunnableInfo#NO_ID} id for notify. if 0 - notify for all */
     int getId(@NonNull I loadInfo);
 
     long getProcessingNotifyInterval(@NonNull I loadInfo);

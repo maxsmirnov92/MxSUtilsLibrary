@@ -2,6 +2,7 @@ package net.maxsmr.networkutils.loadutil.managers.base;
 
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;
@@ -58,17 +59,22 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
         }
     }
 
+    @Nullable
+    public final LoadListener<I> findLoadListenerById(int id) {
+        return mLoadObservable.findLoadListenerById(id);
+    }
+
     public final void addLoadListener(@NonNull LoadListener<I> listener) {
         checkReleased();
         mLoadObservable.registerObserver(listener);
     }
 
     public final void removeLoadListener(@NonNull LoadListener<I> listener) {
-            mLoadObservable.unregisterObserver(listener);
+        mLoadObservable.unregisterObserver(listener);
     }
 
     private void clearLoadListeners() {
-            mLoadObservable.unregisterAll();
+        mLoadObservable.unregisterAll();
     }
 
     public final void enqueueLoad(@NonNull I rInfo) {
@@ -169,7 +175,6 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
     }
 
 
-
     public boolean isLoadRunning(int id) {
         synchronized (mExecutor) {
             checkReleased();
@@ -222,6 +227,20 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
     }
 
     protected static class LoadObservable<I extends LoadRunnableInfo> extends Observable<LoadListener<I>> {
+
+        @Nullable
+        public final LoadListener<I> findLoadListenerById(int id) {
+            LoadListener<I> target = null;
+            synchronized (mObservers) {
+                for (LoadListener<I> l : copyOfObservers()) {
+                    if (l != null && l.getId() == id) {
+                        target = l;
+                        break;
+                    }
+                }
+            }
+            return target;
+        }
 
         public final void notifyLoadAddedToQueue(@NonNull I info, int waitingLoads, int activeLoads) {
             synchronized (mObservers) {
