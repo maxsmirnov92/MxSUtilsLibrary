@@ -21,6 +21,7 @@ import java.net.HttpURLConnection;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 
@@ -59,11 +60,6 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
         }
     }
 
-    @Nullable
-    public final LoadListener<I> findLoadListenerById(int id) {
-        return mLoadObservable.findLoadListenerById(id);
-    }
-
     public final void addLoadListener(@NonNull LoadListener<I> listener) {
         checkReleased();
         mLoadObservable.registerObserver(listener);
@@ -72,6 +68,17 @@ public abstract class BaseNetworkLoadManager<I extends LoadRunnableInfo, R exten
     public final void removeLoadListener(@NonNull LoadListener<I> listener) {
         mLoadObservable.unregisterObserver(listener);
     }
+
+    @Nullable
+    public final LoadListener<I> findLoadListenerById(int id) {
+        return mLoadObservable.findLoadListenerById(id);
+    }
+
+    @NonNull
+    public final Set<LoadListener<I>> getLoadListeners() {
+        return mLoadObservable.copyOfObservers();
+    }
+
 
     private void clearLoadListeners() {
         mLoadObservable.unregisterAll();
