@@ -1288,11 +1288,11 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
             return uploadedBytesCount;
         }
 
-        public long getUploadedKBytesCount() {
+        public float getUploadedKBytesCount() {
             return FileHelper.SizeUnit.BYTES.toKBytes(uploadedBytesCount);
         }
 
-        public long getUploadedMBytesCount() {
+        public float getUploadedMBytesCount() {
             return FileHelper.SizeUnit.BYTES.toMBytes(uploadedBytesCount);
         }
 
@@ -1300,11 +1300,11 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
             return downloadedBytesCount;
         }
 
-        public long getDownloadedKBytesCount() {
+        public float getDownloadedKBytesCount() {
             return FileHelper.SizeUnit.BYTES.toKBytes(downloadedBytesCount);
         }
 
-        public long getDownloadedMBytesCount() {
+        public float getDownloadedMBytesCount() {
             return FileHelper.SizeUnit.BYTES.toMBytes(downloadedBytesCount);
         }
 
@@ -1312,11 +1312,11 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
             return totalUploadBytesCount;
         }
 
-        public long getTotalUploadKBytesCount() {
+        public float getTotalUploadKBytesCount() {
             return FileHelper.SizeUnit.BYTES.toKBytes(totalUploadBytesCount);
         }
 
-        public long getTotalUploadMBytesCount() {
+        public float getTotalUploadMBytesCount() {
             return FileHelper.SizeUnit.BYTES.toMBytes(totalUploadBytesCount);
         }
 
@@ -1324,11 +1324,11 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
             return totalDownloadBytesCount;
         }
 
-        public long getTotalDownloadKBytesCount() {
+        public float getTotalDownloadKBytesCount() {
             return FileHelper.SizeUnit.BYTES.toKBytes(totalDownloadBytesCount);
         }
 
-        public long getTotalDownloadMBytesCount() {
+        public float getTotalDownloadMBytesCount() {
             return FileHelper.SizeUnit.BYTES.toMBytes(totalDownloadBytesCount);
         }
 

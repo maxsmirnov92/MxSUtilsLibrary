@@ -219,9 +219,9 @@ public final class StorageStateWatcher {
                                 throw new RuntimeException("deletePath is empty");
                             }
                             if (FileHelper.isDirExists(deletePath)) {
-                                final Set<File> filesSet = FileHelper.getFiles(Collections.singleton(new File(deletePath)), entry.getValue(), true, settings.comparator, new FileHelper.IGetNotifier() {
+                                final Set<File> filesSet = FileHelper.getFiles(Collections.singleton(new File(deletePath)), entry.getValue(), settings.comparator, new FileHelper.IGetNotifier() {
                                     @Override
-                                    public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected) {
+                                    public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
                                         return isEnabled;
                                     }
 
@@ -234,7 +234,7 @@ public final class StorageStateWatcher {
                                     public boolean onGetFolder(@NonNull File folder) {
                                         return true;
                                     }
-                                });
+                                }, FileHelper.DEPTH_UNLIMITED);
                                 mapping.put(new StorageWatchSettings.DeleteOptionPair(entry.getValue(), entry.getKey()), filesSet);
                             }
                         }
@@ -288,7 +288,7 @@ public final class StorageStateWatcher {
                                         if (allowDelete) {
                                             deletedCount += FileHelper.deleteFromCollection(Collections.singleton(file), pair.mode, true, true, 1, null, null, new FileHelper.IDeleteNotifier() {
                                                 @Override
-                                                public boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted) {
+                                                public boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted, int currentLevel) {
                                                     return isEnabled;
                                                 }
 

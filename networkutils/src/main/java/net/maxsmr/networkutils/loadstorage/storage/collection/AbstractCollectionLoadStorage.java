@@ -112,7 +112,7 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
 
         try {
 
-            Set<File> files = FileHelper.getFiles(Collections.singleton(new File(storageDirPath)), FileHelper.GetMode.FILES, false, null, null);
+            Set<File> files = FileHelper.getFiles(Collections.singleton(new File(storageDirPath)), FileHelper.GetMode.FILES, null, null, 0);
 
             if (files.isEmpty()) {
                 logger.info("no files to restore");

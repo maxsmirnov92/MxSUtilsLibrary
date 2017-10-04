@@ -60,13 +60,13 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
      * Custom divider will be used
      */
     public DividerSpacingItemDecoration(Context context, @Orientation int orientation, @DrawableRes int dividerResId, int space, boolean isReverse) {
-        this(context, orientation, ContextCompat.getDrawable(context, dividerResId), space, isReverse);
+        this(orientation, ContextCompat.getDrawable(context, dividerResId), space, isReverse);
     }
 
     /**
      * Custom divider will be used
      */
-    public DividerSpacingItemDecoration(Context context, @Orientation int orientation, @Nullable Drawable divider, int space, boolean isReverse) {
+    public DividerSpacingItemDecoration(@Orientation int orientation, @Nullable Drawable divider, int space, boolean isReverse) {
         setOrientation(orientation);
         setDivider(divider);
         setSpace(space);
@@ -99,7 +99,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
     }
 
     public void setDivider(@Nullable Drawable divider) {
-        mDivider = GraphicUtils.cloneDrawable(divider);
+        mDivider = divider;
     }
 
     public int getSpace() {
@@ -228,7 +228,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
                 result = childPos < parent.getAdapter().getItemCount() - 1;
                 break;
             case CUSTOM:
-                result = dividerOrSpacing ? settings.getDividerPositions().contains(childPos) : settings.getSpacingPositions().contains(childPos);
+                result = dividerOrSpacing ? settings.getDividerPositions().contains(childPos) : (settings.getDividerPositions().contains(childPos) || settings.getSpacingPositions().contains(childPos));
                 break;
             default:
                 throw new IllegalArgumentException("incorrect " + DecorationSettings.Mode.class.getSimpleName() + ": " + settings.getMode());

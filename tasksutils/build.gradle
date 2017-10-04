@@ -26,7 +26,7 @@ apply plugin: 'maven-publish'
 
 def groupIdName = "net.maxsmr"
 //def artifactIdName = "taskutils"
-def artifactVersionName = "1.0.2.4"
+def artifactVersionName = "1.0.2.6"
 
 def siteUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary'
 def gitUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary.git'
@@ -108,7 +108,7 @@ dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
 
-    compile 'net.maxsmr:commonutils:1.0.3.1'
+    compile 'net.maxsmr:commonutils:1.0.3.3'
 }
 
 uploadArchives {

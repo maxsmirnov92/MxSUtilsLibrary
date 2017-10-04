@@ -3,7 +3,7 @@
     <string name="no_data">No data</string>
     <string name="b">b</string>
 
-    <string name="size_unknown">Mb</string>
+    <string name="size_unknown">Unknown size</string>
 
     <string name="size_suffix_bytes">Bytes</string>
     <string name="size_suffix_kbytes">KBytes</string>

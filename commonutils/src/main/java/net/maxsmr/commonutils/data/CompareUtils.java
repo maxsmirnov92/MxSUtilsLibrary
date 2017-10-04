@@ -117,15 +117,18 @@ public final class CompareUtils {
     }
 
 
-    public static boolean stringMatches(String one, String another, int matchFlags, String... separators) {
+    public static boolean stringMatches(CharSequence oneS, CharSequence anotherS, int matchFlags, String... separators) {
 
-        if (one == null) {
-            one = "";
+        if (oneS == null) {
+            oneS = "";
         }
 
-        if (another == null) {
-            another = "";
+        if (anotherS == null) {
+            anotherS = "";
         }
+
+        String one = oneS.toString();
+        String another = anotherS.toString();
 
         boolean match = false;
 
@@ -226,16 +229,30 @@ public final class CompareUtils {
             return contains;
         }
 
-        public static int resetFlag(@NonNull MatchStringOption option, int flags) {
-            flags &= ~option.flag;
+        public static int setFlag(int flags, @NonNull MatchStringOption option) {
+            return flags | option.flag;
+        }
+
+        public static int setFlags(int flags, MatchStringOption... options) {
+            if (options != null) {
+                for (MatchStringOption o : options) {
+                    if (o != null) {
+                        flags = setFlag(flags, o);
+                    }
+                }
+            }
             return flags;
+        }
+
+        public static int resetFlag(int flags, @NonNull MatchStringOption option) {
+            return flags & ~option.flag;
         }
 
         public static int resetFlags(int flags, MatchStringOption... options) {
             if (options != null) {
                 for (MatchStringOption o : options) {
                     if (o != null) {
-                        flags = resetFlag(o, flags);
+                        flags = resetFlag(flags, o);
                     }
                 }
             }
@@ -254,4 +271,5 @@ public final class CompareUtils {
 
 
     }
+
 }

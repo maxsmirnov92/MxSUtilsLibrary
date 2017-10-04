@@ -1038,7 +1038,8 @@ public final class FileHelper {
 //                }
 //            }
 
-            File[] files = fromDir.listFiles();
+            File[] filesArr = fromDir.listFiles();
+            List<File> files = filesArr != null? Arrays.asList(filesArr) : null;
 
             if (files != null) {
                 for (File f : files) {
@@ -1056,7 +1057,7 @@ public final class FileHelper {
                             }
                         }
 
-                        if (depth != DEPTH_UNLIMITED || depth >= currentLevel) {
+                        if (depth == DEPTH_UNLIMITED || depth >= currentLevel) {
                             collected.addAll(getFiles(Collections.singleton(f), mode, comparator, notifier, depth, currentLevel++));
                         }
 
@@ -2175,7 +2176,7 @@ public final class FileHelper {
         s = sizeUnit.toBytes(s);
         StringBuilder sb = new StringBuilder();
         if (s < SizeUnit.C1 && !sizeUnitsToExclude.contains(SizeUnit.BYTES)) {
-            sb.append(s);
+            sb.append((int) s);
             sb.append(" ");
             sb.append(context.getString(R.string.size_suffix_bytes));
         } else if (s >= SizeUnit.C1 && s < SizeUnit.C2 && !sizeUnitsToExclude.contains(SizeUnit.KBYTES)) {

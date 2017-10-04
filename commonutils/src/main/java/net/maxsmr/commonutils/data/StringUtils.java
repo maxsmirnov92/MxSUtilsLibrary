@@ -20,22 +20,23 @@ public class StringUtils {
         return isEmpty(s) || ctx.getString(R.string.no_data).equalsIgnoreCase(s.toString());
     }
 
+
     @Nullable
-    public static String capitalizeFirstLatter(@Nullable CharSequence s) {
+    public static String changeCaseFirstLatter(@Nullable CharSequence s, boolean upper) {
         String result;
         if (TextUtils.isEmpty(s)) {
             result = null;
         } else {
             result = s.toString();
             if (s.length() == 1) {
-                result = result.toUpperCase();
+                result = upper? result.toUpperCase() : result.toLowerCase();
             } else {
-                result = result.substring(0, 1).toUpperCase() + result.substring(1);
+                result = (upper? result.substring(0, 1).toUpperCase() : result.substring(0, 1).toLowerCase()) + result.substring(1);
             }
         }
+        return result;
 //        String first = parts[i].substring(0, 1);
 //        parts[i] = parts[i].replace(first, first.toUpperCase());
-        return result;
     }
 
     @NonNull
