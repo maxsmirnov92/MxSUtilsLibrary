@@ -31,6 +31,15 @@ ext {
     buildToolsVersion_ = "27.0.2"
     appCompatVersion = buildToolsVersion_
 
+    log4jVersion = "1.0.3"
+    slf4jVersion = "1.7.21"
+    commonsNetVersion = "3.3"
+    gsonVersion = "2.8.1"
+
+    jUnitVersion = "4.12"
+    testRunnerVersion = "1.0.1"
+    espressoVersion = "2.2.2"
+
     groupIdName = "net.maxsmr"
     commonUtilsVersion = "1.0.3.4"
     customContentProviderVersion = "1.0.1.4"
