@@ -28,6 +28,7 @@ allprojects {
 
 ext {
     sdkVersion = 27
+    minSdkVersion_ = 14
     buildToolsVersion_ = "27.0.2"
     appCompatVersion = buildToolsVersion_
 

@@ -53,6 +53,10 @@ public class CustomHandlerThread extends HandlerThread {
         removeTask(runnableQueue.peekLast());
     }
 
+    public synchronized void addNewTask(@NonNull Runnable run) {
+        addNewTask(run, 0);
+    }
+
     public synchronized void addNewTask(@NonNull Runnable run, final long delay) {
 
         if (!isLooperPrepared())

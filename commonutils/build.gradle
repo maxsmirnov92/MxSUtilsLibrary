@@ -44,7 +44,7 @@ android {
     sourceCompatibility = 1.7
     targetCompatibility = 1.7
     defaultConfig {
-        minSdkVersion 14
+        minSdkVersion minSdkVersion_
         targetSdkVersion sdkVersion
         versionCode 1
         versionName commonUtilsVersion

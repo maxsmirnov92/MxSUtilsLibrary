@@ -46,7 +46,7 @@ android {
     targetCompatibility = 1.7
 
     defaultConfig {
-        minSdkVersion 14
+        minSdkVersion minSdkVersion
         targetSdkVersion sdkVersion
         versionCode 1
         versionName taskUtilsVersion
