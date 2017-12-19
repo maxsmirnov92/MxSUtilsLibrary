@@ -24,10 +24,6 @@ apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
-def groupIdName = "net.maxsmr"
-//def artifactIdName = "commonutils"
-def artifactVersionName = "1.0.3.3"
-
 def siteUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary'
 def gitUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary.git'
 
@@ -43,15 +39,15 @@ android {
         }
     }
 
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    compileSdkVersion sdkVersion
+    buildToolsVersion buildToolsVersion_
     sourceCompatibility = 1.7
     targetCompatibility = 1.7
     defaultConfig {
-        minSdkVersion 10
-        targetSdkVersion 25
+        minSdkVersion 14
+        targetSdkVersion sdkVersion
         versionCode 1
-        versionName artifactVersionName
+        versionName commonUtilsVersion
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -102,30 +98,25 @@ artifacts {
 }
 
 dependencies {
-    compile fileTree(include: ['*.jar'], dir: 'libs')
-    compile 'com.android.support:support-annotations:25.3.1'
-    compile 'com.android.support:palette-v7:25.3.1'
-    compile 'com.android.support:design:25.3.1'
-    javadocDependencies 'com.android.support:appcompat-v7:25.3.1'
-    javadocDependencies 'com.android.support:support-annotations:25.3.1'
-    compile 'de.mindpipe.android:android-logging-log4j:1.0.3'
-    compile 'org.slf4j:slf4j-log4j12:1.7.21'
-    compile 'commons-net:commons-net:3.3'
-    compile 'com.google.code.gson:gson:2.8.0'
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "com.android.support:support-annotations:$appCompatVersion"
+    implementation "com.android.support:palette-v7:$appCompatVersion"
+    implementation "com.android.support:design:$appCompatVersion"
+    javadocDependencies "com.android.support:appcompat-v7:$appCompatVersion"
+    javadocDependencies "com.android.support:support-annotations:$appCompatVersion"
+    implementation 'de.mindpipe.android:android-logging-log4j:1.0.3'
+    implementation 'org.slf4j:slf4j-log4j12:1.7.21'
+    implementation 'commons-net:commons-net:3.3'
+    implementation 'com.google.code.gson:gson:2.8.1'
     testCompile 'junit:junit:4.12'
-    androidTestCompile 'com.android.support:support-annotations:25.3.1'
-    androidTestCompile 'com.android.support.test:runner:0.5'
-    androidTestCompile 'com.android.support.test:rules:0.5'
-    androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
+    androidTestCompile "com.android.support:support-annotations:$appCompatVersion"
 }
 
 uploadArchives {
     repositories.mavenDeployer {
         pom.groupId = groupIdName
         pom.artifactId = project.archivesBaseName
-        pom.version = artifactVersionName
+        pom.version = commonUtilsVersion
         repository(url: "file://${localReleaseDest}")
     }
 }
@@ -145,7 +136,7 @@ bintray {
         licenses = ['Apache-2.0']
         vcsUrl = gitUrl
         version {
-            name = artifactVersionName
+            name = commonUtilsVersion
         }
         publicDownloadNumbers = true
     }
@@ -157,7 +148,7 @@ publishing {
 
             groupId = groupIdName
             artifactId = project.archivesBaseName
-            version = artifactVersionName
+            version = commonUtilsVersion
             artifact "${project.buildDir}/outputs/aar/${project.archivesBaseName}-release.aar"
             artifact sourcesJar
 //            artifact javadocsJar

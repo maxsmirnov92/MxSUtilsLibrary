@@ -97,11 +97,11 @@ public abstract class InstanceManager<T> {
     }
 
     public void saveAsByteArray(@NonNull T inst) {
-        FileHelper.writeBytesToFile(serializeAsByteArray(inst), file.getName(), file.getParent(), false);
+        FileHelper.writeBytesToFile(file, serializeAsByteArray(inst), false);
     }
 
     public void saveAsString(@NonNull T inst) {
-        FileHelper.writeStringToFile(serializeAsString(inst), file.getName(), file.getParent(), false);
+        FileHelper.writeStringToFile(file, serializeAsString(inst), false);
     }
 
     public T loadFromByteArray() {

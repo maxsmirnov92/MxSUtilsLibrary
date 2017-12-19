@@ -89,12 +89,12 @@ public class StorageWatchSettings {
 
             case SIZE:
 
-                if ((value < DEFAULT_PARTITION_MIN_SIZE_KB || value >= FileHelper.getPartitionTotalSpaceKb(targetPath)) && value != SIZE_AUTO) {
+                if ((value < DEFAULT_PARTITION_MIN_SIZE_KB || value >= FileHelper.getPartitionTotalSpaceKb(targetPath, FileHelper.SizeUnit.KBYTES)) && value != SIZE_AUTO) {
                     throw new IllegalArgumentException("incorrect value: " + value);
                 }
 
                 if (value == SIZE_AUTO) {
-                    this.value = FileHelper.getPartitionTotalSpaceKb(targetPath) * DEFAULT_PARTITION_THRESHOLD;
+                    this.value = FileHelper.getPartitionTotalSpaceKb(targetPath, FileHelper.SizeUnit.KBYTES) * DEFAULT_PARTITION_THRESHOLD;
                 } else {
                     this.value = value;
                 }

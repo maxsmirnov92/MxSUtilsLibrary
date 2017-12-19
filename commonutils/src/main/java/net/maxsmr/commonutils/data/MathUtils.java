@@ -165,4 +165,19 @@ public final class MathUtils {
         }
         return result;
     }
+
+    public static double avg(Collection<? extends Number> numbers) {
+        double result = 0;
+        if (numbers != null) {
+            int count = numbers.size();
+            double sum = 0;
+            for (Number n : numbers) {
+                if (n != null) {
+                    sum += n.doubleValue();
+                }
+            }
+            result = sum / count;
+        }
+        return result;
+    }
 }

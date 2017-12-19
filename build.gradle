@@ -5,10 +5,11 @@ buildscript {
         jcenter()
         maven { url "https://jitpack.io" }
         mavenCentral()
+        google()
     }
     dependencies {
 //        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
-        classpath 'com.android.tools.build:gradle:2.3.1'
+        classpath 'com.android.tools.build:gradle:3.0.1'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -20,12 +21,22 @@ allprojects {
         jcenter()
         mavenCentral()
         maven { url 'https://dl.bintray.com/maxsmirnov92/maven' }
+        google()
     }
 
 }
 
 ext {
-    project_version = "1.0"
+    sdkVersion = 27
+    buildToolsVersion_ = "27.0.2"
+    appCompatVersion = buildToolsVersion_
+
+    groupIdName = "net.maxsmr"
+    commonUtilsVersion = "1.0.3.4"
+    customContentProviderVersion = "1.0.1.4"
+    taskUtilsVersion = "1.0.2.7"
+    networkUtilsVersion = "1.0.5.1"
+    deviceWatchersVersion = "1.0.2.9"
 }
 
 task clean(type: Delete) {

@@ -24,8 +24,6 @@ apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
-def groupIdName = "net.maxsmr"
-def artifactVersionName = "1.0.5"
 
 def siteUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary'
 def gitUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary.git'
@@ -42,17 +40,17 @@ android {
         }
     }
 
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    compileSdkVersion sdkVersion
+    buildToolsVersion buildToolsVersion_
 
     sourceCompatibility = 1.7
     targetCompatibility = 1.7
 
     defaultConfig {
-        minSdkVersion 10
-        targetSdkVersion 25
+        minSdkVersion 14
+        targetSdkVersion sdkVersion
         versionCode 1
-        versionName artifactVersionName
+        versionName networkUtilsVersion
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
@@ -104,17 +102,17 @@ artifacts {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
 
-    compile 'net.maxsmr:tasksutils:1.0.2.6'
+    implementation "net.maxsmr:tasksutils:$taskUtilsVersion"
 }
 
 uploadArchives {
     repositories.mavenDeployer {
         pom.groupId = groupIdName
         pom.artifactId = project.archivesBaseName
-        pom.version = artifactVersionName
+        pom.version = networkUtilsVersion
         repository(url: "file://${localReleaseDest}")
     }
 }
@@ -134,7 +132,7 @@ bintray {
         licenses = ['Apache-2.0']
         vcsUrl = gitUrl
         version {
-            name = artifactVersionName
+            name = networkUtilsVersion
         }
         publicDownloadNumbers = true
     }
@@ -145,7 +143,7 @@ publishing {
         artifactPublication(MavenPublication) {
             groupId = groupIdName
             artifactId = project.archivesBaseName
-            version = artifactVersionName
+            version = networkUtilsVersion
             artifact "${project.buildDir}/outputs/aar/${archivesBaseName}-release.aar"
             artifact sourcesJar
 //            artifact javadocsJar

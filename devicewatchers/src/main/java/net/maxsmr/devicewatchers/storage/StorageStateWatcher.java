@@ -131,8 +131,8 @@ public final class StorageStateWatcher {
         private void doStateWatch(boolean notify) {
             logger.debug("doStateWatch(), notify=" + notify);
 
-            final long totalKb = FileHelper.getPartitionTotalSpaceKb(settings.targetPath);
-            final long freeKb = FileHelper.getPartitionFreeSpaceKb(settings.targetPath);
+            final long totalKb = (long) FileHelper.getPartitionTotalSpaceKb(settings.targetPath, FileHelper.SizeUnit.KBYTES);
+            final long freeKb = (long) FileHelper.getPartitionFreeSpaceKb(settings.targetPath, FileHelper.SizeUnit.KBYTES);
             final long usedKb = totalKb - freeKb;
 
             logger.info("=== storage total space: " + totalKb + " kB, free: " + freeKb + " kB, used: " + usedKb + " kB ===");

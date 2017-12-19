@@ -9,10 +9,6 @@ buildscript {
     }
 }
 
-//plugins {
-//    id "com.jfrog.bintray" version "1.7.3"
-//}
-
 repositories {
     jcenter()
 }
@@ -23,9 +19,6 @@ apply plugin: 'com.android.library'
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
-
-def groupIdName = "net.maxsmr"
-def artifactVersionName = "1.0.1.3"
 
 def siteUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary'
 def gitUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary.git'
@@ -42,17 +35,17 @@ android {
         }
     }
 
-    compileSdkVersion 25
-    buildToolsVersion "25.0.2"
+    compileSdkVersion sdkVersion
+    buildToolsVersion buildToolsVersion_
 
     sourceCompatibility = 1.7
     targetCompatibility = 1.7
 
     defaultConfig {
-        minSdkVersion 10
-        targetSdkVersion 25
+        minSdkVersion 14
+        targetSdkVersion sdkVersion
         versionCode 1
-        versionName artifactVersionName
+        versionName 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
@@ -104,17 +97,17 @@ artifacts {
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: ['*.jar'])
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
 
-    compile 'net.maxsmr:commonutils:1.0.3.1'
+    implementation "net.maxsmr:commonutils:$commonUtilsVersion"
 }
 
 uploadArchives {
     repositories.mavenDeployer {
         pom.groupId = groupIdName
         pom.artifactId = project.archivesBaseName
-        pom.version = artifactVersionName
+        pom.version = customContentProviderVersion
         repository(url: "file://${localReleaseDest}")
     }
 }
@@ -134,7 +127,7 @@ bintray {
         licenses = ['Apache-2.0']
         vcsUrl = gitUrl
         version {
-            name = artifactVersionName
+            name = customContentProviderVersion
         }
         publicDownloadNumbers = true
     }
@@ -145,7 +138,7 @@ publishing {
         artifactPublication(MavenPublication) {
             groupId = groupIdName
             artifactId = project.archivesBaseName
-            version = artifactVersionName
+            version = customContentProviderVersion
             artifact "${project.buildDir}/outputs/aar/${archivesBaseName}-release.aar"
             artifact sourcesJar
 //            artifact javadocsJar

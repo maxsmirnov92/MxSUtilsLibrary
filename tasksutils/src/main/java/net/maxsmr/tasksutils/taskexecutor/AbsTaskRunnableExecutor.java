@@ -11,6 +11,7 @@ import net.maxsmr.tasksutils.NamedThreadFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -436,7 +437,7 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
         }
 
         final String infoFileName = rInfo.name + "." + FILE_EXT_DAT;
-        return (FileHelper.writeBytesToFile(RunnableInfo.toByteArray(rInfo), infoFileName, parentPath, false) != null);
+        return FileHelper.writeBytesToFile(new File(parentPath, infoFileName), RunnableInfo.toByteArray(rInfo), false);
     }
 
     protected static boolean deleteFileByRunnableInfo(RunnableInfo rInfo, String parentPath) {

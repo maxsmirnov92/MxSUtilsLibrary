@@ -7,6 +7,7 @@ import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.util.LinkedList;
 
 public abstract class AbstractWorkQueue {
@@ -184,7 +185,7 @@ public abstract class AbstractWorkQueue {
         }
 
         final String infoFileName = rInfo.name + "." + FILE_EXT_DAT;
-        return (FileHelper.writeBytesToFile(RunnableInfo.toByteArray(rInfo), infoFileName, parentPath, false) != null);
+        return FileHelper.writeBytesToFile(new File(parentPath, infoFileName), RunnableInfo.toByteArray(rInfo), false);
     }
 
     private static boolean deleteFileByRunnableInfo(RunnableInfo rInfo, String parentPath) {

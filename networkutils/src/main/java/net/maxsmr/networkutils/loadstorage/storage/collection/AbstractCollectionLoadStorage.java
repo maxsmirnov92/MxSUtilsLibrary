@@ -199,7 +199,7 @@ public abstract class AbstractCollectionLoadStorage<I extends LoadInfo> extends 
             // + loadInfo.getUploadFile().getName() + ") to file...");
 
             byte[] b = loadInfo.toByteArray();
-            return b != null && b.length > 0 && FileHelper.writeBytesToFile(b, uploadInfoFileName, storageDirPath, false) != null;
+            return b != null && b.length > 0 && FileHelper.writeBytesToFile(new File(storageDirPath, uploadInfoFileName), b, false);
         }
 
         return false;

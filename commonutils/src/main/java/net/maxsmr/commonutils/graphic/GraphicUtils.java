@@ -694,6 +694,33 @@ public final class GraphicUtils {
         }
     }
 
+    @Nullable
+    public static Bitmap cutBitmap(Bitmap sourceBitmap, @NonNull Rect range, boolean recycleSource) {
+
+        if (!isBitmapCorrect(sourceBitmap)) {
+            logger.error("incorrect bitmap: " + sourceBitmap);
+            return null;
+        }
+
+        if (range.left < 0 || range.left >= sourceBitmap.getWidth()
+                || range.top < 0 || range.top >= sourceBitmap.getHeight()
+                || range.width() > sourceBitmap.getWidth() - range.left
+                || range.height() > sourceBitmap.getHeight() - range.top) {
+            logger.error("incorrect bounds: " + range);
+            return null;
+        }
+
+        try {
+            return Bitmap.createBitmap(sourceBitmap, range.left, range.top, range.width(),
+                    range.height());
+        } finally {
+            if (recycleSource) {
+                sourceBitmap.recycle();
+            }
+        }
+    }
+
+
     public static boolean isBitmapCorrect(Bitmap b) {
         return (b != null && !b.isRecycled() && getBitmapByteCount(b) > 0);
     }

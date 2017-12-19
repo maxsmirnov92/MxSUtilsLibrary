@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -39,6 +40,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -66,18 +68,16 @@ public final class FileHelper {
 
     public final static int DEPTH_UNLIMITED = -1;
 
-    public final static String FILE_EXT_ZIP = "zip";
-
     public FileHelper() {
         throw new AssertionError("no instances.");
     }
 
-    public static long getPartitionTotalSpaceKb(String path) {
-        return isDirExists(path) ? new File(path).getTotalSpace() / 1024L : 0L;
+    public static float getPartitionTotalSpace(String path, @NonNull SizeUnit unit) {
+        return isDirExists(path) ? SizeUnit.convert(new File(path).getTotalSpace(), SizeUnit.BYTES, unit) : 0L;
     }
 
-    public static long getPartitionFreeSpaceKb(String path) {
-        return isDirExists(path) ? new File(path).getFreeSpace() / 1024L : 0L;
+    public static float getPartitionFreeSpace(String path, @NonNull SizeUnit unit) {
+        return isDirExists(path) ? SizeUnit.convert(new File(path).getFreeSpace(), SizeUnit.BYTES, unit) : 0L;
     }
 
     public static boolean isSizeCorrect(File file) {
@@ -90,31 +90,28 @@ public final class FileHelper {
 
     public static boolean isFileExists(String fileName, String parentPath) {
 
-        if (fileName == null || fileName.length() == 0 || fileName.contains("/")) {
+        if (TextUtils.isEmpty(fileName) || fileName.contains("/")) {
             return false;
         }
 
-        if (parentPath == null || parentPath.length() == 0) {
+        if (TextUtils.isEmpty(parentPath)) {
             return false;
         }
 
-        File parentDir = new File(parentPath);
+        File f = new File(parentPath, fileName);
+        return f.exists() && f.isFile();
+    }
 
-        if (!(parentDir.exists() && parentDir.isDirectory())) {
-            logger.debug("directory " + parentDir.getAbsolutePath() + " not exists or not directory");
-            return false;
-        }
-
-        File f = new File(parentDir, fileName);
-        return (f.exists() && f.isFile());
+    public static boolean isFileExists(File file) {
+        return file != null && isFileExists(file.getAbsolutePath());
     }
 
     public static boolean isFileExists(String filePath) {
-        if (filePath == null || filePath.length() == 0) {
-            return false;
+        if (!TextUtils.isEmpty(filePath)) {
+            File f = new File(filePath);
+            return (f.exists() && f.isFile());
         }
-        File f = new File(filePath);
-        return (f.exists() && f.isFile());
+        return false;
     }
 
     @Nullable
@@ -246,100 +243,23 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static File createNewFile(String fileName, String parentPath, boolean recreate) {
+    private static File createFile(String fileName, String parentPath, boolean recreate) {
+        final File file;
 
-        if (TextUtils.isEmpty(fileName)) {
-            logger.error("file name is empty");
-            return null;
-        }
-
-        if (TextUtils.isEmpty(parentPath)) {
-            logger.error("parent path is empty");
-            return null;
-        }
-
-        File f = new File(parentPath, fileName);
-
-        if (f.exists() && f.isFile()) {
-
-            if (recreate) {
-
-                if (f.delete()) {
-
-                    f = FileHelper.createNewFile(f.getName(), f.getParent());
-
-                    if (f == null) {
-                        logger.error("can't create new file " + parentPath + File.separator + fileName);
-                        return null;
-                    }
-
-                } else {
-                    logger.error("can't delete existing file: " + f);
-                    return f;
-                }
-
-            } else {
-                logger.error("not overwriting, file exists: " + f);
-                return f;
-            }
-
+        if (recreate) {
+            file = createNewFile(fileName, parentPath);
         } else {
-
-            f = FileHelper.createNewFile(f.getName(), f.getParent());
-
-            if (f == null) {
-                logger.error("can't create new file " + parentPath + File.separator + fileName);
-                return null;
-            }
+            if (!isFileExists(fileName, parentPath))
+                file = createNewFile(fileName, parentPath);
+            else
+                file = new File(parentPath, fileName);
         }
 
-        return f;
-    }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    @Nullable
-    public static File createNewFile(String fileName, String parentPath) {
-
-        if (TextUtils.isEmpty(fileName) || fileName.contains(File.separator)) {
-            logger.error("file name is empty or contains slashes");
-            return null;
+        if (file == null) {
+            logger.error("can't create file: " + parentPath + File.separator + fileName);
         }
 
-        if (TextUtils.isEmpty(parentPath)) {
-            logger.error("parent path is empty");
-            return null;
-        }
-
-        File newFile = null;
-
-        File parentDir = new File(parentPath);
-        parentDir.mkdirs();
-
-        if (parentDir.exists() && parentDir.isDirectory()) {
-
-            newFile = new File(parentDir, fileName);
-
-            if (newFile.exists() && newFile.isFile()) {
-                if (!newFile.delete()) {
-                    logger.error("can't delete: " + newFile);
-                    return null;
-                }
-            }
-
-            try {
-                if (!newFile.createNewFile()) {
-                    logger.error("can't create new file: " + newFile);
-                    return null;
-                }
-            } catch (IOException e) {
-                logger.error("an IOException occurred during createNewFile()", e);
-                return null;
-            }
-        } else {
-            logger.error("can't create directory: " + parentDir);
-        }
-
-        return newFile;
+        return file;
     }
 
     @Nullable
@@ -360,6 +280,58 @@ public final class FileHelper {
         else
             return null;
 
+    }
+
+    public static File createNewFile(String fileName, String parentPath) {
+        return createNewFile(fileName, parentPath, true);
+    }
+
+    @SuppressWarnings("ResultOfMethodCallIgnored")
+    @Nullable
+    public static File createNewFile(String fileName, String parentPath, boolean recreate) {
+
+        if (TextUtils.isEmpty(fileName) || fileName.contains(File.separator)) {
+            return null;
+        }
+
+        if (TextUtils.isEmpty(parentPath)) {
+            return null;
+        }
+
+        File newFile = null;
+
+        File parentDir = new File(parentPath);
+
+        boolean created = false;
+        try {
+            created = parentDir.mkdirs();
+        } catch (SecurityException e) {
+            logger.error("exception occurred: " + e);
+        }
+
+        if (created || parentDir.exists() && parentDir.isDirectory()) {
+
+            newFile = new File(parentDir, fileName);
+
+            if (newFile.exists() && newFile.isFile()) {
+                if (!recreate || !newFile.delete()) {
+                    newFile = null;
+                }
+            }
+
+            if (newFile != null) {
+                try {
+                    if (!newFile.createNewFile()) {
+                        newFile = null;
+                    }
+                } catch (IOException e) {
+                    logger.error("exception occurred: " + e);
+                    return null;
+                }
+            }
+        }
+
+        return newFile;
     }
 
     public static boolean isBinaryFile(File f) throws FileNotFoundException, IOException {
@@ -462,7 +434,7 @@ public final class FileHelper {
         try {
             return readBytesFromInputStream(new FileInputStream(file));
         } catch (FileNotFoundException e) {
-            logger.debug("a FileNotFoundException occurred", e);
+            logger.error("a FileNotFoundException occurred", e);
             return null;
         }
     }
@@ -482,38 +454,12 @@ public final class FileHelper {
             return lines;
         }
 
-        FileReader reader;
         try {
-            reader = new FileReader(file);
+            return readStringsFromInputStream(new FileInputStream(file));
         } catch (FileNotFoundException e) {
-            logger.debug("a FileNotFoundException occurred", e);
+            logger.error("an IOException occurred", e);
             return lines;
         }
-
-        BufferedReader br = new BufferedReader(reader);
-
-        String line;
-
-        try {
-
-            while ((line = br.readLine()) != null) {
-                lines.add(line);
-            }
-            return lines;
-
-        } catch (IOException e) {
-            logger.error("an IOException occurred during readLine()", e);
-
-        } finally {
-            try {
-                br.close();
-                reader.close();
-            } catch (IOException e) {
-                logger.error("an IOException occurred during close()", e);
-            }
-        }
-
-        return lines;
     }
 
     @Nullable
@@ -525,7 +471,7 @@ public final class FileHelper {
     @NonNull
     public static Collection<String> readStringsFromAsset(@NonNull Context context, String assetName) {
         try {
-            return readStringsFromInputStream(context, context.getAssets().open(assetName));
+            return readStringsFromInputStream(context.getAssets().open(assetName));
         } catch (IOException e) {
             logger.error("an IOException occurred during open()", e);
             return Collections.emptyList();
@@ -535,7 +481,7 @@ public final class FileHelper {
     @Nullable
     public static String readStringFromAsset(@NonNull Context context, String assetName) {
         try {
-            return readStringFromInputStream(context, context.getAssets().open(assetName));
+            return readStringFromInputStream(context.getAssets().open(assetName));
         } catch (IOException e) {
             logger.error("an IOException occurred during open()", e);
             return null;
@@ -545,7 +491,7 @@ public final class FileHelper {
     @NonNull
     public static Collection<String> readStringsFromRes(@NonNull Context context, @RawRes int resId) {
         try {
-            return readStringsFromInputStream(context, context.getResources().openRawResource(resId));
+            return readStringsFromInputStream(context.getResources().openRawResource(resId));
         } catch (Resources.NotFoundException e) {
             logger.error("an IOException occurred during openRawResource()", e);
             return Collections.emptyList();
@@ -555,7 +501,7 @@ public final class FileHelper {
     @Nullable
     public static String readStringFromRes(@NonNull Context context, @RawRes int resId) {
         try {
-            return readStringFromInputStream(context, context.getResources().openRawResource(resId));
+            return readStringFromInputStream(context.getResources().openRawResource(resId));
         } catch (Resources.NotFoundException e) {
             logger.error("an IOException occurred during openRawResource()", e);
             return null;
@@ -563,7 +509,7 @@ public final class FileHelper {
     }
 
     @NonNull
-    public static Collection<String> readStringsFromInputStream(@NonNull Context context, @Nullable InputStream is) {
+    public static List<String> readStringsFromInputStream(@Nullable InputStream is) {
         if (is != null) {
             BufferedReader in = null;
             try {
@@ -573,7 +519,7 @@ public final class FileHelper {
                 while ((line = in.readLine()) != null) {
                     out.add(line);
                 }
-                return Collections.unmodifiableCollection(out);
+                return out;
             } catch (IOException e) {
                 logger.error("an IOException occurred", e);
             } finally {
@@ -590,76 +536,56 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static String readStringFromInputStream(@NonNull Context context, @Nullable InputStream is) {
-        Collection<String> strings = readStringsFromInputStream(context, is);
+    public static String readStringFromInputStream(@Nullable InputStream is) {
+        Collection<String> strings = readStringsFromInputStream(is);
         return !strings.isEmpty() ? TextUtils.join(System.getProperty("line.separator"), strings) : null;
     }
 
-    @Nullable
-    private static File createFile(String fileName, String parentPath, boolean append) {
-        final File file;
-
-        if (!append) {
-            file = createNewFile(fileName, parentPath);
-        } else {
-            if (!isFileExists(fileName, parentPath))
-                file = createNewFile(fileName, parentPath);
-            else
-                file = new File(parentPath, fileName);
-        }
-
-        if (file == null) {
-            logger.error("can't create file: " + parentPath + File.separator + fileName);
-        }
-
-        return file;
-    }
-
-    /** */
-    @Nullable
-    public static File writeBytesToFile(byte[] data, String fileName, String parentPath, boolean append) {
-        logger.debug("writeBytesToFile(), fileName=" + fileName + ", parentPath=" + parentPath + ", append=" + append);
-
-        if (data == null) {
-            data = new byte[0];
-        }
-
-        final File file = createFile(fileName, parentPath, append);
-
-        if (file == null) {
-            logger.error("can't create file " + parentPath + File.separator + fileName);
+    public static String convertInputStreamToString(InputStream inputStream) {
+        ByteArrayOutputStream result = new ByteArrayOutputStream();
+        revectorStream(inputStream, result);
+        try {
+            return result.toString("UTF-8");
+        } catch (UnsupportedEncodingException e) {
+            logger.error("exception occurred: " + e);
             return null;
         }
+    }
 
+    public static boolean writeBytesToFile(@NonNull File file, byte[] data, boolean append) {
+        if (data == null || data.length == 0) {
+            return false;
+        }
+        if (!isFileExists(file.getAbsolutePath()) && (file = createNewFile(file.getName(), file.getAbsolutePath(), !append)) == null) {
+            return false;
+        }
         if (!file.canWrite()) {
             logger.error("can't write to file: " + file);
-            return file;
+            return false;
         }
-
         FileOutputStream fos = null;
-
         try {
-
-            fos = new FileOutputStream(file, append);
-            fos.write(data);
-            fos.flush();
-            fos.close();
-            return file;
-
-        } catch (IOException e) {
-            logger.error("an IOException occurred", e);
-
-        } finally {
+            fos = new FileOutputStream(file.getAbsolutePath(), append);
+        } catch (FileNotFoundException e) {
+            logger.error("exception occurred: " + e);
+        }
+        if (fos != null) {
             try {
-                if (fos != null) {
-                    fos.close();
-                }
+                fos.write(data);
+                fos.flush();
+                return true;
             } catch (IOException e) {
-                logger.error("an IOException occurred during close", e);
+                logger.error("exception occurred: " + e);
+            } finally {
+                try {
+                    fos.close();
+                } catch (IOException e) {
+                    logger.error("exception occurred: " + e);
+                }
             }
         }
+        return false;
 
-        return null;
     }
 
     @Nullable
@@ -668,22 +594,20 @@ public final class FileHelper {
 
         try {
             if (data == null || data.available() == 0) {
-                logger.error("data is null or not available");
                 return null;
             }
         } catch (IOException e) {
-            logger.error("an IOException occurred ", e);
+            logger.error("an IOException occurred during write", e);
             return null;
         }
 
-        final File file = createFile(fileName, parentPath, append);
+        final File file = createFile(fileName, parentPath, !append);
 
         if (file == null) {
             return null;
         }
 
         if (!file.canWrite()) {
-            logger.error("can't write to file: " + file);
             return file;
         }
 
@@ -691,69 +615,28 @@ public final class FileHelper {
             revectorStream(data, new FileOutputStream(file));
             return file;
         } catch (FileNotFoundException e) {
-            logger.error("an IOException occurred ", e);
+            logger.error("exception occurred: " + e);
         }
 
         return null;
     }
 
-    public static File writeStringToFile(String data, String fileName, String parentPath, boolean append) {
-
-        if (data == null) {
-            data = "";
-        }
-
-        final File file = createFile(fileName, parentPath, append);
-
-        if (file == null) {
-            logger.error("can't create file " + parentPath + File.separator + fileName);
-            return null;
-        }
-
-        if (!file.canWrite()) {
-            logger.error("can't write to file: " + file);
-            return file;
-        }
-
-        FileWriter writer = null;
-
-        try {
-            writer = new FileWriter(file, append);
-            writer.write(data);
-            writer.flush();
-            return file;
-
-        } catch (IOException e) {
-            logger.error("an IOException occurred", e);
-
-        } finally {
-            if (writer != null) {
-                try {
-                    writer.close();
-                } catch (IOException e) {
-                    logger.error("an IOException occurred during close()", e);
-                }
-            }
-        }
-
-        return null;
+    public static boolean writeStringToFile(File file, String data, boolean append) {
+        return writeStringsToFile(file, Collections.singletonList(data), append);
     }
 
-    public static File writeStringsToFile(Collection<String> strings, String fileName, String parentPath, boolean append) {
+    public static boolean writeStringsToFile(@Nullable File file, @Nullable Collection<String> data, boolean append) {
 
-        if (strings == null) {
-            strings = new ArrayList<>();
+        if (data == null || data.isEmpty()) {
+            return false;
         }
 
-        final File file = createFile(fileName, parentPath, append);
-
-        if (file == null) {
-            return null;
+        if (file == null || !isFileExists(file.getAbsolutePath()) && (file = createNewFile(file.getName(), file.getAbsolutePath(), !append)) == null) {
+            return false;
         }
-
         if (!file.canWrite()) {
             logger.error("can't write to file: " + file);
-            return file;
+            return false;
         }
 
         FileWriter writer;
@@ -761,16 +644,18 @@ public final class FileHelper {
             writer = new FileWriter(file);
         } catch (IOException e) {
             logger.debug("an IOException occurred", e);
-            return file;
+            return false;
         }
 
         BufferedWriter bw = new BufferedWriter(writer);
 
         try {
-            for (String line : strings) {
+            for (String line : data) {
                 bw.append(line);
+                bw.append(System.getProperty("line.separator"));
                 bw.flush();
             }
+            return true;
         } catch (IOException e) {
             logger.error("an IOException occurred during write", e);
         } finally {
@@ -781,19 +666,21 @@ public final class FileHelper {
             }
         }
 
-        return file;
+        return false;
     }
 
     @Nullable
-    public static File compressFilesToZip(Collection<File> srcFiles, String destZipName) {
+    public static File compressFilesToZip(Collection<File> srcFiles, String destZipName, String destZipParent, boolean recreate) {
 
         if (srcFiles == null || srcFiles.isEmpty()) {
-            logger.error("srcFiles is null or empty");
+            logger.error("source files is null or empty");
             return null;
         }
 
-        if (TextUtils.isEmpty(destZipName)) {
-            logger.error("destZipName is null or empty");
+        File zipFile = createFile(destZipName, destZipParent, recreate);
+
+        if (FileHelper.isFileExists(zipFile)) {
+            logger.error("cannot create zip file");
             return null;
         }
 
@@ -813,13 +700,11 @@ public final class FileHelper {
 
                     byte[] bytes = readBytesFromFile(srcFile);
 
-                    if (bytes == null) {
-
-                    }
-
                     ZipEntry entry = new ZipEntry(srcFile.getName());
                     zos.putNextEntry(entry);
-                    zos.write(bytes);
+                    if (bytes != null) {
+                        zos.write(bytes);
+                    }
                     zos.closeEntry();
 
                     zippedFiles++;
@@ -951,12 +836,9 @@ public final class FileHelper {
     }
 
     @NonNull
-    public static String getFileExtension(String fileName) {
-        String[] fileNameSplit = fileName.split("\\.");
-        if (fileNameSplit.length == 0) {
-            return "";
-        }
-        return fileNameSplit[fileNameSplit.length - 1];
+    public static String getFileExtension(String name) {
+        int index = name.lastIndexOf('.');
+        return (index > 0 && index < name.length() - 1) ? name.substring(index + 1) : "";
     }
 
     public static String removeExtension(String fileName) {
@@ -1039,7 +921,7 @@ public final class FileHelper {
 //            }
 
             File[] filesArr = fromDir.listFiles();
-            List<File> files = filesArr != null? Arrays.asList(filesArr) : null;
+            List<File> files = filesArr != null ? Arrays.asList(filesArr) : null;
 
             if (files != null) {
                 for (File f : files) {
@@ -1750,7 +1632,7 @@ public final class FileHelper {
 
     public static boolean copyFromAssets(Context ctx, String assetsPath, File to, boolean rewrite) {
 
-        to = FileHelper.createNewFile(to != null ? to.getName() : null, to != null ? to.getParent() : null, rewrite);
+        to = createNewFile(to != null ? to.getName() : null, to != null ? to.getParent() : null, rewrite);
 
         if (to == null) {
             return false;
@@ -1796,22 +1678,17 @@ public final class FileHelper {
             return null;
         }
 
-        destFile = writeBytesToFile(readBytesFromFile(sourceFile), destFile.getName(), destFile.getParent(), !rewrite);
-
-        if (destFile == null) {
+        if (!writeBytesToFile(destFile, readBytesFromFile(sourceFile), !rewrite)) {
             logger.error("can't write to dest file: " + destDir + File.separator + targetName);
+            destFile = null;
         }
 
         return destFile;
     }
 
-    /**
-     * @return dest file
-     */
     public static File copyFileWithBuffering(File sourceFile, String destName, String destDir, boolean rewrite) {
 
         if (!isFileCorrect(sourceFile)) {
-            logger.error("incorrect source file: " + sourceFile);
             return null;
         }
 
@@ -1820,17 +1697,13 @@ public final class FileHelper {
         File destFile = createNewFile(targetName, destDir, rewrite);
 
         if (destFile == null) {
-            logger.error("can't create dest file: " + destDir + File.separator + targetName);
             return null;
         }
 
         try {
             destFile = writeFromStreamToFile(new FileInputStream(sourceFile), destFile.getName(), destFile.getParent(), !rewrite);
-            if (destFile == null) {
-                logger.error("can't write to dest file" + destDir + File.separator + targetName);
-            }
         } catch (FileNotFoundException e) {
-            logger.error("a FileNotFoundException occurred", e);
+            logger.error("exception occurred: " + e);
             destFile = null;
         }
 
@@ -1870,7 +1743,7 @@ public final class FileHelper {
 
     public static boolean writeExifLocation(File f, Location loc) {
 
-        if (!FileHelper.isFileCorrect(f) || !FileHelper.isPicture(FileHelper.getFileExtension(f.getName()))) {
+        if (!isFileCorrect(f) || !isPicture(getFileExtension(f.getName()))) {
             logger.error("incorrect picture file: " + f);
             return false;
         }
@@ -2028,7 +1901,7 @@ public final class FileHelper {
         final Set<File> collected = new LinkedHashSet<>();
         for (final File dir : new LinkedHashSet<>(fromDirs)) {
 
-            if (dir != null/* && FileHelper.isDirExists(dir.getAbsolutePath())*/) {
+            if (dir != null/* && isDirExists(dir.getAbsolutePath())*/) {
                 execProcess(Arrays.asList("su", "-c", "ls", dir.getAbsolutePath()), null, new ShellUtils.ShellCallback() {
                     @Override
                     public boolean needToLogCommands() {
@@ -2601,6 +2474,40 @@ public final class FileHelper {
 
         public static float toBytesFromBits(float s) {
             return s / C0;
+        }
+
+        public static float convert(long what, @NonNull SizeUnit from, @NonNull SizeUnit to) {
+            final float result;
+            switch (to) {
+                case BITS:
+                    result = from.toBits(what);
+                    break;
+                case BYTES:
+                    result = from.toBytes(what);
+                    break;
+                case KBITS:
+                    result = from.toKBits(what);
+                    break;
+                case KBYTES:
+                    result = from.toKBytes(what);
+                    break;
+                case MBITS:
+                    result = from.toMBits(what);
+                    break;
+                case MBYTES:
+                    result = from.toMBytes(what);
+                    break;
+                case GBITS:
+                    result = from.toGBits(what);
+                    break;
+                case GBYTES:
+                    result = from.toGBytes(what);
+                    break;
+                default:
+                    result = 0f;
+                    break;
+            }
+            return result;
         }
     }
 
