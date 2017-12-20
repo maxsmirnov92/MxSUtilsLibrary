@@ -33,6 +33,9 @@ android {
             keyAlias 'maxsmirnov'
             storeFile file('~/.android/release-key.keystore')
         }
+        debug {
+            storeFile file('~/.android/debug.keystore')
+        }
     }
 
     compileSdkVersion sdkVersion
@@ -45,7 +48,7 @@ android {
         minSdkVersion minSdkVersion_
         targetSdkVersion sdkVersion
         versionCode 1
-        versionName 
+        versionName project.customContentProviderVersion
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
@@ -97,17 +100,17 @@ artifacts {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    api fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
 
-    implementation "net.maxsmr:commonutils:$commonUtilsVersion"
+    api "net.maxsmr:commonutils:$commonUtilsVersion"
 }
 
 uploadArchives {
     repositories.mavenDeployer {
-        pom.groupId = groupIdName
+        pom.groupId = project.groupIdName
         pom.artifactId = project.archivesBaseName
-        pom.version = customContentProviderVersion
+        pom.version = project.customContentProviderVersion
         repository(url: "file://${localReleaseDest}")
     }
 }
@@ -127,7 +130,7 @@ bintray {
         licenses = ['Apache-2.0']
         vcsUrl = gitUrl
         version {
-            name = customContentProviderVersion
+            name = project.customContentProviderVersion
         }
         publicDownloadNumbers = true
     }
@@ -136,9 +139,9 @@ bintray {
 publishing {
     publications {
         artifactPublication(MavenPublication) {
-            groupId = groupIdName
+            groupId = project.groupIdName
             artifactId = project.archivesBaseName
-            version = customContentProviderVersion
+            version = project.customContentProviderVersion
             artifact "${project.buildDir}/outputs/aar/${archivesBaseName}-release.aar"
             artifact sourcesJar
 //            artifact javadocsJar
@@ -147,8 +150,8 @@ publishing {
                 def dependenciesNode = asNode().appendNode('dependencies')
 
                 //Iterate over the compile dependencies (we don't want the test ones), adding a <dependency> node for each
-                configurations.compile.allDependencies.each {
-                    if (it.group != null) {
+                configurations.api.allDependencies.each {
+                    if (it.group != null && it.name != 'unspecified') {
                         def dependencyNode = dependenciesNode.appendNode('dependency')
                         dependencyNode.appendNode('groupId', it.group)
                         dependencyNode.appendNode('artifactId', it.name)

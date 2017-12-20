@@ -37,6 +37,9 @@ android {
             keyAlias 'maxsmirnov'
             storeFile file('~/.android/release-key.keystore')
         }
+        debug {
+            storeFile file('~/.android/debug.keystore')
+        }
     }
 
     compileSdkVersion sdkVersion
@@ -47,7 +50,7 @@ android {
         minSdkVersion minSdkVersion_
         targetSdkVersion sdkVersion
         versionCode 1
-        versionName commonUtilsVersion
+        versionName project.commonUtilsVersion
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
     buildTypes {
@@ -98,16 +101,16 @@ artifacts {
 }
 
 dependencies {
-    implementation fileTree(include: ['*.jar'], dir: 'libs')
-    implementation "com.android.support:support-annotations:$appCompatVersion"
-    implementation "com.android.support:palette-v7:$appCompatVersion"
-    implementation "com.android.support:design:$appCompatVersion"
+    api fileTree(include: ['*.jar'], dir: 'libs')
+    api "com.android.support:support-annotations:$appCompatVersion"
+    api "com.android.support:palette-v7:$appCompatVersion"
+    api "com.android.support:design:$appCompatVersion"
     javadocDependencies "com.android.support:appcompat-v7:$appCompatVersion"
     javadocDependencies "com.android.support:support-annotations:$appCompatVersion"
-    implementation "de.mindpipe.android:android-logging-log4j:$log4jVersion"
-    implementation "org.slf4j:slf4j-log4j12:$slf4jVersion"
-    implementation "commons-net:commons-net:$commonsNetVersion"
-    implementation "com.google.code.gson:gson:$gsonVersion"
+    api "de.mindpipe.android:android-logging-log4j:$log4jVersion"
+    api "org.slf4j:slf4j-log4j12:$slf4jVersion"
+    api "commons-net:commons-net:$commonsNetVersion"
+    api "com.google.code.gson:gson:$gsonVersion"
     testCompile "junit:junit:$jUnitVersion"
     androidTestCompile "com.android.support:support-annotations:$appCompatVersion"
     androidTestCompile "com.android.support.test:runner:$testRunnerVersion"
@@ -119,9 +122,9 @@ dependencies {
 
 uploadArchives {
     repositories.mavenDeployer {
-        pom.groupId = groupIdName
+        pom.groupId = project.groupIdName
         pom.artifactId = project.archivesBaseName
-        pom.version = commonUtilsVersion
+        pom.version = project.commonUtilsVersion
         repository(url: "file://${localReleaseDest}")
     }
 }
@@ -141,7 +144,7 @@ bintray {
         licenses = ['Apache-2.0']
         vcsUrl = gitUrl
         version {
-            name = commonUtilsVersion
+            name = project.commonUtilsVersion
         }
         publicDownloadNumbers = true
     }
@@ -151,9 +154,9 @@ publishing {
     publications {
         artifactPublication(MavenPublication) {
 
-            groupId = groupIdName
+            groupId = project.groupIdName
             artifactId = project.archivesBaseName
-            version = commonUtilsVersion
+            version = project.commonUtilsVersion
             artifact "${project.buildDir}/outputs/aar/${project.archivesBaseName}-release.aar"
             artifact sourcesJar
 //            artifact javadocsJar
@@ -167,7 +170,7 @@ publishing {
 //                    def artifactName = project.getName()
 //
 //                    // Artifact properties
-//                    groupId = groupIdName
+//                    groupId = project.groupIdName
 //                    artifactId = project.archivesBaseName
 //                    version = libVersion
 //                    artifactId variant.name == 'debug' ? artifactName + '-dev' : artifactName
@@ -222,8 +225,9 @@ publishing {
                 def dependenciesNode = asNode().appendNode('dependencies')
 
                 //Iterate over the compile dependencies (we don't want the test ones), adding a <dependency> node for each
-                configurations.compile.allDependencies.each {
-                    if (it.group != null) {
+                configurations.api.allDependencies.each {
+                    // Ensure dependencies such as fileTree are not included.
+                    if (it.group != null && it.name != 'unspecified') {
                         def dependencyNode = dependenciesNode.appendNode('dependency')
                         dependencyNode.appendNode('groupId', it.group)
                         dependencyNode.appendNode('artifactId', it.name)
