@@ -1,4 +1,4 @@
-package net.maxsmr.networkutils.loadutil.managers.ids;
+package net.maxsmr.tasksutils.storage.ids.pool;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -8,7 +8,7 @@ import java.util.Collections;
 import java.util.Set;
 
 
-public abstract class AbsIdsPool {
+public abstract class AbstractIdsPool {
 
     public abstract boolean contains(int id);
 

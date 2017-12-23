@@ -1,4 +1,4 @@
-package net.maxsmr.networkutils.loadutil.managers.ids;
+package net.maxsmr.tasksutils.storage.ids.pool;
 
 
 import android.support.annotation.NonNull;
@@ -9,11 +9,10 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-public class SetIdsPool extends AbsIdsPool {
+public class SetIdsPool extends AbstractIdsPool {
 
     @NonNull
     private final LinkedHashSet<Integer> ids = new LinkedHashSet<>();
-
 
     @Override
     public boolean contains(int id) {

@@ -4,15 +4,17 @@ import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.tasksutils.NamedThreadFactory;
+import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
+import net.maxsmr.tasksutils.taskexecutor.TaskRunnable.ITaskRestorer;
+import net.maxsmr.tasksutils.taskexecutor.TaskRunnable.ITaskResultValidator;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -24,23 +26,13 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 
-public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
-
-    private final static Logger logger = LoggerFactory.getLogger(AbsTaskRunnableExecutor.class);
-
-    public final static int DEFAULT_KEEP_ALIVE_TIME = 60;
-
-    protected final static String FILE_EXT_DAT = "dat";
-
-    private final Object lock = new Object();
+public abstract class AbsTaskRunnableExecutor<I extends RunnableInfo> extends ThreadPoolExecutor {
 
     public static final int TASKS_NO_LIMIT = 0;
-    public static final int DEFAULT_TASKS_LIMIT = TASKS_NO_LIMIT;
 
-    public final int queuedTasksLimit;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    protected final boolean syncQueue;
-    protected final String queueDirPath;
+    private final Object lock = new Object();
 
     private final Map<Integer, WrappedTaskRunnable> activeTasksRunnables = new LinkedHashMap<>();
 
@@ -48,24 +40,49 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
 
     private final CallbacksObservable callbacksObservable = new CallbacksObservable();
 
-    private Thread restoreThread;
+    public int queuedTasksLimit;
 
-    public AbsTaskRunnableExecutor(int queuedTasksLimit, int concurrentTasksLimit, long keepAliveTime, TimeUnit unit, String poolName, boolean syncQueue, String queueDirPath) {
+    @Nullable
+    private ITaskResultValidator<I, TaskRunnable<I>> resultValidator;
+
+    @Nullable
+    private AbstractSyncStorage<I> syncStorage;
+
+    public AbsTaskRunnableExecutor(int queuedTasksLimit, int concurrentTasksLimit, long keepAliveTime, TimeUnit unit, String poolName,
+                                   @Nullable ITaskResultValidator<I, TaskRunnable<I>> resultValidator,
+                                   @Nullable final AbstractSyncStorage<I> syncStorage,
+                                   @Nullable final ITaskRestorer<I, TaskRunnable<I>> restorer
+    ) {
         super(concurrentTasksLimit, concurrentTasksLimit, keepAliveTime, unit, new LinkedBlockingQueue<Runnable>(), new NamedThreadFactory(poolName));
         logger.debug("AbstractSyncThreadPoolExecutor(), queuedTasksLimit=" + queuedTasksLimit + ", concurrentTasksLimit=" + concurrentTasksLimit
-                + ", keepAliveTime=" + keepAliveTime + ", unit=" + unit + ", poolName=" + poolName + ", syncQueue=" + syncQueue
-                + ", queueDirPath=" + queueDirPath);
+                + ", keepAliveTime=" + keepAliveTime + ", unit=" + unit + ", poolName=" + poolName);
 
-        if (queuedTasksLimit < 0) {
-            throw new IllegalArgumentException("incorrect taskLimit: " + queuedTasksLimit);
+        setQueuedTasksLimit(queuedTasksLimit);
+        setResultValidator(resultValidator);
+        setSyncStorage(syncStorage);
+
+        if (restorer != null && syncStorage != null) {
+            if (!syncStorage.isRestoreCompleted()) {
+                syncStorage.addStorageListener(new AbstractSyncStorage.IStorageListener() {
+                    @Override
+                    public void onStorageRestoreStarted(long startTime) {
+
+                    }
+
+                    @Override
+                    public void onStorageRestoreFinished(long endTime, int restoredElementsCount) {
+                        executeAll(restorer.fromRunnableInfos(syncStorage.getAll()));
+                    }
+
+                    @Override
+                    public void onStorageSizeChanged(int currentSize, int previousSize) {
+
+                    }
+                });
+            } else {
+                executeAll(restorer.fromRunnableInfos(syncStorage.getAll()));
+            }
         }
-
-        this.queuedTasksLimit = queuedTasksLimit;
-
-        this.syncQueue = syncQueue;
-        this.queueDirPath = queueDirPath;
-
-        startRestoreThread();
     }
 
     public boolean isRunning() {
@@ -76,71 +93,39 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
         return callbacksObservable;
     }
 
-    @Override
-    public void shutdown() {
-        super.shutdown();
-        stopRestoreThread();
+    public int getQueuedTasksLimit() {
+        return queuedTasksLimit;
     }
 
-    protected final boolean isRestoreThreadRunning() {
-        return (restoreThread != null && restoreThread.isAlive());
-    }
-
-    protected final void startRestoreThread() {
-
-        if (!syncQueue) {
-            logger.debug("sync queue is not enabled");
-            return;
+    public void setQueuedTasksLimit(int queuedTasksLimit) {
+        if (queuedTasksLimit < 0) {
+            throw new IllegalArgumentException("incorrect taskLimit: " + queuedTasksLimit);
         }
 
-        if (isRestoreThreadRunning()) {
-            return;
-        }
-
-        restoreThread = new Thread(new Runnable() {
-
-            @Override
-            public void run() {
-                restoreTaskRunnablesFromFiles();
-            }
-        }, getClass().getSimpleName() + ":RestoreThread");
-
-        restoreThread.start();
-    }
-
-    protected final void stopRestoreThread() {
-
-        if (!isRestoreThreadRunning()) {
-            return;
-        }
-
-        restoreThread.interrupt();
-        restoreThread = null;
-    }
-
-    protected abstract boolean restoreTaskRunnablesFromFiles();
-
-    public boolean isTasksLimitExceeded() {
-        return queuedTasksLimit != TASKS_NO_LIMIT && getWaitingTasksCount() >= queuedTasksLimit;
-    }
-
-    @NonNull
-    private ExecInfo getExecInfoForRunnable(@NonNull WrappedTaskRunnable r) {
-        synchronized (lock) {
-            ExecInfo execInfo = tasksRunnablesExecInfo.get(r.command.rInfo.id);
-            if (execInfo == null) {
-                execInfo = new ExecInfo(r.command);
-                tasksRunnablesExecInfo.put(r.command.rInfo.id, execInfo);
-            }
-            return execInfo;
-        }
+        this.queuedTasksLimit = queuedTasksLimit;
     }
 
     @Nullable
-    private ExecInfo removeExecInfoForRunnable(@NonNull WrappedTaskRunnable r) {
-        synchronized (lock) {
-            return tasksRunnablesExecInfo.remove(r.command.rInfo.id);
-        }
+    public ITaskResultValidator<I, TaskRunnable<I>> getResultValidator() {
+        return resultValidator;
+    }
+
+    public void setResultValidator(@Nullable ITaskResultValidator<I, TaskRunnable<I>> resultValidator) {
+        this.resultValidator = resultValidator;
+    }
+
+    @Nullable
+    public AbstractSyncStorage<I> getSyncStorage() {
+        return syncStorage;
+    }
+
+    public void setSyncStorage(@Nullable AbstractSyncStorage<I> syncStorage) {
+        this.syncStorage = syncStorage;
+    }
+
+
+    public boolean isTasksLimitExceeded() {
+        return queuedTasksLimit != TASKS_NO_LIMIT && getWaitingTasksCount() >= queuedTasksLimit;
     }
 
     @NonNull
@@ -218,7 +203,6 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
         return getActiveTasks().size();
     }
 
-
     public boolean containsTask(int id) {
         return findRunnableById(id) != null;
     }
@@ -287,7 +271,6 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
         }
     }
 
-
     public boolean isTaskRunning(int id) {
         RunnableInfo runnableInfo = findRunnableInfoById(id, RunnableType.ACTIVE);
         return runnableInfo != null && runnableInfo.isRunning;
@@ -330,7 +313,15 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
         }
     }
 
-    public void execute(TaskRunnable command) {
+    public void executeAll(Collection<TaskRunnable<I>> commands) {
+        if (commands != null) {
+            for (TaskRunnable<I> c : commands) {
+                execute(c);
+            }
+        }
+    }
+
+    public void execute(TaskRunnable<I> command) {
         execute((Runnable) command);
     }
 
@@ -350,7 +341,7 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
             throw new RuntimeException("incorrect type: " + command.getClass() + ", must be: " + TaskRunnable.class.getName());
         }
 
-        if (((TaskRunnable) command).rInfo.id < 0) {
+        if (((TaskRunnable<I>) command).rInfo.id < 0) {
             throw new RuntimeException("incorrect id: " + ((TaskRunnable) command).rInfo.id);
         }
 
@@ -359,15 +350,13 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
             return;
         }
 
-        if (containsTask((TaskRunnable) command)) {
+        if (containsTask((TaskRunnable<I>) command)) {
             logger.error("can't add new task: task list already contains " + TaskRunnable.class.getSimpleName() + " with id " + ((TaskRunnable) command).rInfo.id);
             return;
         }
 
-        if (syncQueue) {
-            if (!writeRunnableInfoToFile(((TaskRunnable) command).rInfo, queueDirPath)) {
-                logger.error("can't write task runnable with info " + ((TaskRunnable) command).rInfo + " to file");
-            }
+        if (syncStorage != null) {
+            syncStorage.addLast(((TaskRunnable<I>) command).rInfo);
         }
 
         WrappedTaskRunnable wrapped = new WrappedTaskRunnable((TaskRunnable) command);
@@ -403,63 +392,42 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
         taskRunnable = (WrappedTaskRunnable) r;
         taskRunnable.command.rInfo.isRunning = false;
 
-        if (syncQueue) {
-            if (!deleteFileByRunnableInfo(taskRunnable.command.rInfo, queueDirPath)) {
-                logger.error("can't delete file by task runnable with info " + taskRunnable.command.rInfo);
-            }
+        if (syncStorage != null) {
+            syncStorage.removeById(((TaskRunnable<I>) taskRunnable.command).rInfo.id);
         }
-        callbacksObservable.dispatchAfterExecute(taskRunnable.command, t, getExecInfoForRunnable(taskRunnable).finishedExecution(System.currentTimeMillis()));
-        removeExecInfoForRunnable(taskRunnable);
+
         synchronized (lock) {
             if (!activeTasksRunnables.containsKey(taskRunnable.command.rInfo.id)) {
                 throw new RuntimeException("no runnable with id " + taskRunnable.command.rInfo.id);
             }
             activeTasksRunnables.remove(taskRunnable.command.rInfo.id);
         }
+
+        callbacksObservable.dispatchAfterExecute(taskRunnable.command, t, getExecInfoForRunnable(taskRunnable).finishedExecution(System.currentTimeMillis()));
+        removeExecInfoForRunnable(taskRunnable);
+
+        if (resultValidator != null && resultValidator.needToReAddTask((TaskRunnable<I>) taskRunnable.command)) {
+            execute(r);
+        }
     }
 
-    protected static boolean writeRunnableInfoToFile(RunnableInfo rInfo, String parentPath) {
-        logger.debug("writeRunnableInfoToFile(), parentPath=" + parentPath); // rInfo=" + rInfo + "
-
-        if (rInfo == null) {
-            logger.error("runnable info is null");
-            return false;
+    @NonNull
+    private ExecInfo getExecInfoForRunnable(@NonNull WrappedTaskRunnable r) {
+        synchronized (lock) {
+            ExecInfo execInfo = tasksRunnablesExecInfo.get(r.command.rInfo.id);
+            if (execInfo == null) {
+                execInfo = new ExecInfo(r.command);
+                tasksRunnablesExecInfo.put(r.command.rInfo.id, execInfo);
+            }
+            return execInfo;
         }
-
-        if (rInfo.name == null || rInfo.name.length() == 0) {
-            logger.error("runnable info name is null or empty");
-            return false;
-        }
-
-        if (parentPath == null || parentPath.length() == 0) {
-            logger.error("parentPath is null or empty");
-            return false;
-        }
-
-        final String infoFileName = rInfo.name + "." + FILE_EXT_DAT;
-        return FileHelper.writeBytesToFile(new File(parentPath, infoFileName), RunnableInfo.toByteArray(rInfo), false);
     }
 
-    protected static boolean deleteFileByRunnableInfo(RunnableInfo rInfo, String parentPath) {
-        logger.debug("deleteFileByRunnableInfo(), parentPath=" + parentPath); // rInfo=" + rInfo + "
-
-        if (rInfo == null) {
-            logger.error("runnable info is null");
-            return false;
+    @Nullable
+    private ExecInfo removeExecInfoForRunnable(@NonNull WrappedTaskRunnable r) {
+        synchronized (lock) {
+            return tasksRunnablesExecInfo.remove(r.command.rInfo.id);
         }
-
-        if (rInfo.name == null || rInfo.name.length() == 0) {
-            logger.error("runnable info name is null or empty");
-            return false;
-        }
-
-        if (parentPath == null || parentPath.length() == 0) {
-            logger.error("parentPath is null or empty");
-            return false;
-        }
-
-        final String infoFileName = rInfo.name + "." + FILE_EXT_DAT;
-        return FileHelper.deleteFile(infoFileName, parentPath);
     }
 
     private class CallbacksObservable extends Observable<Callbacks> {
@@ -498,6 +466,11 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
         void onAfterExecute(TaskRunnable<?> r, Throwable t, ExecInfo execInfo);
     }
 
+    public enum RunnableType {
+        WAITING, ACTIVE
+    }
+
+    /** for seeing in LogCat */
     static final class WrappedTaskRunnable implements Runnable {
 
         @NonNull
@@ -516,10 +489,6 @@ public abstract class AbsTaskRunnableExecutor extends ThreadPoolExecutor {
                 throw new RuntimeException("an exception was occurred during run()", e);
             }
         }
-    }
-
-    public enum RunnableType {
-        WAITING, ACTIVE
     }
 
 }

@@ -1,18 +1,18 @@
-package net.maxsmr.networkutils.loadutil.managers.ids;
+package net.maxsmr.tasksutils.storage.ids;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-public abstract class AbsIdHolder {
+public class IdHolder {
 
     private final AtomicInteger lastId ;
 
     private final int initialValue;
 
-    public AbsIdHolder(int initialValue) {
+    public IdHolder(int initialValue) {
        lastId = new AtomicInteger(this.initialValue = initialValue);
     }
 
-    public final int get() {
+    public int get() {
         return lastId.get();
     }
 

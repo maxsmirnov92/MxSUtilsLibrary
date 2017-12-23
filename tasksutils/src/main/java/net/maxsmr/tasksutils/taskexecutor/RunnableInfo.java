@@ -1,7 +1,12 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
-import net.maxsmr.commonutils.data.model.InstanceManager;
+import android.support.annotation.NonNull;
 
+import net.maxsmr.commonutils.data.model.InstanceManager;
+import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
+
+import java.io.InputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 
 public class RunnableInfo implements Serializable {
@@ -38,6 +43,19 @@ public class RunnableInfo implements Serializable {
         isCancelled = true;
     }
 
+    // change implementation
+    public boolean isValid() {
+        return id >= 0;
+    }
+
+    public byte[] toByteArray() {
+        return InstanceManager.asByteArray(this);
+    }
+
+    public void toOutputStream(@NonNull OutputStream outputStream) {
+        AbstractSyncStorage.toOutputStream(this, outputStream);
+    }
+
     @Override
     public boolean equals(Object o) {
         if (this == o) return true;
@@ -69,12 +87,12 @@ public class RunnableInfo implements Serializable {
                 '}';
     }
 
-    public static <I extends RunnableInfo> byte[] toByteArray(I rInfo) {
-        return InstanceManager.asByteArray(rInfo);
+    public static <I extends RunnableInfo> I fromByteArray(Class<I> clazz, byte[] byteArray) {
+        return InstanceManager.fromByteArray(clazz, byteArray);
     }
 
-    public static <I extends RunnableInfo> I fromByteArray(Class<I> iClass, byte[] byteArray) {
-        return InstanceManager.fromByteArray(iClass, byteArray);
+    public static <I extends RunnableInfo> I fromByteInputStream(Class<I> clazz, InputStream inputStream) {
+        return AbstractSyncStorage.fromInputStream(clazz, inputStream);
     }
 
 }

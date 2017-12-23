@@ -3,14 +3,7 @@ package net.maxsmr.networkutils.loadutil.managers.base;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import net.maxsmr.networkutils.loadstorage.LoadInfo;
-import net.maxsmr.networkutils.loadstorage.storage.AbstractLoadStorage;
-import net.maxsmr.networkutils.loadstorage.storage.collection.QueueLoadStorage;
-import net.maxsmr.networkutils.loadutil.managers.LoadListener;
-import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
-import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
-import net.maxsmr.networkutils.loadutil.managers.base.info.WrappedLoadRunnableInfo;
-import net.maxsmr.networkutils.loadutil.managers.ids.AbsIdHolder;
+
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 

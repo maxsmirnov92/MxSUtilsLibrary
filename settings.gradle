@@ -1,6 +1,7 @@
-include ':commonutils'
-// 'customcontentprovider'
+include ':tasksutils'
+//':tasksutils'
+// 'customcontentprovider',
 //   ':commonutils',
 //  ':networkutils',
 //  ':tasksutils',
-// ':devicewatchers'
+// ':devicewatchers',
