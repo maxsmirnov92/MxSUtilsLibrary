@@ -51,23 +51,25 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
         super.onCreate(savedInstanceState);
         setContentView(contentView = LayoutInflater.from(this).inflate(R.layout.activity_test, null));
 
-        storage = new ListSyncStorage<>(getFilesDir().getAbsolutePath() + File.separator + "queue", null, TestRunnableInfo.class, true, ListSyncStorage.MAX_SIZE_UNLIMITED, new AbstractSyncStorage.IAddRule<TestRunnableInfo>() {
-            @Override
-            public boolean allowAddIfFull() {
-                return true;
-            }
+        storage = new ListSyncStorage<>(getFilesDir().getAbsolutePath() + File.separator + "queue", null,
+                TestRunnableInfo.class, true, ListSyncStorage.MAX_SIZE_UNLIMITED,
+                new AbstractSyncStorage.IAddRule<TestRunnableInfo>() {
+                    @Override
+                    public boolean allowAddIfFull() {
+                        return true;
+                    }
 
-            @Override
-            public void removeAny(AbstractSyncStorage<TestRunnableInfo> fromStorage) {
-                fromStorage.pollFirst();
-            }
-        });
+                    @Override
+                    public void removeAny(AbstractSyncStorage<TestRunnableInfo> fromStorage) {
+                        fromStorage.pollFirst();
+                    }
+                });
         storage.addStorageListener(this);
 
         TaskRunnable.ITaskResultValidator<TestRunnableInfo, TestTaskRunnable> validator = new TaskRunnable.ITaskResultValidator<TestRunnableInfo, TestTaskRunnable>() {
             @Override
             public boolean needToReAddTask(TestTaskRunnable runnable, Throwable t) {
-                return executor.containsTask(runnable.getId()) && t != null;
+                return executor.containsTask(runnable.getId()) && t != null; // на этот момент таска всё ещё числится в "Active", но уже не "running"
             }
         };
 
@@ -105,9 +107,9 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
     @Override
     public void onStorageRestoreFinished(long endTime, long processingTime, int restoredElementsCount) {
         Pair<Integer, TestRunnableInfo> max = storage.findByMinMaxId(false);
-        IdHolder idHolder = max == null ? new IdHolder(1) : new IdHolder(max.second.id);
+        IdHolder idHolder = max == null ? new IdHolder(0) : new IdHolder(max.second.id);
         for (int i = 0; i < TASKS_COUNT; i++) {
-            executor.execute(new TestTaskRunnable(new TestRunnableInfo(idHolder.incrementAndGet(), "TestRunnable", MathUtils.randInt(0, 5000))));
+            executor.execute(new TestTaskRunnable(new TestRunnableInfo(idHolder.getAndIncrement(), "TestRunnable", MathUtils.randInt(0, 5000))));
         }
         assertFiles(storage.getSize());
     }
@@ -127,16 +129,20 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
 
     @Override
     public void onAddedToQueue(final TestTaskRunnable r, final int waitingCount, final int activeCount) {
+        logger.debug("onAddedToQueue(), r=" + r + ", waitingCount=" + waitingCount + ", activeCount=" + activeCount);
         Snackbar.make(contentView, "task with id " + r.getId() + " was added to queue (waiting: " + waitingCount + "), active: " + activeCount, Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onBeforeExecute(Thread t, final TestTaskRunnable r, ExecInfo<TestRunnableInfo, TestTaskRunnable> execInfo) {
-        Snackbar.make(contentView, "task with id " + r.getId() + " starting executing (waiting: " + executor.getWaitingTasksCount() + "), active: " + executor.getActiveTasksCount(), Snackbar.LENGTH_SHORT).show();
+    public void onBeforeExecute(Thread t, final TestTaskRunnable r, ExecInfo<TestRunnableInfo, TestTaskRunnable> execInfo, final int waitingCount, final int activeCount) {
+        logger.debug("onBeforeExecute(), r=" + r + ", execInfo=" + execInfo);
+        Snackbar.make(contentView, "task with id " + r.getId() + " starting executing (waiting: " + waitingCount + "), active: " + activeCount, Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onAfterExecute(final TestTaskRunnable r, Throwable t, final ExecInfo<TestRunnableInfo, TestTaskRunnable> execInfo) {
-        Snackbar.make(contentView, "task with id " + r.getId() + " finished executing in " + execInfo.getTimeExecuting() + " ms (waiting: " + executor.getWaitingTasksCount() + "), active: " + executor.getActiveTasksCount(), Snackbar.LENGTH_SHORT).show();
+    public void onAfterExecute(final TestTaskRunnable r, Throwable t, final ExecInfo<TestRunnableInfo, TestTaskRunnable> execInfo, final int waitingCount, final int activeCount) {
+        logger.debug("onAfterExecute(), r=" + r + ", t=" + t + ", execInfo=" + execInfo);
+        Snackbar.make(contentView, "task with id " + r.getId() + " finished executing in " + execInfo.getTimeExecuting()
+                + " ms (waiting: " + waitingCount + "), active: " + activeCount, Snackbar.LENGTH_SHORT).show();
     }
 }

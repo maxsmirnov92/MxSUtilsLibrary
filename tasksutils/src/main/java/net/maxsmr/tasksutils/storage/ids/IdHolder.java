@@ -16,6 +16,10 @@ public class IdHolder {
         return lastId.get();
     }
 
+    public int getAndIncrement() {
+        return lastId.incrementAndGet();
+    }
+
     public int incrementAndGet() {
         return lastId.incrementAndGet();
     }

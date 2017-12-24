@@ -261,7 +261,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
     }
 
     @CallSuper
-    public final boolean add(I info, int index) {
+    public synchronized final boolean add(I info, int index) {
 
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
@@ -513,7 +513,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
             long endTime = System.currentTimeMillis();
             long processingTime = endTime > startTime? endTime - startTime : 0;
             logger.info("restoring complete, time: " + processingTime + " ms");
-            logger.info("restored StoreInfo objects count: " + result + ", queues total size: " + getSize());
+            logger.info("restored " + runnableInfoClass.getSimpleName() + " objects count: " + result + ", queues total size: " + getSize());
             isRestoreCompleted = true;
             storageObservable.dispatchStorageRestoreFinished(endTime, processingTime, result);
         }

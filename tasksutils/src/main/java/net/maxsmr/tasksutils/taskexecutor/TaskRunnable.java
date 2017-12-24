@@ -99,6 +99,13 @@ public abstract class TaskRunnable<I extends RunnableInfo> implements Runnable {
                 throw new RuntimeException("an exception was occurred during run()", e);
             }
         }
+
+        @Override
+        public String toString() {
+            return "WrappedTaskRunnable{" +
+                    "command=" + command +
+                    '}';
+        }
     }
 
 }
