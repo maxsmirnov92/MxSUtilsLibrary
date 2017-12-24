@@ -1,4 +1,4 @@
-package net.maxsmr.testapplication.taskutils;
+package net.maxsmr.utilstestapplication.taskutils;
 
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 

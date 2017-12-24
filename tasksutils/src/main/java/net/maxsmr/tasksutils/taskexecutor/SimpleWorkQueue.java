@@ -67,7 +67,7 @@ public class SimpleWorkQueue<I extends RunnableInfo> {
                     }
 
                     @Override
-                    public void onStorageRestoreFinished(long endTime, int restoredElementsCount) {
+                    public void onStorageRestoreFinished(long endTime, long processingTime, int restoredElementsCount) {
                         executeAll(restorer.fromRunnableInfos(syncStorage.getAll()));
                     }
 

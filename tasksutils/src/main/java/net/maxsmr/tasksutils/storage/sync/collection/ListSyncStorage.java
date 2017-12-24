@@ -19,10 +19,10 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
     /**
      * {@inheritDoc}
      */
-    public ListSyncStorage(@Nullable String storageDirPath,
+    public ListSyncStorage( @Nullable String storageDirPath, @Nullable String extension,
                            Class<I> clazz,
                            boolean sync, int maxSize, @NonNull IAddRule<I> addRule) {
-        super(storageDirPath, clazz, sync, maxSize, addRule);
+        super(storageDirPath, extension, clazz, sync, maxSize, addRule);
         dataList = new ArrayList<I>(maxSize);
     }
 
@@ -36,7 +36,7 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
 
     @NonNull
     @Override
-    public Iterator<I> iterator() {
+    public synchronized Iterator<I> iterator() {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
@@ -127,9 +127,6 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
 
     @Override
     protected void clearNoDelete() {
-        if (isDisposed()) {
-            throw new IllegalStateException("release() was called");
-        }
         dataList.clear();
     }
 

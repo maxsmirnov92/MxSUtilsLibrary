@@ -1,4 +1,4 @@
-package net.maxsmr.testapplication.taskutils;
+package net.maxsmr.utilstestapplication.taskutils;
 
 import android.support.annotation.NonNull;
 
@@ -17,7 +17,7 @@ public class TestTaskRunnable extends TaskRunnable<TestRunnableInfo> {
 
     @Override
     public void run() {
-        logger.debug("start sleeping...");
+        logger.debug("starting sleeping...");
         try {
             Thread.sleep(rInfo.delay);
         } catch (InterruptedException e) {

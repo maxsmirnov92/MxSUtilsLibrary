@@ -9,6 +9,9 @@ import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 public class RunnableInfo implements Serializable {
 
@@ -19,7 +22,7 @@ public class RunnableInfo implements Serializable {
     public final int id;
     public final String name;
 
-    boolean isRunning = false;
+    private boolean isRunning = false;
 
     private boolean isCancelled = false;
 
@@ -39,6 +42,10 @@ public class RunnableInfo implements Serializable {
 
     public synchronized boolean isRunning() {
         return isRunning;
+    }
+
+    public synchronized void setRunning(boolean running) {
+        isRunning = running;
     }
 
     public synchronized boolean isCancelled() {
@@ -91,6 +98,15 @@ public class RunnableInfo implements Serializable {
                 ", isRunning=" + isRunning +
                 ", isCancelled=" + isCancelled +
                 '}';
+    }
+
+    @NonNull
+    public static <I extends RunnableInfo, T extends TaskRunnable<I>> List<I> fromTasks(Collection<T> runnables) {
+        List<I> infos = new ArrayList<>();
+        for (T runnable : runnables) {
+            infos.add(runnable.rInfo);
+        }
+        return infos;
     }
 
     public static <I extends RunnableInfo> I fromByteArray(Class<I> clazz, byte[] byteArray) {

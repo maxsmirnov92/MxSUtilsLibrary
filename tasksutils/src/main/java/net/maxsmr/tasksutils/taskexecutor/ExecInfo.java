@@ -10,7 +10,7 @@ import java.util.Locale;
 
 public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> implements Serializable {
 
-    private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
+    private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
 
     @NonNull
     public final T taskRunnable;

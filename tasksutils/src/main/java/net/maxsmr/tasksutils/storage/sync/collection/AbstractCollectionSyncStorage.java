@@ -2,6 +2,7 @@ package net.maxsmr.tasksutils.storage.sync.collection;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
@@ -22,14 +23,16 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
     protected final String storageDirPath;
 
+    protected final String extension;
+
     /**
      * @param storageDirPath path when serialized {@link I} files stored
      * @param sync           is synchronization needed when adding and removing to storage
      * @param maxSize        max list elements
-     * @param  addRule       how react on full storage
+     * @param addRule        how react on full storage
      */
     protected AbstractCollectionSyncStorage(
-            @Nullable String storageDirPath,
+            @Nullable String storageDirPath, @Nullable String extension,
             Class<I> clazz,
             boolean sync, int maxSize, @NonNull IAddRule<I> addRule) {
         super(clazz, sync, maxSize, addRule);
@@ -37,12 +40,13 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
             throw new RuntimeException("incorrect queue dir path: " + storageDirPath);
         }
         this.storageDirPath = storageDirPath;
+        this.extension = TextUtils.isEmpty(extension) && sync ? FILE_EXT_DAT : extension;
         startRestoreThread();
     }
 
     @Override
-    protected synchronized int restoreStorage() {
-        logger.debug("restoreStorage()");
+    protected final int restoreStorageInternal() {
+        logger.debug("restoreStorageInternal()");
 
         int restoredCount = 0;
 
@@ -76,7 +80,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
                 final String ext = FileHelper.getFileExtension(f.getName());
 
-                if (FileHelper.isFileCorrect(f) && FILE_EXT_DAT.equalsIgnoreCase(ext)) {
+                if (FileHelper.isFileCorrect(f) && extension.equalsIgnoreCase(ext)) {
 
                     I runnableInfo = null;
 
@@ -97,7 +101,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
                     }
 
                     logger.debug("runnableInfo from byte array: " + runnableInfo);
-                    if (checkRunnableInfo(runnableInfo) && addInternal(runnableInfo)) {
+                    if (runnableInfo != null && checkRunnableInfo(runnableInfo) && addInternal(runnableInfo)) {
                         restoredCount++;
                     } else {
                         logger.error("runnableInfo " + runnableInfo + " was not added to deque, deleting file " + f + "...");
@@ -119,6 +123,11 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
         return restoredCount;
     }
 
+    @Nullable
+    public File getStorageDirPath() {
+        return !TextUtils.isEmpty(storageDirPath) ? new File(storageDirPath) : null;
+    }
+
     @Override
     protected boolean serializeRunnableInfo(I info) {
         logger.debug("serializeRunnableInfo(), info=" + info);
@@ -135,7 +144,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
                 return false;
             }
 
-            final String infoFileName = info.name + "." + FILE_EXT_DAT;
+            final String infoFileName = getFileNameByInfo(info);
 
             FileOutputStream fos = null;
             try {
@@ -168,18 +177,15 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
                 return false;
             }
 
-            return FileHelper.deleteFile(info.name + "." + FILE_EXT_DAT, storageDirPath);
+            return FileHelper.deleteFile(getFileNameByInfo(info), storageDirPath);
         }
 
         return false;
     }
 
-    /**
-     * with deleting storage files
-     */
+    // TODO notify client code on fail
     @Override
-    public synchronized void clear() {
-        clearNoDelete();
+    protected boolean deleteAllSerializedRunnableInfos() {
         FileHelper.delete(Collections.singletonList(new File(storageDirPath)), false, null, null, new FileHelper.IDeleteNotifier() {
             @Override
             public boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted, int currentLevel) {
@@ -188,14 +194,20 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
             @Override
             public boolean confirmDeleteFile(File file) {
-                return FILE_EXT_DAT.equals(FileHelper.getFileExtension(file.getName()));
+                return extension.equals(FileHelper.getFileExtension(file.getName()));
             }
 
             @Override
             public boolean confirmDeleteFolder(File folder) {
                 return false;
             }
-        }, 0);
+        }, FileHelper.DEPTH_UNLIMITED);
+        return true;
+    }
+
+    @NonNull
+    protected String getFileNameByInfo(@NonNull RunnableInfo info) {
+        return info.name + "_" + info.id + "." + extension;
     }
 
     protected class WrappedIterator implements Iterator<I> {

@@ -95,7 +95,17 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         restoreThread = null;
     }
 
-    protected abstract int restoreStorage();
+    private synchronized int restoreStorage() {
+        int count = restoreStorageInternal();
+        Iterator<I> iterator = iterator();
+        while (iterator.hasNext()) {
+            I item = iterator.next();
+            item.setRunning(false);
+        }
+        return count;
+    }
+
+    protected abstract int restoreStorageInternal();
 
     @NonNull
     public Class<I> getRunnableInfoClass() {
@@ -339,7 +349,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
 
         if (info != null) {
             if (!deleteSerializedRunnableInfo(info)) {
-                logger.error("can't delete file by info " + info);
+                logger.error("can't delete serialized info " + info);
             }
             storageObservable.dispatchStorageSizeChanged(getSize(), prev);
             return info;
@@ -353,15 +363,27 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
     protected abstract I removeInternal(int index);
 
     /**
-     * dispose storage (must be re-created for next use)
+     * with removing serialized data
      */
-    public abstract void clear();
+    public final void clear() {
+        if (isDisposed()) {
+            throw new IllegalStateException("release() was called");
+        }
+        int prev = getSize();
+        clearNoDelete();
+        if (deleteAllSerializedRunnableInfos()) {
+            logger.error("can't delete serialized infos");
+        }
+        storageObservable.dispatchStorageSizeChanged(getSize(), prev);
+    }
 
     protected abstract void clearNoDelete();
 
     protected abstract boolean serializeRunnableInfo(I info);
 
     protected abstract boolean deleteSerializedRunnableInfo(I info);
+
+    protected abstract boolean deleteAllSerializedRunnableInfos();
 
     protected I deserializeRunnableInfoFromByteArray(@Nullable byte[] array) {
         return InstanceManager.fromByteArray(runnableInfoClass, array);
@@ -383,7 +405,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
     }
 
     protected boolean isMaxSizeReached() {
-        return getSize() >= maxSize && maxSize != MAX_SIZE_UNLIMITED;
+        return maxSize != MAX_SIZE_UNLIMITED && getSize() >= maxSize;
     }
 
     protected final void checkRange(int index) {
@@ -430,10 +452,10 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
             }
         }
 
-        public void dispatchStorageRestoreFinished(long endTime, int elemCount) {
+        public void dispatchStorageRestoreFinished(long endTime, long processingTime, int elemCount) {
             synchronized (mObservers) {
                 for (IStorageListener l : mObservers) {
-                    l.onStorageRestoreFinished(endTime, elemCount);
+                    l.onStorageRestoreFinished(endTime, processingTime, elemCount);
                 }
             }
         }
@@ -466,7 +488,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
 
         void onStorageRestoreStarted(long startTime);
 
-        void onStorageRestoreFinished(long endTime, int restoredElementsCount);
+        void onStorageRestoreFinished(long endTime, long processingTime, int restoredElementsCount);
 
         void onStorageSizeChanged(int currentSize, int previousSize);
     }
@@ -489,10 +511,11 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         @Override
         protected void postExecute(Integer result) {
             long endTime = System.currentTimeMillis();
-            logger.info("restoring complete, time: " + (endTime - startTime) + " ms");
+            long processingTime = endTime > startTime? endTime - startTime : 0;
+            logger.info("restoring complete, time: " + processingTime + " ms");
             logger.info("restored StoreInfo objects count: " + result + ", queues total size: " + getSize());
             isRestoreCompleted = true;
-            storageObservable.dispatchStorageRestoreFinished(endTime, result);
+            storageObservable.dispatchStorageRestoreFinished(endTime, processingTime, result);
         }
     }
 

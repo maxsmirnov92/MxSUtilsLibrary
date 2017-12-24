@@ -19,10 +19,10 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
     /**
      * {@inheritDoc}
      */
-    public QueueSyncStorage(@Nullable String storageDirPath,
+    public QueueSyncStorage( @Nullable String storageDirPath, @Nullable String extension,
                            Class<I> clazz,
                            boolean sync, int maxSize, @NonNull IAddRule<I> addRule) {
-        super(storageDirPath, clazz, sync, maxSize, addRule);
+        super(storageDirPath, extension, clazz, sync, maxSize, addRule);
     }
 
 
@@ -35,7 +35,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
 
     @Override
     @NonNull
-    public Iterator<I> iterator() {
+    public synchronized Iterator<I> iterator() {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
@@ -51,7 +51,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
             throw new IllegalStateException("release() was called");
         }
 
-        final Iterator<I> it = dataQueue.iterator();
+        final Iterator<I> it = iterator();
 
         final List<I> list = new ArrayList<>();
         while (it.hasNext()) {
@@ -147,9 +147,6 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
 
     @Override
     protected synchronized void clearNoDelete() {
-        if (isDisposed()) {
-            throw new IllegalStateException("release() was called");
-        }
         dataQueue.clear();
     }
 
