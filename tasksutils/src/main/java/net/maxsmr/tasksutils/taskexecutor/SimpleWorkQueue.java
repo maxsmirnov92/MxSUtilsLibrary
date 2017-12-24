@@ -15,11 +15,11 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import static net.maxsmr.tasksutils.taskexecutor.AbsTaskRunnableExecutor.TASKS_NO_LIMIT;
+import static net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor.TASKS_NO_LIMIT;
 
-public abstract class AbstractSimpleWorkQueue<I extends RunnableInfo> {
+public class SimpleWorkQueue<I extends RunnableInfo> {
 
-    private static final Logger logger = LoggerFactory.getLogger(AbstractSimpleWorkQueue.class);
+    private static final Logger logger = LoggerFactory.getLogger(SimpleWorkQueue.class);
 
     @NonNull
     private final LinkedList<TaskRunnable<I>> runnableQueue = new LinkedList<>();
@@ -34,11 +34,11 @@ public abstract class AbstractSimpleWorkQueue<I extends RunnableInfo> {
     @Nullable
     private AbstractSyncStorage<I> syncStorage;
 
-    public AbstractSimpleWorkQueue(int nPoolWorkers, String workQueueName,
-                                   int maxRunnableQueueSize,
-                                   @Nullable ITaskResultValidator<I, TaskRunnable<I>> resultValidator,
-                                   @Nullable final AbstractSyncStorage<I> syncStorage,
-                                   @Nullable final ITaskRestorer<I, TaskRunnable<I>> restorer) {
+    public SimpleWorkQueue(int nPoolWorkers, String workQueueName,
+                           int maxRunnableQueueSize,
+                           @Nullable ITaskResultValidator<I, TaskRunnable<I>> resultValidator,
+                           @Nullable final AbstractSyncStorage<I> syncStorage,
+                           @Nullable final ITaskRestorer<I, TaskRunnable<I>> restorer) {
 
         if (nPoolWorkers <= 0)
             nPoolWorkers = 1;
@@ -193,18 +193,19 @@ public abstract class AbstractSimpleWorkQueue<I extends RunnableInfo> {
                     r = runnableQueue.removeFirst();
                 }
 
+                Exception exception = null;
                 try {
                     // logger.debug("running runnable: " + r + "...");
                     r.run();
-                } catch (RuntimeException e) {
-                    logger.error("a RuntimeException occurred during run()", e);
+                } catch (Exception e) {
+                    logger.error("a RuntimeException occurred during run()", exception = e);
                 }
 
                 if (syncStorage != null) {
                     syncStorage.removeById(r.rInfo.id);
                 }
 
-                if (resultValidator != null && resultValidator.needToReAddTask(r)) {
+                if (resultValidator != null && resultValidator.needToReAddTask(r, exception)) {
                     execute(r);
                 }
             }

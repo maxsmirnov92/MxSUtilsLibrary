@@ -8,11 +8,12 @@ import java.util.Date;
 import java.util.Locale;
 
 
-public class ExecInfo implements Serializable {
+public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> implements Serializable {
 
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault());
 
-    public final TaskRunnable<?> taskRunnable;
+    @NonNull
+    public final T taskRunnable;
 
     private long timeWaitingInQueue;
 
@@ -22,7 +23,7 @@ public class ExecInfo implements Serializable {
 
     private long timeWhenStarted;
 
-    public ExecInfo(TaskRunnable<?> taskRunnable) {
+    public ExecInfo(@NonNull T taskRunnable) {
         this.taskRunnable = taskRunnable;
     }
 
@@ -47,7 +48,7 @@ public class ExecInfo implements Serializable {
     }
 
     @NonNull
-    ExecInfo setTimeWhenAddedToQueue(long timeWhenAddedToQueue) {
+    ExecInfo<I, T> setTimeWhenAddedToQueue(long timeWhenAddedToQueue) {
         if (this.timeWhenAddedToQueue > 0) {
             throw new IllegalStateException("timeWhenAddedToQueue is already specified");
         }
@@ -62,7 +63,7 @@ public class ExecInfo implements Serializable {
     }
 
     @NonNull
-    ExecInfo setTimeWhenStarted(long timeWhenStarted) {
+    ExecInfo<I, T> setTimeWhenStarted(long timeWhenStarted) {
         if (this.timeWhenStarted > 0) {
             throw new IllegalStateException("timeWhenStarted is already specified");
         }
@@ -80,7 +81,7 @@ public class ExecInfo implements Serializable {
     }
 
     @NonNull
-    ExecInfo finishedWaitingInQueue(long when) {
+    ExecInfo<I, T> finishedWaitingInQueue(long when) {
         if (timeWaitingInQueue > 0) {
             throw new IllegalStateException("timeWaitingInQueue is already calculated");
         }
@@ -96,7 +97,7 @@ public class ExecInfo implements Serializable {
     }
 
     @NonNull
-    ExecInfo finishedExecution(long when) {
+    ExecInfo<I, T> finishedExecution(long when) {
         if (timeExecuting > 0) {
             throw new IllegalStateException("timeExecuting is already calculated");
         }
@@ -111,7 +112,7 @@ public class ExecInfo implements Serializable {
     }
 
     @NonNull
-    ExecInfo reset() {
+    ExecInfo<I, T> reset() {
         timeWaitingInQueue = 0;
         timeExecuting = 0;
         timeWhenAddedToQueue = 0;

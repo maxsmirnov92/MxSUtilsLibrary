@@ -1,6 +1,7 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
 import android.support.annotation.NonNull;
+import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.model.InstanceManager;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
@@ -22,13 +23,18 @@ public class RunnableInfo implements Serializable {
 
     private boolean isCancelled = false;
 
+    public RunnableInfo(int id) {
+        this(id, null);
+    }
+
+
     public RunnableInfo(int id, String name) {
 
         if (id < 0)
             throw new IllegalArgumentException("incorrect runnable id: " + id);
 
         this.id = id;
-        this.name = name;
+        this.name = !TextUtils.isEmpty(name)? name : getClass().getSimpleName();
     }
 
     public synchronized boolean isRunning() {

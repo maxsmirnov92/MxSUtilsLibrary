@@ -14,15 +14,15 @@ import java.util.List;
 
 public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollectionSyncStorage<I> {
 
-    private final ArrayDeque<I> dataList = new ArrayDeque<>();
+    private final ArrayDeque<I> dataQueue = new ArrayDeque<>();
 
     /**
      * {@inheritDoc}
      */
-    public QueueSyncStorage(@Nullable String listDirPath,
+    public QueueSyncStorage(@Nullable String storageDirPath,
                            Class<I> clazz,
                            boolean sync, int maxSize, @NonNull IAddRule<I> addRule) {
-        super(listDirPath, clazz, sync, maxSize, addRule);
+        super(storageDirPath, clazz, sync, maxSize, addRule);
     }
 
 
@@ -30,7 +30,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
-        return dataList.size();
+        return dataQueue.size();
     }
 
     @Override
@@ -39,7 +39,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
-        return new WrappedIterator(dataList.iterator());
+        return new WrappedIterator(dataQueue.iterator());
     }
 
     /** copy of queue */
@@ -51,7 +51,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
             throw new IllegalStateException("release() was called");
         }
 
-        final Iterator<I> it = dataList.iterator();
+        final Iterator<I> it = dataQueue.iterator();
 
         final List<I> list = new ArrayList<>();
         while (it.hasNext()) {
@@ -79,7 +79,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
     }
 
     /**
-     * removes first element of dataList
+     * removes first element of dataQueue
      */
     @Nullable
     @Override
@@ -88,7 +88,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
     }
 
     /**
-     * removes last element of dataList
+     * removes last element of dataQueue
      */
     @Nullable
     @Override
@@ -102,7 +102,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
             throw new IllegalStateException("release() was called");
         }
         if (!isEmpty()) {
-            return first ? dataList.peekFirst() : dataList.peekLast();
+            return first ? dataQueue.peekFirst() : dataQueue.peekLast();
         }
         return null;
     }
@@ -120,22 +120,20 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
     }
 
     @Override
-    protected boolean addNoSync(I info, int index) {
-        return dataList.add(info);
+    protected boolean addInternal(I info, int index) {
+        return dataQueue.add(info);
     }
 
     @Override
-    protected boolean setNoSync(@NonNull I info, int index) {
+    protected boolean setInternal(@NonNull I info, int index) {
         throw new UnsupportedOperationException("setting element at specified position is not supported");
     }
 
     @Override
     @Nullable
-    public I removeNoSync(int index) {
-
+    protected I removeInternal(int index) {
         I removed = null;
-
-        Iterator<I> iterator = dataList.iterator();
+        Iterator<I> iterator = dataQueue.iterator();
         for (int i = 0; iterator.hasNext(); i++) {
             I next = iterator.next();
             if (i == index) {
@@ -144,7 +142,6 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
                 break;
             }
         }
-
         return removed;
     }
 
@@ -153,7 +150,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
-        dataList.clear();
+        dataQueue.clear();
     }
 
 

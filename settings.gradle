@@ -1,4 +1,4 @@
-include ':tasksutils'
+include ':tasksutils', ':testapplication'
 //':tasksutils'
 // 'customcontentprovider',
 //   ':commonutils',

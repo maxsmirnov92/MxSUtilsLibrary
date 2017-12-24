@@ -1,0 +1,39 @@
+apply plugin: 'com.android.application'
+
+android {
+
+    compileSdkVersion sdkVersion
+    buildToolsVersion buildToolsVersion_
+    sourceCompatibility = 1.7
+    targetCompatibility = 1.7
+
+    defaultConfig {
+        applicationId project.appId
+        minSdkVersion minSdkVersion_
+        targetSdkVersion sdkVersion
+        versionCode 1
+        versionName "1.0"
+
+        testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
+
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+        }
+    }
+
+}
+
+dependencies {
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    implementation project(':tasksutils')
+
+    implementation "com.android.support:appcompat-v7:$appCompatVersion"
+    testImplementation "junit:junit:$jUnitVersion"
+    androidTestImplementation "com.android.support.test:runner:$testRunnerVersion"
+    androidTestImplementation "com.android.support.test.espresso:espresso-core:$espressoVersion"
+}

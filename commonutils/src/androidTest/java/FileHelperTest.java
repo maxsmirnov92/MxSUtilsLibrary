@@ -1,9 +1,7 @@
 import android.content.Context;
-import android.os.Environment;
 import android.support.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
-import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
@@ -15,7 +13,6 @@ import java.io.File;
 import java.util.Collections;
 import java.util.Set;
 
-import static android.R.attr.data;
 import static android.support.test.InstrumentationRegistry.getTargetContext;
 
 @RunWith(AndroidJUnit4.class)
@@ -126,7 +123,6 @@ public class FileHelperTest {
         System.out.println("result=" + result);
     }
 
-    //    Collections.singleton(new File(context.getFilesDir(), "ru.altarix.ivory_v2/log/Ivory.log"))
 //    @Test
     public void deleteTest() {
         Context context = InstrumentationRegistry.getTargetContext();

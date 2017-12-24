@@ -19,10 +19,10 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
     /**
      * {@inheritDoc}
      */
-    public ListSyncStorage(@Nullable String listDirPath,
+    public ListSyncStorage(@Nullable String storageDirPath,
                            Class<I> clazz,
                            boolean sync, int maxSize, @NonNull IAddRule<I> addRule) {
-        super(listDirPath, clazz, sync, maxSize, addRule);
+        super(storageDirPath, clazz, sync, maxSize, addRule);
         dataList = new ArrayList<I>(maxSize);
     }
 
@@ -108,20 +108,20 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
     }
 
     @Override
-    protected boolean addNoSync(I info, int pos) {
+    protected boolean addInternal(I info, int pos) {
         dataList.add(pos, info);
         return true;
     }
 
     @Override
-    protected boolean setNoSync(@NonNull I info, int pos) {
+    protected boolean setInternal(@NonNull I info, int pos) {
         dataList.set(pos, info);
         return true;
     }
 
     @Nullable
     @Override
-    protected I removeNoSync(int index) {
+    protected I removeInternal(int index) {
         return dataList.remove(index);
     }
 

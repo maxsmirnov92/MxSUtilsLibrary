@@ -97,7 +97,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
                     }
 
                     logger.debug("runnableInfo from byte array: " + runnableInfo);
-                    if (checkRunnableInfo(runnableInfo) && addNoSync(runnableInfo)) {
+                    if (checkRunnableInfo(runnableInfo) && addInternal(runnableInfo)) {
                         restoredCount++;
                     } else {
                         logger.error("runnableInfo " + runnableInfo + " was not added to deque, deleting file " + f + "...");

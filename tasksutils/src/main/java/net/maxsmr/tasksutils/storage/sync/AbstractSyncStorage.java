@@ -157,38 +157,29 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         this.addRule = addRule;
     }
 
-    public int getMaxId() {
+    @Nullable
+    public Pair<Integer, I> findByMinMaxId(boolean min) {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
-        int maxId = NO_ID;
+        Pair<Integer, I> result = null;
         Iterator<I> it = iterator();
-        while (it.hasNext()) {
-            I elem = it.next();
-            if (elem != null && elem.id > maxId) {
-                maxId = elem.id;
+        for (int index = 0; it.hasNext(); index++) {
+            I item = it.next();
+            if (item != null) {
+                if (result == null) {
+                    result = new Pair<>(index, item);
+                }
+                if (min? item.id < result.second.id : item.id > result.second.id || result.second.id == NO_ID) {
+                    result = new Pair<>(index, item);
+                }
             }
         }
-        return maxId;
-    }
-
-    public int getMinId() {
-        if (isDisposed()) {
-            throw new IllegalStateException("release() was called");
-        }
-        int minId = NO_ID;
-        Iterator<I> it = iterator();
-        while (it.hasNext()) {
-            I elem = it.next();
-            if (elem != null && (elem.id < minId || minId == NO_ID)) {
-                minId = elem.id;
-            }
-        }
-        return minId;
+        return result;
     }
 
     @Nullable
-    public final Pair<Integer, I> findById(int id) {
+    public synchronized final Pair<Integer, I> findById(int id) {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
@@ -206,11 +197,11 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         return result;
     }
 
-    public synchronized final boolean contains(int id) {
+    public boolean contains(int id) {
         return findById(id) != null;
     }
 
-    public synchronized final boolean contains(@Nullable I info) {
+    public boolean contains(@Nullable I info) {
         return info != null && contains(info.id);
     }
 
@@ -275,7 +266,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
             }
         }
         int previousSize = getSize();
-        if (result && addNoSync(info, index)) {
+        if (result && addInternal(info, index)) {
             if (!serializeRunnableInfo(info)) {
                 logger.error("can't serialize info " + info);
             }
@@ -285,13 +276,13 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         return false;
     }
 
-    protected final boolean addNoSync(@NonNull I info) {
+    protected final boolean addInternal(@NonNull I info) {
         final int size = getSize();
-        return addNoSync(info, size > 0 ? size - 1 : 0);
+        return addInternal(info, size > 0 ? size - 1 : 0);
     }
 
     // no check needed
-    protected abstract boolean addNoSync(I info, int index);
+    protected abstract boolean addInternal(I info, int index);
     
     public final boolean set(I info, int index) {
 
@@ -305,7 +296,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         
         I previous = get(index);
         
-        if (setNoSync(info, index)) {
+        if (setInternal(info, index)) {
 
             if (!deleteSerializedRunnableInfo(previous)) {
                 logger.error("can't delete file by info " + info);
@@ -321,7 +312,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
     }
 
     // no check needed
-    protected abstract boolean setNoSync(@NonNull I info, int index);
+    protected abstract boolean setInternal(@NonNull I info, int index);
 
     @Nullable
     public final Pair<Integer, I> remove(@Nullable I info) {
@@ -344,7 +335,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         
         int prev = getSize();
 
-        I info = removeNoSync(index);
+        I info = removeInternal(index);
 
         if (info != null) {
             if (!deleteSerializedRunnableInfo(info)) {
@@ -359,7 +350,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
 
     // no check needed
     @Nullable
-    protected abstract I removeNoSync(int index);
+    protected abstract I removeInternal(int index);
 
     /**
      * dispose storage (must be re-created for next use)
@@ -531,7 +522,6 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         return null;
     }
 
-    @Nullable
     public static <T extends Serializable> void toOutputStream(@Nullable T object, @NonNull OutputStream outputStream) {
         if (object != null) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
