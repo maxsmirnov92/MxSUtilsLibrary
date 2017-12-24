@@ -107,15 +107,11 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     }
 
     public boolean isRunning() {
-        synchronized (lock) {
-            return (!executor.isShutdown() || !executor.isTerminated());
-        }
+        return (!executor.isShutdown() || !executor.isTerminated());
     }
 
     public boolean isShutdown() {
-        synchronized (lock) {
-            return executor.isShutdown();
-        }
+        return executor.isShutdown();
     }
 
     public int getQueuedTasksLimit() {
@@ -345,7 +341,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     }
 
     public void executeAll(Collection<T> commands) {
-        logger.debug("executeAll(), commands count: " + (commands != null? commands.size() : 0));
+        logger.debug("executeAll(), commands count: " + (commands != null ? commands.size() : 0));
         if (commands != null) {
             for (T c : commands) {
                 execute(c);
@@ -418,16 +414,12 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     }
 
     public void shutdown() {
-        synchronized (lock) {
-            cancelAllTasks();
-            executor.shutdown();
-        }
+        cancelAllTasks();
+        executor.shutdown();
     }
 
     public boolean awaitTermination(long timeout, TimeUnit unit) throws InterruptedException {
-        synchronized (lock) {
-            return executor.awaitTermination(timeout, unit);
-        }
+        return executor.awaitTermination(timeout, unit);
     }
 
     public interface Callbacks<I extends RunnableInfo, T extends TaskRunnable<I>> {
@@ -513,34 +505,34 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     private static class CallbacksObservable<I extends RunnableInfo, T extends TaskRunnable<I>> extends Observable<Callbacks<I, T>> {
 
         private void dispatchAddedToQueue(final T r, final int waitingCount, final int activeCount, Handler handler) {
-                final Runnable run = new Runnable() {
-                    @Override
-                    public void run() {
-                        synchronized (mObservers) {
-                            for (Callbacks<I, T> c : mObservers) {
-                                c.onAddedToQueue(r, waitingCount, activeCount);
-                            }
+            final Runnable run = new Runnable() {
+                @Override
+                public void run() {
+                    synchronized (mObservers) {
+                        for (Callbacks<I, T> c : mObservers) {
+                            c.onAddedToQueue(r, waitingCount, activeCount);
                         }
                     }
-                };
-                if (handler != null) {
-                    handler.post(run);
-                } else {
-                    run.run();
                 }
+            };
+            if (handler != null) {
+                handler.post(run);
+            } else {
+                run.run();
+            }
         }
 
         private void dispatchBeforeExecute(final Thread t, final T r, final ExecInfo<I, T> execInfo, final int waitingCount, final int activeCount, Handler handler) {
-                final Runnable run = new Runnable() {
-                    @Override
-                    public void run() {
-                        synchronized (mObservers) {
-                            for (Callbacks<I, T> c : mObservers) {
-                                c.onBeforeExecute(t, r, execInfo, waitingCount, activeCount);
-                            }
+            final Runnable run = new Runnable() {
+                @Override
+                public void run() {
+                    synchronized (mObservers) {
+                        for (Callbacks<I, T> c : mObservers) {
+                            c.onBeforeExecute(t, r, execInfo, waitingCount, activeCount);
                         }
                     }
-                };
+                }
+            };
             if (handler != null) {
                 handler.post(run);
             } else {
