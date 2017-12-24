@@ -120,7 +120,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         storageObservable.unregisterObserver(listener);
     }
 
-    protected final boolean isDisposed() {
+    public final boolean isDisposed() {
         return isDisposed;
     }
 
