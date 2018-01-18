@@ -124,10 +124,10 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
     public String toString() {
         return "ExecInfo{" +
                 "taskRunnable=" + taskRunnable +
-                ", timeWaitingInQueue=" + timeWaitingInQueue +
-                ", timeExecuting=" + timeExecuting +
-                ", timeWhenAddedToQueue=" + timeWhenAddedToQueue +
-                ", timeWhenStarted=" + timeWhenStarted +
+                ", time waiting in queue: " + timeWaitingInQueue + " ms" +
+                ", time executing: " + timeExecuting + " ms" +
+                ", time when added to queue: " + SDF.format(new Date(timeWhenAddedToQueue)) +
+                ", time when started: " + SDF.format(new Date(timeWhenStarted)) +
                 '}';
     }
 }

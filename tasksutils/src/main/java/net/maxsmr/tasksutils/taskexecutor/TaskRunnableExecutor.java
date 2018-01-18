@@ -452,14 +452,17 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                 throw new RuntimeException("incorrect command type: " + r.getClass() + ", must be: " + WrappedTaskRunnable.class.getName());
             }
             taskRunnable = (WrappedTaskRunnable<I, T>) r;
-//            if (taskRunnable.command.isCancelled()) {
-//                throw new RuntimeException("can't run task: " + taskRunnable.command + ": cancelled");
-//            }
+            if (!taskRunnable.command.isCancelled()) {
 
-            callbacksObservable.dispatchBeforeExecute(t, taskRunnable.command,
-                    getExecInfoForRunnable(taskRunnable).finishedWaitingInQueue(time), getWaitingTasksCount(), getActiveTasksCount(), callbacksHandler);
+                callbacksObservable.dispatchBeforeExecute(t, taskRunnable.command,
+                        getExecInfoForRunnable(taskRunnable).finishedWaitingInQueue(time), getWaitingTasksCount(), getActiveTasksCount(), callbacksHandler);
 
-            taskRunnable.command.rInfo.setRunning(true);
+                taskRunnable.command.rInfo.setRunning(true);
+
+            } else {
+                logger.error("can't run task: " + taskRunnable.command + ": cancelled");
+            }
+
             synchronized (lock) {
                 activeTasksRunnables.put(taskRunnable.command.getId(), taskRunnable);
             }
