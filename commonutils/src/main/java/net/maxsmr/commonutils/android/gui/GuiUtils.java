@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.ColorStateList;
-import android.content.res.Configuration;
 import android.content.res.TypedArray;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
@@ -60,7 +59,7 @@ public final class GuiUtils {
     @SuppressWarnings("unchecked")
     @Nullable
     public static <V extends View> V findViewById(@Nullable View view, @IdRes int id) throws ClassCastException {
-        return view != null? (V) view.findViewById(id) : null;
+        return view != null ? (V) view.findViewById(id) : null;
     }
 
     @SuppressWarnings("deprecation")
@@ -76,7 +75,7 @@ public final class GuiUtils {
 
     public int getDimensionFromAttr(@NonNull Context context, int attr) {
         final TypedArray styledAttributes = context.getTheme().obtainStyledAttributes(
-                new int[] { attr });
+                new int[]{attr});
         try {
             return (int) styledAttributes.getDimension(0, 0);
         } finally {
@@ -414,22 +413,32 @@ public final class GuiUtils {
     }
 
     @NonNull
+    public static Point getFixedViewSizeByDisplay(@NonNull Context context, @NonNull Point targetSize) {
+        return getFixedViewSizeByDisplay(context, (float) targetSize.x / targetSize.y);
+    }
+
+    @NonNull
     public static Point getFixedViewSizeByDisplay(@NonNull Context context, float targetScale) {
         Display display = ((WindowManager) (context.getSystemService(Context.WINDOW_SERVICE))).getDefaultDisplay();
         DisplayMetrics metrics = new DisplayMetrics();
         display.getMetrics(metrics);
         Point screenSize = new Point(metrics.widthPixels, metrics.heightPixels);
-        return getFixedViewSize(targetScale, screenSize, screenSize);
+        return getFixedViewSize(targetScale, screenSize);
     }
 
     @NonNull
-    public static Point getFixedViewSize(Point targetSize, @Nullable Point measuredViewSize) {
+    public static Point getFixedViewSize(@NonNull Point targetSize, @NonNull View view) {
+        return getFixedViewSize(targetSize, new Point(view.getMeasuredWidth(), view.getMeasuredHeight()));
+    }
+
+    @NonNull
+    public static Point getFixedViewSize(@NonNull Point targetSize, @Nullable Point measuredViewSize) {
         return getFixedViewSize(targetSize, measuredViewSize, null);
     }
 
     @NonNull
-    public static Point getFixedViewSize(Point targetSize, @Nullable Point measuredViewSize, @Nullable Point maxViewSize) {
-        return getFixedViewSize(targetSize != null ? (float) targetSize.x / targetSize.y : 0, measuredViewSize, maxViewSize);
+    public static Point getFixedViewSize(@NonNull Point targetSize, @Nullable Point measuredViewSize, @Nullable Point maxViewSize) {
+        return getFixedViewSize((float) targetSize.x / targetSize.y, measuredViewSize, maxViewSize);
     }
 
     @NonNull
@@ -507,16 +516,72 @@ public final class GuiUtils {
             return fixedSize;
         }
         if (fixedSize.x > 0 && fixedSize.y > 0) {
-            GuiUtils.setViewSize(view, fixedSize);
+            setViewSize(view, fixedSize);
         }
         return fixedSize;
     }
 
     @NonNull
+    public static Point getAutoScaledSize(@NonNull View view, @Nullable Point maxViewSize, int fixedSize) {
+        int width = view.getMeasuredWidth();
+        int height = view.getMeasuredHeight();
+        width = width <= 0 ? (maxViewSize != null ? maxViewSize.x : 0) : width;
+        height = height <= 0 ? (maxViewSize != null ? maxViewSize.y : 0) : height;
+        return getAutoScaledSize(new Point(width, height), fixedSize);
+    }
+
+    @NonNull
+    public static Point getAutoScaledSize(@NonNull Point size, int fixedSize) {
+        return getAutoScaledSize((float) size.x / size.y, fixedSize);
+    }
+
+    @NonNull
+    public static Point getAutoScaledSize(float scale, int fixedSize) {
+        return getScaledSize(scale, fixedSize, scale > 1.0f);
+    }
+
+    @NonNull
+    public static Point getScaledSize(@NonNull View view, @Nullable Point maxViewSize, int fixedSize, boolean isWidth) {
+        int width = view.getMeasuredWidth();
+        int height = view.getMeasuredHeight();
+        width = width <= 0 ? (maxViewSize != null ? maxViewSize.x : 0) : width;
+        height = height <= 0 ? (maxViewSize != null ? maxViewSize.y : 0) : height;
+        return getScaledSize(new Point(width, height), fixedSize, isWidth);
+    }
+
+    @NonNull
+    public static Point getScaledSize(@NonNull Point size, int fixedSize, boolean isWidth) {
+        if (size.x <= 0 || size.y <= 0) {
+            throw new IllegalArgumentException("incorrect size: " + size.x + "x" + size.y);
+        }
+        return getScaledSize((float) size.x / size.y, fixedSize, isWidth);
+    }
+
+    @NonNull
+    public static Point getScaledSize(float scale, int fixedSize, boolean isWidth) {
+        if (scale <= 0) {
+            throw new IllegalArgumentException("incorrect scale: " + scale);
+        }
+        if (fixedSize <= 0) {
+            throw new IllegalArgumentException("incorrect fixedSize: " + scale);
+        }
+        Point result = new Point();
+
+        if (isWidth) {
+            result.x = fixedSize;
+            result.y = (int) (fixedSize / scale);
+        } else {
+            result.x = (int) (fixedSize * scale);
+            result.y = fixedSize;
+        }
+        return result;
+    }
+
+    @NonNull
     public static android.support.v4.util.Pair<Integer, Integer> calcAspectRatioFor(int width, int height) {
         double aspectRatio = (double) width / (double) height;
-        int dividend = width > height? width : height;
-        int divider = width > height? height : width;
+        int dividend = width > height ? width : height;
+        int divider = width > height ? height : width;
         int scale = 2;
         while (scale <= 9) {
             double scaledDividend = (double) dividend / (double) scale;
@@ -540,10 +605,6 @@ public final class GuiUtils {
         return result;
     }
 
-    public enum FitSize {
-        FIT_WIDTH, FIT_HEIGHT;
-    }
-
 
     public static void setViewSize(@NonNull View view, @NonNull Point size) {
         if (size.x < -1 || size.y < -1) {
@@ -563,7 +624,7 @@ public final class GuiUtils {
             }
         }
         if (!found) {
-            throw new IllegalArgumentException("view "+ coordinatorChild + " is not a child of " + rootLayout);
+            throw new IllegalArgumentException("view " + coordinatorChild + " is not a child of " + rootLayout);
         }
         CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) coordinatorChild.getLayoutParams();
         AppBarLayout.ScrollingViewBehavior behavior = (AppBarLayout.ScrollingViewBehavior) params.getBehavior();

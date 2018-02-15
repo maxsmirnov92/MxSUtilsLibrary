@@ -1,27 +1,52 @@
 import android.content.Context;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
+import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Set;
-
-import static android.support.test.InstrumentationRegistry.getTargetContext;
+import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
 public class FileHelperTest {
 
-    //    @Test
+    private Context context;
+
+    private static final String SOURCE_NAME = "source";
+    private static final String DEST_NAME = "dest";
+
+    private static final String SEARCH_PREFIX = "qq";
+
+    private File sourceDir;
+
+    private File destinationDir;
+
+    @Before
+    public void prepare() {
+        context = InstrumentationRegistry.getTargetContext();
+        sourceDir = new File(context.getFilesDir(), SOURCE_NAME);
+        destinationDir = new File(context.getFilesDir(), DEST_NAME);
+        for (int i = 0; i < 5; i++) {
+            FileHelper.createNewFile(String.valueOf(i+ 20) , new File(sourceDir.getAbsolutePath(), sourceDir.getName() + i).getAbsolutePath());
+            File newFile = FileHelper.createNewFile(String.valueOf(i), sourceDir.getAbsolutePath());
+            FileHelper.writeBytesToFile(newFile, BigInteger.valueOf(i).toByteArray(), false);
+        }
+    }
+
+
+    @Test
     public void testGet() {
-        Context context = InstrumentationRegistry.getTargetContext();
-        Set<File> result = FileHelper.getFiles(Collections.singleton(context.getFilesDir() /*new File(Environment.getExternalStorageDirectory(), "Android/data/ru.gokidgo")*/), FileHelper.GetMode.ALL, null, new FileHelper.IGetNotifier() {
+        Set<File> result = FileHelper.getFiles(sourceDir, FileHelper.GetMode.ALL, null, new FileHelper.IGetNotifier() {
             @Override
             public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
                 System.out.println("current=" + current + ", currentLevel=" + currentLevel);
@@ -41,13 +66,10 @@ public class FileHelperTest {
         System.out.println("result=" + result);
     }
 
-//    System.getenv("HOME") + File.separator + "Documents" + File.separator + "AndroidStudioProjects" /*+ File.separator + "OpenCvDetectorExample-android"*/
-
-    //        @Test
+    @Test
     public void testSearch() {
-        Context context = InstrumentationRegistry.getTargetContext();
-        Set<File> result = FileHelper.searchByName("content", Collections.singleton(context.getFilesDir()),
-                FileHelper.GetMode.ALL, CompareUtils.MatchStringOption.STARTS_WITH_IGNORE_CASE.flag, true,
+        Set<File> result = FileHelper.searchByName(SEARCH_PREFIX, sourceDir,
+                FileHelper.GetMode.ALL, CompareUtils.MatchStringOption.STARTS_WITH_IGNORE_CASE.flag,
                 new FileHelper.FileComparator(Collections.singletonMap(FileHelper.FileComparator.SortOption.LAST_MODIFIED, false)),
                 new FileHelper.IGetNotifier() {
 
@@ -70,13 +92,12 @@ public class FileHelperTest {
         System.out.println("result=" + result);
     }
 
-    //    @Test
+    @Test
     public void testSearchFirst() {
-        File result = FileHelper.searchByNameFirst("opencv", Collections.singleton(new File(System.getenv("HOME") + File.separator + "Documents" + File.separator + "AndroidStudioProjects")),
-                FileHelper.GetMode.ALL, CompareUtils.MatchStringOption.STARTS_WITH_IGNORE_CASE.flag, true,
+        File result = FileHelper.searchByNameFirst(SEARCH_PREFIX, sourceDir,
+                FileHelper.GetMode.ALL, CompareUtils.MatchStringOption.STARTS_WITH_IGNORE_CASE.flag,
                 null,
                 new FileHelper.IGetNotifier() {
-
 
                     @Override
                     public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
@@ -97,9 +118,9 @@ public class FileHelperTest {
         System.out.println("result=" + result);
     }
 
-    //    @Test
+    @Test
     public void testSearchStat() {
-        Set<File> result = FileHelper.searchByNameWithStat("opencv", Collections.singleton(new File(System.getenv("HOME") + File.separator + "Documents" + File.separator + "AndroidStudioProjects")),
+        Set<File> result = FileHelper.searchByNameWithStat(SEARCH_PREFIX, Collections.singleton(sourceDir),
                 new FileHelper.FileComparator(Collections.singletonMap(FileHelper.FileComparator.SortOption.NAME, true)),
 
                 new FileHelper.IGetNotifier() {
@@ -123,10 +144,57 @@ public class FileHelperTest {
         System.out.println("result=" + result);
     }
 
-//    @Test
+    @Test
+    public void testCopy() {
+        FileHelper.copyFilesWithBuffering(sourceDir, destinationDir, null,
+                new FileHelper.ISingleCopyNotifier() {
+                    @Override
+                    public long notifyInterval() {
+                        return TimeUnit.SECONDS.toMillis(1);
+                    }
+
+                    @Override
+                    public boolean onProcessing(@NonNull File sourceFile, @NonNull File destFile, long bytesCopied, long bytesTotal) {
+                        return true;
+                    }
+                },
+                new FileHelper.IMultipleCopyNotifier() {
+                    @Override
+                    public boolean onCalculatingSize(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onProcessing(@NonNull File currentFile, @NonNull File destDir, @NonNull Set<File> copied, long filesTotal, int currentLevel) {
+                        return true;
+                    }
+
+                    @Override
+                    public boolean onConfirmCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel) {
+                        return true;
+                    }
+
+                    @Override
+                    public File onBeforeCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel) {
+                        return null;
+                    }
+
+                    @Override
+                    public boolean onExists(@NonNull File destFile, int currentLevel) {
+                        return true;
+                    }
+
+                    @Override
+                    public void onFailed(@Nullable File currentFile, @NonNull File destFile, int currentLevel) {
+
+                    }
+
+                }, true, FileHelper.DEPTH_UNLIMITED);
+    }
+
+    //    @Test
     public void deleteTest() {
-        Context context = InstrumentationRegistry.getTargetContext();
-        Set<File> result = FileHelper.delete(Collections.singleton(context.getFilesDir()), true, null, null, new FileHelper.IDeleteNotifier() {
+        Set<File> result = FileHelper.delete(context.getFilesDir(), true, null, null, new FileHelper.IDeleteNotifier() {
             @Override
             public boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted, int currentLevel) {
                 return true;
@@ -147,7 +215,6 @@ public class FileHelperTest {
 
     @Test
     public void sizeTest() {
-        Context context = InstrumentationRegistry.getTargetContext();
         String result = FileHelper.getSizeWithValue(context, context.getFilesDir().getParentFile(), FileHelper.DEPTH_UNLIMITED);
         System.out.println("result=" + result);
     }

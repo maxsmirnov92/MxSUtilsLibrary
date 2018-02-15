@@ -30,7 +30,8 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation project(':tasksutils')
+//    implementation project(':tasksutils')
+    implementation project(':commonutils')
 
     implementation "com.android.support:appcompat-v7:$appCompatVersion"
     testImplementation "junit:junit:$jUnitVersion"
