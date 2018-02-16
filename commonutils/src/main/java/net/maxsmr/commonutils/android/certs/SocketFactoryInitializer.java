@@ -22,8 +22,6 @@ import javax.net.ssl.TrustManagerFactory;
 
 public final class SocketFactoryInitializer {
 
-    private static final Logger logger = LoggerFactory.getLogger(SocketFactoryInitializer.class);
-
     public SocketFactoryInitializer() {
         throw new AssertionError("no instances.");
     }

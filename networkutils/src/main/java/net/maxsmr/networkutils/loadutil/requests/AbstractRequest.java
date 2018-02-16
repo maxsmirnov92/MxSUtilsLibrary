@@ -139,9 +139,6 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
         @Nullable
         protected LoadRunnableInfo loadRunnableInfo;
 
-        @NonNull
-        protected STATE lastState = STATE.UNKNOWN;
-
         @Nullable
         protected NetworkLoadManager.LoadProcessInfo lastLoadProcessInfo;
 
@@ -193,6 +190,7 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
 
         @NonNull
         public STATE getLastState() {
+            STATE lastState = lastLoadProcessInfo != null? lastLoadProcessInfo.getState() : STATE.UNKNOWN;
             if (lastState == STATE.UNKNOWN) {
                 if (manager == null) {
                     throw new IllegalStateException("manager was not initialized");
@@ -241,7 +239,7 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
 
         @Override
         @CallSuper
-        public void onUpdateState(@NonNull STATE state, @NonNull LoadRunnableInfo loadInfo, @NonNull final NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
+        public void onUpdateState(@NonNull LoadRunnableInfo loadInfo, @NonNull final NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
 
             // TODO         @NonNull LoadListener.STATE lastState в LoadProcessInfo
 
@@ -253,7 +251,6 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
                 throw new IllegalStateException("loadRunnableInfo was not initialized");
             }
 
-            this.lastState = state;
             this.lastLoadProcessInfo = loadProcessInfo;
             this.lastThrowable = t;
 
@@ -261,7 +258,7 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
 
             final Runnable r;
 
-            switch (state) {
+            switch (loadProcessInfo.getState()) {
 
                 case STARTING:
 

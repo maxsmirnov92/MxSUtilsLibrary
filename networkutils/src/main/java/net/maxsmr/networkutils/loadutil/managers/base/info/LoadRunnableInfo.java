@@ -185,8 +185,6 @@ public class LoadRunnableInfo extends RunnableInfo {
         @Nullable
         private File downloadDirectory;
 
-
-
         public Builder(int id, URL url, @NonNull LoadSettings settings) {
             if (id < 0) {
                 throw new IllegalArgumentException("incorrect id: " + id);

@@ -13,7 +13,6 @@ public class TestApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        ConfigureLog4J.initInstance(5, new File(getFilesDir(), "1.log").getAbsolutePath()); // FIXME don't check file if not needed
-        ConfigureLog4J.getInstance().configure(Level.ALL, false, 0, 0);
+        ConfigureLog4J.getInstance().configure(Level.ALL, false, new File(getFilesDir(), "1.log").getAbsolutePath(), 0, 0);
     }
 }

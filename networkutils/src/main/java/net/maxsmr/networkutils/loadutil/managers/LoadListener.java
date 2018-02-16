@@ -53,7 +53,7 @@ public interface LoadListener<I extends LoadRunnableInfo> {
 
     long getProcessingNotifyInterval(@NonNull I loadInfo);
 
-    void onUpdateState(@NonNull STATE state, @NonNull I loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t);
+    void onUpdateState(@NonNull I loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t);
 
     void onResponse(@NonNull I loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NonNull NetworkLoadManager.Response response);
 }

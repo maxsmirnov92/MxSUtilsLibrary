@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.ResolveInfo;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -24,6 +25,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.List;
 
 public final class ServiceUtils {
 
@@ -205,6 +207,10 @@ public final class ServiceUtils {
         return null;
     }
 
+    public static boolean canHandleActivityIntent(@NonNull Context context, @Nullable Intent intent) {
+        List<ResolveInfo> resolveInfos = intent != null ? context.getPackageManager().queryIntentActivities(intent, 0) : null;
+        return resolveInfos != null && !resolveInfos.isEmpty();
+    }
 
 
 }

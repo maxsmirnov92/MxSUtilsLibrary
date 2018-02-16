@@ -2,6 +2,8 @@ package net.maxsmr.commonutils.android.gui;
 
 
 import android.app.Activity;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.ColorStateList;
@@ -31,6 +33,7 @@ import android.util.DisplayMetrics;
 import android.util.Pair;
 import android.view.Display;
 import android.view.KeyEvent;
+import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
@@ -49,6 +52,8 @@ import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static net.maxsmr.commonutils.android.gui.OrientationIntervalListener.ROTATION_NOT_SPECIFIED;
 
 public final class GuiUtils {
 
@@ -631,6 +636,51 @@ public final class GuiUtils {
         if (behavior != null) {
             behavior.onNestedFling(rootLayout, appbarLayout, null, 0, 10000, true);
         }
+    }
+
+    public static int getCurrentDisplayOrientation(@NonNull Context context) {
+        int degrees = 0;
+        final int rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
+        switch (rotation) {
+            case Surface.ROTATION_0:
+                degrees = 0;
+                break;
+            case Surface.ROTATION_90:
+                degrees = 90;
+                break;
+            case Surface.ROTATION_180:
+                degrees = 180;
+                break;
+            case Surface.ROTATION_270:
+                degrees = 270;
+                break;
+        }
+        return degrees;
+    }
+
+    public static int getCorrectedDisplayRotation(int rotation) {
+        rotation = rotation % 360;
+        int result = ROTATION_NOT_SPECIFIED;
+        if (rotation >= 315 && rotation < 360 || rotation >= 0 && rotation < 45) {
+            result = 0;
+        } else if (rotation >= 45 && rotation < 135) {
+            result = 90;
+        } else if (rotation >= 135 && rotation < 225) {
+            result = 180;
+        } else if (rotation >= 225 && rotation < 315) {
+            result = 270;
+        }
+        return result;
+    }
+
+    public static boolean copyToClipboard(@NonNull Context context, String label, String text) {
+        ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
+        if (clipboard != null) {
+            ClipData clip = ClipData.newPlainText(label, text);
+            clipboard.setPrimaryClip(clip);
+            return true;
+        }
+        return false;
     }
 
     public static class ProtectRangeInputFilter implements InputFilter {

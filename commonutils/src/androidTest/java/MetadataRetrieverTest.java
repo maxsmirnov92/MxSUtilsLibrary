@@ -1,29 +1,24 @@
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Environment;
-import android.support.annotation.NonNull;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.SmallTest;
 import android.util.Log;
 
-import net.maxsmr.commonutils.android.hardware.DeviceUtils;
 import net.maxsmr.commonutils.android.media.MetadataRetriever;
-import net.maxsmr.commonutils.data.FileHelper;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
-import java.util.Collections;
 import java.util.Map;
-import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class Tests {
+public class MetadataRetrieverTest {
 
-    public static final String TAG = Tests.class.getSimpleName();
+    public static final String TAG = MetadataRetrieverTest.class.getSimpleName();
 
     @Test
     public void testExtractFrames() {

@@ -3,17 +3,27 @@ package net.maxsmr.networkutils.loadutil.managers.base;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-
+import net.maxsmr.networkutils.loadstorage.LoadInfo;
+import net.maxsmr.networkutils.loadutil.managers.LoadListener;
+import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
+import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
+import net.maxsmr.networkutils.loadutil.managers.base.info.WrappedLoadRunnableInfo;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
+import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
+import net.maxsmr.tasksutils.storage.sync.collection.QueueSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.ArrayList;
 import java.util.List;
 
+import static net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage.MAX_SIZE_UNLIMITED;
 
-public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.Body, I extends LoadInfo<B>> implements LoadListener<WrappedLoadRunnableInfo<B, I>>, AbstractLoadStorage.StorageListener {
+@Deprecated
+public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.Body, I extends LoadInfo<B>>
+        implements LoadListener<WrappedLoadRunnableInfo<B, I>>, AbstractSyncStorage.IStorageListener {
 
     protected final Logger logger = LoggerFactory.getLogger(getClass());
 
@@ -26,18 +36,29 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
     private boolean isReleased = false;
 
     @NonNull
-    protected final NetworkLoadManager loadManager;
+    protected final NetworkLoadManager<WrappedLoadRunnableInfo<B, I>> loadManager;
 
     @NonNull
-    protected final QueueLoadStorage<I> uploadStorage;
+    protected final QueueSyncStorage<WrappedLoadRunnableInfo<B, I>> uploadStorage;
 
     private final ScheduledThreadPoolExecutorManager uploadListSynchronizer = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, getClass().getSimpleName() + "Synchronizer");
 
-    public BaseStorageNetworkLoadManager(@NonNull NetworkLoadManager loadManager, @NonNull Class<I> clazzInstance, String path) {
+    public BaseStorageNetworkLoadManager(@NonNull NetworkLoadManager loadManager, @NonNull Class<WrappedLoadRunnableInfo<B, I>> clazzInstance, String path) {
         logger.debug("BaseStorageNetworkLoadManager(), loadManager=" + loadManager + ", clazzInstance=" + clazzInstance + ", path=" + path);
-        this.uploadStorage = new QueueLoadStorage<>(clazzInstance, AbstractLoadStorage.MAX_SIZE_UNLIMITED, true, true, path, this);
+        this.uploadStorage = new QueueSyncStorage<>(path, "dat", clazzInstance, true,
+                MAX_SIZE_UNLIMITED, new AbstractSyncStorage.IAddRule<WrappedLoadRunnableInfo<B, I>>() {
+            @Override
+            public boolean allowAddIfFull() {
+                return false;
+            }
+
+            @Override
+            public void removeAny(AbstractSyncStorage fromStorage) {
+                fromStorage.removeFirst();
+            }
+        });
         this.loadManager = loadManager;
-        this.loadManager.addLoadListener((LoadListener) this);
+        this.loadManager.addLoadListener(this);
         restartUploadSynchronizer();
     }
 
@@ -57,7 +78,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
         logger.debug("release()");
         checkReleased();
         stopUploadSynchronizer();
-        loadManager.removeLoadListener((LoadListener) this);
+        loadManager.removeLoadListener(this);
         releaseLoadManager();
         uploadStorage.release();
         isReleased = true;
@@ -115,37 +136,17 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
         if (!isStorageRestoreCompleted()) {
             throw new IllegalStateException("storage restore is not completed");
         }
-        return uploadStorage.getAll();
-    }
-
-    /**
-     * @return true if upload added to queue
-     */
-    protected final boolean enqueue(I uploadInfo) {
-        logger.debug("enqueue(), uploadInfo=" + uploadInfo);
-        if (uploadInfo == null) {
-            logger.error("can't start upload: uploadInfo is null");
-            return false;
+        List<I> storageList = new ArrayList<>();
+        for (WrappedLoadRunnableInfo<B, I> i : uploadStorage.getAll()) {
+            if (i != null) {
+                storageList.add(i.loadInfo);
+            }
         }
-        AddMode mode = getAddMode(uploadInfo);
-        switch (mode) {
-            case LOAD_QUEUE:
-                enqueueLoad(uploadInfo);
-                break;
-            case STORAGE:
-                if (!uploadStorage.contains(uploadInfo)) {
-                    uploadStorage.add(uploadInfo);
-                    return true;
-                }
-                break;
-            default:
-                throw new RuntimeException("unknown mode: " + mode);
-        }
-
-        return false;
+        return storageList;
     }
 
     protected boolean enqueueLoad(I uploadInfo) {
+        checkReleased();
         final WrappedLoadRunnableInfo<B, I> uploadRunnableInfo = makeWrappedLoadRunnableInfo(uploadInfo);
         if (uploadRunnableInfo == null) {
             logger.error("can't start upload: uploadRunnableInfo is null");
@@ -160,9 +161,9 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
 
     @Override
     public void onLoadAddedToQueue(int id, int waitingLoads, int activeLoads) {
-        LoadRunnableInfo rInfo = loadManager.findLoadById(id);
-        if (rInfo instanceof WrappedLoadRunnableInfo) { // && LoadManagersFacade.getInstance().loadIdsPool.contains(rInfo.id)
-            uploadStorage.add(((WrappedLoadRunnableInfo<B, I>) rInfo).loadInfo);
+        WrappedLoadRunnableInfo<B, I> rInfo = loadManager.findLoadById(id);
+        if (rInfo != null) {
+            uploadStorage.addLast(rInfo);
         }
     }
 
@@ -172,7 +173,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
     }
 
     @Override
-    public final int getId(@NonNull WrappedLoadRunnableInfo<B, I> loadInfo) {
+    public int getId() {
         return RunnableInfo.NO_ID;
     }
 
@@ -181,23 +182,15 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
         return LoadListener.DEFAULT_PROCESSING_NOTIFY_INTERVAL;
     }
 
-    protected boolean allowRemoveFromStorageWhenRetriesExceeded() {
-        return allowRemoveFailedLoads;
-    }
-
-    @NonNull
-    protected AddMode getAddMode(I uploadInfo) {
-        return AddMode.LOAD_QUEUE;
-    }
-
     @Override
-    public void onUpdateState(@NonNull STATE state, @NonNull WrappedLoadRunnableInfo<B, I> loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
+    public void onUpdateState(@NonNull WrappedLoadRunnableInfo<B, I> loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
+        STATE state = loadProcessInfo.getState();
         switch (state) {
             case CANCELLED:
             case SUCCESS:
             case FAILED_RETRIES_EXCEEDED:
                 if (uploadStorage.contains(loadInfo.id)) {
-                    if (state != STATE.FAILED_RETRIES_EXCEEDED || loadInfo.body == null || loadInfo.body.isEmpty() || allowRemoveFromStorageWhenRetriesExceeded()) {
+                    if (state != STATE.FAILED_RETRIES_EXCEEDED || allowRemoveFailedLoads) {
                         logger.debug("removing info with id " + loadInfo.id + " from storage...");
                         uploadStorage.removeById(loadInfo.id);
                     }
@@ -217,9 +210,13 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
     }
 
     @Override
-    public void onStorageRestored(int restoredElementsCount) {
-        logger.debug("onStorageRestored(), restoredElementsCount=" + restoredElementsCount);
-//        doSynchronizeWithUploadManager();
+    public void onStorageRestoreStarted(long startTime) {
+        logger.debug("onStorageRestoreStarted()");
+    }
+
+    @Override
+    public void onStorageRestoreFinished(long endTime, long processingTime, int restoredElementsCount) {
+        logger.debug("onStorageRestoreFinished(), processingTime=" + processingTime + ", restoredElementsCount=" + restoredElementsCount);
     }
 
     private void doSynchronizeWithUploadManager() {
@@ -237,8 +234,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
             return;
         }
 
-        List<I> infos = uploadStorage.getAll();
-        logger.debug("current upload " + uploadStorage.getLoadInfoClass().getSimpleName() + " list: " + infos);
+        List<I> infos = getStorageList();
 
 //        logger.debug("current upload queue: " + loadManager.getQueue());
         if (!handleStorageSynchronize(infos)) {
@@ -254,14 +250,6 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
 
     @Nullable
     protected abstract WrappedLoadRunnableInfo<B, I> makeWrappedLoadRunnableInfo(@NonNull I info);
-
-    public static int newId(@NonNull AbsIdHolder idHolder) {
-        return idHolder.incrementAndGet();
-    }
-
-    protected enum AddMode {
-        STORAGE, LOAD_QUEUE
-    }
 
     private class SynchronizeUploadListRunnable implements Runnable {
 

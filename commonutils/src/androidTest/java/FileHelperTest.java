@@ -36,10 +36,39 @@ public class FileHelperTest {
         context = InstrumentationRegistry.getTargetContext();
         sourceDir = new File(context.getFilesDir(), SOURCE_NAME);
         destinationDir = new File(context.getFilesDir(), DEST_NAME);
+        FileHelper.delete(destinationDir, true, null, null, new FileHelper.IDeleteNotifier() {
+            @Override
+            public boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted, int currentLevel) {
+                return true;
+            }
+
+            @Override
+            public boolean confirmDeleteFile(File file) {
+                return true;
+            }
+
+            @Override
+            public boolean confirmDeleteFolder(File folder) {
+                return true;
+            }
+
+            @Override
+            public void onDeleteFileFailed(File file) {
+
+            }
+
+            @Override
+            public void onDeleteFolderFailed(File folder) {
+
+            }
+        }, FileHelper.DEPTH_UNLIMITED);
         for (int i = 0; i < 5; i++) {
-            FileHelper.createNewFile(String.valueOf(i+ 20) , new File(sourceDir.getAbsolutePath(), sourceDir.getName() + i).getAbsolutePath());
+            File innerFile1 = FileHelper.createNewFile(String.valueOf(i + 20), new File(sourceDir.getAbsolutePath(), sourceDir.getName() + i).getAbsolutePath());
+            File innerFile2 = FileHelper.createNewFile(String.valueOf(i + 30), innerFile1.getParent() + File.separator + "1");
+            FileHelper.createNewFile(String.valueOf(i + 40), innerFile2.getParent() + File.separator + "2");
             File newFile = FileHelper.createNewFile(String.valueOf(i), sourceDir.getAbsolutePath());
             FileHelper.writeBytesToFile(newFile, BigInteger.valueOf(i).toByteArray(), false);
+            FileHelper.createNewDir(sourceDir.getAbsolutePath() + File.separator + sourceDir.getName() + i + "_empty");
         }
     }
 
@@ -170,7 +199,7 @@ public class FileHelperTest {
                     }
 
                     @Override
-                    public boolean onConfirmCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel) {
+                    public boolean confirmCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel) {
                         return true;
                     }
 
@@ -208,6 +237,16 @@ public class FileHelperTest {
             @Override
             public boolean confirmDeleteFolder(File folder) {
                 return true;
+            }
+
+            @Override
+            public void onDeleteFileFailed(File file) {
+
+            }
+
+            @Override
+            public void onDeleteFolderFailed(File folder) {
+
             }
         }, FileHelper.DEPTH_UNLIMITED);
         System.out.println("result=" + result);

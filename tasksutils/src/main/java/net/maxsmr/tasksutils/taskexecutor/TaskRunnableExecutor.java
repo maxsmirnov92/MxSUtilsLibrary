@@ -82,7 +82,9 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                     @Override
                     public void onStorageRestoreFinished(long endTime, long processingTime, int restoredElementsCount) {
                         logger.debug("onStorageRestoreFinished(), endTime=" + endTime + ", processingTime=" + processingTime + ", restoredElementsCount=" + restoredElementsCount);
-                        List<T> tasks = restorer.fromRunnableInfos(syncStorage.getAll());
+                        List<I> storage = syncStorage.getAll();
+                        RunnableInfo.setRunning(storage, false);
+                        List<T> tasks = restorer.fromRunnableInfos(storage);
                         executeAll(TaskRunnable.filter(tasks, getAllTasks(), false));
                         syncStorage.removeStorageListener(this);
                     }
@@ -457,7 +459,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                 callbacksObservable.dispatchBeforeExecute(t, taskRunnable.command,
                         getExecInfoForRunnable(taskRunnable).finishedWaitingInQueue(time), getWaitingTasksCount(), getActiveTasksCount(), callbacksHandler);
 
-                taskRunnable.command.rInfo.setRunning(true);
+                taskRunnable.command.rInfo.isRunning = true;
 
             } else {
                 logger.error("can't run task: " + taskRunnable.command + ": cancelled");
@@ -479,7 +481,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                 throw new RuntimeException("incorrect command type: " + r.getClass() + ", must be: " + WrappedTaskRunnable.class.getName());
             }
             taskRunnable = (WrappedTaskRunnable<I, T>) r;
-            taskRunnable.command.rInfo.setRunning(false);
+            taskRunnable.command.rInfo.isRunning = false;
 
             boolean reAdd = !taskRunnable.command.isCancelled() &&
                     resultValidator != null && resultValidator.needToReAddTask(taskRunnable.command, t);

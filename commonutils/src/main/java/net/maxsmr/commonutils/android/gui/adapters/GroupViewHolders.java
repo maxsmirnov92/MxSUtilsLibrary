@@ -34,9 +34,6 @@ public class GroupViewHolders {
 
     public static abstract class BaseGroupViewHolder<I> {
 
-        @NonNull
-        protected final Context context;
-
         @LayoutRes
         protected final int itemLayoutId;
 
@@ -45,8 +42,7 @@ public class GroupViewHolders {
         @NonNull
         protected ViewGroup parent;
 
-        public BaseGroupViewHolder(@NonNull Context context, int itemLayoutId, @Nullable View itemView, @NonNull ViewGroup parent) {
-            this.context = context;
+        public BaseGroupViewHolder(int itemLayoutId, @Nullable View itemView, @NonNull ViewGroup parent) {
             this.itemLayoutId = itemLayoutId;
             this.itemView = itemView;
             this.parent = parent;
@@ -54,7 +50,7 @@ public class GroupViewHolders {
 
         protected View createItemView() {
             if (itemView == null) {
-                itemView = LayoutInflater.from(context).inflate(itemLayoutId, null);
+                itemView = LayoutInflater.from(parent.getContext()).inflate(itemLayoutId, parent, false);
             }
             return itemView;
         }
@@ -65,10 +61,14 @@ public class GroupViewHolders {
 
         protected abstract void onBindView(@NonNull View itemView);
 
+        protected boolean isItemEmpty(@Nullable I item) {
+            return item == null;
+        }
+
         public final void fill(@Nullable I item, int groupPosition) {
             createItemView();
             onBindView(itemView);
-            if (item == null) {
+            if (item == null || isItemEmpty(item)) {
                 displayNoData(groupPosition);
             } else {
                 displayData(item, groupPosition);

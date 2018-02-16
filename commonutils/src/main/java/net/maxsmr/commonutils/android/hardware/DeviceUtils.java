@@ -7,9 +7,12 @@ import android.app.AlarmManager;
 import android.app.PendingIntent;
 import android.content.ComponentName;
 import android.content.Context;
+import android.content.Intent;
+import android.content.IntentFilter;
 import android.hardware.usb.UsbAccessory;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.os.BatteryManager;
 import android.os.Build;
 import android.os.PowerManager;
 import android.os.SystemClock;
@@ -55,6 +58,18 @@ public final class DeviceUtils {
     public static UsbAccessory[] getAccessoryList(@NonNull Context context) {
         UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         return usbManager.getAccessoryList();
+    }
+
+    public static int getBatteryPercentage(@NonNull Context context) {
+        IntentFilter iFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
+         return getBatteryPercentageFromIntent(context.registerReceiver(null, iFilter));
+    }
+
+    public static int getBatteryPercentageFromIntent(@Nullable Intent batteryStatus) {
+        int level = batteryStatus != null ? batteryStatus.getIntExtra(BatteryManager.EXTRA_LEVEL, -1) : -1;
+        int scale = batteryStatus != null ? batteryStatus.getIntExtra(BatteryManager.EXTRA_SCALE, -1) : -1;
+        float batteryPct = level / (float) scale;
+        return (int) (batteryPct * 100);
     }
 
     public static boolean isWakeLockHeld(@Nullable PowerManager.WakeLock wakeLock) {

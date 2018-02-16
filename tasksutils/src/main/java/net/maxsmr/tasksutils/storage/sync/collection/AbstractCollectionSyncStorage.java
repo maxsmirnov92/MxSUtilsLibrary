@@ -45,8 +45,8 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
     }
 
     @Override
-    protected final int restoreStorageInternal() {
-        logger.debug("restoreStorageInternal()");
+    protected final int restoreStorage() {
+        logger.debug("restoreStorage()");
 
         int restoredCount = 0;
 
@@ -183,7 +183,6 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
         return false;
     }
 
-    // TODO notify client code on fail
     @Override
     protected boolean deleteAllSerializedRunnableInfos() {
         FileHelper.delete(Collections.singletonList(new File(storageDirPath)), false, null, null, new FileHelper.IDeleteNotifier() {
@@ -199,9 +198,19 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
             @Override
             public boolean confirmDeleteFolder(File folder) {
-                return false;
+                return true;
             }
-        }, FileHelper.DEPTH_UNLIMITED);
+
+            @Override
+            public void onDeleteFileFailed(File file) {
+
+            }
+
+            @Override
+            public void onDeleteFolderFailed(File folder) {
+
+            }
+        }, 1);
         return true;
     }
 

@@ -20,6 +20,7 @@ import android.text.TextUtils;
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.sort.AbsOptionableComparator;
 import net.maxsmr.commonutils.data.sort.ISortOption;
+import net.maxsmr.commonutils.graphic.GraphicUtils;
 import net.maxsmr.commonutils.shell.ShellUtils;
 
 import org.slf4j.Logger;
@@ -966,7 +967,7 @@ public final class FileHelper {
                         if (f.isDirectory()) {
 
                             if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
-                                result.addAll(getFiles(f, mode, comparator, notifier, depth, ++currentLevel, collected));
+                                result.addAll(getFiles(f, mode, comparator, notifier, depth, currentLevel + 1, collected));
                             }
 
                         } else if (f.isFile()) {
@@ -1057,7 +1058,7 @@ public final class FileHelper {
 
                         if (f.isDirectory()) {
                             if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
-                                result.addAll(searchByName(name, f, mode, searchFlags, comparator, notifier, depth, ++currentLevel, foundFiles));
+                                result.addAll(searchByName(name, f, mode, searchFlags, comparator, notifier, depth, currentLevel + 1, foundFiles));
                             }
                         } else if (f.isFile()) {
                             result.addAll(searchByName(name, f, mode, searchFlags, comparator, notifier, depth, currentLevel, foundFiles));
@@ -1304,13 +1305,15 @@ public final class FileHelper {
                         if (excludeFiles == null || !excludeFiles.contains(f)) {
                             if (f.isDirectory()) {
                                 if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
-                                    result.addAll(delete(f, deleteEmptyDirs, excludeFiles, comparator, notifier, depth, ++currentLevel, deletedFiles));
+                                    result.addAll(delete(f, deleteEmptyDirs, excludeFiles, comparator, notifier, depth, currentLevel + 1, deletedFiles));
                                 }
                                 if (deleteEmptyDirs) {
                                     if (notifier == null || notifier.confirmDeleteFolder(f)) {
                                         if (f.delete()) {
                                             result.add(f);
                                             deletedFiles.add(f);
+                                        } else if (notifier != null) {
+                                            notifier.onDeleteFolderFailed(f);
                                         }
                                     }
                                 }
@@ -1330,6 +1333,8 @@ public final class FileHelper {
                                 if (fromFile.delete()) {
                                     result.add(fromFile);
                                     deletedFiles.add(fromFile);
+                                } else if (notifier != null) {
+                                    notifier.onDeleteFolderFailed(fromFile);
                                 }
                             }
                         }
@@ -1341,6 +1346,8 @@ public final class FileHelper {
                     if (fromFile.delete()) {
                         result.add(fromFile);
                         deletedFiles.add(fromFile);
+                    } else if (notifier != null) {
+                        notifier.onDeleteFileFailed(fromFile);
                     }
                 }
 
@@ -1371,7 +1378,7 @@ public final class FileHelper {
             if (files != null && files.length > 0) {
                 for (File file : files) {
                     if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
-                        size += getSize(file, depth, ++currentLevel);
+                        size += getSize(file, depth, currentLevel + 1);
                     }
                 }
             }
@@ -1694,6 +1701,7 @@ public final class FileHelper {
 
         boolean isCorrect = false;
 
+
         if (destDir != null) {
 
             if (fromFile != null && fromFile.exists()) {
@@ -1753,19 +1761,33 @@ public final class FileHelper {
 
                         for (File f : files) {
 
+//                            if (currentLevel >= 1) {
+//                                String tmpPath = destDir.getAbsolutePath();
+//                                int index = tmpPath.lastIndexOf(File.separator);
+//                                if (index > 0 && index < tmpPath.length() - 1) {
+//                                    tmpPath = tmpPath.substring(0, index);
+//                                }
+//                                destDir = new File(tmpPath);
+//                            }
+
                             if (f.isDirectory()) {
                                 if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
-                                    // FIXME
-                                    result.addAll(copyFilesWithBuffering(f, destDir /*new File(destDir, f.getName())*/, comparator,
-                                            singleNotifier, multipleCopyNotifier, preserveFileDate, depth, ++currentLevel, totalFilesCount, copied, exclusionList));
+                                    result.addAll(copyFilesWithBuffering(f, /*new File(destDir + File.separator + fromFile.getName(), f.getName())*/ destDir, comparator,
+                                            singleNotifier, multipleCopyNotifier, preserveFileDate, depth, currentLevel + 1, totalFilesCount, copied, exclusionList));
                                 }
-                            } else if (isFileExists(f)) {
-                                // FIXME
-                                result.addAll(copyFilesWithBuffering(f, destDir /*new File(destDir, fromFile.getName())*/, comparator,
+                            } else {
+                                result.addAll(copyFilesWithBuffering(f, /*new File(destDir, fromFile.getName()) */ destDir, comparator,
                                         singleNotifier, multipleCopyNotifier, preserveFileDate, depth, currentLevel, totalFilesCount, copied, exclusionList));
                             }
                         }
 
+                    }
+
+                    if (files == null || files.length == 0) {
+                        String emptyDir = currentLevel == 0 ? destDir + File.separator + fromFile.getName() : destDir.getAbsolutePath();
+                        if (!isDirExists(emptyDir)) {
+                            createNewDir(emptyDir);
+                        }
                     }
                 } else if (isFileExists(fromFile)) {
 
@@ -1774,7 +1796,7 @@ public final class FileHelper {
                     boolean confirmCopy = true;
 
                     if (multipleCopyNotifier != null) {
-                        confirmCopy = multipleCopyNotifier.onConfirmCopy(fromFile, destDir, currentLevel);
+                        confirmCopy = multipleCopyNotifier.confirmCopy(fromFile, destDir, currentLevel);
                     }
 
                     if (confirmCopy) {
@@ -1818,6 +1840,8 @@ public final class FileHelper {
                     multipleCopyNotifier.onFailed(fromFile, destDir, currentLevel);
                 }
             }
+        } else {
+            logger.error("destination dir is not specified");
         }
 
         if (comparator != null) {
@@ -1857,10 +1881,80 @@ public final class FileHelper {
         return false;
     }
 
-    public static boolean writeExifLocation(File f, Location loc) {
+    @Nullable
+    public static Location readExifLocation(File imageFile) {
+        if (!GraphicUtils.canDecodeImage(imageFile)) {
+            logger.error("incorrect picture file: " + imageFile);
+            return null;
+        }
 
-        if (!isFileCorrect(f) || !isPicture(getFileExtension(f.getName()))) {
-            logger.error("incorrect picture file: " + f);
+        try {
+
+            ExifInterface exif = new ExifInterface(imageFile.getAbsolutePath());
+
+            String provider = exif.getAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD);
+
+            Location result = new Location(provider);
+
+            String value;
+
+            double latitude = 0d;
+            try {
+                value = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE);
+                if (value != null) {
+                    latitude = Location.convert(value);
+                }
+            } catch (IllegalArgumentException e) {
+                logger.error("a IllegalArgumentException occurred", e);
+            }
+
+            double longitude = 0d;
+            try {
+                value = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE);
+                if (value != null) {
+                    longitude =  Location.convert(value);
+                }
+            } catch (NumberFormatException e) {
+                logger.error("a IllegalArgumentException occurred", e);
+            }
+
+            double altitude = 0d;
+            try {
+                value = exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE);
+                if (value != null) {
+                    altitude =  Location.convert(value);
+                }
+            } catch (NumberFormatException e) {
+                logger.error("a IllegalArgumentException occurred", e);
+            }
+
+            long timestamp = 0L;
+            try {
+                value = exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE);
+                if (value != null) {
+                    timestamp = Long.valueOf(value);
+                }
+            } catch (NumberFormatException e) {
+                logger.error("a NumberFormatException occurred", e);
+            }
+
+            result.setLatitude(latitude);
+            result.setLongitude(longitude);
+            result.setAltitude(altitude);
+            result.setTime(timestamp);
+
+            return result;
+
+        } catch (IOException e) {
+            logger.error("an IOException occurred", e);
+            return null;
+        }
+    }
+
+    public static boolean writeExifLocation(File imageFile, Location loc) {
+
+        if (!GraphicUtils.canDecodeImage(imageFile)) {
+            logger.error("incorrect picture file: " + imageFile);
             return false;
         }
 
@@ -1871,13 +1965,19 @@ public final class FileHelper {
 
         try {
 
-            ExifInterface exif = new ExifInterface(f.getAbsolutePath());
+            ExifInterface exif = new ExifInterface(imageFile.getAbsolutePath());
 
-            if (!CompareUtils.objectsEqual(loc.getLatitude(), 0.0d) || !CompareUtils.objectsEqual(loc.getLongitude(), 0.0d)) {
-                exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, String.valueOf(loc.getLatitude()));
-                exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, String.valueOf(loc.getLongitude()));
-            }
-            exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, String.valueOf(loc.getAltitude()));
+            double latitude = loc.getLatitude();
+            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertLocationDoubleToString(latitude));
+            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, latitude > 0? "N" : "S");
+
+            double longitude = loc.getLongitude();
+            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertLocationDoubleToString(longitude));
+            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, longitude > 0? "E" : "W");
+
+            exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, convertLocationDoubleToString((loc.getAltitude())));
+
+            exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, String.valueOf(loc.getTime()));
 
             exif.setAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD, String.valueOf(loc.getProvider()));
 
@@ -1888,6 +1988,30 @@ public final class FileHelper {
             logger.error("an IOException occurred", e);
             return false;
         }
+    }
+
+    public static String convertLocationDoubleToString(double value) {
+        String result = null;
+
+        double aValue = Math.abs(value);
+        String dms = Location.convert(aValue, Location.FORMAT_SECONDS);
+        String[] splits = dms.split(":");
+
+        if (splits.length >= 3) {
+
+            String[] seconds = (splits[2]).split("\\.");
+            String secondsStr;
+
+            if (seconds.length == 0) {
+                secondsStr = splits[2];
+            } else {
+                secondsStr = seconds[0];
+            }
+
+            result = splits[0] + "/1," + splits[1] + "/1," + secondsStr + "/1";
+        }
+
+        return result;
     }
 
     /**
@@ -1910,7 +2034,7 @@ public final class FileHelper {
             field.setAccessible(true);
             if (field.getName().equals(resName)) {
                 try {
-                    if (field.getInt(null) == id)
+                    if (CompareUtils.objectsEqual(field.getInt(null), id))
                         return true;
                 } catch (Exception e) {
                     logger.error("an Exception occurred during getInt()");
@@ -1960,6 +2084,10 @@ public final class FileHelper {
          * @return false if client code doesn't want to delete this folder
          */
         boolean confirmDeleteFolder(File folder);
+
+        void onDeleteFileFailed(File file);
+
+        void onDeleteFolderFailed(File folder);
     }
 
     public interface IStreamNotifier {
@@ -1982,7 +2110,7 @@ public final class FileHelper {
 
         boolean onProcessing(@NonNull File currentFile, @NonNull File destDir, @NonNull Set<File> copied, long filesTotal, int currentLevel);
 
-        boolean onConfirmCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel);
+        boolean confirmCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel);
 
         /**
          * @return target file to copy in or null if default

@@ -7,6 +7,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
@@ -87,6 +88,31 @@ public abstract class InstanceManager<T> {
                 try {
                     if (in != null) {
                         in.close();
+                    }
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+        return null;
+    }
+
+    @Nullable
+    public static <T extends Serializable> T fromInputStream(@NonNull Class<T> clazz, InputStream inputStream) {
+        if (inputStream != null) {
+            ObjectInput objectInput = null;
+            try {
+                objectInput = new ObjectInputStream(inputStream);
+                Object o = objectInput.readObject();
+                if (clazz.isAssignableFrom(o.getClass())) {
+                    return (T) o;
+                }
+            } catch (Exception e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    if (objectInput != null) {
+                        objectInput.close();
                     }
                 } catch (IOException e) {
                     e.printStackTrace();

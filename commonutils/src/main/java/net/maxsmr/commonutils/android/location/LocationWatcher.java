@@ -9,9 +9,12 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.Handler;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.android.location.info.TrackingStatus;
-import net.maxsmr.commonutils.android.location.info.LocationInfo;
+import net.maxsmr.commonutils.data.CompareUtils;
+
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -59,8 +62,6 @@ public final class LocationWatcher {
 
     private Location mLastLocation;
 
-    private LocationInfo mLastLocationInfo;
-
     private long mLocationUpdateTime = DEFAULT_LOCATION_UPDATE_TIME;
 
     private float mLocationUpdateDistance = DEFAULT_LOCATION_UPDATE_DISTANCE;
@@ -69,49 +70,45 @@ public final class LocationWatcher {
         return mLocationObservable;
     }
 
+    public long getLocationUpdateTime() {
+        return mLocationUpdateTime;
+    }
+
+    public float getLocationUpdateDistance() {
+        return mLocationUpdateDistance;
+    }
+
+    @Nullable
     public Location getLastLocation() {
         return mLastLocation;
     }
 
-    public LocationInfo getLastLocationInfo() {
-        return mLastLocationInfo;
-    }
-
-    public void setPreferredProviders(Collection<String> providers) {
+    public void setPreferredProviders(@Nullable Collection<String> providers) {
         mPreferredProviders.clear();
         if (providers != null) {
             mPreferredProviders.addAll(providers);
         }
     }
 
-    private boolean updateLocation(Location loc) {
+    private boolean updateLocation(@NonNull Location location) {
 
-        if (loc == null)
-            return false;
-
-        if (loc == mLastLocation)
-            return false;
-
-        LocationInfo locationInfo = LocationInfo.from(loc, mContext);
-
-        final boolean isSameLocationInfos = mLastLocationInfo != null && mLastLocationInfo.equals(locationInfo);
-        logger.info("last location info: " + mLastLocationInfo + ", new location info: " + locationInfo + ", is same: " + isSameLocationInfos);
+        final boolean isSameLocationInfos = CompareUtils.objectsEqual(mLastLocation, location);
+        logger.info("last location info: " + mLastLocation + ", new location info: " + location + ", is same: " + isSameLocationInfos);
 
         final float accuracy = mLastLocation == null ? 0 : mLastLocation.getAccuracy();
-        final boolean isBetterAccuracy = loc.getAccuracy() > accuracy;
+        final boolean isBetterAccuracy = location.getAccuracy() > accuracy;
         logger.info("last accuracy: " + accuracy + ", new is better: " + isBetterAccuracy);
 
         final long time = mLastLocation == null ? 0 : mLastLocation.getTime();
-        final boolean isLaterTime = loc.getTime() - time > mLocationUpdateTime;
+        final boolean isLaterTime = location.getTime() - time > mLocationUpdateTime;
         logger.info("last update time: " + time + ", new is later: " + isLaterTime);
 
         if (!isSameLocationInfos && (isBetterAccuracy || isLaterTime)) {
 
-            mLastLocation = loc;
-            mLastLocationInfo = locationInfo;
-            logger.info("last location info has been changed: " + mLastLocationInfo);
+            mLastLocation = location;
+            logger.info("last location info has been changed");
 
-            mLocationObservable.dispatchLocationUpdated(mLastLocation, mLastLocationInfo);
+            mLocationObservable.dispatchLocationUpdated(mLastLocation);
             mLocationObservable.dispatchLocationTrackingStatusChanged(TrackingStatus.NEW_LOCATION);
             return true;
         }
@@ -195,7 +192,9 @@ public final class LocationWatcher {
         @Override
         public void onLocationChanged(Location loc) {
             logger.debug("onLocationChanged(), loc=" + loc);
-            updateLocation(loc);
+            if (loc != null) {
+                updateLocation(loc);
+            }
         }
 
         @Override
@@ -246,7 +245,6 @@ public final class LocationWatcher {
 
         if (resetLastLoc) {
             mLastLocation = null;
-            mLastLocationInfo = null;
         }
 
         mLocationObservable.dispatchLocationTrackingStatusChanged(TrackingStatus.STOP_TRACKING);
@@ -284,9 +282,9 @@ public final class LocationWatcher {
             }
         }
 
-        private void dispatchLocationUpdated(Location loc, LocationInfo locInfo) {
+        private void dispatchLocationUpdated(Location location) {
             for (LocationTrackingListener l : mObservers) {
-                l.onLocationUpdated(loc, locInfo);
+                l.onLocationUpdated(location);
             }
         }
     }

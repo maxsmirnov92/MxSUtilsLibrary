@@ -1,8 +1,7 @@
-include ':commonutils', ':testapplication'
-// ':testapplication's
+include ':networkutils'
+// ':testapplication
 // ':tasksutils'
-// 'customcontentprovider',
-// ':commonutils',
-// ':networkutils',
-// ':tasksutils',
-// ':devicewatchers',
+// 'customcontentprovider'
+// ':commonutils'
+// ':networkutils'
+// ':devicewatchers'

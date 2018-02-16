@@ -7,6 +7,7 @@ import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 
 import org.slf4j.Logger;
@@ -131,8 +132,8 @@ public final class StorageStateWatcher {
         private void doStateWatch(boolean notify) {
             logger.debug("doStateWatch(), notify=" + notify);
 
-            final long totalKb = (long) FileHelper.getPartitionTotalSpaceKb(settings.targetPath, FileHelper.SizeUnit.KBYTES);
-            final long freeKb = (long) FileHelper.getPartitionFreeSpaceKb(settings.targetPath, FileHelper.SizeUnit.KBYTES);
+            final long totalKb = (long) FileHelper.getPartitionTotalSpace(settings.targetPath, FileHelper.SizeUnit.KBYTES);
+            final long freeKb = (long) FileHelper.getPartitionFreeSpace(settings.targetPath, FileHelper.SizeUnit.KBYTES);
             final long usedKb = totalKb - freeKb;
 
             logger.info("=== storage total space: " + totalKb + " kB, free: " + freeKb + " kB, used: " + usedKb + " kB ===");
@@ -251,7 +252,7 @@ public final class StorageStateWatcher {
 
                         if (entry != null) {
 
-                            StorageWatchSettings.DeleteOptionPair pair = findPairFromMappingByPath(entry.getKey());
+                            final StorageWatchSettings.DeleteOptionPair pair = findPairFromMappingByPath(entry.getKey());
 
                             if (pair != null) {
 
@@ -286,7 +287,7 @@ public final class StorageStateWatcher {
                                         }
 
                                         if (allowDelete) {
-                                            deletedCount += FileHelper.deleteFromCollection(Collections.singleton(file), pair.mode, true, true, 1, null, null, new FileHelper.IDeleteNotifier() {
+                                            deletedCount += FileHelper.delete(file, true, null, null, new FileHelper.IDeleteNotifier() {
                                                 @Override
                                                 public boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted, int currentLevel) {
                                                     return isEnabled;
@@ -294,14 +295,25 @@ public final class StorageStateWatcher {
 
                                                 @Override
                                                 public boolean confirmDeleteFile(File file) {
-                                                    return true;
+                                                    return pair.mode == FileHelper.GetMode.FILES || pair.mode == FileHelper.GetMode.ALL;
                                                 }
 
                                                 @Override
                                                 public boolean confirmDeleteFolder(File folder) {
-                                                    return true;
+                                                    return pair.mode == FileHelper.GetMode.FOLDERS || pair.mode == FileHelper.GetMode.ALL;
                                                 }
-                                            }).size();
+
+                                                @Override
+                                                public void onDeleteFileFailed(File file) {
+                                                    logger.error("onDeleteFileFailed(), file=" + file);
+                                                }
+
+                                                @Override
+                                                public void onDeleteFolderFailed(File folder) {
+                                                    logger.error("onDeleteFolderFailed(), folder=" + folder);
+                                                }
+
+                                            }, FileHelper.DEPTH_UNLIMITED).size();
                                         }
 
                                         if (deletedCount > 0) {
@@ -322,13 +334,13 @@ public final class StorageStateWatcher {
         }
 
         @Nullable
-        StorageWatchSettings.DeleteOptionPair findPairFromMappingByPath(String path) {
-            for (StorageWatchSettings.DeleteOptionPair p : mapping.keySet()) {
-                if (p != null && CompareUtils.stringsEqual(p.path, path, true)) {
-                    return p;
+        StorageWatchSettings.DeleteOptionPair findPairFromMappingByPath(final String path) {
+            return Predicate.Methods.find(mapping.keySet(), new Predicate<StorageWatchSettings.DeleteOptionPair>() {
+                @Override
+                public boolean apply(StorageWatchSettings.DeleteOptionPair element) {
+                    return element != null && CompareUtils.stringsEqual(element.path, path, true);
                 }
-            }
-            return null;
+            });
         }
 
     }

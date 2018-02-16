@@ -1,6 +1,7 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.model.InstanceManager;
@@ -22,14 +23,13 @@ public class RunnableInfo implements Serializable {
     public final int id;
     public final String name;
 
-    private boolean isRunning = false;
+    boolean isRunning = false;
 
     private boolean isCancelled = false;
 
     public RunnableInfo(int id) {
         this(id, null);
     }
-
 
     public RunnableInfo(int id, String name) {
 
@@ -42,10 +42,6 @@ public class RunnableInfo implements Serializable {
 
     public synchronized boolean isRunning() {
         return isRunning;
-    }
-
-    public synchronized void setRunning(boolean running) {
-        isRunning = running;
     }
 
     public synchronized boolean isCancelled() {
@@ -113,8 +109,28 @@ public class RunnableInfo implements Serializable {
         return InstanceManager.fromByteArray(clazz, byteArray);
     }
 
-    public static <I extends RunnableInfo> I fromByteInputStream(Class<I> clazz, InputStream inputStream) {
-        return AbstractSyncStorage.fromInputStream(clazz, inputStream);
+    public static <I extends RunnableInfo> I fromInputStream(Class<I> clazz, InputStream inputStream) {
+        return InstanceManager.fromInputStream(clazz, inputStream);
+    }
+
+    public static void setRunning(@Nullable Collection<? extends RunnableInfo> infos, boolean isRunning) {
+        if (infos != null) {
+            for (RunnableInfo i : infos) {
+                if (i != null) {
+                    i.isRunning = isRunning;
+                }
+            }
+        }
+    }
+
+    public static void cancel(@Nullable Collection<? extends RunnableInfo> infos) {
+        if (infos != null) {
+            for (RunnableInfo i : infos) {
+                if (i != null) {
+                    i.cancel();
+                }
+            }
+        }
     }
 
 }

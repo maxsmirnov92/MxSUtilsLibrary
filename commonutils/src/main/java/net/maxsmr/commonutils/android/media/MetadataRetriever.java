@@ -343,7 +343,7 @@ public final class MetadataRetriever {
         }
 
         MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(context, resourceUri, null);
-        return retriever != null ? GraphicUtils.createBitmapByByteArray(retriever.getEmbeddedPicture(), 1) : null;
+        return retriever != null ? GraphicUtils.createBitmapFromByteArray(retriever.getEmbeddedPicture(), 1) : null;
     }
 
     public static long extractMediaDuration(@NonNull Context context, @Nullable Uri resourceUri) {

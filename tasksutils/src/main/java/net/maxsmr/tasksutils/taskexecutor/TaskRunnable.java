@@ -3,6 +3,8 @@ package net.maxsmr.tasksutils.taskexecutor;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import net.maxsmr.commonutils.data.Predicate;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -37,37 +39,49 @@ public abstract class TaskRunnable<I extends RunnableInfo> implements Runnable {
         return "TaskRunnable [rInfo=" + rInfo + "]";
     }
 
-    // TODO change by Predicate<>
     @Nullable
-    public static <I extends RunnableInfo, T extends TaskRunnable<I>> T findRunnableById(int id, Collection<T> tasks) {
+    public static <I extends RunnableInfo, T extends TaskRunnable<I>> T findRunnableById(final int id, Collection<T> tasks) {
         if (id < 0) {
             throw new IllegalArgumentException("incorrect id: " + id);
         }
-        T targetRunnable = null;
-        for (T r : tasks) {
-            if (id == r.getId()) {
-                targetRunnable = r;
-                break;
+        return Predicate.Methods.find(tasks, new Predicate<T>() {
+            @Override
+            public boolean apply(T element) {
+                return element != null && id == element.getId();
             }
-        }
-        return targetRunnable;
+        });
     }
 
 
     @NonNull
-    public static <I extends RunnableInfo, T extends TaskRunnable<I>> List<T> filter(Collection<T> what, Collection<T> by, boolean contains) {
-        List<T> tasks = new ArrayList<>();
-        if (what != null) {
-            for (T t : what) {
+    public static <I extends RunnableInfo, T extends TaskRunnable<I>> List<T> filter(final Collection<T> what, final Collection<T> by, final boolean contains) {
+        return Predicate.Methods.filter(what, new Predicate<T>() {
+            @Override
+            public boolean apply(T element) {
+                T runnable = findRunnableById(element.getId(), by);
+                return contains && runnable != null || !contains && runnable == null;
+            }
+        });
+    }
+
+    public static void setRunning(@Nullable Collection<? extends TaskRunnable<?>> tasks, boolean isRunning) {
+        if (tasks != null) {
+            for (TaskRunnable<?> t : tasks) {
                 if (t != null) {
-                    T runnable = findRunnableById(t.getId(), by);
-                    if (contains && runnable != null || !contains && runnable == null) {
-                        tasks.add(t);
-                    }
+                    t.rInfo.isRunning = isRunning;
                 }
             }
         }
-        return tasks;
+    }
+
+    public static void cancel(@Nullable Collection<? extends TaskRunnable<?>> tasks) {
+        if (tasks != null) {
+            for (TaskRunnable<?> t : tasks) {
+                if (t != null) {
+                    t.cancel();
+                }
+            }
+        }
     }
 
     public interface ITaskResultValidator<I extends RunnableInfo, T extends TaskRunnable<I>> {

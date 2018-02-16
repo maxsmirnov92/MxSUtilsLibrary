@@ -6,7 +6,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 
 import net.maxsmr.commonutils.data.Observable;
-import net.maxsmr.commonutils.data.model.InstanceManager;
 import net.maxsmr.tasksutils.CustomHandlerThread;
 import net.maxsmr.tasksutils.handler.HandlerRunnable;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
@@ -17,8 +16,6 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
@@ -27,6 +24,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.NO_ID;
+import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.fromByteArray;
+import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.fromInputStream;
 
 public abstract class AbstractSyncStorage<I extends RunnableInfo> {
 
@@ -95,17 +94,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         restoreThread = null;
     }
 
-    private synchronized int restoreStorage() {
-        int count = restoreStorageInternal();
-        Iterator<I> iterator = iterator();
-        while (iterator.hasNext()) {
-            I item = iterator.next();
-            item.setRunning(false);
-        }
-        return count;
-    }
-
-    protected abstract int restoreStorageInternal();
+    protected abstract int restoreStorage();
 
     @NonNull
     public Class<I> getRunnableInfoClass() {
@@ -341,6 +330,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         return null;
     }
 
+    @Nullable
     public final synchronized I remove(int index) {
         
         int prev = getSize();
@@ -356,6 +346,16 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         }
 
         return null;
+    }
+
+    @Nullable
+    public final I removeFirst() {
+        return !isEmpty()? remove(0) : null;
+    }
+
+    @Nullable
+    public final I removeLast() {
+        return !isEmpty()? remove(getSize() - 1) : null;
     }
 
     // no check needed
@@ -386,7 +386,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
     protected abstract boolean deleteAllSerializedRunnableInfos();
 
     protected I deserializeRunnableInfoFromByteArray(@Nullable byte[] array) {
-        return InstanceManager.fromByteArray(runnableInfoClass, array);
+        return fromByteArray(runnableInfoClass, array);
     }
 
     protected I deserializeRunnableInfoFromInputStream(@Nullable InputStream inputStream) {
@@ -517,32 +517,6 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
             isRestoreCompleted = true;
             storageObservable.dispatchStorageRestoreFinished(endTime, processingTime, result);
         }
-    }
-
-    // TODO move to InstanceManager
-    @Nullable
-    public static <T extends Serializable> T fromInputStream(@NonNull Class<T> clazz, InputStream inputStream) {
-        if (inputStream != null) {
-            ObjectInput objectInput = null;
-            try {
-                objectInput = new ObjectInputStream(inputStream);
-                Object o = objectInput.readObject();
-                if (clazz.isAssignableFrom(o.getClass())) {
-                    return (T) o;
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    if (objectInput != null) {
-                        objectInput.close();
-                    }
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }
-        return null;
     }
 
     public static <T extends Serializable> void toOutputStream(@Nullable T object, @NonNull OutputStream outputStream) {

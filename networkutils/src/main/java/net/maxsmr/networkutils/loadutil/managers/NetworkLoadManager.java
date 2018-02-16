@@ -1,6 +1,7 @@
 package net.maxsmr.networkutils.loadutil.managers;
 
 import android.net.Uri;
+import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -8,6 +9,7 @@ import android.text.TextUtils;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.networkutils.loadutil.managers.base.BaseNetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
+import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 
@@ -46,28 +48,21 @@ import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableIn
 /**
  * @author maxsmirnov
  */
-public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo, NetworkLoadManager.LoadRunnable> {
+public class NetworkLoadManager<LI extends LoadRunnableInfo> extends BaseNetworkLoadManager<LI, TaskRunnable<LI>> {
 
     private static final Logger logger = LoggerFactory.getLogger(NetworkLoadManager.class);
 
     private static final String LINE_FEED = "\r\n";
 
-    public NetworkLoadManager(int limit, int concurrentLoadsCount) {
-        super(limit, concurrentLoadsCount);
+    public NetworkLoadManager(int limit, int concurrentLoadsCount, @Nullable AbstractSyncStorage<LI> storage,
+                              @Nullable TaskRunnable.ITaskResultValidator<LI, TaskRunnable<LI>> validator, @Nullable final TaskRunnable.ITaskRestorer<LI, TaskRunnable<LI>> restorer) {
+        super(limit, concurrentLoadsCount, storage, validator, restorer);
     }
 
-    @Nullable
-    private LoadRunnable findLoadRunnableById(int loadId) {
-        checkReleased();
-        TaskRunnable r = mExecutor.findRunnableById(loadId);
-        if (r == null) {
-            logger.error("no load with id " + loadId);
-            return null;
-        }
-        if (!(r instanceof LoadRunnable)) {
-            throw new RuntimeException("incorrect runnable class " + r.getClass() + ", must be " + LoadRunnable.class);
-        }
-        return (LoadRunnable) r;
+    public NetworkLoadManager(int limit, int concurrentLoadsCount, @Nullable AbstractSyncStorage<LI> storage,
+                              @Nullable TaskRunnable.ITaskResultValidator<LI, TaskRunnable<LI>> validator, @Nullable final TaskRunnable.ITaskRestorer<LI, TaskRunnable<LI>> restorer,
+                              @Nullable Handler callbacksHandler) {
+        super(limit, concurrentLoadsCount, storage, validator, restorer, callbacksHandler);
     }
 
 
@@ -81,10 +76,8 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
 
     @NonNull
     public LoadListener.STATE getLastStateForId(int loadId) {
-        synchronized (mExecutor) {
-            LoadRunnable runnable = findLoadRunnableById(loadId);
-            return runnable != null ? runnable.getLastState() : LoadListener.STATE.UNKNOWN;
-        }
+        LoadProcessInfo processInfo = getCurrentLoadProcessInfoForId(loadId);
+        return processInfo != null? processInfo.state : LoadListener.STATE.UNKNOWN;
     }
 
     @Nullable
@@ -95,19 +88,29 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         }
     }
 
+    @Nullable
+    protected LoadRunnable findLoadRunnableById(int loadId) {
+        checkReleased();
+        TaskRunnable r = mExecutor.findRunnableById(loadId);
+        if (r == null) {
+            logger.error("no load with id " + loadId);
+            return null;
+        }
+//        if (!(r instanceof LoadRunnable)) {
+//            throw new RuntimeException("incorrect runnable class " + r.getClass() + ", must be " + LoadRunnable.class);
+//        }
+        return (LoadRunnable) r;
+    }
+
     @Override
-    protected LoadRunnable newRunnable(LoadRunnableInfo rInfo) {
+    protected LoadRunnable newRunnable(LI rInfo) {
         return new LoadRunnable(rInfo);
     }
 
-
-    protected final class LoadRunnable extends TaskRunnable<LoadRunnableInfo> {
+    protected final class LoadRunnable extends TaskRunnable<LI> {
 
         @NonNull
         LoadProcessInfo currentLoadInfo = new LoadProcessInfo();
-
-        @NonNull
-        LoadListener.STATE lastState = LoadListener.STATE.UNKNOWN;
 
         @Nullable
         Throwable lastException;
@@ -130,7 +133,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
 
         @NonNull
         public LoadListener.STATE getLastState() {
-            return lastState;
+            return currentLoadInfo.getState();
         }
 
         @Nullable
@@ -138,7 +141,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
             return lastResponse;
         }
 
-        public LoadRunnable(LoadRunnableInfo rInfo) {
+        public LoadRunnable(LI rInfo) {
             super(rInfo);
         }
 
@@ -161,22 +164,25 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
         }
 
         private void _notifyStateChanged(@NonNull LoadListener.STATE state) {
+            LoadListener.STATE lastState = getLastState();
             if (lastState == LoadListener.STATE.FAILED || lastState == LoadListener.STATE.FAILED_FILE_REASON) {
                 if (lastNotifiedByFail) {
                     return;
                 }
             }
-            mLoadObservable.notifyStateChanged(lastState = state, rInfo, currentLoadInfo, lastException);
+            currentLoadInfo.state = state;
+            mLoadObservable.notifyStateChanged(rInfo, currentLoadInfo, lastException);
             if (lastState == LoadListener.STATE.FAILED || lastState == LoadListener.STATE.FAILED_FILE_REASON) {
                 lastNotifiedByFail = true;
             }
         }
 
-        private void _notifyStateProcessing(@NonNull LoadListener.STATE state, @NonNull LoadListener<LoadRunnableInfo> l) {
+        private void _notifyStateProcessing(@NonNull LoadListener.STATE state, @NonNull LoadListener<LI> l) {
             if (!(state == LoadListener.STATE.DOWNLOADING || state == LoadListener.STATE.UPLOADING)) {
                 throw new IllegalArgumentException("incorrect state: " + state);
             }
-            l.onUpdateState(lastState = state, rInfo, currentLoadInfo, lastException);
+            currentLoadInfo.state = state;
+            l.onUpdateState(rInfo, currentLoadInfo, lastException);
         }
 
         @Override
@@ -408,7 +414,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                                     synchronized (mLoadObservable) {
                                         if (mLoadObservable.getObservers().size() > 0) {
                                             boolean notified = false;
-                                            for (LoadListener<LoadRunnableInfo> l : mLoadObservable.copyOfObservers()) {
+                                            for (LoadListener<LI> l : mLoadObservable.copyOfObservers()) {
                                                 final int id = l.getId(rInfo);
                                                 if (id == RunnableInfo.NO_ID || id == rInfo.id) {
                                                     final long interval = System.currentTimeMillis() - lastProcessingNotifyTime;
@@ -575,7 +581,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                                 synchronized (mLoadObservable) {
                                     if (mLoadObservable.getObservers().size() > 0) {
                                         boolean notified = false;
-                                        for (LoadListener<LoadRunnableInfo> l : mLoadObservable.copyOfObservers()) {
+                                        for (LoadListener<LI> l : mLoadObservable.copyOfObservers()) {
                                             final int id = l.getId(rInfo);
                                             if (id == RunnableInfo.NO_ID || id == rInfo.id) {
                                                 final long interval = System.currentTimeMillis() - lastProcessingNotifyTime;
@@ -656,7 +662,7 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
                         }
 
                         synchronized (mLoadObservable) {
-                            for (LoadListener<LoadRunnableInfo> l : mLoadObservable.copyOfObservers()) {
+                            for (LoadListener<LI> l : mLoadObservable.copyOfObservers()) {
                                 final int id = l.getId(rInfo);
                                 if (id == RunnableInfo.NO_ID || id == rInfo.id) {
                                     l.onResponse(rInfo, currentLoadInfo, lastResponse);
@@ -1225,6 +1231,9 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
 
     public static class LoadProcessInfo {
 
+        @NonNull
+        LoadListener.STATE state = LoadListener.STATE.UNKNOWN;
+
         int retriesCount = -1;
 
         long passedUploadTime;
@@ -1247,6 +1256,11 @@ public class NetworkLoadManager extends BaseNetworkLoadManager<LoadRunnableInfo,
          * bytes/ms
          */
         float uploadSpeed;
+
+        @NonNull
+        public LoadListener.STATE getState() {
+            return state;
+        }
 
         public int getRetriesCount() {
             return retriesCount + 1;

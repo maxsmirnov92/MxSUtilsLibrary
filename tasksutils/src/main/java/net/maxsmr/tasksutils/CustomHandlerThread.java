@@ -2,6 +2,7 @@ package net.maxsmr.tasksutils;
 
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
@@ -112,6 +113,27 @@ public class CustomHandlerThread extends HandlerThread {
                 if (callbackWhenNormal != null) {
                     callbackWhenNormal.run();
                 }
+            }
+        }
+    }
+
+    public static void runOnUiThreadSync(@NonNull final Runnable run) {
+        if (Looper.getMainLooper() == Looper.myLooper()) {
+            run.run();
+        } else {
+            final CountDownLatch latch = new CountDownLatch(1);
+            new Handler(Looper.getMainLooper()).post(new Runnable() {
+                @Override
+                public void run() {
+                    run.run();
+                    latch.countDown();
+                }
+            });
+            try {
+                latch.await();
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                e.printStackTrace();
             }
         }
     }

@@ -29,6 +29,11 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
+import android.renderscript.Allocation;
+import android.renderscript.Element;
+import android.renderscript.RenderScript;
+import android.renderscript.ScriptIntrinsicYuvToRGB;
+import android.renderscript.Type;
 import android.support.annotation.ColorInt;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
@@ -40,6 +45,7 @@ import android.util.DisplayMetrics;
 import android.util.TypedValue;
 import android.view.WindowManager;
 
+import net.maxsmr.commonutils.android.gui.GuiUtils;
 import net.maxsmr.commonutils.android.media.MetadataRetriever;
 import net.maxsmr.commonutils.data.FileHelper;
 
@@ -49,6 +55,7 @@ import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -197,19 +204,24 @@ public final class GraphicUtils {
      */
     public static File writeCompressedBitmapToFile(File file, Bitmap data, Bitmap.CompressFormat format) {
 
+        if (file == null) {
+            logger.error("file not specified");
+            return null;
+        }
+
         if (!isBitmapCorrect(data)) {
-            logger.error("incorrect bitmap");
+            logger.error("bitmap is incorrect");
             return null;
         }
 
         String ext = getFileExtByCompressFormat(format);
 
         if (TextUtils.isEmpty(ext)) {
-            logger.error("file extension is empty");
+            logger.error("unknown format: " + format);
             return null;
         }
 
-        file = FileHelper.createNewFile(file.getName() + "." + ext, file.getParent());
+        file = FileHelper.createNewFile(FileHelper.removeExtension(file.getName()) + "." + ext, file.getParent());
 
         if (file == null) {
             logger.error("file was not created");
@@ -223,14 +235,44 @@ public final class GraphicUtils {
             fos.flush();
             return file;
         } catch (IOException e) {
-            logger.error("an IOException occurred : " + e.getMessage());
+            logger.error("an IOException occurred", e);
         } finally {
             try {
                 if (fos != null) {
                     fos.close();
                 }
             } catch (IOException e) {
-                logger.error("an IOException occurred during close: " + e.getMessage());
+                logger.error("an IOException occurred during close", e);
+            }
+        }
+
+        return null;
+    }
+
+    @Nullable
+    public static byte[] compressedBitmapToByteArray(Bitmap data, Bitmap.CompressFormat format) {
+
+        if (!isBitmapCorrect(data)) {
+            logger.error("bitmap is incorrect");
+            return null;
+        }
+
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            data.compress(format, 100, baos);
+            baos.flush();
+            try {
+                return baos.toByteArray();
+            } catch (OutOfMemoryError e) {
+                logger.error("an OutOfMemoryError occurred during toByteArray()", e);
+            }
+        } catch (IOException e) {
+            logger.error("an IOException occurred", e);
+        } finally {
+            try {
+                baos.close();
+            } catch (IOException e) {
+                logger.error("an IOException occurred during close", e);
             }
         }
 
@@ -414,7 +456,117 @@ public final class GraphicUtils {
         return inSampleSize;
     }
 
-    public static Bitmap createBitmapFromResource(@DrawableRes int resId, int scale, Context context) {
+    @Nullable
+    public static Bitmap createBitmapFromUri(@NonNull Context context, Uri uri, int scale) {
+        return createBitmapFromUri(context, uri, scale, null);
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromUri(@NonNull Context context, Uri uri, int scale, @Nullable Bitmap.Config config) {
+
+        if (!(uri != null && (uri.getScheme() == null || uri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_FILE)))) {
+            logger.error("incorrect resource uri: " + uri);
+            return null;
+        }
+
+        try {
+            return createBitmapFromStream((context.getContentResolver().openInputStream(uri)), scale, config);
+        } catch (FileNotFoundException e) {
+            return null;
+        }
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromFile(File file, int scale) {
+        return createBitmapFromFile(file, scale, null);
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromFile(File file, int scale, @Nullable Bitmap.Config config) {
+
+        if (!FileHelper.isFileCorrect(file) || !FileHelper.isPicture(FileHelper.getFileExtension(file.getName()))) {
+            logger.error("incorrect file: " + file);
+            return null;
+        }
+
+        try {
+            return createBitmapFromStream(new FileInputStream(file), scale, config);
+        } catch (FileNotFoundException e) {
+            logger.error("a FileNotFoundException occurred during open FileInputStream", e);
+            return null;
+        }
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromByteArray(byte[] data, int scale) {
+        return createBitmapFromByteArray(data, scale, null);
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromByteArray(byte[] data, int scale, @Nullable Bitmap.Config config) {
+
+        if (data == null || data.length == 0) {
+            logger.error("data is null or empty");
+            return null;
+        }
+
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(data, 0, data.length, options);
+
+        final int widthPx = scale > 1 ? options.outWidth / scale : options.outWidth;
+        final int heightPx = scale > 1 ? options.outHeight / scale : options.outHeight;
+
+        options.inSampleSize = calculateInSampleSize(options, widthPx, heightPx);
+        options.inPurgeable = true;
+        options.inInputShareable = true;
+        options.inJustDecodeBounds = false;
+        options.inPreferredConfig = config == null ? Bitmap.Config.ARGB_8888 : config;
+
+        try {
+            return BitmapFactory.decodeByteArray(data, 0, data.length, options);
+        } catch (OutOfMemoryError e) {
+            logger.error("an OutOfMemoryError error occurred during decodeByteArray()", e);
+            return null;
+        }
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromStream(InputStream is, int scale) {
+        return createBitmapFromStream(is, scale, null);
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromStream(InputStream is, int scale, @Nullable Bitmap.Config config) {
+
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeStream(is, null, options);
+
+        final int widthPx = scale > 1 ? options.outWidth / scale : options.outWidth;
+        final int heightPx = scale > 1 ? options.outHeight / scale : options.outHeight;
+
+        options.inSampleSize = calculateInSampleSize(options, widthPx, heightPx);
+        options.inPurgeable = true;
+        options.inInputShareable = true;
+        options.inJustDecodeBounds = false;
+        options.inPreferredConfig = config == null ? Bitmap.Config.ARGB_8888 : config;
+
+        try {
+            return BitmapFactory.decodeStream(is, null, options);
+        } catch (OutOfMemoryError e) {
+            logger.error("an OutOfMemoryError error occurred during decodeByteArray()", e);
+            return null;
+        }
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromResource(Context context, @DrawableRes int resId, int scale) {
+        return createBitmapFromResource(context, resId, scale, null);
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromResource(Context context, @DrawableRes int resId, int scale, @Nullable Bitmap.Config config) {
 
         if (resId <= 0) {
             return null;
@@ -431,7 +583,7 @@ public final class GraphicUtils {
         options.inPurgeable = true;
         options.inInputShareable = true;
         options.inJustDecodeBounds = false;
-        options.inPreferredConfig = Bitmap.Config.RGB_565;
+        options.inPreferredConfig = config == null ? Bitmap.Config.ARGB_8888 : config;
 
         try {
             return BitmapFactory.decodeResource(context.getResources(), resId, options);
@@ -440,6 +592,7 @@ public final class GraphicUtils {
             return null;
         }
     }
+
 
     public static Bitmap createResizedBitmap(Bitmap bm, int newWidth) {
 
@@ -465,6 +618,16 @@ public final class GraphicUtils {
         return Bitmap.createScaledBitmap(bm, newWidth, newHeight, false);
     }
 
+    public static boolean canDecodeImage(byte[] data) {
+        if (data == null || data.length == 0) {
+            return false;
+        }
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeByteArray(data, 0, data.length);
+        return options.outWidth > -1 && options.outHeight > -1;
+    }
+
     public static boolean canDecodeImage(File file) {
         if (!FileHelper.isFileCorrect(file) || !FileHelper.isPicture(FileHelper.getFileExtension(file.getName()))) {
             return false;
@@ -482,68 +645,8 @@ public final class GraphicUtils {
         return MetadataRetriever.extractMediaDuration(file) > 0;
     }
 
-    public static Bitmap createBitmapFromStream(InputStream is, int scale) {
-        return createBitmapByByteArray(FileHelper.readBytesFromInputStream(is), scale);
-    }
-
-    @Nullable
-    public static Bitmap createBitmapFromUri(@NonNull Context context, Uri uri, int scale) {
-
-        if (!(uri != null && (uri.getScheme() == null || uri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_FILE)))) {
-            logger.error("incorrect resource uri: " + uri);
-            return null;
-        }
-
-        try {
-            return createBitmapFromStream((context.getContentResolver().openInputStream(uri)), scale);
-        } catch (FileNotFoundException e) {
-            return null;
-        }
-    }
-
-    @Nullable
-    public static Bitmap createBitmapFromFile(File file, int scale) {
-
-        if (!FileHelper.isFileCorrect(file) || !FileHelper.isPicture(FileHelper.getFileExtension(file.getName()))) {
-            logger.error("incorrect file: " + file);
-            return null;
-        }
-
-        return createBitmapByByteArray(FileHelper.readBytesFromFile(file), scale);
-    }
-
-    @Nullable
-    public static Bitmap createBitmapByByteArray(byte[] data, int scale) {
-
-        if (data == null || data.length == 0) {
-            logger.error("data is null or empty");
-            return null;
-        }
-
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeByteArray(data, 0, data.length, options);
-
-        final int widthPx = scale > 1 ? options.outWidth / scale : options.outWidth;
-        final int heightPx = scale > 1 ? options.outHeight / scale : options.outHeight;
-
-        options.inSampleSize = calculateInSampleSize(options, widthPx, heightPx);
-        options.inPurgeable = true;
-        options.inInputShareable = true;
-        options.inJustDecodeBounds = false;
-        options.inPreferredConfig = Bitmap.Config.RGB_565;
-
-        try {
-            return BitmapFactory.decodeByteArray(data, 0, data.length, options);
-        } catch (OutOfMemoryError e) {
-            logger.error("an OutOfMemoryError error occurred during decodeByteArray()", e);
-            return null;
-        }
-    }
-
     /**
      * Определяет поворот картинки
-     *
      */
     public static int getOrientation(Context context, Uri photoUri) {
     /* it's on the external media. */
@@ -566,11 +669,11 @@ public final class GraphicUtils {
         return orientation;
     }
 
+
     /**
      * Определяем угол для поворота http://sylvana.net/jpegcrop/exif_orientation.html
-     *
      */
-    public static int getRotateAngleByOrientation(int orientation) {
+    public static int getRotationAngleByExifOrientation(int orientation) {
         switch (orientation) {
             case ExifInterface.ORIENTATION_NORMAL:
                 return 0;
@@ -585,16 +688,38 @@ public final class GraphicUtils {
         }
     }
 
-    public static Bitmap getCorrectlyOrientedImage(Context context, Uri uri, Bitmap sourceBitmap, boolean recycleSource) {
+    public static int getExifOrientationByRotationAngle(int degrees) {
+        int orientation = GuiUtils.getCorrectedDisplayRotation(degrees);
+        switch (orientation) {
+            case 90:
+                orientation = ExifInterface.ORIENTATION_ROTATE_90;
+                break;
+            case 180:
+                orientation = ExifInterface.ORIENTATION_ROTATE_180;
+                break;
+            case 270:
+                orientation = ExifInterface.ORIENTATION_ROTATE_270;
+                break;
+            default:
+                orientation = ExifInterface.ORIENTATION_NORMAL;
+        }
+        return orientation;
+    }
+
+    public static Bitmap getCorrectlyOrientedImage(Context context, Uri uri, Bitmap sourceBitmap) {
         if (isBitmapCorrect(sourceBitmap)) {
-            ExifInterface exif;
-            try {
-                exif = new ExifInterface(FileHelper.getPath(context, uri));
-                int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-                int rotateAngle = getRotateAngleByOrientation(orientation);
-                return rotateBitmap(sourceBitmap, rotateAngle, recycleSource);
-            } catch (Exception e) {
-                logger.error("an Exception occurred", e);
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+                ExifInterface exif;
+                try {
+                    exif = new ExifInterface(FileHelper.getPath(context, uri));
+                    int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
+                    int rotateAngle = getRotationAngleByExifOrientation(orientation);
+                    return rotateBitmap(sourceBitmap, rotateAngle);
+                } catch (Exception e) {
+                    logger.error("an Exception occurred", e);
+                }
+            } else {
+                return sourceBitmap;
             }
         }
         return null;
@@ -638,19 +763,56 @@ public final class GraphicUtils {
             is.close();
         }
 
-    /*
-     * if the orientation is not 0 (or -1, which means we don't know), we
-     * have to do a rotation.
-     */
-        if (orientation > 0) {
-            return rotateBitmap(srcBitmap, orientation, true);
+        /*
+        * if the orientation is not 0 (or -1, which means we don't know), we
+        * have to do a rotation.
+        */
+        if (orientation > 0 && Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return rotateBitmap(srcBitmap, orientation);
         }
 
         return srcBitmap;
     }
 
+    public static int getRotationAngleFromExif(File imageFile) {
+        if (GraphicUtils.canDecodeImage(imageFile)) {
+            ExifInterface exif;
+            try {
+                exif = new ExifInterface(imageFile.getAbsolutePath());
+                int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
+                return getRotationAngleByExifOrientation(orientation);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }
+        return 0;
+    }
+
+    public static boolean writeRotationAngleToExif(File imageFile, int degrees) {
+
+        if (!GraphicUtils.canDecodeImage(imageFile)) {
+            logger.error("incorrect picture file: " + imageFile);
+            return false;
+        }
+
+        if (degrees < 0) {
+            logger.warn("incorrect angle: " + degrees);
+            return false;
+        }
+
+        try {
+            ExifInterface exif = new ExifInterface(imageFile.getAbsolutePath());
+            exif.setAttribute(ExifInterface.TAG_ORIENTATION, String.valueOf(getExifOrientationByRotationAngle(degrees)));
+            exif.saveAttributes();
+            return true;
+        } catch (IOException e) {
+            logger.error("an IOException occurred", e);
+            return false;
+        }
+    }
+
     @Nullable
-    public static Bitmap rotateBitmap(Bitmap sourceBitmap, int angle, boolean recycleSource) {
+    public static Bitmap rotateBitmap(Bitmap sourceBitmap, int angle) {
 
         if (!isBitmapCorrect(sourceBitmap)) {
             logger.error("incorrect bitmap: " + sourceBitmap);
@@ -664,18 +826,18 @@ public final class GraphicUtils {
 
         Matrix matrix = new Matrix();
         matrix.postRotate(angle);
+
         try {
             return Bitmap.createBitmap(sourceBitmap, 0, 0, sourceBitmap.getWidth(),
                     sourceBitmap.getHeight(), matrix, true);
-        } finally {
-            if (recycleSource) {
-                sourceBitmap.recycle();
-            }
+        } catch (OutOfMemoryError e) {
+            logger.error("an OutOfMemoryError occurred during createBitmap()", e);
+            return null;
         }
     }
 
     @Nullable
-    public static Bitmap mirrorBitmap(Bitmap sourceBitmap, boolean recycleSource) {
+    public static Bitmap mirrorBitmap(Bitmap sourceBitmap) {
 
         if (!isBitmapCorrect(sourceBitmap)) {
             logger.error("incorrect bitmap: " + sourceBitmap);
@@ -687,15 +849,14 @@ public final class GraphicUtils {
         try {
             return Bitmap.createBitmap(sourceBitmap, 0, 0, sourceBitmap.getWidth(),
                     sourceBitmap.getHeight(), matrix, true);
-        } finally {
-            if (recycleSource) {
-                sourceBitmap.recycle();
-            }
+        } catch (OutOfMemoryError e) {
+            logger.error("an OutOfMemoryError occurred during createBitmap()", e);
+            return null;
         }
     }
 
     @Nullable
-    public static Bitmap cutBitmap(Bitmap sourceBitmap, @NonNull Rect range, boolean recycleSource) {
+    public static Bitmap cutBitmap(Bitmap sourceBitmap, @NonNull Rect range) {
 
         if (!isBitmapCorrect(sourceBitmap)) {
             logger.error("incorrect bitmap: " + sourceBitmap);
@@ -711,12 +872,10 @@ public final class GraphicUtils {
         }
 
         try {
-            return Bitmap.createBitmap(sourceBitmap, range.left, range.top, range.width(),
-                    range.height());
-        } finally {
-            if (recycleSource) {
-                sourceBitmap.recycle();
-            }
+            return Bitmap.createBitmap(sourceBitmap, range.left, range.top, range.width(), range.height());
+        } catch (OutOfMemoryError e) {
+            logger.error("an OutOfMemoryError occurred during createBitmap()", e);
+            return null;
         }
     }
 
@@ -783,7 +942,7 @@ public final class GraphicUtils {
      * @return newly created bitmap with given config
      */
     @Nullable
-    public static Bitmap createBitmap(Bitmap b, Bitmap.Config c) {
+    public static Bitmap copyBitmap(Bitmap b, Bitmap.Config c) {
 
         if (!isBitmapCorrect(b)) {
             logger.error("incorrect bitmap");
@@ -921,7 +1080,7 @@ public final class GraphicUtils {
             return null;
         }
 
-        if (!(format == ImageFormat.NV16 || format == ImageFormat.NV21 || format == ImageFormat.YV12 || format == ImageFormat.YUY2)) {
+        if (!(format == ImageFormat.NV21 || format == ImageFormat.YUY2)) {
             logger.error("incorrect image format: " + format);
             return null;
         }
@@ -984,6 +1143,99 @@ public final class GraphicUtils {
         }
         return yuv;
     }
+
+    @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
+    public static Bitmap renderScriptNVToRGBA(@NonNull Context context, int width, int height, byte[] nv, @Nullable Bitmap.Config bitmapConfig) {
+
+        if (width <= 0 || height <= 0) {
+            logger.error("incorrect size: " + width + "x" + height);
+            return null;
+        }
+
+        if (nv == null || nv.length == 0) {
+            logger.error("incorrect source");
+            return null;
+        }
+
+        RenderScript rs = null;
+        ScriptIntrinsicYuvToRGB yuvToRgbIntrinsic = null;
+        Allocation in = null;
+        Allocation out = null;
+
+        try {
+            rs = RenderScript.create(context);
+            yuvToRgbIntrinsic = ScriptIntrinsicYuvToRGB.create(rs, Element.U8_4(rs));
+
+            Type.Builder yuvType = new Type.Builder(rs, Element.U8(rs)).setX(nv.length);
+            in = Allocation.createTyped(rs, yuvType.create(), Allocation.USAGE_SCRIPT);
+
+            final Element element;
+
+            if (bitmapConfig == null) {
+                bitmapConfig = Bitmap.Config.ARGB_8888;
+            }
+
+            switch (bitmapConfig) {
+                case ALPHA_8:
+                    element = Element.A_8(rs);
+                    break;
+                case ARGB_4444:
+                    element = Element.RGBA_4444(rs);
+                    break;
+                case RGB_565:
+                    element = Element.RGB_565(rs);
+                    break;
+                default:
+                    element = Element.RGBA_8888(rs);
+            }
+
+            Type.Builder rgbaType = new Type.Builder(rs, element).setX(width).setY(height);
+            out = Allocation.createTyped(rs, rgbaType.create(), Allocation.USAGE_SCRIPT);
+
+            in.copyFrom(nv);
+
+            yuvToRgbIntrinsic.setInput(in);
+            yuvToRgbIntrinsic.forEach(out);
+
+            Bitmap resultBitmap = null;
+            try {
+                resultBitmap = Bitmap.createBitmap(width, height, bitmapConfig);
+            } catch (OutOfMemoryError e) {
+                logger.error("an OutOfMemoryError occurred during createBitmap()", e);
+            }
+
+            if (resultBitmap != null) {
+                try {
+                    out.copyTo(resultBitmap);
+                    return resultBitmap;
+                } catch (Throwable e) {
+                    logger.error("an Exception occurred during copyTo()", e);
+                    if (!resultBitmap.isRecycled()) {
+                        resultBitmap.recycle();
+                    }
+                }
+            }
+
+        } catch (RuntimeException e) {
+            logger.error("a RuntimeException occurred during rendering", e);
+
+        } finally {
+            if (out != null) {
+                out.destroy();
+            }
+            if (in != null) {
+                in.destroy();
+            }
+            if (yuvToRgbIntrinsic != null) {
+                yuvToRgbIntrinsic.destroy();
+            }
+            if (rs != null) {
+                rs.destroy();
+            }
+        }
+        return null;
+    }
+
 
     public static int generateRandomColor(int color) {
         Random random = new Random();

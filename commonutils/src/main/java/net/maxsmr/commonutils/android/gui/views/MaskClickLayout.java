@@ -530,7 +530,7 @@ public class MaskClickLayout extends FrameLayout {
 
             this.clickMask = clickMask;
 
-            Bitmap background = GraphicUtils.createBitmapFromResource(clickMask.backgroundResId, 1, getContext());
+            Bitmap background = GraphicUtils.createBitmapFromResource(getContext(), clickMask.backgroundResId, 1);
 
             if (background == null) {
                 throw new RuntimeException("background bitmap was not created");
@@ -545,11 +545,11 @@ public class MaskClickLayout extends FrameLayout {
             }
 
             if (clickMask.options.rotateAngleCorrect()) {
-                background = GraphicUtils.rotateBitmap(background, clickMask.options.rotateAngle, true);
+                background = GraphicUtils.rotateBitmap(background, clickMask.options.rotateAngle);
             }
 
             if (clickMask.options.mirror) {
-                background = GraphicUtils.mirrorBitmap(background, true);
+                background = GraphicUtils.mirrorBitmap(background);
             }
 
             this.backgroundImageView.setImageBitmap(background);
@@ -756,24 +756,24 @@ public class MaskClickLayout extends FrameLayout {
 
             this.tag = tag;
 
-            Bitmap layerBitmap = GraphicUtils.createBitmapFromResource(layerResId, 1, context);
+            Bitmap layerBitmap = GraphicUtils.createBitmapFromResource(context, layerResId, 1);
             if (options.rotateAngleCorrect()) {
-                layerBitmap = GraphicUtils.rotateBitmap(layerBitmap, options.rotateAngle, true);
+                layerBitmap = GraphicUtils.rotateBitmap(layerBitmap, options.rotateAngle);
             }
             if (options.mirror) {
-                layerBitmap = GraphicUtils.mirrorBitmap(layerBitmap, true);
+                layerBitmap = GraphicUtils.mirrorBitmap(layerBitmap);
             }
             if (layerBitmap == null) {
                 throw new RuntimeException("layer bitmap was not created");
             }
             this.layerPair = new Pair<>(layerResId, layerBitmap);
 
-            Bitmap maskBitmap = GraphicUtils.createBitmapFromResource(maskResId, 1, context);
+            Bitmap maskBitmap = GraphicUtils.createBitmapFromResource(context, maskResId, 1);
             if (options.rotateAngleCorrect()) {
-                maskBitmap = GraphicUtils.rotateBitmap(maskBitmap, options.rotateAngle, true);
+                maskBitmap = GraphicUtils.rotateBitmap(maskBitmap, options.rotateAngle);
             }
             if (options.mirror) {
-                maskBitmap = GraphicUtils.mirrorBitmap(maskBitmap, true);
+                maskBitmap = GraphicUtils.mirrorBitmap(maskBitmap);
             }
             if (maskBitmap == null) {
                 throw new RuntimeException("mask bitmap was not created");

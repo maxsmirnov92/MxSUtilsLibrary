@@ -42,7 +42,7 @@ public class NumberDrawable extends BitmapDrawable {
     }
 
     public NumberDrawable(Context ctx, @DrawableRes int sourceDrawableResId, @ColorInt int textColor, int textAlpha, String fontAlias) {
-        this(ctx, GraphicUtils.createBitmap(GraphicUtils.createBitmapFromResource(sourceDrawableResId, 1, ctx), Bitmap.Config.ARGB_8888), textColor, textAlpha, fontAlias);
+        this(ctx, GraphicUtils.copyBitmap(GraphicUtils.createBitmapFromResource(ctx, sourceDrawableResId, 1), Bitmap.Config.ARGB_8888), textColor, textAlpha, fontAlias);
     }
 
     public NumberDrawable(Context ctx, Bitmap sourceBitmap, @ColorInt int textColor, int textAlpha, String fontAlias) {
