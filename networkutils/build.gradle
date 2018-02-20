@@ -108,7 +108,8 @@ dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
     testCompile 'junit:junit:4.12'
 
-    api "net.maxsmr:tasksutils:$taskUtilsVersion"
+//    api "net.maxsmr:tasksutils:$taskUtilsVersion" TODO
+    compile project(':tasksutils')
 }
 
 uploadArchives {

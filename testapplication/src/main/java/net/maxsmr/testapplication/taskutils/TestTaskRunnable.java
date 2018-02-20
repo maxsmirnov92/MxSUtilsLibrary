@@ -1,4 +1,4 @@
-package net.maxsmr.utilstestapplication.taskutils;
+package net.maxsmr.testapplication.taskutils;
 
 import android.support.annotation.NonNull;
 

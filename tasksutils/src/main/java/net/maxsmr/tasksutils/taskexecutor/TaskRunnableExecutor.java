@@ -59,7 +59,6 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     public TaskRunnableExecutor(int queuedTasksLimit, int concurrentTasksLimit, long keepAliveTime, TimeUnit unit, String poolName,
                                 @Nullable ITaskResultValidator<I, T> resultValidator,
                                 @Nullable final AbstractSyncStorage<I> syncStorage,
-                                @Nullable final ITaskRestorer<I, T> restorer,
                                 @Nullable Handler callbacksHandler) {
         logger.debug("TaskRunnableExecutor(), queuedTasksLimit=" + queuedTasksLimit + ", concurrentTasksLimit=" + concurrentTasksLimit
                 + ", keepAliveTime=" + keepAliveTime + ", unit=" + unit + ", poolName=" + poolName);
@@ -70,8 +69,11 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
         setResultValidator(resultValidator);
         setSyncStorage(syncStorage);
         setCallbacksHandler(callbacksHandler);
+    }
 
-        if (restorer != null && syncStorage != null) {
+    public void restoreQueueByRestorer(@NonNull final ITaskRestorer<I, T> restorer) {
+        cancelAllTasks();
+        if (syncStorage != null) {
             if (!syncStorage.isRestoreCompleted()) {
                 syncStorage.addStorageListener(new AbstractSyncStorage.IStorageListener() {
                     @Override
@@ -95,7 +97,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                     }
                 });
             } else {
-                executeAll(restorer.fromRunnableInfos(syncStorage.getAll()));
+                executeAll(TaskRunnable.filter(restorer.fromRunnableInfos(syncStorage.getAll()), getAllTasks(), false));
             }
         }
     }
@@ -358,42 +360,45 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     public void executeInternal(T command, boolean reAdd) {
         logger.debug("executeInternal(), command=" + command + ", reAdd=" + reAdd);
 
-        if (!isRunning()) {
-            throw new IllegalStateException("can't add " + command + ": not running (shutdown: " + isShutdown() + ", terminated: " + executor.isTerminated() + ", tasks count: " + getTotalTasksCount());
-        }
+        synchronized (lock) {
 
-        if (command == null) {
-            throw new NullPointerException("command is null");
-        }
+            if (!isRunning()) {
+                throw new IllegalStateException("can't add " + command + ": not running (shutdown: " + isShutdown() + ", terminated: " + executor.isTerminated() + ", tasks count: " + getTotalTasksCount());
+            }
+
+            if (command == null) {
+                throw new NullPointerException("command is null");
+            }
 
 //        if (!(command instanceof TaskRunnable)) {
 //            throw new RuntimeException("incorrect type: " + command.getClass().getName() + ", must be: " + TaskRunnable.class.getName());
 //        }
 
-        if (!command.rInfo.isValid()) {
-            throw new RuntimeException("incorrect task: " + command);
-        }
+            if (!command.rInfo.isValid()) {
+                throw new RuntimeException("incorrect task: " + command);
+            }
 
-        if (command.isCancelled()) {
-            throw new RuntimeException("can't add task: " + command + ": cancelled");
-        }
+            if (command.isCancelled()) {
+                throw new RuntimeException("can't add task: " + command + ": cancelled");
+            }
 
-        if (isTasksLimitExceeded()) {
-            throw new RuntimeException("can't add task " + command + ": limit exceeded (" + queuedTasksLimit + ")");
-        }
+            if (isTasksLimitExceeded()) {
+                throw new RuntimeException("can't add task " + command + ": limit exceeded (" + queuedTasksLimit + ")");
+            }
 
-        if (!reAdd ? containsTask(command) : containsTask(command, RunnableType.ACTIVE)) {
-            throw new RuntimeException("can't add task " + command + ": already added");
-        }
+            if (!reAdd ? containsTask(command) : containsTask(command, RunnableType.ACTIVE)) {
+                throw new RuntimeException("can't add task " + command + ": already added");
+            }
 
-        if (syncStorage != null) {
-            syncStorage.addLast(command.rInfo);
-        }
+            if (syncStorage != null) {
+                syncStorage.addLast(command.rInfo);
+            }
 
-        WrappedTaskRunnable<I, T> wrapped = new WrappedTaskRunnable<>(command);
-        getExecInfoForRunnable(wrapped).reset().setTimeWhenAddedToQueue(System.currentTimeMillis());
-        executor.execute(wrapped);
-        callbacksObservable.dispatchAddedToQueue(command, getWaitingTasksCount(), getActiveTasksCount(), callbacksHandler);
+            WrappedTaskRunnable<I, T> wrapped = new WrappedTaskRunnable<>(command);
+            getExecInfoForRunnable(wrapped).reset().setTimeWhenAddedToQueue(System.currentTimeMillis());
+            executor.execute(wrapped);
+            callbacksObservable.dispatchAddedToQueue(command, getWaitingTasksCount(), getActiveTasksCount(), callbacksHandler);
+        }
     }
 
     @NonNull
@@ -454,15 +459,14 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                 throw new RuntimeException("incorrect command type: " + r.getClass() + ", must be: " + WrappedTaskRunnable.class.getName());
             }
             taskRunnable = (WrappedTaskRunnable<I, T>) r;
-            if (!taskRunnable.command.isCancelled()) {
 
-                callbacksObservable.dispatchBeforeExecute(t, taskRunnable.command,
-                        getExecInfoForRunnable(taskRunnable).finishedWaitingInQueue(time), getWaitingTasksCount(), getActiveTasksCount(), callbacksHandler);
+            callbacksObservable.dispatchBeforeExecute(t, taskRunnable.command,
+                    getExecInfoForRunnable(taskRunnable).finishedWaitingInQueue(time), getWaitingTasksCount(), getActiveTasksCount(), callbacksHandler);
 
-                taskRunnable.command.rInfo.isRunning = true;
+            taskRunnable.command.rInfo.isRunning = true;
 
-            } else {
-                logger.error("can't run task: " + taskRunnable.command + ": cancelled");
+            if (taskRunnable.command.isCancelled()) {
+                logger.warn("task: " + taskRunnable.command + ": cancelled");
             }
 
             synchronized (lock) {
@@ -481,10 +485,11 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                 throw new RuntimeException("incorrect command type: " + r.getClass() + ", must be: " + WrappedTaskRunnable.class.getName());
             }
             taskRunnable = (WrappedTaskRunnable<I, T>) r;
-            taskRunnable.command.rInfo.isRunning = false;
 
             boolean reAdd = !taskRunnable.command.isCancelled() &&
                     resultValidator != null && resultValidator.needToReAddTask(taskRunnable.command, t);
+
+            taskRunnable.command.rInfo.isRunning = false;
 
             if (syncStorage != null) {
                 syncStorage.removeById(taskRunnable.command.getId());

@@ -34,9 +34,12 @@ import static net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor.DEFAULT_KE
 /**
  * @author maxsmirnov
  */
-public abstract class BaseNetworkLoadManager<LI extends LoadRunnableInfo, R extends TaskRunnable<LI>> implements TaskRunnableExecutor.Callbacks<LI, R> {
+public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends LoadRunnableInfo<B>,
+        R extends TaskRunnable<LI>> implements TaskRunnableExecutor.Callbacks<LI, R> {
 
     private static final Logger logger = LoggerFactory.getLogger(BaseNetworkLoadManager.class);
+
+    public static final int LOADS_NO_LIMIT = TaskRunnableExecutor.TASKS_NO_LIMIT;
 
     protected final TaskRunnableExecutor<LI, R> mExecutor;
 
@@ -44,13 +47,13 @@ public abstract class BaseNetworkLoadManager<LI extends LoadRunnableInfo, R exte
 
     public BaseNetworkLoadManager(int limit, int concurrentLoadsCount, @Nullable AbstractSyncStorage<LI> storage,
                                   @Nullable TaskRunnable.ITaskResultValidator<LI, R> validator, @Nullable final TaskRunnable.ITaskRestorer<LI, R> restorer) {
-        this(limit, concurrentLoadsCount, storage, validator, restorer, new Handler(Looper.getMainLooper()));
+        this(limit, concurrentLoadsCount, storage, validator, new Handler(Looper.getMainLooper()));
     }
 
     public BaseNetworkLoadManager(int limit, int concurrentLoadsCount, @Nullable AbstractSyncStorage<LI> storage,
-                                  @Nullable TaskRunnable.ITaskResultValidator<LI, R> validator, @Nullable final TaskRunnable.ITaskRestorer<LI, R> restorer,
+                                  @Nullable TaskRunnable.ITaskResultValidator<LI, R> validator,
                                   @Nullable Handler callbacksHandler) {
-        mExecutor = new TaskRunnableExecutor<>(limit, concurrentLoadsCount, DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS, getClass().getName(), validator, storage, restorer, callbacksHandler);
+        mExecutor = new TaskRunnableExecutor<>(limit, concurrentLoadsCount, DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS, getClass().getSimpleName(), validator, storage, callbacksHandler);
         mExecutor.registerCallback(this);
     }
 
@@ -68,12 +71,16 @@ public abstract class BaseNetworkLoadManager<LI extends LoadRunnableInfo, R exte
         }
     }
 
-    public final void addLoadListener(@NonNull LoadListener<LI> listener) {
+    protected void doRestore(@NonNull final TaskRunnable.ITaskRestorer<LI, R> restorer) {
+        mExecutor.restoreQueueByRestorer(restorer);
+    }
+
+    public final void registerLoadListener(@NonNull LoadListener<LI> listener) {
         checkReleased();
         mLoadObservable.registerObserver(listener);
     }
 
-    public final void removeLoadListener(@NonNull LoadListener<LI> listener) {
+    public final void unregisterLoadListener(@NonNull LoadListener<LI> listener) {
         mLoadObservable.unregisterObserver(listener);
     }
 
@@ -86,7 +93,6 @@ public abstract class BaseNetworkLoadManager<LI extends LoadRunnableInfo, R exte
     public final Set<LoadListener<LI>> getLoadListeners() {
         return mLoadObservable.copyOfObservers();
     }
-
 
     private void clearLoadListeners() {
         mLoadObservable.unregisterAll();
@@ -105,7 +111,7 @@ public abstract class BaseNetworkLoadManager<LI extends LoadRunnableInfo, R exte
         }
     }
 
-    protected abstract R newRunnable(LI rInfo);
+    protected abstract R newRunnable(@NonNull LI rInfo);
 
     @Override
     public void onAddedToQueue(R r, int waitingCount, int activeCount) {
@@ -122,9 +128,49 @@ public abstract class BaseNetworkLoadManager<LI extends LoadRunnableInfo, R exte
         mLoadObservable.notifyLoadRemovedFromQueue(r.rInfo, mExecutor.getWaitingTasksCount(), mExecutor.getActiveTasksCount());
     }
 
+    @NonNull
+    public List<LI> getAllLoadRunnableInfos() {
+        checkReleased();
+        List<LI> loadInfos = new ArrayList<>();
+        List<R> loadRunnables = getAllLoadRunnables();
+        for (R r : loadRunnables) {
+            loadInfos.add(r.rInfo);
+        }
+        return Collections.unmodifiableList(loadInfos);
+    }
 
     @NonNull
-    private List<R> getWaitingLoadRunnables() {
+    public List<LI> getWaitingLoadRunnableInfos() {
+        checkReleased();
+        List<LI> loadInfos = new ArrayList<>();
+        List<R> loadRunnables = getWaitingLoadRunnables();
+        for (R r : loadRunnables) {
+            loadInfos.add(r.rInfo);
+        }
+        return Collections.unmodifiableList(loadInfos);
+    }
+
+    @NonNull
+    public List<LI> getActiveLoadRunnableInfos() {
+        checkReleased();
+        List<LI> loadInfos = new ArrayList<>();
+        List<R> loadRunnables = getActiveLoadRunnables();
+        for (R r : loadRunnables) {
+            loadInfos.add(r.rInfo);
+        }
+        return Collections.unmodifiableList(loadInfos);
+    }
+
+    @NonNull
+    protected List<R> getAllLoadRunnables() {
+        synchronized (mExecutor) {
+            checkReleased();
+            return mExecutor.getAllTasks();
+        }
+    }
+
+    @NonNull
+    protected List<R> getWaitingLoadRunnables() {
         synchronized (mExecutor) {
             checkReleased();
             return mExecutor.getWaitingTasks();
@@ -132,36 +178,10 @@ public abstract class BaseNetworkLoadManager<LI extends LoadRunnableInfo, R exte
     }
 
     @NonNull
-    public List<LI> getWaitingLoadRunnableInfos() {
-        synchronized (mExecutor) {
-            checkReleased();
-            List<LI> loadInfos = new ArrayList<>();
-            List<R> loadRunnables = getWaitingLoadRunnables();
-            for (R r : loadRunnables) {
-                loadInfos.add(r.rInfo);
-            }
-            return Collections.unmodifiableList(loadInfos);
-        }
-    }
-
-    @NonNull
-    private List<R> getActiveLoadRunnables() {
+    protected List<R> getActiveLoadRunnables() {
         synchronized (mExecutor) {
             checkReleased();
             return mExecutor.getActiveTasks();
-        }
-    }
-
-    @NonNull
-    public List<LI> getActiveLoadRunnableInfos() {
-        synchronized (mExecutor) {
-            checkReleased();
-            List<LI> loadInfos = new ArrayList<>();
-            List<R> loadRunnables = getActiveLoadRunnables();
-            for (R r : loadRunnables) {
-                loadInfos.add(r.rInfo);
-            }
-            return Collections.unmodifiableList(loadInfos);
         }
     }
 

@@ -11,21 +11,20 @@ import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
 
 import java.io.File;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
+public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends AbstractRequest.Callback> {
 
     protected final int id;
 
     @NonNull
-    protected final NetworkLoadManager manager;
+    protected final NetworkLoadManager<B, LoadRunnableInfo<B>> manager;
 
     @Nullable
     private C callback;
 
-    public AbstractRequest(int id, @NonNull NetworkLoadManager manager) {
+    public AbstractRequest(int id, @NonNull NetworkLoadManager<B, LoadRunnableInfo<B>> manager) {
         this.id = id;
         this.manager = manager;
     }
@@ -35,7 +34,7 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
     }
 
     @NonNull
-    public NetworkLoadManager getManager() {
+    public NetworkLoadManager<B, LoadRunnableInfo<B>> getManager() {
         return manager;
     }
 
@@ -70,13 +69,18 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
         }
     }
 
+    @Nullable
+    protected String getName() {
+        return null;
+    }
+
     @NonNull
     protected List<Integer> getAcceptableResponseCodes() {
         return defaultAcceptableResponseCodes();
     }
 
     @NonNull
-    protected abstract URL getUrl();
+    protected abstract String getUrl();
 
     @NonNull
     protected abstract LoadRunnableInfo.LoadSettings getLoadSettings();
@@ -95,7 +99,7 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
     }
 
     @Nullable
-    protected LoadRunnableInfo.Body getBody() {
+    protected B getBody() {
         return null;
     }
 
@@ -106,38 +110,40 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
 
     public void enqueue(@Nullable C callback) {
 
-        LoadRunnableInfo.Builder builder = new LoadRunnableInfo.Builder(id, getUrl(), getLoadSettings());
+        LoadRunnableInfo.Builder<B, LoadRunnableInfo<B>> builder = new LoadRunnableInfo.Builder<>(id, getUrl(), getLoadSettings());
         builder.addAcceptableResponseCodes(getAcceptableResponseCodes());
+        builder.name(getName());
         builder.contentType(getContentType());
         builder.addHeaders(getHeaders());
         builder.addFormFields(getFormFields());
         builder.body(getBody());
         builder.downloadFile(getDownloadFile());
 
-        LoadRunnableInfo info = builder.build();
+        LoadRunnableInfo<B> info = builder.build();
 
         this.callback = callback;
         if (callback != null) {
-            callback.loadRunnableInfo = info;
             callback.manager = manager;
-            manager.addLoadListener(callback);
+            manager.registerLoadListener(callback);
         }
 
         manager.enqueueLoad(info);
     }
 
-    public abstract static class Callback implements LoadListener<LoadRunnableInfo> {
+    public abstract static class Callback<B extends LoadRunnableInfo.Body> implements LoadListener<LoadRunnableInfo<B>> {
 
         @NonNull
         protected final Handler uiHandler = new Handler(Looper.getMainLooper());
 
-        private final boolean callbacksOnUiThread;
+        protected final int loadId;
+
+        protected final boolean callbacksOnUiThread;
 
         @Nullable
-        protected NetworkLoadManager manager;
+        protected NetworkLoadManager<B, LoadRunnableInfo<B>> manager;
 
         @Nullable
-        protected LoadRunnableInfo loadRunnableInfo;
+        protected LoadRunnableInfo<B> lastLoadRunnableInfo;
 
         @Nullable
         protected NetworkLoadManager.LoadProcessInfo lastLoadProcessInfo;
@@ -148,19 +154,9 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
         @Nullable
         protected Throwable lastThrowable;
 
-        public Callback(boolean callbacksOnUiThread) {
-            this(callbacksOnUiThread, null, null);
-        }
-
-        public Callback(boolean callbacksOnUiThread, @Nullable NetworkLoadManager manager, @Nullable LoadRunnableInfo loadRunnableInfo) {
-//            this.uiHandler = Looper.myLooper() != null ? new Handler(Looper.myLooper()) : null;
+        public Callback(int loadId, boolean callbacksOnUiThread) {
+            this.loadId = loadId;
             this.callbacksOnUiThread = callbacksOnUiThread;
-            this.manager = manager;
-            this.loadRunnableInfo = loadRunnableInfo;
-        }
-
-        public boolean isInitialized() {
-            return manager != null && loadRunnableInfo != null;
         }
 
         @Nullable
@@ -168,34 +164,23 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
             return manager;
         }
 
-        @Nullable
-        public final LoadRunnableInfo getLoadRunnableInfo() {
-            return loadRunnableInfo;
+        @Override
+        public final int getId() {
+            return loadId;
         }
 
         @Override
-        public int getId() {
-            if (loadRunnableInfo == null) {
-                throw new IllegalStateException("loadRunnableInfo was not initialized");
-            }
-            return loadRunnableInfo.id;
-        }
-
-        // template
-        @Override
-        public final int getId(@NonNull LoadRunnableInfo info) {
+        public int getId(@NonNull LoadRunnableInfo info) {
             return getId();
         }
-
 
         @NonNull
         public STATE getLastState() {
             STATE lastState = lastLoadProcessInfo != null? lastLoadProcessInfo.getState() : STATE.UNKNOWN;
             if (lastState == STATE.UNKNOWN) {
-                if (manager == null) {
-                    throw new IllegalStateException("manager was not initialized");
+                if (manager != null) {
+                    lastState = manager.getLastStateForId(getId());
                 }
-                lastState = manager.getLastStateForId(getId());
             }
             return lastState;
         }
@@ -206,12 +191,16 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
         }
 
         @Nullable
+        public LoadRunnableInfo<B> getLastLoadRunnableInfo() {
+            return lastLoadRunnableInfo;
+        }
+
+        @Nullable
         public NetworkLoadManager.LoadProcessInfo getLastLoadProcessInfo() {
             if (lastLoadProcessInfo == null) {
-                if (manager == null) {
-                    throw new IllegalStateException("manager was not initialized");
+                if (manager != null) {
+                    lastLoadProcessInfo = manager.getCurrentLoadProcessInfoForId(getId());
                 }
-                lastLoadProcessInfo = manager.getCurrentLoadProcessInfoForId(getId());
             }
             return lastLoadProcessInfo;
         }
@@ -219,10 +208,9 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
         @Nullable
         public NetworkLoadManager.Response getLastResponse() {
             if (lastResponse == null) {
-                if (manager == null) {
-                    throw new IllegalStateException("manager was not initialized");
+                if (manager != null) {
+                    lastResponse = manager.getLastResponseForId(getId());
                 }
-                lastResponse = manager.getLastResponseForId(getId());
             }
             return lastResponse;
         }
@@ -233,24 +221,15 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
         }
 
         @Override
-        public long getProcessingNotifyInterval(@NonNull LoadRunnableInfo info) {
+        public long getProcessingNotifyInterval(@NonNull LoadRunnableInfo<B> info) {
             return DEFAULT_PROCESSING_NOTIFY_INTERVAL;
         }
 
         @Override
         @CallSuper
-        public void onUpdateState(@NonNull LoadRunnableInfo loadInfo, @NonNull final NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
+        public void onUpdateState(@NonNull final LoadRunnableInfo<B> loadInfo, @NonNull final NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
 
-            // TODO         @NonNull LoadListener.STATE lastState в LoadProcessInfo
-
-            if (manager == null) {
-                throw new IllegalStateException("manager was not initialized");
-            }
-
-            if (loadRunnableInfo == null) {
-                throw new IllegalStateException("loadRunnableInfo was not initialized");
-            }
-
+            this.lastLoadRunnableInfo = loadInfo;
             this.lastLoadProcessInfo = loadProcessInfo;
             this.lastThrowable = t;
 
@@ -281,7 +260,7 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
                         @Override
                         public void run() {
                             int retriesCount = loadProcessInfo.getRetriesCount();
-                            onFailedAttempt(response, loadProcessInfo, retriesCount, loadRunnableInfo.settings.retryLimit > 0 ? loadRunnableInfo.settings.retryLimit - retriesCount : loadRunnableInfo.settings.retryLimit);
+                            onFailedAttempt(response, loadProcessInfo, retriesCount, loadInfo.settings.retryLimit > 0 ? loadInfo.settings.retryLimit - retriesCount : loadInfo.settings.retryLimit);
                         }
                     };
 
@@ -363,7 +342,7 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
 
         @Override
         @CallSuper
-        public void onResponse(@NonNull LoadRunnableInfo loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NonNull NetworkLoadManager.Response response) {
+        public void onResponse(@NonNull LoadRunnableInfo<B> loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NonNull NetworkLoadManager.Response response) {
             lastResponse = response;
         }
 
@@ -387,10 +366,6 @@ public abstract class AbstractRequest<C extends AbstractRequest.Callback> {
 
         @CallSuper
         protected void onFinished() {
-            if (manager == null) {
-                throw new IllegalStateException("manager was not initialized");
-            }
-            manager.removeLoadListener(this);
         }
 
         @CallSuper

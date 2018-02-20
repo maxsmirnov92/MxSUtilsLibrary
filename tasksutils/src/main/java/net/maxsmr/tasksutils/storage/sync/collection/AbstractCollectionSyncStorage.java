@@ -246,7 +246,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
             if (!deleteSerializedRunnableInfo(next)) {
                 logger.error("can't delete file by info " + next);
             }
-            storageObservable.dispatchStorageSizeChanged(getSize(), prev);
+            storageObservable.dispatchStorageSizeChanged(getSize(), prev, callbacksHandler);
             next = null;
         }
     }

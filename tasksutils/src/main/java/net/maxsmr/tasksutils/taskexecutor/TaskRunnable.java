@@ -5,7 +5,6 @@ import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Predicate;
 
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -58,7 +57,7 @@ public abstract class TaskRunnable<I extends RunnableInfo> implements Runnable {
         return Predicate.Methods.filter(what, new Predicate<T>() {
             @Override
             public boolean apply(T element) {
-                T runnable = findRunnableById(element.getId(), by);
+                T runnable = element != null? findRunnableById(element.getId(), by) : null;
                 return contains && runnable != null || !contains && runnable == null;
             }
         });

@@ -1,4 +1,4 @@
-package net.maxsmr.utilstestapplication;
+package net.maxsmr.testapplication;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

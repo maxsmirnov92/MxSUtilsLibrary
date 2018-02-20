@@ -1,4 +1,4 @@
-package net.maxsmr.utilstestapplication;
+package net.maxsmr.testapplication;
 
 import org.junit.Test;
 

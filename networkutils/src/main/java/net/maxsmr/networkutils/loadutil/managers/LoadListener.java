@@ -48,7 +48,7 @@ public interface LoadListener<I extends LoadRunnableInfo> {
     /** @return personal id */
     int getId();
 
-    /** @return {@link RunnableInfo#NO_ID} id for notify. if 0 - notify for all */
+    /** @return id for notify. if {@link RunnableInfo#NO_ID} - notify for all */
     int getId(@NonNull I loadInfo);
 
     long getProcessingNotifyInterval(@NonNull I loadInfo);

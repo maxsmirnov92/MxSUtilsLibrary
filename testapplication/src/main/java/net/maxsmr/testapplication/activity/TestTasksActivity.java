@@ -1,4 +1,4 @@
-package net.maxsmr.utilstestapplication.activity;
+package net.maxsmr.testapplication.activity;
 
 import android.os.Bundle;
 import android.os.Handler;
@@ -18,9 +18,9 @@ import net.maxsmr.tasksutils.storage.sync.collection.ListSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.ExecInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor;
-import net.maxsmr.utilstestapplication.R;
-import net.maxsmr.utilstestapplication.taskutils.TestRunnableInfo;
-import net.maxsmr.utilstestapplication.taskutils.TestTaskRunnable;
+import net.maxsmr.testapplication.R;
+import net.maxsmr.testapplication.taskutils.TestRunnableInfo;
+import net.maxsmr.testapplication.taskutils.TestTaskRunnable;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,17 +53,7 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
 
         storage = new ListSyncStorage<>(getFilesDir().getAbsolutePath() + File.separator + "queue", null,
                 TestRunnableInfo.class, true, ListSyncStorage.MAX_SIZE_UNLIMITED,
-                new AbstractSyncStorage.IAddRule<TestRunnableInfo>() {
-                    @Override
-                    public boolean allowAddIfFull() {
-                        return true;
-                    }
-
-                    @Override
-                    public void removeAny(AbstractSyncStorage<TestRunnableInfo> fromStorage) {
-                        fromStorage.pollFirst();
-                    }
-                });
+                new AbstractSyncStorage.DefaultAddRule<TestRunnableInfo>());
         storage.addStorageListener(this);
 
         TaskRunnable.ITaskResultValidator<TestRunnableInfo, TestTaskRunnable> validator = new TaskRunnable.ITaskResultValidator<TestRunnableInfo, TestTaskRunnable>() {
@@ -86,8 +76,9 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
 
         executor = new TaskRunnableExecutor<>(TaskRunnableExecutor.TASKS_NO_LIMIT, 1,
                 TaskRunnableExecutor.DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS, "Test",
-                validator, storage, restorer, new Handler(Looper.getMainLooper()));
+                validator, storage, new Handler(Looper.getMainLooper()));
         executor.registerCallback(this);
+        executor.restoreQueueByRestorer(restorer);
     }
 
     @Override

@@ -14,7 +14,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.InputStream;
 import java.io.Serializable;
-import java.net.URL;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -24,14 +23,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public class LoadRunnableInfo extends RunnableInfo {
+public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableInfo {
 
     private static final long serialVersionUID = 2752232594822816967L;
 
     public static final Charset DEFAULT_CHARSET = Charset.defaultCharset();
 
-    protected LoadRunnableInfo(Builder<?> b) {
-        super(b.id, LoadRunnableInfo.class.getSimpleName() + "_" + b.id);
+    protected LoadRunnableInfo(Builder<B, ?> b) {
+        super(b.id, b.name);
         url = b.url;
         settings = b.settings;
         requestMethod = b.requestMethod;
@@ -45,7 +44,7 @@ public class LoadRunnableInfo extends RunnableInfo {
     }
 
     @NonNull
-    public final URL url;
+    public final String url;
 
     @NonNull
     public final LoadSettings settings;
@@ -67,7 +66,7 @@ public class LoadRunnableInfo extends RunnableInfo {
     private final List<NameValuePair> formFields = new ArrayList<>();
 
     @Nullable
-    public final Body body;
+    public final B body;
 
     @Nullable
     public final File downloadFile;
@@ -152,14 +151,17 @@ public class LoadRunnableInfo extends RunnableInfo {
                 '}';
     }
 
-    public static class Builder<I extends LoadRunnableInfo> implements IBuilder<I> {
+    public static class Builder<B extends Body, I extends LoadRunnableInfo<B>> implements IBuilder<I> {
 
         private final int id;
 
-        private final URL url;
+        private final String url;
 
         @NonNull
         private final LoadSettings settings;
+
+        @Nullable
+        private String name;
 
         @NonNull
         private RequestMethod requestMethod = RequestMethod.POST;
@@ -177,7 +179,7 @@ public class LoadRunnableInfo extends RunnableInfo {
         private List<NameValuePair> formFields = new ArrayList<>();
 
         @Nullable
-        private Body body;
+        private B body;
 
         @Nullable
         private File downloadFile;
@@ -185,16 +187,24 @@ public class LoadRunnableInfo extends RunnableInfo {
         @Nullable
         private File downloadDirectory;
 
-        public Builder(int id, URL url, @NonNull LoadSettings settings) {
+        public Builder(int id, String url, @NonNull LoadSettings settings) {
             if (id < 0) {
                 throw new IllegalArgumentException("incorrect id: " + id);
             }
-            if (url == null || TextUtils.isEmpty(url.toString())) {
+            if (TextUtils.isEmpty(url)) {
                 throw new IllegalArgumentException("incorrect url: " + url);
             }
             this.id = id;
             this.url = url;
             this.settings = settings;
+            this.name(null);
+        }
+
+        public void name(@Nullable String name) {
+            this.name = name;
+            if (TextUtils.isEmpty(this.name)) {
+                this.name = LoadRunnableInfo.class.getSimpleName() + "_" + id;
+            }
         }
 
         public void requestMethod(@NonNull RequestMethod requestMethod) {
@@ -229,7 +239,7 @@ public class LoadRunnableInfo extends RunnableInfo {
             }
         }
 
-        public void body(@Nullable Body body) {
+        public void body(@Nullable B body) {
             this.body = body;
         }
 
@@ -425,35 +435,6 @@ public class LoadRunnableInfo extends RunnableInfo {
                     ", super=" + super.toString() +
                     '}';
         }
-
-//        static class WrappedJsonElement {
-//
-//            final JsonElement element;
-//
-//            WrappedJsonElement(JsonElement e) {
-//                element = e;
-//            }
-//
-//            @Override
-//            public String toString() {
-//                String str = element.toString();
-//                logger.debug("jsonnull=" + JsonNull.INSTANCE);
-//                logger.debug("jsonprimitive=" + new JsonPrimitive(true));
-//                JsonObject o = new JsonObject();
-//                o.add("", new JsonPrimitive(true));
-//                logger.debug("jsonobject=" + o);
-//                JsonArray a = new JsonArray();
-//                a.add(o);
-//                logger.debug("jsonarray=" + a);
-//                StringBuilder sb = new StringBuilder();
-//                sb.append(str);
-//                if (sb.length() >= 2) {
-//                    sb.deleteCharAt(0);
-//                    sb.deleteCharAt(sb.length() - 1);
-//                }
-//                return sb.toString();
-//            }
-//        }
     }
 
     public static class FilesBody extends Body {
@@ -544,8 +525,8 @@ public class LoadRunnableInfo extends RunnableInfo {
 
     public static class FileBody extends FilesBody {
 
-        public FileBody(@NonNull String name, @NonNull File sourceFile, boolean asArray) {
-            super(name, Collections.singletonList(sourceFile), asArray, false);
+        public FileBody(@NonNull String name, @NonNull File sourceFile, boolean asArray, boolean ignoreIncorrect) {
+            super(name, Collections.singletonList(sourceFile), asArray, ignoreIncorrect);
         }
 
         @NonNull
@@ -692,9 +673,9 @@ public class LoadRunnableInfo extends RunnableInfo {
 
             private long retryDelay;
 
-            private boolean notifyRead;
+            private boolean notifyRead = true;
 
-            private boolean notifyWrite;
+            private boolean notifyWrite = true;
 
             private boolean logRequestData;
 

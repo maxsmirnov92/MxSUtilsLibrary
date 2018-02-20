@@ -23,7 +23,7 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
                            Class<I> clazz,
                            boolean sync, int maxSize, @NonNull IAddRule<I> addRule) {
         super(storageDirPath, extension, clazz, sync, maxSize, addRule);
-        dataList = new ArrayList<I>(maxSize);
+        dataList = new ArrayList<>(maxSize);
     }
 
     @Override
