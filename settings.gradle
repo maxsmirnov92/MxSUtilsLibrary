@@ -1,4 +1,4 @@
-include ':networkutils', ':tasksutils', ':testapplication'
+include ':networkutils'
 // ':testapplication'
 // ':tasksutils'
 // 'customcontentprovider'
