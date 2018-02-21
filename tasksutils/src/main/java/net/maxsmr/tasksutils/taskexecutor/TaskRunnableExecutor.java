@@ -305,7 +305,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
 
     public boolean isTaskCancelled(int id) {
         T runnable = findRunnableById(id);
-        return runnable == null || runnable.isCancelled();
+        return runnable == null || runnable.isCanceled();
     }
 
     public boolean cancelTask(@Nullable T t) {
@@ -378,7 +378,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                 throw new RuntimeException("incorrect task: " + command);
             }
 
-            if (command.isCancelled()) {
+            if (command.isCanceled()) {
                 throw new RuntimeException("can't add task: " + command + ": cancelled");
             }
 
@@ -465,7 +465,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
 
             taskRunnable.command.rInfo.isRunning = true;
 
-            if (taskRunnable.command.isCancelled()) {
+            if (taskRunnable.command.isCanceled()) {
                 logger.warn("task: " + taskRunnable.command + ": cancelled");
             }
 
@@ -486,7 +486,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
             }
             taskRunnable = (WrappedTaskRunnable<I, T>) r;
 
-            boolean reAdd = !taskRunnable.command.isCancelled() &&
+            boolean reAdd = !taskRunnable.command.isCanceled() &&
                     resultValidator != null && resultValidator.needToReAddTask(taskRunnable.command, t);
 
             taskRunnable.command.rInfo.isRunning = false;

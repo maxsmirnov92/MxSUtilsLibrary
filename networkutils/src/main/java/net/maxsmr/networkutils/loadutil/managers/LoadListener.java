@@ -14,7 +14,11 @@ public interface LoadListener<I extends LoadRunnableInfo> {
 
     enum STATE {
 
-        UNKNOWN(-1), STARTING(0), CONNECTING(1), UPLOADING(2), DOWNLOADING(3), CANCELLED(4), FAILED_FILE_REASON(5), FAILED(6), FAILED_RETRIES_EXCEEDED(7), SUCCESS(8);
+        UNKNOWN(-1), STARTING(0), CONNECTING(1), CONNECTED(2),
+        UPLOADING(3), DOWNLOADING(4),
+        CANCELLED(5),
+        FAILED_FILE_REASON(6), FAILED(7), FAILED_RETRIES_EXCEEDED(8),
+        SUCCESS(9);
 
         private final int value;
 
@@ -26,8 +30,12 @@ public interface LoadListener<I extends LoadRunnableInfo> {
             return value;
         }
 
-        public static boolean isRunning(@NonNull STATE state) {
-            return state == STARTING || state == CONNECTING || state == UPLOADING || state == DOWNLOADING;
+        public boolean isRunning() {
+            return this == STARTING || this == CONNECTING || this == UPLOADING || this == DOWNLOADING;
+        }
+
+        public boolean isFailed() {
+            return this == FAILED_FILE_REASON || this == FAILED || this == FAILED_RETRIES_EXCEEDED;
         }
 
         @NonNull

@@ -44,7 +44,7 @@ public class RunnableInfo implements Serializable {
         return isRunning;
     }
 
-    public synchronized boolean isCancelled() {
+    public synchronized boolean isCanceled() {
         return isCancelled;
     }
 
@@ -92,7 +92,7 @@ public class RunnableInfo implements Serializable {
                 "id=" + id +
                 ", name='" + name + '\'' +
                 ", isRunning=" + isRunning +
-                ", isCancelled=" + isCancelled +
+                ", isCanceled=" + isCancelled +
                 '}';
     }
 

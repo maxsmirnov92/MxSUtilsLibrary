@@ -23,6 +23,8 @@ import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 
 import java.io.File;
+import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
@@ -79,12 +81,13 @@ public class TestUploadActivity extends AppCompatActivity implements AbstractSyn
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        loadManager.cancelAllLoads();
         storage.removeStorageListener(this);
         loadManager.unregisterLoadListener(this);
     }
 
     private void enqueueLoads(boolean viaRequest) {
-        Set<File> filesToUpload = FileHelper.getFiles(DATA_DIRECTORY, FileHelper.GetMode.FILES, null, null, 1);
+        Set<File> filesToUpload = FileHelper.getFiles(DATA_DIRECTORY, FileHelper.GetMode.FILES, null, null, 0);
         for (File f : filesToUpload) {
             LoadRunnableInfo.LoadSettings.Builder settingsBuilder = new LoadRunnableInfo.LoadSettings.Builder();
             settingsBuilder.connectionTimeout(TimeUnit.SECONDS.toMillis(30));
@@ -132,6 +135,12 @@ public class TestUploadActivity extends AppCompatActivity implements AbstractSyn
                     @Override
                     protected LoadRunnableInfo.FileBody getBody() {
                         return body;
+                    }
+
+                    @NonNull
+                    @Override
+                    protected List<Integer> getAcceptableResponseCodes() {
+                        return Collections.emptyList();
                     }
                 };
                 if (!loadManager.containsLoad(id)) {

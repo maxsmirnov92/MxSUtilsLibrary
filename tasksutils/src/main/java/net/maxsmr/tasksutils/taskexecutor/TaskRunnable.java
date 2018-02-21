@@ -25,8 +25,8 @@ public abstract class TaskRunnable<I extends RunnableInfo> implements Runnable {
         return rInfo.isRunning();
     }
 
-    public boolean isCancelled() {
-        return rInfo.isCancelled();
+    public boolean isCanceled() {
+        return rInfo.isCanceled();
     }
 
     public void cancel() {

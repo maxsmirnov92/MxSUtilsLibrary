@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.ContentType.MULTIPART_FORM_DATA;
+import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.DownloadWriteMode.OVERWRITE;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.DownloadWriteMode.RESUME_DOWNLOAD;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.ReadBodyMode.BYTE_ARRAY;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.ReadBodyMode.FILE;
@@ -57,6 +58,8 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
     private static final Logger logger = LoggerFactory.getLogger(NetworkLoadManager.class);
 
     private static final String LINE_FEED = "\r\n";
+
+    public static final int BUF_SIZE = 1024;
 
     public NetworkLoadManager(int limit, int concurrentLoadsCount, @Nullable AbstractSyncStorage<LI> storage,
                               @Nullable TaskRunnable.ITaskResultValidator<LI, TaskRunnable<LI>> validator) {
@@ -133,8 +136,6 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         @Nullable
         Set<File> lastUploadFiles;
 
-        boolean lastNotifiedByFail;
-
         @NonNull
         public LoadProcessInfo getCurrentLoadInfo() {
             return currentLoadInfo;
@@ -172,23 +173,14 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             return true;
         }
 
-        private void _notifyStateChanged(@NonNull LoadListener.STATE state) {
-            LoadListener.STATE lastState = getLastState();
-            if (lastState == LoadListener.STATE.FAILED || lastState == LoadListener.STATE.FAILED_FILE_REASON) {
-                if (lastNotifiedByFail) {
-                    return;
-                }
-            }
+        private void notifyStateChanged(@NonNull LoadListener.STATE state) {
             currentLoadInfo.state = state;
             mLoadObservable.notifyStateChanged(rInfo, currentLoadInfo, lastException);
-            if (lastState == LoadListener.STATE.FAILED || lastState == LoadListener.STATE.FAILED_FILE_REASON) {
-                lastNotifiedByFail = true;
-            }
         }
 
-        private void _notifyStateProcessing(@NonNull LoadListener.STATE state, @NonNull LoadListener<LI> l) {
-            if (!(state == LoadListener.STATE.DOWNLOADING || state == LoadListener.STATE.UPLOADING)) {
-                throw new IllegalArgumentException("incorrect state: " + state);
+        private void notifyStateProcessing(@NonNull LoadListener.STATE state, @NonNull LoadListener<LI> l) {
+            if (!state.isRunning()) {
+                throw new IllegalArgumentException("incorrect state: " + state + ", must be running");
             }
             currentLoadInfo.state = state;
             l.onUpdateState(rInfo, currentLoadInfo, lastException);
@@ -206,16 +198,21 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
             currentLoadInfo = new LoadProcessInfo();
 
-            while (!success && !rInfo.isCancelled() &&
+            HttpURLConnection connection = null;
+            DataOutputStream requestStream = null;
+            BufferedInputStream responseInput = null;
+            BufferedOutputStream responseOutput = null;
+
+            while (!success && !rInfo.isCanceled() &&
                     (rInfo.settings.retryLimit == LoadRunnableInfo.LoadSettings.RETRY_LIMIT_UNLIMITED
                             || (currentLoadInfo.retriesCount == -1 || rInfo.settings.retryLimit != LoadRunnableInfo.LoadSettings.RETRY_LIMIT_NONE && currentLoadInfo.retriesCount < rInfo.settings.retryLimit))) {
+
+                boolean isFileReasonFail = false;
 
                 int previousRetriesCount = currentLoadInfo.retriesCount;
                 currentLoadInfo = new LoadProcessInfo();
                 currentLoadInfo.retriesCount = previousRetriesCount;
                 currentLoadInfo.retriesCount++;
-
-                lastNotifiedByFail = false;
 
                 lastResponse = null;
                 lastException = null;
@@ -228,95 +225,73 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     rInfo.cancel();
                 }
 
-                if (rInfo.isCancelled()) {
-                    logger.warn("load " + rInfo + " cancelled");
-                    _notifyStateChanged(LoadListener.STATE.CANCELLED);
-                    return;
-                }
+                try {
 
-                final String boundary;
-
-                if (rInfo.body != null && !(rInfo.body instanceof LoadRunnableInfo.EmptyBody)) {
-
-                    currentLoadInfo.totalUploadBytesCount = (rInfo.body).getByteCount();
-
-                    switch (rInfo.contentType) {
-
-                        case TEXT_PLAIN:
-                        case TEXT_HTML:
-                        case TEXT_CSS:
-                        case APPLICATION_JSON:
-                        case APPLICATION_JAVASCRIPT:
-                        case APPLICATION_XML:
-                        case APPLICATION_ATOM_XML:
-
-                            if (!(rInfo.body instanceof LoadRunnableInfo.StringBody)) {
-                                throw new RuntimeException("incorrect body type: " + rInfo.body.getClass() + ", must be: " + LoadRunnableInfo.StringBody.class);
-                            }
-
-                            lastUploadFiles = null;
-                            boundary = null;
-
-                            break;
-
-                        case MULTIPART_FORM_DATA:
-
-                            lastUploadFiles = new LinkedHashSet<>();
-
-                            if (rInfo.body instanceof LoadRunnableInfo.FilesBody) {
-                                lastUploadFiles.addAll(((LoadRunnableInfo.FilesBody) rInfo.body).getSourceFiles());
-                            } else {
-                                throw new RuntimeException("incorrect body type: " + rInfo.body.getClass() + ", must be: " + LoadRunnableInfo.FilesBody.class);
-                            }
-
-                            boolean isIncorrect = false;
-
-                            if (!((LoadRunnableInfo.FilesBody) rInfo.body).ignoreIncorrect) {
-                                for (File uploadFile : lastUploadFiles) {
-                                    if (!FileHelper.isFileCorrect(uploadFile)) {
-                                        lastException = new Throwable("incorrect source upload file" + uploadFile);
-                                        isIncorrect = true;
-                                        break;
-                                    } else if (!uploadFile.canRead()) {
-                                        lastException = new Throwable("can't read from source upload file: " + uploadFile);
-                                        isIncorrect = true;
-                                        break;
-                                    }
-                                }
-                            }
-
-                            if (isIncorrect) {
-                                _notifyStateChanged(LoadListener.STATE.FAILED_FILE_REASON);
-                                continue;
-                            }
-
-                            boundary = "++++" + System.currentTimeMillis();
-                            break;
-
-                        default:
-                            throw new RuntimeException("contentType is " + rInfo.contentType + " is not applicable to body " + rInfo.body.getClass());
+                    if (rInfo.isCanceled()) {
+                        throw new RuntimeException("load with id " + rInfo.id + " was canceled");
                     }
 
+                    final String boundary;
 
-                } else {
+                    if (rInfo.body != null && !(rInfo.body instanceof LoadRunnableInfo.EmptyBody)) {
 
-                    lastUploadFiles = null;
-                    currentLoadInfo.totalUploadBytesCount = 0;
-                    boundary = null;
-                }
+                        currentLoadInfo.totalUploadBytesCount = (rInfo.body).getByteCount();
 
-                if (!doStuffWithDownloadFile()) {
-                    continue;
-                }
+                        switch (rInfo.contentType) {
 
-                _notifyStateChanged(LoadListener.STATE.STARTING);
+                            case TEXT_PLAIN:
+                            case TEXT_HTML:
+                            case TEXT_CSS:
+                            case APPLICATION_JSON:
+                            case APPLICATION_JAVASCRIPT:
+                            case APPLICATION_XML:
+                            case APPLICATION_ATOM_XML:
 
-                HttpURLConnection connection = null;
-                DataOutputStream requestStream = null;
-                BufferedInputStream responseInput = null;
-                BufferedOutputStream responseOutput = null;
+                                if (!(rInfo.body instanceof LoadRunnableInfo.StringBody)) {
+                                    throw new RuntimeException("incorrect body type: " + rInfo.body.getClass() + ", must be: " + LoadRunnableInfo.StringBody.class);
+                                }
+                                lastUploadFiles = null;
+                                boundary = null;
+                                break;
 
-                try {
+                            case MULTIPART_FORM_DATA:
+
+                                lastUploadFiles = new LinkedHashSet<>();
+
+                                if (rInfo.body instanceof LoadRunnableInfo.FilesBody) {
+                                    lastUploadFiles.addAll(((LoadRunnableInfo.FilesBody) rInfo.body).getSourceFiles());
+                                } else {
+                                    throw new RuntimeException("incorrect body type: " + rInfo.body.getClass() + ", must be: " + LoadRunnableInfo.FilesBody.class);
+                                }
+
+                                if (!((LoadRunnableInfo.FilesBody) rInfo.body).ignoreIncorrect) {
+                                    for (File uploadFile : lastUploadFiles) {
+                                        if (!FileHelper.isFileCorrect(uploadFile)) {
+                                            isFileReasonFail = true;
+                                            throw new RuntimeException("incorrect source upload file" + uploadFile);
+                                        } else if (!uploadFile.canRead()) {
+                                            isFileReasonFail = true;
+                                            throw new RuntimeException("can't read from source upload file: " + uploadFile);
+                                        }
+                                    }
+                                }
+
+                                boundary = "++++" + System.currentTimeMillis();
+                                break;
+
+                            default:
+                                throw new RuntimeException("contentType is " + rInfo.contentType + " is not applicable to body " + rInfo.body.getClass());
+                        }
+
+
+                    } else {
+
+                        lastUploadFiles = null;
+                        currentLoadInfo.totalUploadBytesCount = 0;
+                        boundary = null;
+                    }
+
+                    notifyStateChanged(LoadListener.STATE.STARTING);
 
                     URL url = null;
                     Exception innerException = null;
@@ -328,11 +303,10 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     }
 
                     logger.debug("opening connection on " + rInfo.url + "...");
-                    connection = url != null? (HttpURLConnection) url.openConnection() : null;
+                    connection = url != null ? (HttpURLConnection) url.openConnection() : null;
 
                     if (connection == null) {
-                        lastException = new Throwable("cannot open connection on " + rInfo.url, innerException);
-                        continue;
+                        throw new RuntimeException("cannot open connection on " + rInfo.url, innerException);
                     }
 
                     if (rInfo.settings.logRequestData) {
@@ -409,10 +383,12 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 //                    connection.setRequestProperty("Expect", "100-continue");
 //                    connection.setRequestProperty("Accept-Charset", "ISO-8859-1,utf-8;q=0.7,*;q=0.7");
 
-                    _notifyStateChanged(LoadListener.STATE.CONNECTING);
+                    notifyStateChanged(LoadListener.STATE.CONNECTING);
 
                     logger.debug("connecting...");
                     connection.connect();
+
+                    notifyStateChanged(LoadListener.STATE.CONNECTED);
 
 //                    if (rInfo.requestMethod != LoadRunnableInfo.RequestMethod.GET) {
 
@@ -433,8 +409,8 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                         }
 
                         @Override
-                        public boolean isCancelled() {
-                            return rInfo.isCancelled();
+                        public boolean isCanceled() {
+                            return rInfo.isCanceled();
                         }
 
                         @Override
@@ -458,7 +434,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                                 if (targetInterval > 0 && interval >= targetInterval || currentLoadInfo.uploadedBytesCount >= currentLoadInfo.totalUploadBytesCount) {
                                                     long currentTime = System.currentTimeMillis();
 //                                                        logger.debug("updating uploading state (processing)...");
-                                                    _notifyStateProcessing(LoadListener.STATE.UPLOADING, l);
+                                                    notifyStateProcessing(LoadListener.STATE.UPLOADING, l);
                                                     waitTime += System.currentTimeMillis() - currentTime;
                                                     notified = true;
                                                 }
@@ -538,10 +514,10 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                     logger.debug("closing output stream...");
                     requestStream.close();
-                    requestStream = null;
+//                    requestStream = null;
 //                    }
 
-                    if (!rInfo.isCancelled()) {
+                    if (!rInfo.isCanceled()) {
 
                         logger.debug("reading response...");
                         lastResponse = new Response();
@@ -597,8 +573,8 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                             }
 
                             @Override
-                            public boolean isCancelled() {
-                                return rInfo.isCancelled();
+                            public boolean isCanceled() {
+                                return rInfo.isCanceled();
                             }
 
                             @Override
@@ -625,7 +601,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                                 if (targetInterval > 0 && interval >= targetInterval || currentLoadInfo.downloadedBytesCount >= currentLoadInfo.totalDownloadBytesCount) {
                                                     long currentTime = System.currentTimeMillis();
 //                                                        logger.debug("updating downloading state (processing)...");
-                                                    _notifyStateProcessing(LoadListener.STATE.DOWNLOADING, l);
+                                                    notifyStateProcessing(LoadListener.STATE.DOWNLOADING, l);
                                                     waitTime += System.currentTimeMillis() - currentTime;
                                                     notified = true;
                                                 }
@@ -664,25 +640,17 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                             logger.debug("reading response to file...");
 
-                            if (lastDownloadFile == null || (rInfo.settings.downloadWriteMode == RESUME_DOWNLOAD && (lastResponse.contentLength == -1 || lastResponse.contentLength <= lastDownloadFile.length()))) {
-
-                                if (lastDownloadFile != null && lastDownloadFile.length() > 0) {
-                                    if (FileHelper.createNewFile(lastDownloadFile.getName(), lastDownloadFile.getParent()) == null) {
-                                        lastException = new Throwable("can't overwrite download file " + lastDownloadFile);
-                                        _notifyStateChanged(LoadListener.STATE.FAILED_FILE_REASON);
-                                        continue;
-                                    }
-                                }
-
-                                if (!doStuffWithDownloadFile()) {
-                                    continue;
-                                }
+                            try {
+                                doStuffWithDownloadFile();
+                            } catch (RuntimeException e) {
+                                isFileReasonFail = true;
+                                throw e;
                             }
 
                             // download the file
                             responseInput = new BufferedInputStream(connection.getInputStream());
                             FileOutputStream fos = lastDownloadFile.length() == 0 ? new FileOutputStream(lastDownloadFile) : new FileOutputStream(lastDownloadFile, true);
-                            responseOutput = new BufferedOutputStream(fos, LoadRunnableInfo.LoadSettings.DEFAULT_BUF_SIZE);
+                            responseOutput = new BufferedOutputStream(fos, BUF_SIZE);
                             Utils.readResponseToOutputStream(responseInput, responseOutput, readNotifier);
                             fos.flush();
 
@@ -750,11 +718,11 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                         connection.disconnect();
                     }
 
-                    if (success && !rInfo.isCancelled()) {
+                    if (success && !rInfo.isCanceled()) {
 
-                        logger.info("load " + rInfo + " success");
                         lastException = null;
-                        _notifyStateChanged(LoadListener.STATE.SUCCESS);
+                        logger.info("load " + rInfo + " success");
+                        notifyStateChanged(LoadListener.STATE.SUCCESS);
 
                         if (currentLoadInfo.totalUploadBytesCount > 0 && rInfo.contentType == MULTIPART_FORM_DATA) {
                             if (rInfo.settings.allowDeleteUploadFiles) {
@@ -785,19 +753,18 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                             }
                         }
 
-                        if (!rInfo.isCancelled()) {
+                        if (!rInfo.isCanceled()) {
 
                             if (!success) {
+
+                                notifyStateChanged(!isFileReasonFail? LoadListener.STATE.FAILED : LoadListener.STATE.FAILED_FILE_REASON);
 
                                 logger.error("load " + rInfo + " failed");
                                 if (rInfo.settings.retryLimit == LoadRunnableInfo.LoadSettings.RETRY_LIMIT_UNLIMITED ||
                                         rInfo.settings.retryLimit != LoadRunnableInfo.LoadSettings.RETRY_LIMIT_NONE && currentLoadInfo.retriesCount < rInfo.settings.retryLimit) {
 
                                     int retriesLeft = rInfo.settings.retryLimit - currentLoadInfo.retriesCount;
-                                    logger.error("retries left: " + retriesLeft);
-
-                                    lastException = new Throwable("load with id " + rInfo.id + " failed, retries left: " + retriesLeft, lastException);
-                                    _notifyStateChanged(LoadListener.STATE.FAILED);
+                                    logger.error("load with id " + rInfo.id + " failed, retries left: " + retriesLeft);
 
                                     if (rInfo.settings.retryDelay > 0) {
                                         try {
@@ -805,25 +772,24 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                         } catch (InterruptedException e) {
                                             e.printStackTrace();
                                             Thread.currentThread().interrupt();
-                                            logger.warn("thread interrupted, cancelling upload...");
+                                            logger.warn("thread interrupted, cancelling load...");
                                             rInfo.cancel();
-                                            logger.error("load " + rInfo + " cancelled");
-                                            lastException = new Throwable("load with id " + rInfo.id + " was cancelled");
-                                            _notifyStateChanged(LoadListener.STATE.CANCELLED);
                                         }
                                     }
 
                                 } else {
                                     logger.error("no retries left");
-                                    _notifyStateChanged(LoadListener.STATE.FAILED_RETRIES_EXCEEDED);
+                                    notifyStateChanged(LoadListener.STATE.FAILED_RETRIES_EXCEEDED);
                                 }
 
                             }
+                        }
 
-                        } else {
-                            logger.error("load " + rInfo + " cancelled");
-                            lastException = new Throwable("load with id " + rInfo.id + " was cancelled");
-                            _notifyStateChanged(LoadListener.STATE.CANCELLED);
+                        if (rInfo.isCanceled()) {
+                            logger.warn("load " + rInfo + " canceled");
+                            final String message = "load with id " + rInfo.id + " was canceled";
+                            lastException = lastException != null? new RuntimeException(message, lastException) : new RuntimeException(message);
+                            notifyStateChanged(LoadListener.STATE.CANCELLED);
                         }
                     }
                 }
@@ -834,7 +800,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         /**
          * @return true if {@link LoadRunnableInfo.LoadSettings.ReadBodyMode} not {@link LoadRunnableInfo.LoadSettings.ReadBodyMode#FILE} or file was handled
          */
-        boolean doStuffWithDownloadFile() {
+        boolean doStuffWithDownloadFile() throws RuntimeException {
 
             boolean handled = true;
 
@@ -865,18 +831,15 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                 if (lastDownloadFile != null) {
                                     handled = true;
                                 } else {
-                                    lastException = new Throwable("can't create download file: " + downloadDirectory.getAbsolutePath() + File.separator + headerFileName);
-                                    _notifyStateChanged(LoadListener.STATE.FAILED_FILE_REASON);
+                                    throw new RuntimeException("can't create download file: " + downloadDirectory.getAbsolutePath() + File.separator + headerFileName);
                                 }
 
                             } else {
-                                lastException = new Throwable("can't create download directory: " + downloadDirectory);
-                                _notifyStateChanged(LoadListener.STATE.FAILED_FILE_REASON);
+                                throw new RuntimeException("can't create download directory: " + downloadDirectory);
                             }
 
                         } else {
-                            lastException = new Throwable("download directory was not specified");
-                            _notifyStateChanged(LoadListener.STATE.FAILED_FILE_REASON);
+                            throw new RuntimeException("download directory was not specified");
                         }
 
                     } else {
@@ -886,84 +849,101 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                 }
 
-                if (lastDownloadFile != null) {
+                if (!handled) {
+                    if (lastDownloadFile != null) {
 
-                    if (lastDownloadFile.exists() && lastDownloadFile.isFile()) {
+                        handled = false;
 
-                        switch (rInfo.settings.downloadWriteMode) {
+                        if (lastDownloadFile.exists() && lastDownloadFile.isFile()) {
 
-                            case OVERWRITE:
-                                if (FileHelper.createNewFile(lastDownloadFile.getName(), lastDownloadFile.getParent(), true) == null) {
-                                    lastException = new Throwable("can't overwrite download file: " + lastDownloadFile);
-                                    _notifyStateChanged(LoadListener.STATE.FAILED_FILE_REASON);
-                                } else {
-                                    handled = true;
-                                }
-                                break;
+                            LoadRunnableInfo.LoadSettings.DownloadWriteMode writeMode = rInfo.settings.downloadWriteMode;
 
-                            case CREATE_NEW:
-                                int it = 1;
-                                while (lastDownloadFile.exists()) {
-                                    String newName = lastDownloadFile.getName();
-                                    String ext = FileHelper.getFileExtension(newName);
-                                    if (!TextUtils.isEmpty(ext)) {
-                                        newName = FileHelper.removeExtension(newName) + " (" + it + ")." + ext;
-                                    } else {
-                                        newName += " (" + it + ")";
-                                    }
-                                    lastDownloadFile = new File(lastDownloadFile.getParent(), newName);
-                                    if (!lastDownloadFile.exists()) {
-                                        if (FileHelper.createNewFile(lastDownloadFile.getName(), lastDownloadFile.getParent()) == null) {
-                                            lastException = new Throwable("can't create download file: " + lastDownloadFile);
-                                            _notifyStateChanged(LoadListener.STATE.FAILED_FILE_REASON);
+                            if (writeMode == RESUME_DOWNLOAD && lastResponse != null &&
+                                    (lastResponse.contentLength > -1 && lastDownloadFile.length() < lastResponse.contentLength)) {
+                                writeMode = null;
+                                handled = true;
+                            } else {
+                                writeMode = OVERWRITE;
+                            }
+
+                            if (writeMode != null) {
+
+                                switch (writeMode) {
+
+                                    case OVERWRITE:
+                                        if (FileHelper.createNewFile(lastDownloadFile.getName(), lastDownloadFile.getParent(), true) == null) {
+                                            throw new RuntimeException("can't overwrite download file: " + lastDownloadFile);
                                         } else {
                                             handled = true;
-                                            break;
                                         }
-                                    }
-                                    it++;
+                                        break;
+
+                                    case CREATE_NEW:
+                                        int it = 1;
+                                        while (lastDownloadFile.exists()) {
+                                            String newName = lastDownloadFile.getName();
+                                            String ext = FileHelper.getFileExtension(newName);
+                                            if (!TextUtils.isEmpty(ext)) {
+                                                newName = FileHelper.removeExtension(newName) + " (" + it + ")." + ext;
+                                            } else {
+                                                newName += " (" + it + ")";
+                                            }
+                                            lastDownloadFile = new File(lastDownloadFile.getParent(), newName);
+                                            if (!lastDownloadFile.exists()) {
+                                                if (FileHelper.createNewFile(lastDownloadFile.getName(), lastDownloadFile.getParent()) == null) {
+                                                    throw new RuntimeException("can't create download file: " + lastDownloadFile);
+                                                } else {
+                                                    handled = true;
+                                                    break;
+                                                }
+                                            }
+                                            it++;
+                                        }
+                                        break;
+
+
+                                    case DO_NOTING:
+                                        throw new RuntimeException("overwriting download file " + lastDownloadFile + " is not allowed");
+
+                                    default:
+                                        throw new RuntimeException("unknown mode: " + rInfo.settings.downloadWriteMode);
                                 }
-                                break;
-
-                            case DO_NOTING:
-                                lastException = new Throwable("overwriting download file " + lastDownloadFile + " is not allowed");
-                                _notifyStateChanged(LoadListener.STATE.FAILED_FILE_REASON);
-                                break;
-
-                            default:
-                                throw new RuntimeException("unknown mode: " + rInfo.settings.downloadWriteMode);
-                        }
+                            }
 
 
-                    } else {
-
-                        String name = lastDownloadFile.getName();
-                        String parent = lastDownloadFile.getParent();
-                        lastDownloadFile = FileHelper.createNewFile(name, parent);
-
-                        if (lastDownloadFile == null) {
-                            lastException = new Throwable("can't create download file: " + parent + File.separator + name);
-                            _notifyStateChanged(LoadListener.STATE.FAILED_FILE_REASON);
                         } else {
-                            handled = true;
+
+                            String name = lastDownloadFile.getName();
+                            String parent = lastDownloadFile.getParent();
+                            lastDownloadFile = FileHelper.createNewFile(name, parent);
+
+                            if (lastDownloadFile == null) {
+                                throw new RuntimeException("can't create download file: " + parent + File.separator + name);
+                            } else {
+                                handled = true;
+                            }
+                        }
+
+                        if (handled) {
+                            if (!lastDownloadFile.canWrite()) {
+                                throw new RuntimeException("can't write to download file: " + lastDownloadFile);
+                            } else {
+                                handled = true;
+                            }
                         }
                     }
-
-                    if (!lastDownloadFile.canWrite()) {
-                        lastException = new Throwable("can't write to download file: " + lastDownloadFile);
-                        _notifyStateChanged(LoadListener.STATE.FAILED_FILE_REASON);
-                    } else {
-                        handled = true;
-                    }
-
-                    if (FileHelper.isFileCorrect(lastDownloadFile)) {
-                        currentLoadInfo.totalDownloadBytesCount = lastDownloadFile.length();
-                    }
+                } else {
+                    throw new RuntimeException("can't create file + in download directory: " + rInfo.downloadDirectory);
                 }
+
+
             }
+
 
             if (!handled) {
                 currentLoadInfo.totalDownloadBytesCount = 0;
+            } else if (FileHelper.isFileCorrect(lastDownloadFile)) {
+                currentLoadInfo.totalDownloadBytesCount = lastDownloadFile.length();
             }
 
             return handled;
@@ -1057,14 +1037,14 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                 requestStream.writeBytes(LINE_FEED);
 
                 FileInputStream inputStream = new FileInputStream(file);
-                byte[] buffer = new byte[LoadRunnableInfo.LoadSettings.DEFAULT_BUF_SIZE];
+                byte[] buffer = new byte[BUF_SIZE];
 
                 int bytesRead;
                 while ((bytesRead = inputStream.read(buffer)) > -1) {
 
                     if (notifier != null) {
                         while (notifier.isPaused()) ;
-                        if (notifier.isCancelled()) {
+                        if (notifier.isCanceled()) {
                             return;
                         }
                         notifier.onWriteBytes(bytesRead);
@@ -1155,12 +1135,12 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
 
             int count;
-            byte[] data = new byte[LoadRunnableInfo.LoadSettings.DEFAULT_BUF_SIZE];
+            byte[] data = new byte[BUF_SIZE];
 
             while ((count = bis.read(data, 0, data.length)) > -1) {
                 if (readNotifier != null) {
                     while (readNotifier.isPaused()) ;
-                    if (readNotifier.isCancelled()) {
+                    if (readNotifier.isCanceled()) {
                         break;
                     }
                     readNotifier.onReadBytes(count, data);
@@ -1190,7 +1170,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             while ((readByte = bis.read()) > -1) {
                 if (readNotifier != null) {
                     while (readNotifier.isPaused()) ;
-                    if (readNotifier.isCancelled()) {
+                    if (readNotifier.isCanceled()) {
                         break;
                     }
                     readNotifier.onReadBytes(1, new byte[]{(byte) readByte});
@@ -1213,7 +1193,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             while ((line = reader.readLine()) != null) {
                 if (readNotifier != null) {
                     while (readNotifier.isPaused()) ;
-                    if (readNotifier.isCancelled()) {
+                    if (readNotifier.isCanceled()) {
                         break;
                     }
                     readNotifier.onReadLine(line);
@@ -1225,13 +1205,13 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         }
 
         static void readResponseToOutputStream(@NonNull InputStream inStream, @NonNull OutputStream outStream, @Nullable IReadBytesNotifier readNotifier) throws IOException {
-            byte data[] = new byte[LoadRunnableInfo.LoadSettings.DEFAULT_BUF_SIZE];
+            byte data[] = new byte[BUF_SIZE];
             int count;
 
-            while ((count = inStream.read(data, 0, LoadRunnableInfo.LoadSettings.DEFAULT_BUF_SIZE)) >= 0) {
+            while ((count = inStream.read(data, 0, BUF_SIZE)) >= 0) {
                 if (readNotifier != null) {
                     while (readNotifier.isPaused()) ;
-                    if (readNotifier.isCancelled()) {
+                    if (readNotifier.isCanceled()) {
                         break;
                     }
                     readNotifier.onReadBytes(count, data);
@@ -1538,7 +1518,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
     }
 
     private interface INotifier {
-        boolean isCancelled();
+        boolean isCanceled();
 
         boolean isPaused();
     }

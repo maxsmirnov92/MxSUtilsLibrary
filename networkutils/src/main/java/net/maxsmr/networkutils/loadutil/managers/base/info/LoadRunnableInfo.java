@@ -123,13 +123,13 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
     }
 
     public synchronized void pause() {
-        if (!isCancelled()) {
+        if (!isCanceled()) {
             paused = true;
         }
     }
 
     public synchronized void resume() {
-        if (!isCancelled()) {
+        if (!isCanceled()) {
             paused = false;
         }
     }
@@ -540,8 +540,6 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
     }
 
     public final static class LoadSettings implements Serializable {
-
-        public static final int DEFAULT_BUF_SIZE = 1024;
 
         /**
          * no retries

@@ -56,7 +56,7 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
     }
 
     public boolean isLastStateRunning() {
-        return callback != null && LoadListener.STATE.isRunning(callback.getLastState());
+        return callback != null && callback.getLastState().isRunning();
     }
 
     public final boolean isCancelled() {
