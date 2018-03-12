@@ -23,9 +23,7 @@ public class ConfigureLog4J {
     }
 
     public static ConfigureLog4J getInstance() {
-        if (mInstance == null) {
-            throw new IllegalStateException("initInstance() was not called");
-        }
+        initInstance();
         return mInstance;
     }
 

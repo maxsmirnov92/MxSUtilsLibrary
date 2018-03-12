@@ -15,13 +15,7 @@ import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
 import java.util.Iterator;
 import java.util.List;
 
@@ -584,30 +578,6 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         @Override
         public void removeAny(AbstractSyncStorage<I> fromStorage) {
             fromStorage.pollFirst();
-        }
-    }
-
-    // TODO move
-    public static <T extends Serializable> void toOutputStream(@Nullable T object, @NonNull OutputStream outputStream) {
-        if (object != null) {
-            ByteArrayOutputStream bos = new ByteArrayOutputStream();
-            ObjectOutput objectOutput = null;
-            try {
-                objectOutput = new ObjectOutputStream(bos);
-                objectOutput.writeObject(object);
-                bos.writeTo(outputStream);
-            } catch (IOException e) {
-                e.printStackTrace();
-            } finally {
-                try {
-                    if (objectOutput != null) {
-                        objectOutput.close();
-                    }
-                    bos.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
         }
     }
 

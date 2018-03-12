@@ -19,7 +19,7 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
     /**
      * {@inheritDoc}
      */
-    public ListSyncStorage( @Nullable String storageDirPath, @Nullable String extension,
+    public ListSyncStorage(@Nullable String storageDirPath, @Nullable String extension,
                            Class<I> clazz,
                            boolean sync, int maxSize, @NonNull IAddRule<I> addRule) {
         super(storageDirPath, extension, clazz, sync, maxSize, addRule);

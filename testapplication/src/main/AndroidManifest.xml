@@ -15,7 +15,7 @@
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
 
-        <activity android:name="net.maxsmr.testapplication.activity.TestTasksActivity">
+        <activity android:exported="true" android:name="net.maxsmr.testapplication.activity.TestTasksActivity">
         </activity>
 
         <activity android:name="net.maxsmr.testapplication.activity.TestUploadActivity">

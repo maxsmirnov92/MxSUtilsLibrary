@@ -130,7 +130,7 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
         manager.enqueueLoad(info);
     }
 
-    public abstract static class Callback<B extends LoadRunnableInfo.Body> implements LoadListener<LoadRunnableInfo<B>> {
+    public static class Callback<B extends LoadRunnableInfo.Body> implements LoadListener<LoadRunnableInfo<B>> {
 
         @NonNull
         protected final Handler uiHandler = new Handler(Looper.getMainLooper());

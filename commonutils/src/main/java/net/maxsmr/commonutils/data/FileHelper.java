@@ -360,13 +360,15 @@ public final class FileHelper {
     }
 
     public static boolean revectorStream(InputStream in, OutputStream out) {
-        return revectorStream(in, out);
+        return revectorStream(in, out, null);
     }
 
     public static boolean revectorStream(InputStream in, OutputStream out, @Nullable IStreamNotifier notifier) {
 
         if (in == null || out == null)
             return false;
+
+        boolean result = true;
 
         try {
             byte[] buff = new byte[256];
@@ -387,6 +389,7 @@ public final class FileHelper {
                     if (interval <= 0 || lastNotifyTime == 0 || (System.currentTimeMillis() - lastNotifyTime) >= interval) {
                         if (!notifier.onProcessing(in, out, bytesWriteCount,
                                 totalBytesCount > 0 && bytesWriteCount <= totalBytesCount ? totalBytesCount - bytesWriteCount : 0)) {
+                            result = false;
                             break;
                         }
                         lastNotifyTime = System.currentTimeMillis();
@@ -399,7 +402,8 @@ public final class FileHelper {
 
         } catch (IOException e) {
             logger.error("an IOException occurred", e);
-            return false;
+            result = false;
+
         } finally {
             try {
                 in.close();
@@ -409,8 +413,7 @@ public final class FileHelper {
             }
         }
 
-        return true;
-
+        return result;
     }
 
     @Nullable

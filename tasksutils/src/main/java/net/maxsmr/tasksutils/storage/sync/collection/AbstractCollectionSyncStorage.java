@@ -148,7 +148,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
             FileOutputStream fos = null;
             try {
-                toOutputStream(info, fos = new FileOutputStream((new File(storageDirPath, infoFileName)), false));
+                info.toOutputStream(fos = new FileOutputStream((new File(storageDirPath, infoFileName)), false));
                 return true;
             } catch (FileNotFoundException e) {
                 e.printStackTrace();

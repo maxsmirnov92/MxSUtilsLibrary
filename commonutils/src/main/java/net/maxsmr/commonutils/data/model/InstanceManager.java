@@ -3,6 +3,8 @@ package net.maxsmr.commonutils.data.model;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import net.maxsmr.commonutils.data.FileHelper;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -12,10 +14,9 @@ import java.io.ObjectInput;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
+import java.io.OutputStream;
 import java.io.Serializable;
 import java.util.List;
-
-import net.maxsmr.commonutils.data.FileHelper;
 
 public abstract class InstanceManager<T> {
 
@@ -64,6 +65,29 @@ public abstract class InstanceManager<T> {
             }
         }
         return null;
+    }
+
+    public static <T extends Serializable> void toOutputStream(@Nullable T object, @NonNull OutputStream outputStream) {
+        if (object != null) {
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutput objectOutput = null;
+            try {
+                objectOutput = new ObjectOutputStream(bos);
+                objectOutput.writeObject(object);
+                bos.writeTo(outputStream);
+            } catch (IOException e) {
+                e.printStackTrace();
+            } finally {
+                try {
+                    if (objectOutput != null) {
+                        objectOutput.close();
+                    }
+                    bos.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
     }
 
     @Nullable

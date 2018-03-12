@@ -1,6 +1,7 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
@@ -23,32 +24,48 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
 
     private long timeWhenStarted;
 
+    @Nullable
+    private Throwable execException;
+
     public ExecInfo(@NonNull T taskRunnable) {
         this.taskRunnable = taskRunnable;
     }
 
-    public long getTimeWaitingInQueue() {
+    public ExecInfo(@NonNull ExecInfo<I, T> execInfo) {
+        this.taskRunnable = execInfo.taskRunnable;
+        this.timeWaitingInQueue = execInfo.timeWaitingInQueue;
+        timeExecuting = execInfo.timeExecuting;
+        timeWhenAddedToQueue = execInfo.timeWhenAddedToQueue;
+        timeWhenStarted = execInfo.timeWhenStarted;
+    }
+
+    synchronized public long getTimeWaitingInQueue() {
         return timeWaitingInQueue;
     }
 
-    public String getTimeWhenAddedToQueueFormatted() {
+    synchronized public String getTimeWhenAddedToQueueFormatted() {
         return SDF.format(new Date(timeWhenAddedToQueue));
     }
 
-    public long getTimeExecuting() {
+    synchronized public long getTimeExecuting() {
         return timeExecuting;
     }
 
-    public String getTimeWhenStartedFormatted() {
+    synchronized public String getTimeWhenStartedFormatted() {
         return SDF.format(new Date(timeWhenStarted));
     }
 
-    public long getTotalTime() {
+    synchronized public long getTotalTime() {
         return getTimeExecuting() + getTimeWaitingInQueue();
     }
 
+    @Nullable
+    synchronized public Throwable getExecException() {
+        return execException;
+    }
+
     @NonNull
-    ExecInfo<I, T> setTimeWhenAddedToQueue(long timeWhenAddedToQueue) {
+    synchronized ExecInfo<I, T> setTimeWhenAddedToQueue(long timeWhenAddedToQueue) {
         if (this.timeWhenAddedToQueue > 0) {
             throw new IllegalStateException("timeWhenAddedToQueue is already specified");
         }
@@ -63,7 +80,7 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
     }
 
     @NonNull
-    ExecInfo<I, T> setTimeWhenStarted(long timeWhenStarted) {
+    synchronized ExecInfo<I, T> setTimeWhenStarted(long timeWhenStarted) {
         if (this.timeWhenStarted > 0) {
             throw new IllegalStateException("timeWhenStarted is already specified");
         }
@@ -81,7 +98,7 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
     }
 
     @NonNull
-    ExecInfo<I, T> finishedWaitingInQueue(long when) {
+    synchronized ExecInfo<I, T> finishedWaitingInQueue(long when) {
         if (timeWaitingInQueue > 0) {
             throw new IllegalStateException("timeWaitingInQueue is already calculated");
         }
@@ -97,7 +114,7 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
     }
 
     @NonNull
-    ExecInfo<I, T> finishedExecution(long when) {
+    synchronized ExecInfo<I, T> finishedExecution(long when, @Nullable Throwable execException) {
         if (timeExecuting > 0) {
             throw new IllegalStateException("timeExecuting is already calculated");
         }
@@ -108,16 +125,43 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
             throw new IllegalArgumentException("incorrect when: " + when + " < timeWhenStarted: " + timeWhenStarted);
         }
         timeExecuting = when - timeWhenStarted;
+        this.execException = execException;
         return this;
     }
 
     @NonNull
-    ExecInfo<I, T> reset() {
+    synchronized ExecInfo<I, T> reset() {
         timeWaitingInQueue = 0;
         timeExecuting = 0;
         timeWhenAddedToQueue = 0;
         timeWhenStarted = 0;
         return this;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        ExecInfo<?, ?> execInfo = (ExecInfo<?, ?>) o;
+
+        if (timeWaitingInQueue != execInfo.timeWaitingInQueue) return false;
+        if (timeExecuting != execInfo.timeExecuting) return false;
+        if (timeWhenAddedToQueue != execInfo.timeWhenAddedToQueue) return false;
+        if (timeWhenStarted != execInfo.timeWhenStarted) return false;
+        if (!taskRunnable.equals(execInfo.taskRunnable)) return false;
+        return execException != null ? execException.equals(execInfo.execException) : execInfo.execException == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = taskRunnable.hashCode();
+        result = 31 * result + (int) (timeWaitingInQueue ^ (timeWaitingInQueue >>> 32));
+        result = 31 * result + (int) (timeExecuting ^ (timeExecuting >>> 32));
+        result = 31 * result + (int) (timeWhenAddedToQueue ^ (timeWhenAddedToQueue >>> 32));
+        result = 31 * result + (int) (timeWhenStarted ^ (timeWhenStarted >>> 32));
+        result = 31 * result + (execException != null ? execException.hashCode() : 0);
+        return result;
     }
 
     @Override
@@ -128,6 +172,7 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
                 ", time executing: " + timeExecuting + " ms" +
                 ", time when added to queue: " + SDF.format(new Date(timeWhenAddedToQueue)) +
                 ", time when started: " + SDF.format(new Date(timeWhenStarted)) +
+                ", exec exception: " + execException +
                 '}';
     }
 }

@@ -253,8 +253,12 @@ public final class DeviceUtils {
         logger.debug("setAlarm(), pIntent=" + pIntent + ", triggerTime=" + triggerTime + ", alarmType=" + alarmType);
         boolean result = false;
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) {
+            throw new IllegalStateException("can't connect to " + AlarmManager.class.getSimpleName());
+        }
         switch (alarmType) {
             case RTC:
+            case RTC_WAKE_UP:
                 long currentTime = System.currentTimeMillis();
                 logger.debug("currentTime=" + currentTime);
                 if (triggerTime <= currentTime) {
@@ -262,9 +266,9 @@ public final class DeviceUtils {
                     break;
                 }
                 if (SDK_INT < Build.VERSION_CODES.KITKAT) {
-                    alarmManager.set(AlarmManager.RTC_WAKEUP, triggerTime, pIntent);
+                    alarmManager.set(alarmType == AlarmType.RTC_WAKE_UP? AlarmManager.RTC_WAKEUP : AlarmManager.RTC, triggerTime, pIntent);
                 } else if (Build.VERSION_CODES.KITKAT <= SDK_INT && SDK_INT < Build.VERSION_CODES.M) {
-                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, triggerTime, pIntent);
+                    alarmManager.setExact(alarmType == AlarmType.RTC_WAKE_UP? AlarmManager.RTC_WAKEUP : AlarmManager.RTC, triggerTime, pIntent);
                 } else if (SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setAlarmClock(new AlarmManager.AlarmClockInfo(triggerTime, null), pIntent);
                 }
@@ -272,6 +276,7 @@ public final class DeviceUtils {
                 break;
 
             case ELAPSED_REALTIME:
+            case ELAPSED_REALTIME_WAKE_UP:
                 long elapsedTime = SystemClock.elapsedRealtime();
                 logger.debug("elapsedTime=" + elapsedTime);
                 if (triggerTime <= elapsedTime) {
@@ -279,9 +284,9 @@ public final class DeviceUtils {
                     break;
                 }
                 if (SDK_INT < Build.VERSION_CODES.KITKAT) {
-                    alarmManager.set(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, pIntent);
+                    alarmManager.set(alarmType == AlarmType.ELAPSED_REALTIME_WAKE_UP? AlarmManager.ELAPSED_REALTIME_WAKEUP : AlarmManager.ELAPSED_REALTIME, triggerTime, pIntent);
                 } else if (Build.VERSION_CODES.KITKAT <= SDK_INT && SDK_INT < Build.VERSION_CODES.M) {
-                    alarmManager.setExact(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, pIntent);
+                    alarmManager.setExact(alarmType == AlarmType.ELAPSED_REALTIME_WAKE_UP? AlarmManager.ELAPSED_REALTIME_WAKEUP : AlarmManager.ELAPSED_REALTIME, triggerTime, pIntent);
                 } else if (SDK_INT >= Build.VERSION_CODES.M) {
                   alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, pIntent);
                 }
@@ -292,7 +297,7 @@ public final class DeviceUtils {
     }
 
     public enum AlarmType {
-        RTC, ELAPSED_REALTIME
+        RTC, RTC_WAKE_UP, ELAPSED_REALTIME, ELAPSED_REALTIME_WAKE_UP
     }
 
     public enum ScreenTimeout {

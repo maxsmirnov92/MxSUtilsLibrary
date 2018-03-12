@@ -92,43 +92,50 @@ public final class ServiceUtils {
     }
 
     public static <S extends Service> void cancelDelay(@NonNull Context context, @NonNull Class<S> serviceClass) {
+        cancelDelay(context, serviceClass, 0, 0);
+    }
+
+    public static <S extends Service> void cancelDelay(@NonNull Context context, @NonNull Class<S> serviceClass, int requestCode, int flags) {
         logger.debug("cancelDelay(), serviceClass=" + serviceClass);
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
+        if (alarmManager == null) {
+            throw new IllegalStateException("can't connect to " + AlarmManager.class.getSimpleName());
+        }
         Intent intent = new Intent(context, serviceClass);
-        PendingIntent pendingIntent = PendingIntent.getService(context, 0, intent, 0);
+        PendingIntent pendingIntent = PendingIntent.getService(context, requestCode >= 0 ? requestCode : 0, intent, flags);
         alarmManager.cancel(pendingIntent);
     }
 
-    public static <S extends Service> void restartDelay(@NonNull Context context, @NonNull Class<S> serviceClass, long delay) {
+    public static <S extends Service> void restartDelay(@NonNull Context context, @NonNull Class<S> serviceClass, long delay, boolean wakeUp) {
         logger.debug("restartDelay(), serviceClass=" + serviceClass + ", delay=" + delay);
 
         if (delay < 0) {
             throw new IllegalArgumentException("incorrect delay: " + delay);
         }
         stop(context, serviceClass);
-        startDelayNoCheck(context, serviceClass, delay);
+        startDelayNoCheck(context, serviceClass, delay, wakeUp);
     }
 
-    private static <S extends Service> void restartDelayNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass, long delay) {
+    private static <S extends Service> void restartDelayNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass, long delay, boolean wakeUp) {
 
         if (delay < 0) {
             throw new IllegalArgumentException("incorrect delay: " + delay);
         }
 
         stopNoCheck(context, serviceClass);
-        startDelayNoCheck(context, serviceClass, delay);
+        startDelayNoCheck(context, serviceClass, delay, wakeUp);
     }
 
-    public static <S extends Service> void startDelayNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass, long delay) {
+    public static <S extends Service> void startDelayNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass, long delay, boolean wakeUp) {
         cancelDelay(context, serviceClass);
         PendingIntent pendingIntent = PendingIntent.getService(context, 0, new Intent(context, serviceClass), PendingIntent.FLAG_CANCEL_CURRENT);
-        DeviceUtils.setAlarm(context, pendingIntent, System.currentTimeMillis() + delay, DeviceUtils.AlarmType.RTC);
+        DeviceUtils.setAlarm(context, pendingIntent, System.currentTimeMillis() + delay, wakeUp ? DeviceUtils.AlarmType.RTC_WAKE_UP : DeviceUtils.AlarmType.RTC);
     }
 
-    public static <S extends Service> void startDelay(@NonNull Context context, @NonNull Class<S> serviceClass, long delay) {
+    public static <S extends Service> void startDelay(@NonNull Context context, @NonNull Class<S> serviceClass, long delay, boolean wakeUp) {
         logger.debug("startDelay(), serviceClass=" + serviceClass + ", delay=" + delay);
         if (!isServiceRunning(context, serviceClass)) {
-            restartDelayNoCheck(context, serviceClass, delay);
+            restartDelayNoCheck(context, serviceClass, delay, wakeUp);
         }
     }
 

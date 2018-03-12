@@ -8,6 +8,8 @@ public abstract class WrappedProgressable implements Progressable {
 
     private final Set<Progressable> progressables = new LinkedHashSet<>();
 
+    private boolean isStarted = false;
+
     public WrappedProgressable(Progressable... progressables) {
         if (progressables != null) {
             this.progressables.addAll(Arrays.asList(progressables));
@@ -22,6 +24,7 @@ public abstract class WrappedProgressable implements Progressable {
                     p.onStart();
                 }
             }
+            isStarted = true;
         }
     }
 
@@ -33,7 +36,12 @@ public abstract class WrappedProgressable implements Progressable {
                     p.onStop();
                 }
             }
+            isStarted = false;
         }
+    }
+
+    public boolean isStarted() {
+        return isStarted;
     }
 
     protected abstract boolean isAlive();

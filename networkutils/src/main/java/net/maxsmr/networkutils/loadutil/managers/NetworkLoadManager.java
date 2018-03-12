@@ -7,14 +7,13 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.logger.AndroidSimpleLogger;
+import net.maxsmr.commonutils.logger.base.BaseSimpleLogger;
 import net.maxsmr.networkutils.loadutil.managers.base.BaseNetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -55,7 +54,7 @@ import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableIn
 public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends LoadRunnableInfo<B>>
         extends BaseNetworkLoadManager<B, LI, TaskRunnable<LI>> {
 
-    private static final Logger logger = LoggerFactory.getLogger(NetworkLoadManager.class);
+    private static BaseSimpleLogger logger = new AndroidSimpleLogger(NetworkLoadManager.class.getSimpleName());
 
     private static final String LINE_FEED = "\r\n";
 
@@ -70,6 +69,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                               @Nullable TaskRunnable.ITaskResultValidator<LI, TaskRunnable<LI>> validator,
                               @Nullable Handler callbacksHandler) {
         super(limit, concurrentLoadsCount, storage, validator, callbacksHandler);
+
         doRestore(new TaskRunnable.ITaskRestorer<LI, TaskRunnable<LI>>() {
 
             @Override
@@ -85,6 +85,9 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         });
     }
 
+    public static void setLogger(BaseSimpleLogger logger) {
+        NetworkLoadManager.logger = logger;
+    }
 
     @Nullable
     public LoadProcessInfo getCurrentLoadProcessInfoForId(int loadId) {
@@ -198,14 +201,14 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
             currentLoadInfo = new LoadProcessInfo();
 
-            HttpURLConnection connection = null;
-            DataOutputStream requestStream = null;
-            BufferedInputStream responseInput = null;
-            BufferedOutputStream responseOutput = null;
-
             while (!success && !rInfo.isCanceled() &&
                     (rInfo.settings.retryLimit == LoadRunnableInfo.LoadSettings.RETRY_LIMIT_UNLIMITED
                             || (currentLoadInfo.retriesCount == -1 || rInfo.settings.retryLimit != LoadRunnableInfo.LoadSettings.RETRY_LIMIT_NONE && currentLoadInfo.retriesCount < rInfo.settings.retryLimit))) {
+
+                HttpURLConnection connection = null;
+                DataOutputStream requestStream = null;
+                BufferedInputStream responseInput = null;
+                BufferedOutputStream responseOutput = null;
 
                 boolean isFileReasonFail = false;
 

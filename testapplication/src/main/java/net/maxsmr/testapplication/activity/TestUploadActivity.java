@@ -144,7 +144,7 @@ public class TestUploadActivity extends AppCompatActivity implements AbstractSyn
                     }
                 };
                 if (!loadManager.containsLoad(id)) {
-                    request.enqueue(null); // new Callback(id) // TODO unsubscribe
+                    request.enqueue(new AbstractRequest.Callback(id, true));
                 }
 
             } else {

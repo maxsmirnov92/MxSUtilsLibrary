@@ -7,6 +7,8 @@ import android.content.ClipboardManager;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.res.ColorStateList;
+import android.content.res.Configuration;
+import android.content.res.Resources;
 import android.content.res.TypedArray;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
@@ -22,6 +24,7 @@ import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.TextInputLayout;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
@@ -31,8 +34,10 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.util.Pair;
+import android.util.TypedValue;
 import android.view.Display;
 import android.view.KeyEvent;
+import android.view.MenuItem;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
@@ -46,12 +51,14 @@ import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.StringUtils;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 
 import static net.maxsmr.commonutils.android.gui.OrientationIntervalListener.ROTATION_NOT_SPECIFIED;
 
@@ -118,19 +125,82 @@ public final class GuiUtils {
         }
     }
 
-    public static void setStatusBarColor(@ColorInt int color, @NonNull Window window) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS);
-            window.setStatusBarColor(color);
+    /**
+     * Меняет цвет статусбара на заданный
+     */
+    public static boolean setStatusBarColor(Window window, @ColorInt int color) {
+        boolean result = false;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                window.setStatusBarColor(color);
+                result = true;
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                TypedValue typedValue = new TypedValue();
+
+                TypedArray a = window.getContext().obtainStyledAttributes(typedValue.data, new int[]{R.attr.colorPrimaryDark});
+                int colorPrimaryDark = a.getColor(0, 0);
+                a.recycle();
+
+                window.setStatusBarColor(colorPrimaryDark);
+
+                result = true;
+            }
+        } catch (Exception ignored) {
+        }
+
+        return result;
+    }
+
+
+    public static boolean setNavigationBarColor(@NonNull Window window, @ColorInt int color) {
+        boolean result = false;
+        try {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                window.setNavigationBarColor(color);
+                result = true;
+            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                TypedValue typedValue = new TypedValue();
+
+                TypedArray a = window.getContext().obtainStyledAttributes(typedValue.data, new int[]{R.attr.colorPrimaryDark});
+                int colorPrimaryDark = a.getColor(0, 0);
+                a.recycle();
+
+                window.setNavigationBarColor(colorPrimaryDark);
+
+                result = true;
+            }
+        } catch (Exception ignored) {
+        }
+
+        return result;
+    }
+
+    /**
+     * Меняет цвет иконок статусбара на темный/светлый
+     *
+     * @param v      корневая {@link View} лейаута
+     * @param toogle {@link Boolean#TRUE} тёмные icons, {@link Boolean#FALSE} - светлые
+     */
+    public static void toggleLightStatusBar(View v, boolean toogle) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            try {
+                //noinspection ConstantConditions
+                int flags = v.getSystemUiVisibility();
+                flags = toogle ? flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR : flags & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
+                v.setSystemUiVisibility(flags);
+            } catch (Exception ignored) {
+            }
         }
     }
 
-    public static void setNavigationBarColor(@ColorInt int color, @NonNull Window window) {
+    public static void applyItemColorTint(@NonNull Context context, MenuItem item, int color) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            window.addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-            window.clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_NAVIGATION);
-            window.setNavigationBarColor(color);
+            if (item != null) {
+                Drawable icon = item.getIcon();
+                if (icon != null) {
+                    icon.setTintList(ContextCompat.getColorStateList(context, color));
+                }
+            }
         }
     }
 
@@ -155,6 +225,29 @@ public final class GuiUtils {
                 progressBar.setIndeterminateTintList(stateList);
                 // new ColorStateList(new int[][]{new int[]{android.R.attr.state_enabled}}, new int[]{color})
             }
+        }
+    }
+
+    /**
+     * Задает локаль по умолчанию в рамках приложения.
+     *
+     * @param locale объект локали
+     */
+    public static void forceLocaleInApp(@NonNull Context context, Locale locale) {
+        Locale.setDefault(locale);
+
+        Resources resources;
+        resources = context.getResources();
+
+        Configuration configuration = resources.getConfiguration();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            configuration.setLocale(locale);
+            context.createConfigurationContext(configuration);
+        } else {
+            //noinspection deprecation // есть проверка
+            configuration.locale = locale;
+            //noinspection deprecation // есть проверка
+            resources.updateConfiguration(configuration, resources.getDisplayMetrics());
         }
     }
 

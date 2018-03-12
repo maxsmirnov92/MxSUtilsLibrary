@@ -2,7 +2,7 @@ package net.maxsmr.commonutils.logger.base;
 
 public abstract class BaseSimpleLogger implements Logger {
 
-    private boolean mLoggingEnabled;
+    private boolean mLoggingEnabled = true;
 
     public boolean isLoggingEnabled() {
         return mLoggingEnabled;

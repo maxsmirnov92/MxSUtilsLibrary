@@ -14,6 +14,7 @@ import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.ExecInfo;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
+import net.maxsmr.tasksutils.taskexecutor.StatInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor;
 
@@ -114,17 +115,17 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
     protected abstract R newRunnable(@NonNull LI rInfo);
 
     @Override
-    public void onAddedToQueue(R r, int waitingCount, int activeCount) {
+    public void onAddedToQueue(@NonNull R r, int waitingCount, int activeCount) {
         mLoadObservable.notifyLoadAddedToQueue(r.rInfo, waitingCount, activeCount);
     }
 
     @Override
-    public void onBeforeExecute(Thread t, R r, ExecInfo<LI, R> execInfo, int waitingCount, int activeCount) {
+    public void onBeforeExecute(@NonNull Thread t, @NonNull R r, @NonNull ExecInfo<LI, R> execInfo, int waitingCount, int activeCount) {
 
     }
 
     @Override
-    public void onAfterExecute(R r, Throwable t, ExecInfo<LI, R> execInfo, int waitingCount, int activeCount) {
+    public void onAfterExecute(@NonNull R r, Throwable t, @NonNull ExecInfo<LI, R> execInfo, @NonNull StatInfo<LI, R> statInfo, int waitingCount, int activeCount) {
         mLoadObservable.notifyLoadRemovedFromQueue(r.rInfo, mExecutor.getWaitingTasksCount(), mExecutor.getActiveTasksCount());
     }
 

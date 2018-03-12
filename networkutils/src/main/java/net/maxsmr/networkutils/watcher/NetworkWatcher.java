@@ -7,7 +7,7 @@ import android.os.PowerManager;
 import android.provider.Settings;
 
 import net.maxsmr.commonutils.data.MathUtils;
-import net.maxsmr.networkutils.NETWORK_TYPE;
+import net.maxsmr.networkutils.NetworkType;
 import net.maxsmr.networkutils.NetworkHelper;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 
@@ -73,10 +73,10 @@ public class NetworkWatcher {
         this.context = context;
     }
 
-    public final static NETWORK_TYPE DEFAULT_PREFERABLE_NETWORK_TYPE = NETWORK_TYPE.WIFI;
-    private NETWORK_TYPE preferableNetworkType = DEFAULT_PREFERABLE_NETWORK_TYPE;
+    public final static NetworkType DEFAULT_PREFERABLE_NETWORK_TYPE = NetworkType.WIFI;
+    private NetworkType preferableNetworkType = DEFAULT_PREFERABLE_NETWORK_TYPE;
 
-    public NETWORK_TYPE getPreferableNetworkType() {
+    public NetworkType getPreferableNetworkType() {
         return preferableNetworkType;
     }
 
@@ -88,12 +88,12 @@ public class NetworkWatcher {
         return preferableNetworkTypeSwitchTime;
     }
 
-    public void setPreferableNetworkTypeAndSwitchTime(NETWORK_TYPE preferableNetworkType, long preferableNetworkTypeSwitchTime) {
+    public void setPreferableNetworkTypeAndSwitchTime(NetworkType preferableNetworkType, long preferableNetworkTypeSwitchTime) {
         logger.debug("setPreferableNetworkTypeAndSwitchTime(), preferableNetworkType=" + preferableNetworkType
                 + ", preferableNetworkTypeSwitchTime=" + preferableNetworkTypeSwitchTime);
 
         if (preferableNetworkType != null && ConnectivityManager.isNetworkTypeValid(preferableNetworkType.getValue())
-                || preferableNetworkType == NETWORK_TYPE.NONE) {
+                || preferableNetworkType == NetworkType.NONE) {
             this.preferableNetworkType = preferableNetworkType;
         } else {
             logger.error("incorrect preferableNetworkType: " + preferableNetworkType);
@@ -491,7 +491,7 @@ public class NetworkWatcher {
 
                         logger.info("switching wifi network ON/OFF...");
 
-                        restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NETWORK_TYPE.WIFI,
+                        restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NetworkType.WIFI,
                                 DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT);
                         restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
                         restoreNetworkThread.start();
@@ -510,7 +510,7 @@ public class NetworkWatcher {
 
                         logger.info("turning OFF wifi and turning ON mobile data connection...");
 
-                        restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NETWORK_TYPE.MOBILE,
+                        restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NetworkType.MOBILE,
                                 DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT);
                         restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
                         restoreNetworkThread.start();
@@ -535,7 +535,7 @@ public class NetworkWatcher {
 
                         logger.info("turning ON wifi...");
 
-                        restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NETWORK_TYPE.WIFI,
+                        restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NetworkType.WIFI,
                                 DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT);
                         restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
                         restoreNetworkThread.start();
@@ -561,7 +561,7 @@ public class NetworkWatcher {
                             logger.info("turning ON airplane mode...");
 
                             restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.TOGGLE_AIRPLANE_MODE, airplaneModeTime,
-                                    airplaneModePostWait, NETWORK_TYPE.NONE, 0);
+                                    airplaneModePostWait, NetworkType.NONE, 0);
                             restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
                             restoreNetworkThread.start();
 
@@ -579,7 +579,7 @@ public class NetworkWatcher {
 
                                 logger.info("rebooting...");
 
-                                restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.REBOOT_PHONE, 0, 0, NETWORK_TYPE.WIFI, 0);
+                                restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.REBOOT_PHONE, 0, 0, NetworkType.WIFI, 0);
                                 restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
                                 restoreNetworkThread.start();
 
@@ -593,7 +593,7 @@ public class NetworkWatcher {
 
                                     logger.info("turning OFF mobile data connection and turning ON wifi...");
 
-                                    restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NETWORK_TYPE.WIFI,
+                                    restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NetworkType.WIFI,
                                             DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT);
                                     restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
                                     restoreNetworkThread.start();
@@ -643,11 +643,11 @@ public class NetworkWatcher {
         private final long airplaneModeTime;
         private final long airplaneModePostWait;
 
-        private final NETWORK_TYPE networkTypeToSwitch;
+        private final NetworkType networkTypeToSwitch;
         private final long networkTypeSwitchPostWait;
 
         public RestoreNetworkThread(RESTORE_METHOD restoreMethod, long airplaneModeTime, long airplaneModePostWait,
-                                    NETWORK_TYPE networkTypeToSwitch, long networkTypeSwitchPostWait) {
+                                    NetworkType networkTypeToSwitch, long networkTypeSwitchPostWait) {
 
             if (restoreMethod != null) {
                 this.restoreMethod = restoreMethod;
@@ -675,10 +675,10 @@ public class NetworkWatcher {
                         this.networkTypeToSwitch = networkTypeToSwitch;
                         break;
                     default:
-                        this.networkTypeToSwitch = NETWORK_TYPE.fromNativeValue(NetworkHelper.NETWORK_TYPE_NONE);
+                        this.networkTypeToSwitch = NetworkType.fromNativeValue(NetworkHelper.NETWORK_TYPE_NONE);
                 }
             } else {
-                this.networkTypeToSwitch = NETWORK_TYPE.fromNativeValue(NetworkHelper.NETWORK_TYPE_NONE);
+                this.networkTypeToSwitch = NetworkType.fromNativeValue(NetworkHelper.NETWORK_TYPE_NONE);
             }
 
             if (networkTypeSwitchPostWait < 0) {
@@ -722,7 +722,7 @@ public class NetworkWatcher {
                     break;
             }
 
-            if (networkTypeToSwitch != NETWORK_TYPE.NONE) {
+            if (networkTypeToSwitch != NetworkType.NONE) {
 
                 try {
                     Thread.sleep(networkTypeSwitchPostWait);

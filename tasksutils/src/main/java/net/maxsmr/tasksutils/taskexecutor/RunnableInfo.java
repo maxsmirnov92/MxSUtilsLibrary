@@ -4,8 +4,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.data.model.InstanceManager;
-import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -62,7 +62,7 @@ public class RunnableInfo implements Serializable {
     }
 
     public void toOutputStream(@NonNull OutputStream outputStream) {
-        AbstractSyncStorage.toOutputStream(this, outputStream);
+        InstanceManager.toOutputStream(this, outputStream); // TODO return boolean
     }
 
     @Override
@@ -97,20 +97,59 @@ public class RunnableInfo implements Serializable {
     }
 
     @NonNull
-    public static <I extends RunnableInfo, T extends TaskRunnable<I>> List<I> fromTasks(Collection<T> runnables) {
+    public static <I extends RunnableInfo, T extends TaskRunnable<I>> List<I> fromTasks(@Nullable Collection<T> runnables) {
         List<I> infos = new ArrayList<>();
-        for (T runnable : runnables) {
-            infos.add(runnable.rInfo);
+        if (runnables != null) {
+            for (T runnable : runnables) {
+                infos.add(runnable.rInfo);
+            }
         }
         return infos;
     }
 
+    @NonNull
+    public static <I extends RunnableInfo> List<Integer> idsFromInfos(@Nullable Collection<I> infos) {
+        List<Integer> ids = new ArrayList<>();
+        if (infos != null) {
+            for (I info : infos) {
+                ids.add(info.id);
+            }
+        }
+        return ids;
+    }
+
+    @Nullable
     public static <I extends RunnableInfo> I fromByteArray(Class<I> clazz, byte[] byteArray) {
         return InstanceManager.fromByteArray(clazz, byteArray);
     }
 
+    @Nullable
     public static <I extends RunnableInfo> I fromInputStream(Class<I> clazz, InputStream inputStream) {
         return InstanceManager.fromInputStream(clazz, inputStream);
+    }
+
+    @Nullable
+    public static <I extends RunnableInfo> I findRunnableInfoById(final int id, Collection<I> tasks) {
+        if (id < 0) {
+            throw new IllegalArgumentException("incorrect id: " + id);
+        }
+        return Predicate.Methods.find(tasks, new Predicate<I>() {
+            @Override
+            public boolean apply(I element) {
+                return element != null && id == element.id;
+            }
+        });
+    }
+
+    @NonNull
+    public static <I extends RunnableInfo> List<I> filter(final Collection<I> what, final Collection<I> by, final boolean contains) {
+        return Predicate.Methods.filter(what, new Predicate<I>() {
+            @Override
+            public boolean apply(I element) {
+                I info = element != null? findRunnableInfoById(element.id, by) : null;
+                return contains && info != null || !contains && info == null;
+            }
+        });
     }
 
     public static void setRunning(@Nullable Collection<? extends RunnableInfo> infos, boolean isRunning) {

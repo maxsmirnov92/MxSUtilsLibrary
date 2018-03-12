@@ -1,5 +1,6 @@
 package net.maxsmr.networkutils;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
@@ -38,26 +39,35 @@ public class NetworkHelper {
 
     private final static Logger logger = LoggerFactory.getLogger(NetworkHelper.class);
 
-    public static boolean isOnline(@NonNull Context context) {
+    public final static int PING_TIME_NONE = -1;
 
-        final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
+    public final static int NETWORK_TYPE_NONE = -1;
 
-        if (activeNetInfo != null && activeNetInfo.isConnected() && activeNetInfo.isAvailable()) {
+    public final static String NETWORK_TYPE_NONE_HR = "none";
 
-            logger.debug("isOnline=true");
-            return true;
-        } else {
-            logger.debug("isOnline=false");
-            return false;
+    private static Pattern IPV4_PATTERN = null;
+    private static Pattern IPV6_PATTERN = null;
+
+    static {
+        try {
+            IPV4_PATTERN = Pattern.compile("(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])", Pattern.CASE_INSENSITIVE);
+            IPV6_PATTERN = Pattern.compile("([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}", Pattern.CASE_INSENSITIVE);
+        } catch (PatternSyntaxException e) {
+            logger.error("Unable to compile pattern", e);
         }
+    }
+
+    public static boolean isOnline(@NonNull Context context) {
+        final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
+        return activeNetInfo != null && activeNetInfo.isConnected() && activeNetInfo.isAvailable();
     }
 
     @NonNull
     public static NetworkInfo.State getCurrentNetworkState(@NonNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
+        @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
 
         if (activeNetInfo != null) {
             NetworkInfo.State state = activeNetInfo.getState();
@@ -76,46 +86,34 @@ public class NetworkHelper {
         }
     }
 
-    public final static int NETWORK_TYPE_NONE = -1;
-
-    @NonNull
     public static int getActiveNetworkType(@NonNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
+        @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
 
         if (activeNetInfo != null && activeNetInfo.isConnected()) {
-
             return activeNetInfo.getType();
-        } else {
-
-            return NETWORK_TYPE_NONE;
         }
+        return NETWORK_TYPE_NONE;
     }
 
     public static int getActiveNetworkSubtype(@NonNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
+        @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
 
         if (activeNetInfo != null && activeNetInfo.isConnected()) {
-
             return activeNetInfo.getSubtype();
-        } else {
-
-            return NETWORK_TYPE_NONE;
         }
+        return NETWORK_TYPE_NONE;
     }
-
-    public final static String NETWORK_TYPE_NONE_HR = "none";
 
     public static String getActiveNetworkTypeHR(@NonNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
+        @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
 
         if (activeNetInfo != null && activeNetInfo.isConnected()) {
-
             return activeNetInfo.getTypeName();
 
         } else {
@@ -126,27 +124,12 @@ public class NetworkHelper {
     public static String getActiveNetworkSubtypeHR(@NonNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
+        @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
 
         if (activeNetInfo != null && activeNetInfo.isConnected()) {
-
             return activeNetInfo.getSubtypeName();
-
-        } else {
-            return NETWORK_TYPE_NONE_HR;
         }
-    }
-
-    private static Pattern IPV4_PATTERN = null;
-    private static Pattern IPV6_PATTERN = null;
-
-    static {
-        try {
-            IPV4_PATTERN = Pattern.compile("(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])", Pattern.CASE_INSENSITIVE);
-            IPV6_PATTERN = Pattern.compile("([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}", Pattern.CASE_INSENSITIVE);
-        } catch (PatternSyntaxException e) {
-             logger.error("Unable to compile pattern", e);
-        }
+        return NETWORK_TYPE_NONE_HR;
     }
 
     public static boolean isIpAddress(String ipAddress) {
@@ -227,8 +210,9 @@ public class NetworkHelper {
 
     /**
      * Get IP address from first non-localhost interface
-     * @param useIPv4  true=return ipv4, false=return ipv6
-     * @return  address or empty string
+     *
+     * @param useIPv4 true=return ipv4, false=return ipv6
+     * @return address or empty string
      */
     public static String getIPAddress(boolean useIPv4) {
         try {
@@ -239,14 +223,14 @@ public class NetworkHelper {
                     if (!addr.isLoopbackAddress()) {
                         String sAddr = addr.getHostAddress();
                         //boolean isIPv4 = InetAddressUtils.isIPv4Address(sAddr);
-                        boolean isIPv4 = sAddr.indexOf(':')<0;
+                        boolean isIPv4 = sAddr.indexOf(':') < 0;
                         if (useIPv4) {
                             if (isIPv4)
                                 return sAddr;
                         } else {
                             if (!isIPv4) {
                                 int delim = sAddr.indexOf('%'); // drop ip6 zone suffix
-                                return delim<0 ? sAddr.toUpperCase() : sAddr.substring(0, delim).toUpperCase();
+                                return delim < 0 ? sAddr.toUpperCase() : sAddr.substring(0, delim).toUpperCase();
                             }
                         }
                     }
@@ -278,8 +262,6 @@ public class NetworkHelper {
             return false;
         }
     }
-
-    public final static int PING_TIME_NONE = -1;
 
     /**
      * @return ping time in ms or -1 if error occurred

@@ -3,11 +3,13 @@ package net.maxsmr.testapplication.activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
+import android.support.annotation.NonNull;
 import android.support.design.widget.Snackbar;
 import android.support.v4.util.Pair;
 import android.support.v7.app.AppCompatActivity;
 import android.view.LayoutInflater;
 import android.view.View;
+import android.widget.Toast;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.MathUtils;
@@ -16,6 +18,7 @@ import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.storage.sync.collection.AbstractCollectionSyncStorage;
 import net.maxsmr.tasksutils.storage.sync.collection.ListSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.ExecInfo;
+import net.maxsmr.tasksutils.taskexecutor.StatInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor;
 import net.maxsmr.testapplication.R;
@@ -59,7 +62,7 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
         TaskRunnable.ITaskResultValidator<TestRunnableInfo, TestTaskRunnable> validator = new TaskRunnable.ITaskResultValidator<TestRunnableInfo, TestTaskRunnable>() {
             @Override
             public boolean needToReAddTask(TestTaskRunnable runnable, Throwable t) {
-                return executor.containsTask(runnable.getId()) && t != null; // на этот момент таска всё ещё числится в "Active", но уже не "running"
+                return executor.containsTask(runnable.getId()) && t == null; // на этот момент таска всё ещё числится в "Active"
             }
         };
 
@@ -84,10 +87,9 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
     @Override
     protected void onDestroy() {
         super.onDestroy();
-//        storage.clear(); // специально удаляем вместе с файлами для следующего теста
+        storage.clear(); // специально удаляем вместе с файлами для следующего теста
         storage.release();
         executor.shutdown();
-        executor.unregisterCallback(this);
     }
 
     @Override
@@ -119,21 +121,22 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
     }
 
     @Override
-    public void onAddedToQueue(final TestTaskRunnable r, final int waitingCount, final int activeCount) {
+    public void onAddedToQueue(@NonNull final TestTaskRunnable r, final int waitingCount, final int activeCount) {
         logger.debug("onAddedToQueue(), r=" + r + ", waitingCount=" + waitingCount + ", activeCount=" + activeCount);
         Snackbar.make(contentView, "task with id " + r.getId() + " was added to queue (waiting: " + waitingCount + "), active: " + activeCount, Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onBeforeExecute(Thread t, final TestTaskRunnable r, ExecInfo<TestRunnableInfo, TestTaskRunnable> execInfo, final int waitingCount, final int activeCount) {
+    public void onBeforeExecute(@NonNull Thread t, @NonNull final TestTaskRunnable r, @NonNull ExecInfo<TestRunnableInfo, TestTaskRunnable> execInfo, final int waitingCount, final int activeCount) {
         logger.debug("onBeforeExecute(), r=" + r + ", execInfo=" + execInfo);
         Snackbar.make(contentView, "task with id " + r.getId() + " starting executing (waiting: " + waitingCount + "), active: " + activeCount, Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onAfterExecute(final TestTaskRunnable r, Throwable t, final ExecInfo<TestRunnableInfo, TestTaskRunnable> execInfo, final int waitingCount, final int activeCount) {
+    public void onAfterExecute(@NonNull final TestTaskRunnable r, Throwable t, @NonNull final ExecInfo<TestRunnableInfo, TestTaskRunnable> execInfo, @NonNull final StatInfo<TestRunnableInfo, TestTaskRunnable> statInfo, final int waitingCount, final int activeCount) {
         logger.debug("onAfterExecute(), r=" + r + ", t=" + t + ", execInfo=" + execInfo);
         Snackbar.make(contentView, "task with id " + r.getId() + " finished executing in " + execInfo.getTimeExecuting()
                 + " ms (waiting: " + waitingCount + "), active: " + activeCount, Snackbar.LENGTH_SHORT).show();
+        Toast.makeText(this, "task with id " + r.getId() + " completed " + statInfo.getCompletedTimesCount() + " times", Toast.LENGTH_SHORT).show();
     }
 }
