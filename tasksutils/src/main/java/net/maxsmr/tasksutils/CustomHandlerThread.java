@@ -30,6 +30,10 @@ public class CustomHandlerThread extends HandlerThread {
         this.listener = listener;
     }
 
+    public Handler getHandler() {
+        return handler;
+    }
+
     public boolean isLooperPrepared() {
         return handler != null && getLooper() != null;
     }

@@ -21,6 +21,7 @@ import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.sort.AbsOptionableComparator;
 import net.maxsmr.commonutils.data.sort.ISortOption;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
+import net.maxsmr.commonutils.shell.CommandResult;
 import net.maxsmr.commonutils.shell.ShellUtils;
 
 import org.slf4j.Logger;
@@ -72,6 +73,14 @@ public final class FileHelper {
         throw new AssertionError("no instances.");
     }
 
+    public static boolean isExternalStorageMounted() {
+        return Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED);
+    }
+
+    public static boolean isExternalStorageMountedAndWritable() {
+        return isExternalStorageMounted() && !Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED_READ_ONLY);
+    }
+
     public static float getPartitionTotalSpace(String path, @NonNull SizeUnit unit) {
         return isDirExists(path) ? SizeUnit.convert(new File(path).getTotalSpace(), SizeUnit.BYTES, unit) : 0L;
     }
@@ -112,6 +121,19 @@ public final class FileHelper {
             return (f.exists() && f.isFile());
         }
         return false;
+    }
+
+    @Nullable
+    public static String getCanonicalPath(File file) {
+        if (file != null) {
+            try {
+                return file.getCanonicalPath();
+            } catch (IOException e) {
+                e.printStackTrace();
+                return file.getAbsolutePath();
+            }
+        }
+        return null;
     }
 
     @Nullable
@@ -305,7 +327,7 @@ public final class FileHelper {
         try {
             created = parentDir.mkdirs();
         } catch (SecurityException e) {
-            logger.error("exception occurred: " + e);
+            logger.error("an Exception occurred", e);
         }
 
         if (created || parentDir.exists() && parentDir.isDirectory()) {
@@ -324,7 +346,7 @@ public final class FileHelper {
                         newFile = null;
                     }
                 } catch (IOException e) {
-                    logger.error("exception occurred: " + e);
+                    logger.error("an Exception occurred", e);
                     return null;
                 }
             }
@@ -575,7 +597,7 @@ public final class FileHelper {
         try {
             return result.toString("UTF-8");
         } catch (UnsupportedEncodingException e) {
-            logger.error("exception occurred: " + e);
+            logger.error("an Exception occurred", e);
             return null;
         }
     }
@@ -595,7 +617,7 @@ public final class FileHelper {
         try {
             fos = new FileOutputStream(file.getAbsolutePath(), append);
         } catch (FileNotFoundException e) {
-            logger.error("exception occurred: " + e);
+            logger.error("an Exception occurred", e);
         }
         if (fos != null) {
             try {
@@ -603,12 +625,12 @@ public final class FileHelper {
                 fos.flush();
                 return true;
             } catch (IOException e) {
-                logger.error("exception occurred: " + e);
+                logger.error("an Exception occurred", e);
             } finally {
                 try {
                     fos.close();
                 } catch (IOException e) {
-                    logger.error("exception occurred: " + e);
+                    logger.error("an Exception occurred", e);
                 }
             }
         }
@@ -640,7 +662,7 @@ public final class FileHelper {
                 return file;
             }
         } catch (FileNotFoundException e) {
-            logger.error("exception occurred: " + e);
+            logger.error("an Exception occurred", e);
         }
 
         return null;
@@ -1672,7 +1694,7 @@ public final class FileHelper {
                 }
             }
         } catch (FileNotFoundException e) {
-            logger.error("exception occurred: " + e);
+            logger.error("an Exception occurred", e);
         }
 
         return null;
@@ -2245,7 +2267,7 @@ public final class FileHelper {
 
                         @Override
                         public void processComplete(int exitValue) {
-                            if (exitValue != ShellUtils.PROCESS_EXIT_CODE_SUCCESS && notifier != null) {
+                            if (exitValue != CommandResult.PROCESS_EXIT_CODE_SUCCESS && notifier != null) {
                                 notifier.onNonSuccessExitCode(exitValue, current);
                             }
                         }

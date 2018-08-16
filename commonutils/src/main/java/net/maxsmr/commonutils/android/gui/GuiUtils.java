@@ -5,7 +5,6 @@ import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
 import android.content.Context;
-import android.content.DialogInterface;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.res.Resources;
@@ -25,7 +24,6 @@ import android.support.design.widget.BottomSheetDialog;
 import android.support.design.widget.CoordinatorLayout;
 import android.support.design.widget.TextInputLayout;
 import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.InputFilter;
@@ -493,23 +491,6 @@ public final class GuiUtils {
         }
     }
 
-
-    public static AlertDialog showAlertDialog(Context ctx, String title, String message, boolean cancelable, DialogInterface.OnClickListener posClickListener, DialogInterface.OnClickListener negClickListener, DialogInterface.OnCancelListener cancelListener) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
-        return builder.setTitle(title).setMessage(message)
-                .setIcon(android.R.drawable.ic_dialog_alert)
-                .setPositiveButton(android.R.string.yes, posClickListener).setNegativeButton(android.R.string.no, negClickListener)
-                .setOnCancelListener(cancelListener).setCancelable(cancelable).show();
-    }
-
-    public static AlertDialog showCustomAlertDialog(Context ctx, String title, String message, View content, boolean cancelable, DialogInterface.OnClickListener posClickListener, DialogInterface.OnClickListener negClickListener, DialogInterface.OnCancelListener cancelListener) {
-        AlertDialog.Builder builder = new AlertDialog.Builder(ctx);
-        return builder.setTitle(title).setMessage(message)
-                .setView(content).setIcon(android.R.drawable.ic_dialog_alert)
-                .setPositiveButton(android.R.string.yes, posClickListener).setNegativeButton(android.R.string.no, negClickListener)
-                .setOnCancelListener(cancelListener).setCancelable(cancelable).show();
-    }
-
     @NonNull
     public static Point getFixedViewSizeByDisplay(@NonNull Context context, @NonNull Point targetSize) {
         return getFixedViewSizeByDisplay(context, (float) targetSize.x / targetSize.y);
@@ -774,6 +755,39 @@ public final class GuiUtils {
             return true;
         }
         return false;
+    }
+
+    @NonNull
+    public static DeviceType getScreenType(Context con) {
+        final DeviceType deviceType;
+        WindowManager wm = (WindowManager) con.getSystemService(Context.WINDOW_SERVICE);
+        if (wm == null) {
+            throw new NullPointerException(WindowManager.class.getSimpleName() + "");
+        }
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        wm.getDefaultDisplay().getMetrics(outMetrics);
+        int shortSize = Math.min(outMetrics.heightPixels, outMetrics.widthPixels);
+        int shortSizeDp = shortSize * DisplayMetrics.DENSITY_DEFAULT / outMetrics.densityDpi;
+        if (shortSizeDp < 600) {
+            // 0-599dp: "phone" UI with a separate status & navigation bar
+            deviceType = DeviceType.PHONE;
+        } else if (shortSizeDp < 720) {
+            // 600-719dp: "phone" UI with modifications for larger screens
+            deviceType = DeviceType.HYBRID;
+        } else {
+            // 720dp: "tablet" UI with a single combined status & navigation bar
+            deviceType = DeviceType.TABLET;
+        }
+        return deviceType;
+    }
+
+    public static boolean isTabletUI(Context con) {
+        return getScreenType(con) == DeviceType.TABLET;
+    }
+
+    public enum DeviceType {
+
+        PHONE, HYBRID, TABLET;
     }
 
     public static class ProtectRangeInputFilter implements InputFilter {

@@ -12,7 +12,6 @@ import org.slf4j.LoggerFactory;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
 
 public final class ShScreenshotMaker {
@@ -57,7 +56,7 @@ public final class ShScreenshotMaker {
             return false;
         }
 
-        return ShellUtils.execProcessAsync(new ArrayList<>(Arrays.asList(new String[]{ShellUtils.SU_BINARY_NAME, "-c", SCREENCAP_PROCESS_NAME, destFile.getName()})), destFile.getParent(), sc, watcher);
+        return ShellUtils.execProcessAsync(new ArrayList<>(Arrays.asList(new String[]{"su", "-c", SCREENCAP_PROCESS_NAME, destFile.getName()})), destFile.getParent(), sc, watcher);
     }
 
     /**
@@ -79,12 +78,12 @@ public final class ShScreenshotMaker {
             return null;
         }
 
-        return ShellUtils.execProcess(new ArrayList<>(Arrays.asList(new String[]{ShellUtils.SU_BINARY_NAME, "-c", SCREENCAP_PROCESS_NAME, destFile.getAbsolutePath()})), null, sc, watcher) == 0 ? destFile : null;
+        return ShellUtils.execProcess(new ArrayList<>(Arrays.asList(new String[]{"su", "-c", SCREENCAP_PROCESS_NAME, destFile.getAbsolutePath()})), null, sc, watcher).isSuccessful() ? destFile : null;
     }
 
     private static class ThreadsWatcher implements ShellUtils.ThreadsCallback {
 
-        final List<Thread> threads = new ArrayList<>();
+        private final List<Thread> threads = new ArrayList<>();
 
         public boolean isRunning() {
             for (Thread thread : threads) {
@@ -97,13 +96,7 @@ public final class ShScreenshotMaker {
 
         @Override
         public void onThreadsStarted(List<Thread> threads) {
-            Iterator<Thread> threadIt = this.threads.iterator();
-            while (threadIt.hasNext()) {
-                Thread thread = threadIt.next();
-                if (!thread.isAlive() || thread.isInterrupted()) {
-                    threadIt.remove();
-                }
-            }
+            this.threads.clear();
             this.threads.addAll(threads);
         }
     }

@@ -111,7 +111,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
                     }
 
                 } else {
-                    logger.error("incorrect queue file: " + f + ", deleting...");
+                    logger.error("incorrect storage file: " + f + ", deleting...");
                     if (!FileHelper.deleteFile(f)) {
                         logger.error("can't delete file: " + f);
                     }

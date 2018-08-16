@@ -4,6 +4,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.shell.CommandResult;
 import net.maxsmr.commonutils.shell.ShellUtils;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
@@ -14,16 +16,28 @@ import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 
 
 public class UsbDeviceWatcher {
 
     private static final Logger logger = LoggerFactory.getLogger(UsbDeviceWatcher.class);
 
+    public static final int DEFAULT_WATCH_INTERVAL = 2000;
+
     private static UsbDeviceWatcher sInstance;
+
+    private final DeviceWatchObservable watchListeners = new DeviceWatchObservable();
+
+    private final DevicesFlagsObservable flagsListeners = new DevicesFlagsObservable();
+
+    private final ScheduledThreadPoolExecutorManager deviceListWatcher = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, UsbDeviceWatcher.class.getSimpleName());
+
+    private final ScheduledThreadPoolExecutorManager deviceFinder = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, "UsbDeviceFinder");
+
+    private DeviceWatcherRunnable deviceListRunnable;
+
+    private DeviceFinderRunnable deviceFinderRunnable;
 
     public static void initInstance() {
         if (sInstance == null) {
@@ -43,32 +57,14 @@ public class UsbDeviceWatcher {
     private UsbDeviceWatcher() {
     }
 
-    public static final int DEFAULT_WATCH_INTERVAL = 2000;
-
-    public interface WatchListener {
-        void onDevicesStatusChanged(List<DeviceInfo> deviceInfos, boolean attach);
-
-        void onSpecifiedDevicesStatusChanged(List<DeviceInfo> deviceInfos, boolean attach);
-
-        void onDevicesListChanged(List<DeviceInfo> currentList, List<DeviceInfo> previousList);
-
-        void onDevicesListReadFailed(int exitCode, @NonNull List<String> errorStream);
+    public void addWatchListener(@NonNull DeviceWatchListener l) {
+        watchListeners.registerObserver(l);
     }
 
-    private final Set<WatchListener> watchListeners = new LinkedHashSet<>();
-
-    public void addWatchListener(@NonNull WatchListener l) {
-        if (!watchListeners.contains(l)) {
-            watchListeners.add(l);
-        }
+    public void removeWatchListener(@NonNull DeviceWatchListener l) {
+        watchListeners.unregisterObserver(l);
     }
 
-    public void removeWatchListener(@NonNull WatchListener l) {
-        watchListeners.remove(l);
-    }
-
-    private final ScheduledThreadPoolExecutorManager deviceListWatcher = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, UsbDeviceWatcher.class.getSimpleName());
-    private DeviceWatcherRunnable deviceListRunnable;
 
     public boolean isDeviceListWatcherRunning() {
         return deviceListWatcher.isRunning() && deviceListRunnable != null;
@@ -99,30 +95,14 @@ public class UsbDeviceWatcher {
         }
     }
 
-    public interface DevicesFlagsListener {
-        void onDevicesFlagsFound(List<Integer> devicesFlags, int mask);
-
-        void onDevicesFlagsNotFound(int mask);
-
-        void onDevicesFlagsReadFailed(int exitCode, @NonNull List<String> errorStream);
-    }
-
-    private final Set<DevicesFlagsListener> flagsListeners = new LinkedHashSet<>();
 
     public void addDevicesFlagsListener(@NonNull DevicesFlagsListener l) {
-        synchronized (flagsListeners) {
-            flagsListeners.add(l);
-        }
+        flagsListeners.registerObserver(l);
     }
 
     public void removeDevicesFlagsListener(@NonNull DevicesFlagsListener l) {
-        synchronized (flagsListeners) {
-            flagsListeners.remove(l);
-        }
+        flagsListeners.unregisterObserver(l);
     }
-
-    private final ScheduledThreadPoolExecutorManager deviceFinder = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, "UsbDeviceFinder");
-    private DeviceFinderRunnable deviceFinderRunnable;
 
     public boolean isDeviceFinderRunning() {
         return deviceFinder.isRunning() && deviceFinderRunnable != null;
@@ -228,91 +208,45 @@ public class UsbDeviceWatcher {
         private void doDeviceWatch() {
             logger.debug("doDeviceWatch()");
 
-            ShellUtils.execProcess(Arrays.asList("su", "-c", "lsusb"), null, new ShellUtils.ShellCallback() {
+            CommandResult result = ShellUtils.execProcess(Arrays.asList("su", "-c", "lsusb"), null, null, null);
 
-                final List<String> output = new ArrayList<>();
-                final List<String> error = new ArrayList<>();
-
-                @Override
-                public boolean needToLogCommands() {
-                    return true;
-                }
-
-                @Override
-                public void shellOut(@NonNull StreamType from, String shellLine) {
-                    if (from == StreamType.OUT) {
-                        output.add(shellLine);
-                    } else if (from == StreamType.ERR) {
-                        error.add(shellLine);
-                    }
-                }
-
-                @Override
-                public void processComplete(int exitValue) {
-                    logger.debug("processComplete(), exitValue=" + exitValue);
-
-                    if (exitValue == ShellUtils.PROCESS_EXIT_CODE_SUCCESS) {
-                        List<DeviceInfo> infos = parseOutput(output);
+            if (result.isSuccessful()) {
+                List<DeviceInfo> infos = parseOutput(result.getStdOutLines());
 //                        logger.debug("parsed: " + infos + ", current: " + currentDeviceInfos);
 
-                        List<DeviceInfo> attached = new ArrayList<>();
-                        List<DeviceInfo> detached = new ArrayList<>();
+                List<DeviceInfo> attached = new ArrayList<>();
+                List<DeviceInfo> detached = new ArrayList<>();
 
-                        List<DeviceInfo> specifiedAttached = new ArrayList<>();
-                        List<DeviceInfo> specifiedDetached = new ArrayList<>();
+                List<DeviceInfo> specifiedAttached = new ArrayList<>();
+                List<DeviceInfo> specifiedDetached = new ArrayList<>();
 
-                        for (DeviceInfo i : infos) {
-                            if (!currentDeviceInfos.contains(i)) {
-                                attached.add(i);
-                                if (devicesToWatch.contains(i)) {
-                                    specifiedAttached.add(i);
-                                }
-                            }
-                        }
-
-                        for (DeviceInfo i : currentDeviceInfos) {
-                            if (!infos.contains(i)) {
-                                detached.add(i);
-                                if (devicesToWatch.contains(i)) {
-                                    specifiedDetached.add(i);
-                                }
-                            }
-                        }
-
-                        synchronized (watchListeners) {
-                            for (WatchListener l : watchListeners) {
-                                if (!attached.isEmpty())
-                                    l.onDevicesStatusChanged(attached, true);
-                                if (!detached.isEmpty())
-                                    l.onDevicesStatusChanged(detached, false);
-                                if (!specifiedAttached.isEmpty())
-                                    l.onSpecifiedDevicesStatusChanged(specifiedAttached, true);
-                                if (!specifiedDetached.isEmpty())
-                                    l.onSpecifiedDevicesStatusChanged(specifiedDetached, false);
-                                if (!currentDeviceInfos.equals(infos))
-                                    l.onDevicesListChanged(new ArrayList<>(infos), new ArrayList<>(currentDeviceInfos));
-                            }
-                        }
-
-                        currentDeviceInfos.clear();
-                        currentDeviceInfos.addAll(infos);
-
-                    } else {
-                        synchronized (watchListeners) {
-                            for (WatchListener l : watchListeners) {
-                                l.onDevicesListReadFailed(exitValue, error);
-                            }
+                for (DeviceInfo i : infos) {
+                    if (!currentDeviceInfos.contains(i)) {
+                        attached.add(i);
+                        if (devicesToWatch.contains(i)) {
+                            specifiedAttached.add(i);
                         }
                     }
                 }
 
-                @Override
-                public void processStartFailed(Throwable t) {
-                    logger.error("processStartFailed(), t=" + t);
+                for (DeviceInfo i : currentDeviceInfos) {
+                    if (!infos.contains(i)) {
+                        detached.add(i);
+                        if (devicesToWatch.contains(i)) {
+                            specifiedDetached.add(i);
+                        }
+                    }
                 }
 
-            }, null);
+                watchListeners.notifyDevicesChanged(attached, detached, specifiedAttached, specifiedDetached, currentDeviceInfos, infos);
 
+                currentDeviceInfos.clear();
+                currentDeviceInfos.addAll(infos);
+
+            } else {
+
+                watchListeners.notifyReadFailed(result);
+            }
         }
 
         @NonNull
@@ -423,63 +357,20 @@ public class UsbDeviceWatcher {
         @Override
         public void run() {
 
-            ShellUtils.execProcess(Arrays.asList("su", "-c", "cat", "/proc/bus/input/devices"), null, new ShellUtils.ShellCallback() {
+            CommandResult result = ShellUtils.execProcess(Arrays.asList("su", "-c", "cat", "/proc/bus/input/devices"), null, null, null);
 
-                final List<String> output = new ArrayList<>();
-                final List<String> error = new ArrayList<>();
+            if (result.isSuccessful()) {
 
-                @Override
-                public boolean needToLogCommands() {
-                    return true;
-                }
-
-                @Override
-                public void shellOut(@NonNull StreamType from, String shellLine) {
-                    if (from == StreamType.OUT) {
-                        output.add(shellLine);
-                    } else if (from == StreamType.ERR) {
-                        error.add(shellLine);
-                    }
-                }
-
-                @Override
-                public void processComplete(int exitValue) {
-                    logger.debug("processComplete(), exitValue=" + exitValue);
-                    if (exitValue == ShellUtils.PROCESS_EXIT_CODE_SUCCESS) {
-
-                        lastEvFlags.clear();
-                        lastEvFlags.addAll(parseEventFlags(output));
+                lastEvFlags.clear();
+                lastEvFlags.addAll(parseEventFlags(result.getStdOutLines()));
 //                        logger.debug("parsed: " + lastEvFlags);
 
-                        List<Integer> found = scanFlags(lastEvFlags, evFlagsMask, match);
-//                        logger.debug("found: " + found);
-                        synchronized (flagsListeners) {
-                            for (DevicesFlagsListener l : flagsListeners) {
-                                if (!found.isEmpty()) {
-                                    l.onDevicesFlagsFound(found, evFlagsMask);
-                                } else {
-                                    l.onDevicesFlagsNotFound(evFlagsMask);
-                                }
-                            }
-                        }
-
-                    } else {
-                        synchronized (watchListeners) {
-                            for (DevicesFlagsListener l : flagsListeners) {
-                                l.onDevicesFlagsReadFailed(exitValue, error);
-                            }
-                        }
-                    }
-                }
-
-                @Override
-                public void processStartFailed(Throwable t) {
-                    logger.error("processStartFailed(), t=" + t);
-                }
-
-            }, null);
+                flagsListeners.notifyFlagsChanged(scanFlags(lastEvFlags, evFlagsMask, match), evFlagsMask);
 
 
+            } else {
+                flagsListeners.notifyReadFailed(result);
+            }
         }
 
         @NonNull
@@ -515,5 +406,80 @@ public class UsbDeviceWatcher {
             }
             return found;
         }
+    }
+
+    public interface DeviceWatchListener {
+
+        void onDevicesStatusChanged(List<DeviceInfo> deviceInfos, boolean attach);
+
+        void onSpecifiedDevicesStatusChanged(List<DeviceInfo> deviceInfos, boolean attach);
+
+        void onDevicesListChanged(List<DeviceInfo> currentList, List<DeviceInfo> previousList);
+
+        void onDevicesListReadFailed(int exitCode, @NonNull List<String> errorStream);
+    }
+
+    public interface DevicesFlagsListener {
+
+        void onDevicesFlagsFound(List<Integer> devicesFlags, int mask);
+
+        void onDevicesFlagsNotFound(int mask);
+
+        void onDevicesFlagsReadFailed(int exitCode, @NonNull List<String> errorStream);
+    }
+
+    private static class DeviceWatchObservable extends Observable<DeviceWatchListener> {
+
+        void notifyDevicesChanged(List<DeviceInfo> attached, List<DeviceInfo> detached,
+                                  List<DeviceInfo> specifiedAttached, List<DeviceInfo> specifiedDetached,
+                                  List<DeviceInfo> currentDeviceInfos, List<DeviceInfo> previousDeviceInfos) {
+            synchronized (mObservers) {
+                for (DeviceWatchListener l : getObservers()) {
+                    if (!attached.isEmpty())
+                        l.onDevicesStatusChanged(new ArrayList<>(attached), true);
+                    if (!detached.isEmpty())
+                        l.onDevicesStatusChanged(new ArrayList<>(detached), false);
+                    if (!specifiedAttached.isEmpty())
+                        l.onSpecifiedDevicesStatusChanged(new ArrayList<>(specifiedAttached), true);
+                    if (!specifiedDetached.isEmpty())
+                        l.onSpecifiedDevicesStatusChanged(new ArrayList<>(specifiedDetached), false);
+                    if (!currentDeviceInfos.equals(previousDeviceInfos))
+                        l.onDevicesListChanged(new ArrayList<>(currentDeviceInfos), new ArrayList<>(previousDeviceInfos));
+                }
+            }
+        }
+
+        void notifyReadFailed(@NonNull CommandResult result) {
+            synchronized (mObservers) {
+                for (DeviceWatchListener l : mObservers) {
+                    l.onDevicesListReadFailed(result.getExitCode(), result.getStdErrLines());
+                }
+            }
+        }
+    }
+
+    private static class DevicesFlagsObservable extends Observable<DevicesFlagsListener> {
+
+        void notifyFlagsChanged(@NonNull List<Integer> found, int evFlagsMask) {
+            synchronized (mObservers) {
+                for (DevicesFlagsListener l : mObservers) {
+                    if (!found.isEmpty()) {
+                        l.onDevicesFlagsFound(found, evFlagsMask);
+                    } else {
+                        l.onDevicesFlagsNotFound(evFlagsMask);
+                    }
+                }
+            }
+        }
+
+        void notifyReadFailed(@NonNull CommandResult result) {
+            synchronized (mObservers) {
+                for (DevicesFlagsListener l : mObservers) {
+                    l.onDevicesFlagsReadFailed(result.getExitCode(), result.getStdErrLines());
+                }
+            }
+        }
+
+
     }
 }

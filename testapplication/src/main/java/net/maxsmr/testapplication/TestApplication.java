@@ -13,7 +13,6 @@ public class TestApplication extends Application {
     @Override
     public void onCreate() {
         super.onCreate();
-        ConfigureLog4J.initInstance(); // TODO remove
         ConfigureLog4J.getInstance().configure(Level.ALL, false, new File(getFilesDir(), "1.log").getAbsolutePath(), 0, 0);
     }
 }

@@ -129,11 +129,11 @@ public class RunnableInfo implements Serializable {
     }
 
     @Nullable
-    public static <I extends RunnableInfo> I findRunnableInfoById(final int id, Collection<I> tasks) {
+    public static <I extends RunnableInfo> I findRunnableInfoById(final int id, Collection<I> from) {
         if (id < 0) {
             throw new IllegalArgumentException("incorrect id: " + id);
         }
-        return Predicate.Methods.find(tasks, new Predicate<I>() {
+        return Predicate.Methods.find(from, new Predicate<I>() {
             @Override
             public boolean apply(I element) {
                 return element != null && id == element.id;

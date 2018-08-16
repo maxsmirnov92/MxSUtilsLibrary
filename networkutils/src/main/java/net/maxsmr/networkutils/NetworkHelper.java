@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
-import java.net.MalformedURLException;
 import java.net.NetworkInterface;
 import java.net.SocketException;
 import java.net.URL;
@@ -408,17 +407,13 @@ public class NetworkHelper {
 
     @Nullable
     public static URL parseURL(String url) {
-        try {
-            return new URL(url);
-        } catch (MalformedURLException e) {
-            return null;
-        }
+        return parseURL(url, true);
     }
 
     @Nullable
-    public static URL parseEncodedURL(String url) {
+    public static URL parseURL(String url, boolean encoded) {
         try {
-            return new URL(URLEncoder.encode(url, "UTF-8"));
+            return new URL(!encoded? URLEncoder.encode(url, "UTF-8") : url);
         } catch (Exception e) {
             return null;
         }

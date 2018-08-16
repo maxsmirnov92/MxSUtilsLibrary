@@ -70,11 +70,11 @@ import java.util.Random;
 
 public final class GraphicUtils {
 
+    private static final Logger logger = LoggerFactory.getLogger(GraphicUtils.class);
+
     private GraphicUtils() {
         throw new AssertionError("no instances.");
     }
-
-    private static final Logger logger = LoggerFactory.getLogger(GraphicUtils.class);
 
     @Nullable
     public static String getFileExtByCompressFormat(Bitmap.CompressFormat compressFormat) {
@@ -1388,5 +1388,61 @@ public final class GraphicUtils {
                 }
             });
         }
+    }
+
+    /**
+     * Resize bitmap to fit x and y leaving no blank space
+     */
+    public static Bitmap resizeBitmapFitXY(@NonNull Bitmap bitmap, int width, int height) {
+        Bitmap background = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
+        float originalWidth = bitmap.getWidth(), originalHeight = bitmap.getHeight();
+        Canvas canvas = new Canvas(background);
+        float scale, xTranslation = 0.0f, yTranslation = 0.0f;
+        if (originalWidth > originalHeight) {
+            scale = height / originalHeight;
+            xTranslation = (width - originalWidth * scale) / 2.0f;
+        } else {
+            scale = width / originalWidth;
+            yTranslation = (height - originalHeight * scale) / 2.0f;
+        }
+        Matrix transformation = new Matrix();
+        transformation.postTranslate(xTranslation, yTranslation);
+        transformation.preScale(scale, scale);
+        Paint paint = new Paint();
+        paint.setFilterBitmap(true);
+        canvas.drawBitmap(bitmap, transformation, paint);
+        return background;
+    }
+
+    /**
+     * Get size delta in pixels for one dimension of image and screen
+     */
+    private static int getSizeDelta(int bitmapSize, int screenSize) {
+        return bitmapSize - screenSize;
+    }
+
+    /**
+     * Resize bitmap if needed
+     */
+    public static Bitmap resizeBitmap(Bitmap bitmap, int screenWidth, int screenHeight, float screenAspectRatio, float wallpaperSizeThreshold, float wallpaperAspectRatioThreshold) {
+        logger.debug("Resizing bitmap");
+        logger.debug("Screen size: " + screenWidth + "x" + screenHeight + ", wallpaper size: " + bitmap.getWidth() + "x" + bitmap.getHeight());
+
+        float wallpaperAspectRatio = bitmap.getWidth() / bitmap.getHeight();
+
+        logger.debug("Wallpaper aspect ratio: " + wallpaperAspectRatio +
+                ", screen aspect ratio: " + screenAspectRatio);
+
+        if (getSizeDelta(bitmap.getWidth(), screenWidth) > wallpaperSizeThreshold || getSizeDelta(bitmap.getHeight(), screenHeight) > wallpaperSizeThreshold) {
+            // if at least one dimension of wallpaper is bigger then screen's with the set threshold — check aspect ratio and resize it if needed
+            float aspectRatioDelta = Math.abs(wallpaperAspectRatio - screenAspectRatio);
+
+            if (aspectRatioDelta >= wallpaperAspectRatioThreshold) {
+                logger.debug("Wallpaper aspect ratio differs from screen: " + aspectRatioDelta);
+                return resizeBitmapFitXY(bitmap, screenWidth, screenHeight);
+            }
+        }
+
+        return bitmap;
     }
 }

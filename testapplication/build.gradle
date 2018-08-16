@@ -30,8 +30,8 @@ android {
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-//    implementation project(':networkutils')
-    implementation "net.maxsmr:networkutils:$networkUtilsVersion"
+    implementation project(':networkutils')
+//    implementation "net.maxsmr:networkutils:$networkUtilsVersion"
 
     implementation "com.android.support:appcompat-v7:$appCompatVersion"
     testImplementation "junit:junit:$jUnitVersion"

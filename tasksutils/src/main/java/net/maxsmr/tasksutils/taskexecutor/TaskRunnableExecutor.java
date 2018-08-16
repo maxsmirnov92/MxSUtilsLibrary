@@ -83,7 +83,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
             throw new IllegalStateException(TaskRunnableExecutor.class.getSimpleName() + " was shutdown");
         }
         if (syncStorage != null) {
-            cancelAllTasks();
+//            cancelAllTasks();
             if (!syncStorage.isRestoreCompleted()) {
                 syncStorage.addStorageListener(new AbstractSyncStorage.IStorageListener() {
                     @Override
@@ -94,14 +94,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                     @Override
                     public void onStorageRestoreFinished(long endTime, long processingTime, int restoredElementsCount) {
                         logger.debug("onStorageRestoreFinished(), endTime=" + endTime + ", processingTime=" + processingTime + ", restoredElementsCount=" + restoredElementsCount);
-                        List<I> storage = syncStorage.getAll();
-                        List<I> currentTasks = getAllTasksRunnableInfos();
-                        List<I> filtered = RunnableInfo.filter(storage, currentTasks, false);
-                        logger.debug("runnable infos ids, storage: " + RunnableInfo.idsFromInfos(storage));
-                        logger.debug("runnable infos ids, current: " + RunnableInfo.idsFromInfos(currentTasks));
-                        logger.debug("runnable infos ids, filtered: " + RunnableInfo.idsFromInfos(filtered));
-                        RunnableInfo.setRunning(filtered, false);
-                        executeAll(restorer.fromRunnableInfos(filtered));
+                        executeUniqueFromInfoList(restorer, syncStorage.getAll());
                         syncStorage.removeStorageListener(this);
                     }
 
@@ -111,7 +104,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                     }
                 });
             } else {
-                executeAll(TaskRunnable.filter(restorer.fromRunnableInfos(syncStorage.getAll()), getAllTasks(), false));
+                executeUniqueFromInfoList(restorer, syncStorage.getAll());
             }
         }
     }
@@ -363,10 +356,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     public void cancelAllTasks() {
         logger.debug("cancelAllTasks()");
         synchronized (lock) {
-            for (T task : getWaitingTasks()) {
-                task.cancel();
-            }
-            for (T task : getActiveTasks()) {
+            for (T task : getAllTasks()) {
                 task.cancel();
             }
         }
@@ -417,6 +407,16 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     public StatInfo<I, T> findStatInfoById(int id) {
         T r = findCompletedRunnableById(id);
         return r != null ? getStatInfoForRunnable(r) : null;
+    }
+
+    private void executeUniqueFromInfoList(@NonNull ITaskRestorer<I, T> restorer, Collection<I> target) {
+        List<I> currentTasks = getAllTasksRunnableInfos();
+        List<I> filtered = RunnableInfo.filter(target, currentTasks, false);
+        logger.debug("runnable infos ids, target: " + RunnableInfo.idsFromInfos(target));
+        logger.debug("runnable infos ids, current: " + RunnableInfo.idsFromInfos(currentTasks));
+        logger.debug("runnable infos ids, filtered: " + RunnableInfo.idsFromInfos(filtered));
+        RunnableInfo.setRunning(filtered, false);
+        executeAll(restorer.fromRunnableInfos(filtered));
     }
 
     public void executeAll(Collection<T> commands) {

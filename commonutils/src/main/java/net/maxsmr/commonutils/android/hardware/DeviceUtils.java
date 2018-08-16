@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils.android.hardware;
 
+import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
 import android.app.ActivityManager;
@@ -18,6 +19,7 @@ import android.os.PowerManager;
 import android.os.SystemClock;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.telephony.TelephonyManager;
 import android.view.WindowManager;
 
 import net.maxsmr.commonutils.shell.ShellUtils;
@@ -62,7 +64,7 @@ public final class DeviceUtils {
 
     public static int getBatteryPercentage(@NonNull Context context) {
         IntentFilter iFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
-         return getBatteryPercentageFromIntent(context.registerReceiver(null, iFilter));
+        return getBatteryPercentageFromIntent(context.registerReceiver(null, iFilter));
     }
 
     public static int getBatteryPercentageFromIntent(@Nullable Intent batteryStatus) {
@@ -76,23 +78,41 @@ public final class DeviceUtils {
         return wakeLock != null && wakeLock.isHeld();
     }
 
-    public static boolean releaseWakeLock(@Nullable PowerManager.WakeLock wakeLock) {
-        if (isWakeLockHeld(wakeLock)) {
-            wakeLock.release();
-            return true;
+    @SuppressWarnings("deprecation")
+    public static boolean acquireWakeLockDefault(@NonNull Context context, @NonNull String name, long timeoutMillis) {
+        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        if (pm == null) {
+            throw new RuntimeException(PowerManager.class.getSimpleName() + " is null");
+        }
+        return acquireWakeLock(context, pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, name), timeoutMillis);
+    }
+
+    public static boolean acquireWakeLock(@NonNull Context context, @Nullable PowerManager.WakeLock wakeLock, long timeoutMillis) {
+        if (!isWakeLockHeld(wakeLock)) {
+            // Even if we have the permission, some devices throw an exception in the try block nonetheless,
+            // I'm looking at you, Samsung SM-T805
+
+            try {
+                wakeLock.acquire(timeoutMillis);
+                return true;
+            } catch (Exception e) {
+                // saw an NPE on rooted Galaxy Nexus Android 4.1.1
+                // android.os.IPowerManager$Stub$Proxy.acquireWakeLock(IPowerManager.java:288)
+                logger.error("an Exception occurred during acquire()", e);
+            }
         }
         return false;
     }
 
-    @SuppressWarnings("deprecation")
-    public static PowerManager.WakeLock wakeScreen(@NonNull Context context, @Nullable PowerManager.WakeLock wakeLock, @NonNull String name) {
-        releaseWakeLock(wakeLock);
-        PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
-        wakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, name);
-        if (wakeLock != null && !wakeLock.isHeld()) {
-            wakeLock.acquire();
+    public static void releaseWakeLock(@Nullable PowerManager.WakeLock wakeLock) {
+        try {
+            if (isWakeLockHeld(wakeLock)) {
+                wakeLock.release();
+            }
+        } catch (Exception e) {
+            // just to make sure if the PowerManager crashes while acquiring a wake lock
+            logger.error("an Exception occurred during release()", e);
         }
-        return wakeLock;
     }
 
     public static void showKeyguard(@NonNull Activity activity) {
@@ -109,11 +129,47 @@ public final class DeviceUtils {
         // kl.disableKeyguard();
     }
 
-    public static boolean isInteractive(@NonNull Context context) {
+    /**
+     * Get the IMEI
+     *
+     * @param context Context to use
+     * @return IMEI or null if not accessible
+     */
+    @SuppressLint({"HardwareIds", "MissingPermission"})
+    @Nullable
+    public static String getIMEI(@NonNull Context context) {
+        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        if (telephonyManager == null) {
+            throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null");
+        }
+        return telephonyManager.getDeviceId();
+    }
+
+    /**
+     * Get the IMSI
+     *
+     * @param context Context to use
+     * @return IMSI or null if not accessible
+     */
+    @SuppressLint({"HardwareIds", "MissingPermission"})
+    @Nullable
+    public static String getIMSI(@NonNull Context context) {
+        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        if (telephonyManager == null) {
+            throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null");
+        }
+        return telephonyManager.getSubscriberId();
+    }
+
+    public static boolean isScreenOn(@NonNull Context context) {
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
+        if (pm == null) {
+            throw new RuntimeException(PowerManager.class.getSimpleName() + " is null");
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
             return pm.isInteractive();
         } else {
+            //noinspection deprecation
             return pm.isScreenOn();
         }
     }
@@ -208,7 +264,9 @@ public final class DeviceUtils {
         return -1;
     }
 
-    /** requires root */
+    /**
+     * requires root
+     */
     public static void setSystemTime(long timestamp) {
         logger.debug("setSystemTime(), timestamp=" + timestamp);
 
@@ -246,7 +304,7 @@ public final class DeviceUtils {
 
         dateFormat.setTimeZone(TimeZone.getDefault());
         String formatTime = dateFormat.format(new Date(timestamp));
-        ShellUtils.execProcess(Arrays.asList(ShellUtils.SU_BINARY_NAME, "-c", "date", "-s", formatTime), null, sc, null);
+        ShellUtils.execProcess(Arrays.asList("su", "-c", "date", "-s", formatTime), null, sc, null);
     }
 
     public static boolean setAlarm(@NonNull Context context, @NonNull PendingIntent pIntent, long triggerTime, @NonNull AlarmType alarmType) {
@@ -266,9 +324,9 @@ public final class DeviceUtils {
                     break;
                 }
                 if (SDK_INT < Build.VERSION_CODES.KITKAT) {
-                    alarmManager.set(alarmType == AlarmType.RTC_WAKE_UP? AlarmManager.RTC_WAKEUP : AlarmManager.RTC, triggerTime, pIntent);
+                    alarmManager.set(alarmType == AlarmType.RTC_WAKE_UP ? AlarmManager.RTC_WAKEUP : AlarmManager.RTC, triggerTime, pIntent);
                 } else if (Build.VERSION_CODES.KITKAT <= SDK_INT && SDK_INT < Build.VERSION_CODES.M) {
-                    alarmManager.setExact(alarmType == AlarmType.RTC_WAKE_UP? AlarmManager.RTC_WAKEUP : AlarmManager.RTC, triggerTime, pIntent);
+                    alarmManager.setExact(alarmType == AlarmType.RTC_WAKE_UP ? AlarmManager.RTC_WAKEUP : AlarmManager.RTC, triggerTime, pIntent);
                 } else if (SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setAlarmClock(new AlarmManager.AlarmClockInfo(triggerTime, null), pIntent);
                 }
@@ -284,11 +342,11 @@ public final class DeviceUtils {
                     break;
                 }
                 if (SDK_INT < Build.VERSION_CODES.KITKAT) {
-                    alarmManager.set(alarmType == AlarmType.ELAPSED_REALTIME_WAKE_UP? AlarmManager.ELAPSED_REALTIME_WAKEUP : AlarmManager.ELAPSED_REALTIME, triggerTime, pIntent);
+                    alarmManager.set(alarmType == AlarmType.ELAPSED_REALTIME_WAKE_UP ? AlarmManager.ELAPSED_REALTIME_WAKEUP : AlarmManager.ELAPSED_REALTIME, triggerTime, pIntent);
                 } else if (Build.VERSION_CODES.KITKAT <= SDK_INT && SDK_INT < Build.VERSION_CODES.M) {
-                    alarmManager.setExact(alarmType == AlarmType.ELAPSED_REALTIME_WAKE_UP? AlarmManager.ELAPSED_REALTIME_WAKEUP : AlarmManager.ELAPSED_REALTIME, triggerTime, pIntent);
+                    alarmManager.setExact(alarmType == AlarmType.ELAPSED_REALTIME_WAKE_UP ? AlarmManager.ELAPSED_REALTIME_WAKEUP : AlarmManager.ELAPSED_REALTIME, triggerTime, pIntent);
                 } else if (SDK_INT >= Build.VERSION_CODES.M) {
-                  alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, pIntent);
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.ELAPSED_REALTIME_WAKEUP, triggerTime, pIntent);
                 }
                 result = true;
                 break;

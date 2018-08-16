@@ -24,11 +24,7 @@ public final class ShellUtils {
 
     private final static Logger logger = LoggerFactory.getLogger(ShellUtils.class);
 
-    public static final int PROCESS_EXIT_CODE_SUCCESS = 0;
-
-    public static final String SU_BINARY_NAME = "su";
-
-    public ShellUtils() {
+    private ShellUtils() {
         throw new AssertionError("no instances.");
     }
 
@@ -81,6 +77,11 @@ public final class ShellUtils {
         return process;
     }
 
+
+    public static boolean execProcessAsync(@NonNull String cmd, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
+        return execProcessAsync(Collections.singletonList(cmd), workingDir, sc, tc);
+    }
+
     /**
      * @return true if started successfully, false - otherwise
      */
@@ -97,19 +98,70 @@ public final class ShellUtils {
         return process != null;
     }
 
+    public static CommandResult execProcess(@NonNull String cmd, @Nullable String workingDir, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
+        return execProcess(cmd, workingDir, CommandResult.DEFAULT_TARGET_CODE, sc, tc);
+    }
+
+    public static CommandResult execProcess(@NonNull String cmd, @Nullable String workingDir, @Nullable Integer targetExitCode, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
+        return execProcess(Collections.singletonList(cmd), workingDir, targetExitCode, sc, tc);
+    }
+
+    public static CommandResult execProcess(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
+        return execProcess(cmds, workingDir, CommandResult.DEFAULT_TARGET_CODE, sc, tc);
+    }
+
     /**
      * @return result code; -1 if start failed or interrupted
      */
-    public static int execProcess(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable final ThreadsCallback tc) {
-        logger.debug("execProcess(), cmds=" + cmds + ", workingDir=" + workingDir + ", sc=" + sc + ", tc=" + tc);
-        Process process = createAndStartProcess(cmds, workingDir, sc, tc);
+    public static CommandResult execProcess(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable Integer targetExitCode, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
+        logger.debug("execProcess(), cmds=" + cmds + ", workingDir=" + workingDir + ", targetExitCode=" + targetExitCode + ", sc=" + sc + ", tc=" + tc);
+
+        final List<String> stdOutLines = new ArrayList<>();
+        final List<String> stdErrLines = new ArrayList<>();
+
+        Process process = createAndStartProcess(cmds, workingDir, new ShellCallback() {
+
+            @Override
+            public boolean needToLogCommands() {
+                return sc != null && sc.needToLogCommands();
+            }
+
+            @Override
+            public void shellOut(@NonNull StreamType from, String shellLine) {
+                switch (from) {
+                    case OUT:
+                        stdOutLines.add(shellLine);
+                        break;
+                    case ERR:
+                        stdErrLines.add(shellLine);
+                        break;
+                }
+                if (sc != null) {
+                    sc.shellOut(from, shellLine);
+                }
+            }
+
+            @Override
+            public void processStartFailed(Throwable t) {
+                if (sc != null) {
+                    sc.processStartFailed(t);
+                }
+            }
+
+            @Override
+            public void processComplete(int exitValue) {
+                if (sc != null) {
+                    sc.processComplete(exitValue);
+                }
+            }
+        }, tc);
+
         int exitCode = -1;
         try {
-            return exitCode = process != null ? process.waitFor() : -1;
+            exitCode = process != null ? process.waitFor() : -1;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             e.printStackTrace();
-            return exitCode;
         } finally {
             if (process != null) {
                 process.destroy();
@@ -118,10 +170,12 @@ public final class ShellUtils {
                 sc.processComplete(exitCode);
             }
         }
+
+        return new CommandResult(targetExitCode, exitCode, stdOutLines, stdErrLines);
     }
 
     public static boolean isRootAvailable() {
-        return (FileHelper.searchByNameWithStat(SU_BINARY_NAME, null, null)).size() > 0;
+        return (FileHelper.searchByNameWithStat("su", null, null)).size() > 0;
     }
 
     private static class StreamConsumeThread extends Thread {
@@ -152,13 +206,13 @@ public final class ShellUtils {
                         sc.shellOut(type, line);
                     }
             } catch (IOException e) {
-                logger.error("an IOException occurred", e);
+                logger.error("an IOException occurred: " + e.getMessage());
                 e.printStackTrace();
             }
         }
     }
 
-    static class ProcessWaitThread extends Thread {
+    private static class ProcessWaitThread extends Thread {
 
         @NonNull
         final Process process;
@@ -180,7 +234,7 @@ public final class ShellUtils {
             try {
                 exitVal = process.waitFor();
             } catch (InterruptedException e) {
-                logger.error("an InterruptedException occurred", e);
+                logger.error("an InterruptedException occurred" + e.getMessage());
                 Thread.currentThread().interrupt();
                 e.printStackTrace();
             }
@@ -216,6 +270,9 @@ public final class ShellUtils {
     }
 
     public interface ThreadsCallback {
+
         void onThreadsStarted(List<Thread> threads);
     }
+
 }
+

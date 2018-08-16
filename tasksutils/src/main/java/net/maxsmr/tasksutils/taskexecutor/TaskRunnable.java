@@ -5,6 +5,7 @@ import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Predicate;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -39,28 +40,47 @@ public abstract class TaskRunnable<I extends RunnableInfo> implements Runnable {
     }
 
     @Nullable
-    public static <I extends RunnableInfo, T extends TaskRunnable<I>> T findRunnableById(final int id, Collection<T> tasks) {
-        if (id < 0) {
-            throw new IllegalArgumentException("incorrect id: " + id);
-        }
-        return Predicate.Methods.find(tasks, new Predicate<T>() {
+    public static <I extends RunnableInfo, T extends TaskRunnable<I>> T findRunnableById(final int id, Collection<T> from) {
+        final I resultInfo = RunnableInfo.findRunnableInfoById(id, toRunnableInfos(from));
+
+        return resultInfo != null ? Predicate.Methods.find(from, new Predicate<T>() {
             @Override
             public boolean apply(T element) {
-                return element != null && id == element.getId();
+                return element != null && element.getId() == id;
             }
-        });
+        }) : null;
     }
 
 
     @NonNull
     public static <I extends RunnableInfo, T extends TaskRunnable<I>> List<T> filter(final Collection<T> what, final Collection<T> by, final boolean contains) {
+
+        final List<I> resultInfos = RunnableInfo.filter(toRunnableInfos(what), toRunnableInfos(by), contains);
+
         return Predicate.Methods.filter(what, new Predicate<T>() {
             @Override
-            public boolean apply(T element) {
-                T runnable = element != null? findRunnableById(element.getId(), by) : null;
-                return contains && runnable != null || !contains && runnable == null;
+            public boolean apply(final T task) {
+                return Predicate.Methods.find(resultInfos, new Predicate<I>() {
+                    @Override
+                    public boolean apply(I info) {
+                        return info != null && info.id == task.getId();
+                    }
+                }) != null;
             }
         });
+    }
+
+    @NonNull
+    public static <I extends RunnableInfo, T extends TaskRunnable<I>> List<I> toRunnableInfos(Collection<T> what) {
+        List<I> result = new ArrayList<>();
+        if (what != null) {
+            for (TaskRunnable<I> t : what) {
+                if (t != null) {
+                    result.add(t.rInfo);
+                }
+            }
+        }
+        return result;
     }
 
     public static void setRunning(@Nullable Collection<? extends TaskRunnable<?>> tasks, boolean isRunning) {
@@ -93,7 +113,9 @@ public abstract class TaskRunnable<I extends RunnableInfo> implements Runnable {
         List<T> fromRunnableInfos(Collection<I> runnableInfos);
     }
 
-    /** for seeing in LogCat */
+    /**
+     * for seeing in LogCat
+     */
     public static final class WrappedTaskRunnable<I extends RunnableInfo, T extends TaskRunnable<I>> implements Runnable {
 
         @NonNull
