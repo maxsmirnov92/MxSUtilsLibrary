@@ -4,10 +4,9 @@ package net.maxsmr.commonutils.graphic;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.ShellUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -16,14 +15,13 @@ import java.util.List;
 
 public final class ShScreenshotMaker {
 
-    private final static Logger logger = LoggerFactory.getLogger(ShScreenshotMaker.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ShScreenshotMaker.class);
 
     private static ShScreenshotMaker sInstance;
 
     public static void initInstance() {
         if (sInstance == null) {
             synchronized (ShScreenshotMaker.class) {
-                logger.debug("initInstance()");
                 sInstance = new ShScreenshotMaker();
             }
         }
@@ -87,7 +85,7 @@ public final class ShScreenshotMaker {
 
         public boolean isRunning() {
             for (Thread thread : threads) {
-                if (thread.isAlive() && !thread.isInterrupted()) {
+                if (thread.isAlive()) {
                     return true;
                 }
             }

@@ -21,8 +21,10 @@ import android.view.WindowManager;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.android.gui.GuiUtils;
+import net.maxsmr.commonutils.data.CompareUtils;
+import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.graphic.GraphicUtils;
 
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -30,27 +32,20 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
-import java.util.LinkedList;
 import java.util.List;
-
-import net.maxsmr.commonutils.android.gui.GuiUtils;
-import net.maxsmr.commonutils.data.CompareUtils;
-import net.maxsmr.commonutils.graphic.GraphicUtils;
 
 public class MaskClickLayout extends FrameLayout {
 
-    private static final Logger logger = LoggerFactory.getLogger(MaskClickLayout.class);
+    @NonNull
+    private final ItemHitObservable itemHitCallbacks = new ItemHitObservable();
+
+    @NonNull
+    private final LayoutChangeObservable layoutChangeListeners = new LayoutChangeObservable();
 
     private ImageView backgroundImageView;
     private ImageView layersImageView;
     private ImageView masksImageView;
     private ClickMask clickMask;
-
-    @NonNull
-    private final LinkedList<ItemHitCallback> itemHitCallbacks = new LinkedList<>();
-
-    @NonNull
-    private final LinkedList<LayoutChangeListener> layoutChangeListeners = new LinkedList<>();
 
     @NonNull
     private ChoiceMode choiceMode = ChoiceMode.MULTIPLE;
@@ -86,15 +81,19 @@ public class MaskClickLayout extends FrameLayout {
     }
 
     public void addItemHitCallback(@NonNull ItemHitCallback c) {
-        if (!itemHitCallbacks.contains(c)) {
-            itemHitCallbacks.add(c);
-        }
+        itemHitCallbacks.registerObserver(c);
     }
 
     public void removeItemHitCallback(@NonNull ItemHitCallback c) {
-        if (itemHitCallbacks.contains(c)) {
-            itemHitCallbacks.remove(c);
-        }
+        itemHitCallbacks.unregisterObserver(c);
+    }
+
+    public void addSelectionChangeListener(@NonNull LayoutChangeListener l) {
+        layoutChangeListeners.registerObserver(l);
+    }
+
+    public void removeSelectionChangeListener(@NonNull LayoutChangeListener l) {
+        layoutChangeListeners.unregisterObserver(l);
     }
 
     @NonNull
@@ -120,7 +119,7 @@ public class MaskClickLayout extends FrameLayout {
                 if (this.choiceMode == ChoiceMode.NONE || (this.choiceMode == ChoiceMode.SINGLE && getSelectedItemsCount() > 1))
                     clearSelection();
             }
-            dispatchChoiceModeChanged();
+            layoutChangeListeners.dispatchChoiceModeChanged(choiceMode);
         }
     }
 
@@ -148,7 +147,6 @@ public class MaskClickLayout extends FrameLayout {
     }
 
     public boolean setItemSelected(@NonNull Item item, boolean isSelected) {
-        logger.debug("setItemSelected(), item=" + item + ", isSelected=" + isSelected);
 
         if (!isLoaded()) {
             throw new IllegalStateException("clickMask was not loaded");
@@ -189,7 +187,7 @@ public class MaskClickLayout extends FrameLayout {
                 LayerDrawable layerDrawable = !drawables.isEmpty() ? new LayerDrawable(drawables.toArray(new Drawable[drawables.size()])) : null;
                 layersImageView.setImageDrawable(layerDrawable);
 
-                dispatchSelectionChanged(item, isSelected);
+                layoutChangeListeners.dispatchSelectionChanged(item, isSelected);
             }
 
             return true;
@@ -212,7 +210,6 @@ public class MaskClickLayout extends FrameLayout {
     }
 
     public boolean toggleItemSelected(@NonNull Item item) {
-        logger.debug("toggleItemSelected(), item=" + item);
         return setItemSelected(item, !isItemSelected(item));
     }
 
@@ -322,21 +319,9 @@ public class MaskClickLayout extends FrameLayout {
             while (iterator.hasNext()) {
                 Item it = iterator.next();
                 iterator.remove();
-                dispatchSelectionChanged(it, false);
+                layoutChangeListeners.dispatchSelectionChanged(it, false);
             }
             layersImageView.setImageDrawable(null);
-        }
-    }
-
-    public void addSelectionChangeListener(@NonNull LayoutChangeListener l) {
-        if (!layoutChangeListeners.contains(l)) {
-            layoutChangeListeners.add(l);
-        }
-    }
-
-    public void removeSelectionChangeListener(@NonNull LayoutChangeListener l) {
-        if (layoutChangeListeners.contains(l)) {
-            layoutChangeListeners.remove(l);
         }
     }
 
@@ -401,56 +386,12 @@ public class MaskClickLayout extends FrameLayout {
         masksImageView.setImageDrawable(masksDrawable);
     }
 
-    private boolean dispatchItemPreHit(@NonNull Point clickPoint, @NonNull Item item) {
-        boolean b = true;
-        synchronized (itemHitCallbacks) {
-            for (ItemHitCallback c : itemHitCallbacks) {
-                if (!c.onItemPreHit(clickPoint, item)) {
-                    b = false;
-                }
-            }
-        }
-        return b;
-    }
-
-    private boolean dispatchItemsHit(@NonNull Point clickPoint, @NonNull List<Item> items) {
-        boolean b = true;
-        synchronized (itemHitCallbacks) {
-            for (ItemHitCallback c : itemHitCallbacks) {
-                if (!c.onItemsHit(clickPoint, items)) {
-                    b = false;
-                }
-            }
-        }
-        return b;
-    }
-
-    private void dispatchChoiceModeChanged() {
-        synchronized (layoutChangeListeners) {
-            for (LayoutChangeListener l : layoutChangeListeners) {
-                l.onChoiceModeChanged(choiceMode);
-            }
-        }
-    }
-
-    private void dispatchSelectionChanged(@NonNull Item item, boolean isSelected) {
-        synchronized (layoutChangeListeners) {
-            for (LayoutChangeListener l : layoutChangeListeners) {
-                l.onSelectedChanged(item, isSelected);
-            }
-        }
-    }
-
     private static void correctImageViewSize(@NonNull ImageView v) {
-        logger.debug("correctImageViewSize(), v=" + v);
         Pair<Integer, Integer> viewSize = GuiUtils.getRescaledImageViewSize(v);
         v.setMaxWidth(viewSize.first);
         v.setMaxHeight(viewSize.second);
         v.invalidate();
         v.requestLayout();
-        logger.debug("measured size: " + v.getMeasuredWidth() + "x" + v.getMeasuredHeight());
-        logger.debug("drawable size: " + GuiUtils.getImageViewDrawableSize(v).first + "x" + GuiUtils.getImageViewDrawableSize(v).second);
-        logger.debug("rescaled size: " + GuiUtils.getRescaledImageViewSize(v).first + "x" + GuiUtils.getRescaledImageViewSize(v).second);
     }
 
     public void setBackgroundVisibility(boolean visibility) {
@@ -522,7 +463,6 @@ public class MaskClickLayout extends FrameLayout {
     }
 
     public void load(ClickMask clickMask) {
-        logger.debug("load(), clickMask=" + clickMask);
 
         if (clickMask != null) {
 
@@ -576,7 +516,6 @@ public class MaskClickLayout extends FrameLayout {
     }
 
     public void unload() {
-        logger.debug("unload()");
 
         if (isLoaded()) {
 
@@ -616,16 +555,11 @@ public class MaskClickLayout extends FrameLayout {
 
                     int x = (int) event.getX();
                     int y = (int) event.getY();
-                    logger.debug("source point {x=" + x + ", y=" + y + "}");
 
                     Point point = correctCoordsBySize(new Point(x, y), new Pair<>(backgroundImageView.getMeasuredWidth(), backgroundImageView.getMeasuredHeight()), new Pair<>(backgroundSize.first, backgroundSize.second));
                     point.set(x = point.x, y = point.y);
-                    logger.debug("corrected point {x=" + x + ", y=" + y + "}");
 
-                    logger.debug("[background] imageView: " + backgroundImageView.getMeasuredWidth() + "x" + backgroundImageView.getMeasuredHeight());
-                    logger.debug("[background] drawable: " + backgroundSize.first + "x" + backgroundSize.second);
-
-//                List<Drawable> drawables = new ArrayList<>();
+//                  List<Drawable> drawables = new ArrayList<>();
 
                     List<Item> hitItems = new ArrayList<>();
 
@@ -635,7 +569,6 @@ public class MaskClickLayout extends FrameLayout {
 
                         if (item.options.scaleToParent) {
                             if (backgroundSize.first > 0 && backgroundSize.second > 0) {
-                                logger.debug("[mask] scaling to " + backgroundSize.first + "x" + backgroundSize.second + "...");
                                 Bitmap scaledMaskBitmap = Bitmap.createScaledBitmap(maskBitmap, backgroundSize.first, backgroundSize.second, false);
 
                                 if (scaledMaskBitmap == null) {
@@ -647,15 +580,12 @@ public class MaskClickLayout extends FrameLayout {
                             }
                         }
 
-                        logger.debug("[mask] maskBitmap: " + maskBitmap.getWidth() + "x" + maskBitmap.getHeight());
-
                         int color = maskBitmap.getPixel(x, y);
                         color &= ~0xFF000000;
-                        logger.debug("clicked color: " + Integer.toHexString(color) + ", mask color: " + Integer.toHexString(item.maskClickColor) + ", " + "(id=" + item.maskedPair.first + ")");
 
                         if (color == item.maskClickColor) {
 
-                            if (dispatchItemPreHit(point, item)) {
+                            if (itemHitCallbacks.dispatchItemPreHit(point, item)) {
                                 continue;
                             }
 
@@ -672,7 +602,7 @@ public class MaskClickLayout extends FrameLayout {
                     }
 
                     if (!hitItems.isEmpty()) {
-                        if (!dispatchItemsHit(point, hitItems)) {
+                        if (!itemHitCallbacks.dispatchItemsHit(point, hitItems)) {
                             for (Item item : hitItems) {
                                 if (!isItemSelected(item)) {
                                     setItemSelected(item, true);
@@ -912,6 +842,52 @@ public class MaskClickLayout extends FrameLayout {
          * @return true if event consumed
          */
         boolean onItemsHit(@NonNull Point clickPoint, @NonNull List<Item> items);
+    }
+
+    private static class ItemHitObservable extends Observable<ItemHitCallback> {
+
+        private boolean dispatchItemPreHit(@NonNull Point clickPoint, @NonNull Item item) {
+            boolean b = true;
+            synchronized (mObservers) {
+                for (ItemHitCallback c : mObservers) {
+                    if (!c.onItemPreHit(clickPoint, item)) {
+                        b = false;
+                    }
+                }
+            }
+            return b;
+        }
+
+        private boolean dispatchItemsHit(@NonNull Point clickPoint, @NonNull List<Item> items) {
+            boolean b = true;
+            synchronized (mObservers) {
+                for (ItemHitCallback c : mObservers) {
+                    if (!c.onItemsHit(clickPoint, items)) {
+                        b = false;
+                    }
+                }
+            }
+            return b;
+        }
+    }
+
+    private static class LayoutChangeObservable extends Observable<LayoutChangeListener> {
+
+        private void dispatchChoiceModeChanged(@NonNull ChoiceMode choiceMode) {
+            synchronized (mObservers) {
+                for (LayoutChangeListener l : mObservers) {
+                    l.onChoiceModeChanged(choiceMode);
+                }
+            }
+        }
+
+        private void dispatchSelectionChanged(@NonNull Item item, boolean isSelected) {
+            synchronized (mObservers) {
+                for (LayoutChangeListener l : mObservers) {
+                    l.onSelectedChanged(item, isSelected);
+                }
+            }
+        }
     }
 
 }

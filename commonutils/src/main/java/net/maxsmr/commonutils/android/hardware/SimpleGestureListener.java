@@ -7,15 +7,10 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.util.LinkedList;
 import java.util.List;
 
 public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestureListener, View.OnTouchListener {
-
-    private static final Logger logger = LoggerFactory.getLogger(SimpleGestureListener.class);
 
     public interface ScaleFactorChangeListener {
         void onScaleFactorChanged(float from, float to);
@@ -93,7 +88,6 @@ public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestur
 
     @Override
     public boolean onScale(ScaleGestureDetector detector) {
-        logger.debug("onScale()");
 
         float newScaleFactor;
         newScaleFactor = currentScaleFactor * detector.getScaleFactor();
@@ -122,9 +116,6 @@ public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestur
 
     @Override
     public void onScaleEnd(ScaleGestureDetector detector) {
-        logger.debug("onScaleEnd()");
-//            logger.debug("previous span: " + detector.getPreviousSpan() + ", current span: " + detector.getCurrentSpan() + ", scale factor: " + detector.getScaleFactor());
-        logger.debug("current scale factor: " + currentScaleFactor + ", previous scale factor: " + previousScaleFactor);
         isScaling = false;
     }
 

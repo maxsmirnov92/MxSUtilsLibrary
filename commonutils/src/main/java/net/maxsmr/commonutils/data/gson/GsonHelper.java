@@ -4,13 +4,12 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -18,7 +17,7 @@ import java.util.List;
 
 public class GsonHelper {
 
-    private static final Logger logger = LoggerFactory.getLogger(GsonHelper.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(GsonHelper.class);
 
     private GsonHelper() {
         throw new AssertionError("no instances.");
@@ -28,16 +27,12 @@ public class GsonHelper {
      * @param type T Serializable or Parcelable
      */
     @Nullable
-    public static <T> T fromJsonObjectString(@Nullable String jsonString, @NonNull Class<T> type, boolean withExposedOnly) {
+    public static <T> T fromJsonObjectString(@NonNull Gson gson, @Nullable String jsonString, @NonNull Class<T> type) {
         logger.debug("fromJsonObjectString(), jsonString=" + jsonString + ", type=" + type);
-
-        final Gson gson = withExposedOnly? new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create() : new GsonBuilder().create();
-
         try {
             return gson.fromJson(jsonString, type);
         } catch (Exception e) {
-            e.printStackTrace();
-            logger.error("an Exception occurred during fromJson(): " + e.getMessage());
+            logger.error("an Exception occurred during fromJson(): " + e.getMessage(), e);
             return null;
         }
     }
@@ -46,31 +41,24 @@ public class GsonHelper {
      * @param type T Serializable or Parcelable
      */
     @NonNull
-    public static <T> List<T> fromJsonArrayString(@Nullable String jsonString, @NonNull Class<T[]> type, boolean withExposedOnly) {
+    public static <T> List<T> fromJsonArrayString(@NonNull Gson gson, @Nullable String jsonString, @NonNull Class<T[]> type) {
         logger.debug("fromJsonArrayString(), jsonString=" + jsonString + ", type=" + type);
-
-        final Gson gson = withExposedOnly? new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create() : new GsonBuilder().create();
-
         try {
             return new ArrayList<>(Arrays.asList(gson.fromJson(jsonString, type)));
         } catch (Exception e) {
-            e.printStackTrace();
-            logger.error("an Exception occurred during fromJson(): " + e.getMessage());
+            logger.error("an Exception occurred during fromJson(): " + e.getMessage(), e);
             return new ArrayList<>();
         }
     }
 
     @NonNull
-    public static <T> String toJsonString(boolean withExposedOnly, T... what) {
+    public static <T> String toJsonString(@NonNull Gson gson, T... what) {
         logger.debug("toJsonString(), what=" + Arrays.toString(what));
-
-        final Gson gson = withExposedOnly? new GsonBuilder().excludeFieldsWithoutExposeAnnotation().create() : new GsonBuilder().create();
 
         try {
             return gson.toJson(what != null && what.length == 1? what[0] : what);
         } catch (Exception e) {
-            e.printStackTrace();
-            logger.error("an Exception occurred during toJson(): " + e.getMessage());
+            logger.error("an Exception occurred during toJson(): " + e.getMessage(), e);
             return "null";
         }
     }
@@ -124,6 +112,7 @@ public class GsonHelper {
         return value;
     }
 
+    @SuppressWarnings("unchecked")
     @Nullable
     public static <V> V getJsonPrimitiveValueFor(@Nullable JsonElement forElement, Class<V> clazz) {
         V value = null;

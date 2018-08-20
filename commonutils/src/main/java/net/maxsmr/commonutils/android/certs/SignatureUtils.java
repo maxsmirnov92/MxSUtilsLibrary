@@ -8,8 +8,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -24,7 +24,7 @@ import java.util.List;
 
 public final class SignatureUtils {
 
-    private static final Logger logger = LoggerFactory.getLogger(SignatureUtils.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(SignatureUtils.class);
 
     public SignatureUtils() {
         throw new AssertionError("no instances.");

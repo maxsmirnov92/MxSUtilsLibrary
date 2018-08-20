@@ -5,9 +5,8 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -22,14 +21,16 @@ import java.util.Locale;
 
 public final class ShellUtils {
 
-    private final static Logger logger = LoggerFactory.getLogger(ShellUtils.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ShellUtils.class);
 
     private ShellUtils() {
         throw new AssertionError("no instances.");
     }
 
     @Nullable
-    private static Process createAndStartProcess(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
+    private static Process createAndStartProcess(@NonNull List<String> cmds, @Nullable String workingDir,
+                                                 @Nullable IProcessBuilderConfigurator configurator,
+                                                 @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
 
         for (int i = 0; i < cmds.size(); i++) {
             cmds.set(i, String.format(Locale.US, "%s", cmds.get(i)));
@@ -54,13 +55,22 @@ public final class ShellUtils {
             sc.shellOut(ShellCallback.StreamType.CMD, cmdlog.toString());
         }
 
-        Process process;
+        if (configurator != null) {
+            configurator.configure(pb);
+        }
+
+        Process process = null;
+        IOException startEx = null;
 
         try {
             process = pb.start();
         } catch (IOException e) {
+            startEx = e;
+        }
+
+        if (process == null) {
             if (sc != null) {
-                sc.processStartFailed(e);
+                sc.processStartFailed(startEx);
             }
             return null;
         }
@@ -79,15 +89,23 @@ public final class ShellUtils {
 
 
     public static boolean execProcessAsync(@NonNull String cmd, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
-        return execProcessAsync(Collections.singletonList(cmd), workingDir, sc, tc);
+        return execProcessAsync(cmd, workingDir, null, sc, tc);
+    }
+
+    public static boolean execProcessAsync(@NonNull String cmd, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
+        return execProcessAsync(Collections.singletonList(cmd), workingDir, configurator, sc, tc);
+    }
+
+    public static boolean execProcessAsync(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
+        return execProcessAsync(cmds, workingDir, null, sc, tc);
     }
 
     /**
      * @return true if started successfully, false - otherwise
      */
-    public static boolean execProcessAsync(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
+    public static boolean execProcessAsync(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
         logger.debug("execProcessAsync(), cmds=" + cmds + ", workingDir=" + workingDir + ", sc=" + sc + ", tc=" + tc);
-        Process process = createAndStartProcess(cmds, workingDir, sc, tc);
+        Process process = createAndStartProcess(cmds, workingDir, configurator, sc, tc);
         if (process != null) {
             Thread waitThread;
             (waitThread = new ProcessWaitThread(process, sc)).start();
@@ -99,27 +117,30 @@ public final class ShellUtils {
     }
 
     public static CommandResult execProcess(@NonNull String cmd, @Nullable String workingDir, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
-        return execProcess(cmd, workingDir, CommandResult.DEFAULT_TARGET_CODE, sc, tc);
+        return execProcess(cmd, workingDir, null, CommandResult.DEFAULT_TARGET_CODE, sc, tc);
     }
 
-    public static CommandResult execProcess(@NonNull String cmd, @Nullable String workingDir, @Nullable Integer targetExitCode, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
-        return execProcess(Collections.singletonList(cmd), workingDir, targetExitCode, sc, tc);
+    public static CommandResult execProcess(@NonNull String cmd, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable Integer targetExitCode, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
+        return execProcess(Collections.singletonList(cmd), workingDir, configurator, targetExitCode, sc, tc);
     }
 
     public static CommandResult execProcess(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
-        return execProcess(cmds, workingDir, CommandResult.DEFAULT_TARGET_CODE, sc, tc);
+        return execProcess(cmds, workingDir, null, CommandResult.DEFAULT_TARGET_CODE, sc, tc);
     }
 
     /**
      * @return result code; -1 if start failed or interrupted
      */
-    public static CommandResult execProcess(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable Integer targetExitCode, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
+    public static CommandResult execProcess(@NonNull List<String> cmds, @Nullable String workingDir,
+                                            @Nullable IProcessBuilderConfigurator configurator,
+                                            @Nullable Integer targetExitCode,
+                                            @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
         logger.debug("execProcess(), cmds=" + cmds + ", workingDir=" + workingDir + ", targetExitCode=" + targetExitCode + ", sc=" + sc + ", tc=" + tc);
 
         final List<String> stdOutLines = new ArrayList<>();
         final List<String> stdErrLines = new ArrayList<>();
 
-        Process process = createAndStartProcess(cmds, workingDir, new ShellCallback() {
+        Process process = createAndStartProcess(cmds, workingDir, configurator, new ShellCallback() {
 
             @Override
             public boolean needToLogCommands() {
@@ -172,10 +193,6 @@ public final class ShellUtils {
         }
 
         return new CommandResult(targetExitCode, exitCode, stdOutLines, stdErrLines);
-    }
-
-    public static boolean isRootAvailable() {
-        return (FileHelper.searchByNameWithStat("su", null, null)).size() > 0;
     }
 
     private static class StreamConsumeThread extends Thread {
@@ -264,7 +281,7 @@ public final class ShellUtils {
 
         void shellOut(@NonNull StreamType from, String shellLine);
 
-        void processStartFailed(Throwable t);
+        void processStartFailed(@Nullable Throwable t);
 
         void processComplete(int exitValue);
     }
@@ -274,5 +291,9 @@ public final class ShellUtils {
         void onThreadsStarted(List<Thread> threads);
     }
 
-}
+    public interface IProcessBuilderConfigurator {
 
+        void configure(@NonNull ProcessBuilder builder);
+    }
+
+}

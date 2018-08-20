@@ -21,11 +21,10 @@ import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.sort.AbsOptionableComparator;
 import net.maxsmr.commonutils.data.sort.ISortOption;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
 import net.maxsmr.commonutils.shell.ShellUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.BufferedOutputStream;
 import java.io.BufferedReader;
@@ -65,7 +64,7 @@ import static net.maxsmr.commonutils.shell.ShellUtils.execProcess;
 
 public final class FileHelper {
 
-    private final static Logger logger = LoggerFactory.getLogger(FileHelper.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(FileHelper.class);
 
     public final static int DEPTH_UNLIMITED = -1;
 
@@ -129,7 +128,7 @@ public final class FileHelper {
             try {
                 return file.getCanonicalPath();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error("an IOException occurred during getCanonicalPath(): " + e.getMessage(), e);
                 return file.getAbsolutePath();
             }
         }
@@ -2251,7 +2250,7 @@ public final class FileHelper {
                                     try {
                                         size = Long.parseLong(parts[0]);
                                     } catch (NumberFormatException e) {
-                                        e.printStackTrace();
+                                        logger.error("an NumberFormatException occurred during parseLong(): " + e.getMessage(), e);
                                     }
                                 }
                                 collectedMap.put(current, SizeUnit.KBYTES.toBytes(size));

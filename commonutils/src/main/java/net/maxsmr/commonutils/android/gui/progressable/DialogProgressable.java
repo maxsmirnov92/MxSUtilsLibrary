@@ -10,15 +10,15 @@ import android.view.KeyEvent;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.lang.reflect.Field;
 
 public class DialogProgressable implements Progressable, DialogInterface.OnKeyListener, DialogInterface.OnDismissListener, DialogInterface.OnCancelListener {
 
-    protected static final Logger logger = LoggerFactory.getLogger(DialogProgressable.class);
-
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(DialogProgressable.class);
+    
     @NonNull
     private final Context context;
 
@@ -109,7 +109,6 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
     }
 
     public void notifyProgress(int progress) {
-        logger.debug("notifyProgress(), progress=" + progress);
         if (isStarted()) {
             if (!progressDialog.isIndeterminate()) {
                 if (progress >= 0 && progress <= progressDialog.getMax()) {
@@ -131,7 +130,7 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
         try {
             f = progressDialog.getClass().getDeclaredField("mProgress");
         } catch (NoSuchFieldException e) {
-            e.printStackTrace();
+            logger.error(e);
         }
 
         if (f != null) {
@@ -139,7 +138,7 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
             try {
                 return (ProgressBar) f.get(progressDialog);
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                logger.error(e);
             }
         }
 
@@ -157,7 +156,7 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
         try {
             f = progressDialog.getClass().getDeclaredField("mMessageView");
         } catch (NoSuchFieldException e) {
-            e.printStackTrace();
+            logger.error(e);
         }
 
         if (f != null) {
@@ -165,7 +164,7 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
             try {
                 return (TextView) f.get(progressDialog);
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                logger.error(e);
             }
         }
 
@@ -191,7 +190,6 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
     public DialogProgressable setMax(int max) {
         this.max = max < 0 ? 0 : max;
         if (isStarted()) {
-            logger.debug("setting max: " + max);
             progressDialog.setMax(this.max);
         }
         return this;
@@ -291,7 +289,6 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
 
     @Override
     public boolean onKey(DialogInterface dialog, int keyCode, KeyEvent event) {
-        logger.debug("onKey(), dialog=" + dialog + ", keyCode=" + keyCode + ", event=" + event);
         if (keyCode == KeyEvent.KEYCODE_BACK && dialog != null) {
             if (backPressedListener != null) {
                 backPressedListener.onBackPressed(dialog);
@@ -302,7 +299,6 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
 
     @Override
     public void onDismiss(DialogInterface dialog) {
-        logger.debug("onDismiss(), dialog=" + dialog);
         if (dismissListener != null) {
             dismissListener.onDismiss(dialog);
         }
@@ -310,7 +306,6 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
 
     @Override
     public void onCancel(DialogInterface dialog) {
-        logger.debug("onCancel(), dialog=" + dialog);
         if (cancelListener != null) {
             cancelListener.onCancel(dialog);
         }

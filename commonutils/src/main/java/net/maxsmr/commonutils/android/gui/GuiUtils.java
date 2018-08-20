@@ -51,6 +51,8 @@ import android.widget.TextView;
 
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.StringUtils;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -61,6 +63,8 @@ import java.util.Locale;
 import static net.maxsmr.commonutils.android.gui.OrientationIntervalListener.ROTATION_NOT_SPECIFIED;
 
 public final class GuiUtils {
+
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(GuiUtils.class);
 
     public GuiUtils() {
         throw new AssertionError("no instances.");
@@ -256,7 +260,7 @@ public final class GuiUtils {
         try {
             behaviourField = clazz.getDeclaredField("mBehavior");
         } catch (NoSuchFieldException e) {
-            e.printStackTrace();
+            logger.error(e);
         }
         if (behaviourField != null) {
             behaviourField.setAccessible(true);
@@ -264,7 +268,7 @@ public final class GuiUtils {
             try {
                 behavior = (BottomSheetBehavior<FrameLayout>) behaviourField.get(dialog);
             } catch (IllegalAccessException e) {
-                e.printStackTrace();
+                logger.error(e);
             }
             if (behavior != null) {
                 behavior.setHideable(toggle);
@@ -280,7 +284,7 @@ public final class GuiUtils {
             InputMethodManager inputManager = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
             return inputManager.isActive(view);
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
         }
         return false;
     }
@@ -427,7 +431,7 @@ public final class GuiUtils {
                 return insets.bottom;
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
 
         }
         return 0;
@@ -472,7 +476,7 @@ public final class GuiUtils {
             mErrorView.setTextColor(color);
             mErrorView.requestLayout();
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
         }
     }
 

@@ -16,9 +16,8 @@ import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -30,7 +29,7 @@ import static android.os.Build.VERSION_CODES.M;
 
 public final class MetadataRetriever {
 
-    private static final Logger logger = LoggerFactory.getLogger(MetadataRetriever.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(MetadataRetriever.class);
 
     private MetadataRetriever() {
         throw new UnsupportedOperationException("no instances.");
@@ -269,14 +268,14 @@ public final class MetadataRetriever {
                 try {
                     return !isEmpty ? (M) Long.valueOf(value) : (defaultValue != null ? defaultValue : (M) Long.valueOf(0));
                 } catch (NumberFormatException e) {
-                    e.printStackTrace();
+                    logger.error("a NumberFormatException occurred during valueOf(): " + e.getMessage(), e);
                     return defaultValue;
                 }
             } else if (clazz.isAssignableFrom(Integer.class)) {
                 try {
                     return !isEmpty ? (M) Integer.valueOf(value) : (defaultValue != null ? defaultValue : (M) Integer.valueOf(0));
                 } catch (NumberFormatException e) {
-                    e.printStackTrace();
+                    logger.error("a NumberFormatException occurred during valueOf(): " + e.getMessage(), e);
                     return defaultValue;
                 }
             } else if (clazz.isAssignableFrom(Boolean.class)) {
@@ -285,8 +284,7 @@ public final class MetadataRetriever {
                 throw new UnsupportedOperationException("incorrect class: " + clazz);
             }
         } catch (ClassCastException e) {
-            e.printStackTrace();
-            logger.error("value " + value + " cannot be casted to " + clazz);
+            logger.error("value " + value + " cannot be casted to " + clazz, e);
             return defaultValue;
         }
     }

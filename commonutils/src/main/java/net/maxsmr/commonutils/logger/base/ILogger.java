@@ -1,10 +1,14 @@
 package net.maxsmr.commonutils.logger.base;
 
-public interface Logger {
+public interface ILogger {
 
     void info(String message);
 
+    void info(String message, Throwable exception);
+
     void debug(String message);
+
+    void debug(String message, Throwable exception);
 
     void warn(String message);
 
@@ -18,7 +22,7 @@ public interface Logger {
 
     void error(String message, Throwable exception);
 
-    class Stub implements Logger {
+    class Stub implements ILogger {
 
         @Override
         public void info(String message) {
@@ -26,7 +30,17 @@ public interface Logger {
         }
 
         @Override
+        public void info(String message, Throwable exception) {
+
+        }
+
+        @Override
         public void debug(String message) {
+
+        }
+
+        @Override
+        public void debug(String message, Throwable exception) {
 
         }
 

@@ -7,9 +7,13 @@ import android.util.AttributeSet;
 import android.widget.RelativeLayout;
 
 import net.maxsmr.commonutils.R;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 
 public class RelativeLayoutMaxSize extends RelativeLayout {
+
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(RelativeLayoutMaxSize.class);
     
     public static final int NOT_SET = -1;
 
@@ -30,7 +34,8 @@ public class RelativeLayoutMaxSize extends RelativeLayout {
     }
 
     public void setMaxSize(int maxWidth, int maxHeight) {
-        if (maxWidth < NOT_SET || maxHeight < NOT_SET) {
+        if ((maxWidth < 0 && maxWidth != NOT_SET) ||
+                (maxHeight < 0 && maxHeight != NOT_SET)) {
             throw new IllegalArgumentException("incorrect size: " + maxWidth + "x" + maxHeight);
         }
         boolean changed = false;
@@ -90,7 +95,7 @@ public class RelativeLayoutMaxSize extends RelativeLayout {
             setMeasuredDimension(widthSize, heightSize);
 
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
         } finally {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }

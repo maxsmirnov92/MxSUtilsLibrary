@@ -9,7 +9,7 @@ buildscript {
     }
     dependencies {
 //        classpath 'com.neenbedankt.gradle.plugins:android-apt:1.8'
-        classpath 'com.android.tools.build:gradle:3.0.1'
+        classpath 'com.android.tools.build:gradle:3.1.4'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -32,10 +32,8 @@ ext {
     buildToolsVersion_ = "27.0.2"
     appCompatVersion = buildToolsVersion_
 
-    log4jVersion = "1.0.3"
-    slf4jVersion = "1.7.21"
     commonsNetVersion = "3.3"
-    gsonVersion = "2.8.1"
+    gsonVersion = "2.8.5"
 
     jUnitVersion = "4.12"
     testRunnerVersion = "1.0.1"

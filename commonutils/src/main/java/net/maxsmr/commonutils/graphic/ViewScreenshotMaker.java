@@ -7,16 +7,15 @@ import android.view.View;
 import android.view.Window;
 
 import net.maxsmr.commonutils.data.FileHelper;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
 import java.io.FileOutputStream;
 
 public final class ViewScreenshotMaker {
 
-    private final static Logger logger = LoggerFactory.getLogger(ViewScreenshotMaker.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ViewScreenshotMaker.class);
 
     private ViewScreenshotMaker() {
     }
@@ -48,7 +47,6 @@ public final class ViewScreenshotMaker {
 
         } catch (Throwable e) {
             logger.error("an Exception occurred", e);
-            e.printStackTrace();
         }
 
         return null;

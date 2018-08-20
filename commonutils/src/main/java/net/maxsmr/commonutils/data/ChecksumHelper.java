@@ -3,8 +3,8 @@ package net.maxsmr.commonutils.data;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
@@ -16,7 +16,7 @@ import java.util.Locale;
 
 public final class ChecksumHelper {
 
-    private final static Logger logger = LoggerFactory.getLogger(ChecksumHelper.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ChecksumHelper.class);
 
     private ChecksumHelper() {
         throw new AssertionError("no instances.");
@@ -28,7 +28,6 @@ public final class ChecksumHelper {
     public static String md5Hash(byte[] encData) {
 
         if (encData == null || encData.length == 0) {
-            logger.error("data is null or empty");
             return null;
         }
 
@@ -67,13 +66,7 @@ public final class ChecksumHelper {
 
 
     public static String md5Hash(File file) {
-
-        if (!FileHelper.isFileCorrect(file)) {
-            logger.error("incorrect file: " + file);
-            return null;
-        }
-
-        return md5Hash(FileHelper.readBytesFromFile(file));
+        return FileHelper.isFileCorrect(file)? md5Hash(FileHelper.readBytesFromFile(file)) : null;
     }
 
 

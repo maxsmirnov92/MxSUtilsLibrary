@@ -1,9 +1,9 @@
 package net.maxsmr.commonutils.logger;
 
 
-import net.maxsmr.commonutils.logger.base.BaseSimpleLogger;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
 
-public class SimpleLogger extends BaseSimpleLogger {
+public class SimpleLogger extends BaseLogger {
 
     @Override
     public void info(String message) {
@@ -15,10 +15,30 @@ public class SimpleLogger extends BaseSimpleLogger {
     }
 
     @Override
+    public void info(String message, Throwable exception) {
+        if (isLoggingEnabled()) {
+            System.out.println(message);
+            if (exception != null) {
+                exception.printStackTrace();
+            }
+        }
+    }
+
+    @Override
     public void debug(String message) {
         if (isLoggingEnabled()) {
             if (message != null) {
                 System.out.println(message);
+            }
+        }
+    }
+
+    @Override
+    public void debug(String message, Throwable exception) {
+        if (isLoggingEnabled()) {
+            System.out.println(message);
+            if (exception != null) {
+                exception.printStackTrace();
             }
         }
     }

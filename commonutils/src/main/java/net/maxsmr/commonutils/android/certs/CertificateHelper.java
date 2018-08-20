@@ -7,8 +7,8 @@ import android.support.annotation.RawRes;
 import android.text.TextUtils;
 import android.util.Pair;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -31,7 +31,7 @@ import javax.net.ssl.TrustManagerFactory;
 
 public final class CertificateHelper {
 
-    private static final Logger logger = LoggerFactory.getLogger(CertificateHelper.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(CertificateHelper.class);
 
     private CertificateHelper() {
         throw new AssertionError("no instances.");
@@ -45,8 +45,7 @@ public final class CertificateHelper {
         try {
             return generateCertificate(new FileInputStream(file));
         } catch (FileNotFoundException e) {
-            e.printStackTrace();
-            throw new RuntimeException("can't open file: " + file);
+            throw new RuntimeException("can't open file: " + file, e);
         }
     }
 
@@ -60,7 +59,6 @@ public final class CertificateHelper {
             logger.debug("generated certificate: " + ((X509Certificate) certificate).getSubjectDN());
             return certificate;
         } catch (CertificateException | IOException e) {
-            e.printStackTrace();
             throw new RuntimeException("can't generate certificate", e);
         }
     }
@@ -105,7 +103,6 @@ public final class CertificateHelper {
             return tmf;
 
         } catch (KeyStoreException | CertificateException | NoSuchAlgorithmException | IOException | UnsupportedOperationException e) {
-            e.printStackTrace();
             throw new RuntimeException("can't initialize TrustManagerFactory", e);
         }
     }
@@ -138,7 +135,6 @@ public final class CertificateHelper {
                 }
             }
         } catch (IOException | KeyStoreException | NoSuchAlgorithmException | CertificateException e) {
-            e.printStackTrace();
             throw new RuntimeException("can't retrieve certificate list from store type " + keystoreType, e);
         }
         return certificates;

@@ -5,9 +5,8 @@ import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -21,8 +20,8 @@ import static net.maxsmr.commonutils.shell.CommandResult.DEFAULT_TARGET_CODE;
 
 public class ShellWrapper {
 
-    private final static Logger logger = LoggerFactory.getLogger(ShellWrapper.class);
-    
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ShellWrapper.class);
+
     private static final String EMULATED_STORAGE_SOURCE;
     private static final String EMULATED_STORAGE_TARGET;
 
@@ -35,20 +34,13 @@ public class ShellWrapper {
 
     private final Map<Integer, CommandInfo> commandsMap = new LinkedHashMap<>();
 
-    private final int targetCode;
+    private int targetCode = DEFAULT_TARGET_CODE;
 
-    private final String workingDir;
+    private String workingDir;
+
+    private ShellUtils.IProcessBuilderConfigurator configurator;
 
     private boolean isDisposed = false;
-
-    public ShellWrapper() {
-        this(DEFAULT_TARGET_CODE, null);
-    }
-
-    public ShellWrapper(int targetCode, String workingDir) {
-        this.targetCode = targetCode;
-        this.workingDir = workingDir;
-    }
 
     public Map<Integer, CommandInfo> getCommandsMap() {
 
@@ -99,6 +91,30 @@ public class ShellWrapper {
         isDisposed = true;
     }
 
+    public int getTargetCode() {
+        return targetCode;
+    }
+
+    public void setTargetCode(int targetCode) {
+        this.targetCode = targetCode;
+    }
+
+    public String getWorkingDir() {
+        return workingDir;
+    }
+
+    public void setWorkingDir(String workingDir) {
+        this.workingDir = workingDir;
+    }
+
+    public ShellUtils.IProcessBuilderConfigurator getConfigurator() {
+        return configurator;
+    }
+
+    public void setConfigurator(ShellUtils.IProcessBuilderConfigurator configurator) {
+        this.configurator = configurator;
+    }
+
     public synchronized CommandResult executeCommand(String command, boolean useSU) {
         return executeCommand(Collections.singletonList(command), useSU);
     }
@@ -128,7 +144,7 @@ public class ShellWrapper {
             commandsMap.put(commandId, commandInfo);
         }
 
-        final CommandResult result = ShellUtils.execProcess(commands, workingDir, targetCode, new ShellUtils.ShellCallback() {
+        final CommandResult result = ShellUtils.execProcess(commands, workingDir, configurator, targetCode, new ShellUtils.ShellCallback() {
 
             @Override
             public boolean needToLogCommands() {
@@ -143,7 +159,7 @@ public class ShellWrapper {
             @Override
             public void processStartFailed(Throwable t) {
                 logger.debug("Command \"" + commandInfo.getCommandsToRun() + "\" start failed");
-                commandInfo.setResult(new CommandResult(targetCode, -1, null, null));
+//                commandInfo.setResult(new CommandResult(targetCode, -1, null, null));
             }
 
             @Override

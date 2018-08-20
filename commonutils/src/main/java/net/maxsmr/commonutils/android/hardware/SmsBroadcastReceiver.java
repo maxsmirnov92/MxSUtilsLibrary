@@ -10,17 +10,12 @@ import android.support.annotation.Nullable;
 import android.support.v4.content.LocalBroadcastManager;
 import android.telephony.SmsMessage;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
 public class SmsBroadcastReceiver extends BroadcastReceiver {
-
-    protected static final Logger logger = LoggerFactory.getLogger(SmsBroadcastReceiver.class);
 
     public static final String ACTION_SMS_RECEIVED = SmsBroadcastReceiver.class.getSimpleName() + ".ACTION_SMS_RECEIVED";
     public static final String EXTRA_SMS_DATA = SmsBroadcastReceiver.class.getSimpleName() + ".EXTRA_SMS_DATA";
@@ -36,7 +31,6 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
     @Override
     public void onReceive(Context context, Intent intent) {
-        logger.debug("onReceive(), intent=" + intent);
         if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION.equalsIgnoreCase(intent.getAction())) {
             SmsMessage smsMessage = get(intent);
             if (isFromSpecifiedSender(smsMessage)) {

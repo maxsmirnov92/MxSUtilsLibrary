@@ -5,7 +5,12 @@ import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
 import android.view.View;
 
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
 public class WrapContentViewPager extends ViewPager {
+
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(WrapContentViewPager.class);
 
     public WrapContentViewPager(Context context) {
         super(context);
@@ -25,7 +30,7 @@ public class WrapContentViewPager extends ViewPager {
                 heightMeasureSpec = MeasureSpec.makeMeasureSpec(h, MeasureSpec.EXACTLY);
             }
         } catch (Exception e) {
-            e.printStackTrace();
+            logger.error(e);
         }
         super.onMeasure(widthMeasureSpec, heightMeasureSpec);
     }

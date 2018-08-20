@@ -3,18 +3,22 @@ package net.maxsmr.commonutils.shell;
 import android.os.Build;
 import android.support.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
 import java.util.Arrays;
 
-public class RootShellCommands {
+public final class RootShellCommands {
 
-    private final static Logger logger = LoggerFactory.getLogger(RootShellCommands.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(RootShellCommands.class);
 
     private static final int MAX_INSTALL_RETRIES = 20;
     private static final int MAX_UNINSTALL_RETRIES = 20;
+
+    public RootShellCommands() {
+        throw new AssertionError("no instances.");
+    }
 
     /**
      * Execute SU command

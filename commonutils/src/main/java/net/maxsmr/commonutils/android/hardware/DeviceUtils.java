@@ -22,12 +22,12 @@ import android.support.annotation.Nullable;
 import android.telephony.TelephonyManager;
 import android.view.WindowManager;
 
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.ShellUtils;
 
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -44,7 +44,7 @@ import static android.os.Build.VERSION.SDK_INT;
 
 public final class DeviceUtils {
 
-    private static final Logger logger = LoggerFactory.getLogger(DeviceUtils.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(DeviceUtils.class);
 
     public DeviceUtils() {
         throw new AssertionError("no instances.");
@@ -221,7 +221,7 @@ public final class DeviceUtils {
         try {
             value = android.provider.Settings.System.getInt(context.getContentResolver(), android.provider.Settings.System.SCREEN_OFF_TIMEOUT);
         } catch (android.provider.Settings.SettingNotFoundException e) {
-            e.printStackTrace();
+            logger.error(e);
         }
         return value;
     }
@@ -258,7 +258,7 @@ public final class DeviceUtils {
             TimeInfo timeInfo = timeClient.getTime(inetAddress);
             return timeInfo.getMessage().getTransmitTimeStamp().getTime();
         } catch (IOException e) {
-            e.printStackTrace();
+            logger.error(e);
             timeClient.close();
         }
         return -1;

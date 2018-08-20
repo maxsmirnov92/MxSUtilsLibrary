@@ -52,7 +52,7 @@ public class CommandResult {
     }
 
     public boolean isSuccessful() {
-        return isCompleted() && exitCode == targetExitCode && stdErrLines.isEmpty();
+        return isCompleted() && exitCode == targetExitCode /*&& stdErrLines.isEmpty()*/;
     }
 
     @NonNull

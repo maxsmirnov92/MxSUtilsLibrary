@@ -14,10 +14,8 @@ import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.android.location.info.TrackingStatus;
 import net.maxsmr.commonutils.data.CompareUtils;
-
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -26,7 +24,7 @@ import java.util.Set;
 
 public final class LocationWatcher {
 
-    private static final Logger logger = LoggerFactory.getLogger(LocationWatcher.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(LocationWatcher.class);
 
     private static LocationWatcher sInstance;
 

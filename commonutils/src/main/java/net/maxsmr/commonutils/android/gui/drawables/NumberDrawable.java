@@ -11,30 +11,30 @@ import android.support.annotation.ColorInt;
 import android.support.annotation.DrawableRes;
 import android.text.TextUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 
 public class NumberDrawable extends BitmapDrawable {
 
-    private static final Logger logger = LoggerFactory.getLogger(NumberDrawable.class);
-
     private final Context mContext;
 
-    public interface Defaults {
-        Typeface DEFAULT_FONT = Typeface.create((String) null, Typeface.BOLD);
-        int DEFAULT_TEXT_COLOR = Color.BLACK;
-        int DEFAULT_TEXT_ALPHA = 0xBB;
-        int DEFAULT_TEXT_SIZE_DP = 18;
-    }
-
-    public interface NumberSetter {
-        int getNumber();
-    }
-
     private NumberSetter mSetter;
+
+    private boolean mNeedInvalidate = true;
+
+    private Bitmap mSource = null;
+
+    private Typeface mFont = Defaults.DEFAULT_FONT;
+
+    private int mTextColor = Defaults.DEFAULT_TEXT_COLOR;
+
+    private int mTextAlpha = Defaults.DEFAULT_TEXT_ALPHA;
+
+    private int mNumber = 0;
+
+    private int mTextSizeDP = Defaults.DEFAULT_TEXT_SIZE_DP;
+
+    private final Paint mPaint = new Paint();
 
     public NumberDrawable setNumberSetter(NumberSetter setter) {
         mSetter = setter;
@@ -48,18 +48,13 @@ public class NumberDrawable extends BitmapDrawable {
     public NumberDrawable(Context ctx, Bitmap sourceBitmap, @ColorInt int textColor, int textAlpha, String fontAlias) {
         super(ctx.getResources(), sourceBitmap);
         mContext = ctx;
-        needInvalidate = false;
+        mNeedInvalidate = false;
         setSource(sourceBitmap);
         setTextColor(textColor);
         setTextAlpha(textAlpha);
         setFontByAlias(fontAlias);
-        needInvalidate = true;
+        mNeedInvalidate = true;
     }
-
-    private boolean needInvalidate = true;
-
-    private Bitmap mSource = null;
-
     /**
      * @param source may be immutable
      */
@@ -67,16 +62,11 @@ public class NumberDrawable extends BitmapDrawable {
         if (mSource != source) {
             if (GraphicUtils.isBitmapCorrect(source)) {
                 mSource = source;
-                if (needInvalidate)
+                if (mNeedInvalidate)
                     invalidateSelf();
-            } else {
-                logger.error("incorrect source bitmap: " + source);
             }
         }
     }
-
-
-    private Typeface mFont = Defaults.DEFAULT_FONT;
 
     public void setFontByAlias(String alias) {
         if (!TextUtils.isEmpty(alias)) {
@@ -84,10 +74,8 @@ public class NumberDrawable extends BitmapDrawable {
             if (!mFont.equals(font)) {
                 if (font != null) {
                     mFont = font;
-                    if (needInvalidate)
+                    if (mNeedInvalidate)
                         invalidateSelf();
-                } else {
-                    logger.error("no loaded font with alias: " + alias);
                 }
             }
         }
@@ -97,56 +85,43 @@ public class NumberDrawable extends BitmapDrawable {
         if (mFont != font) {
             if (font != null) {
                 mFont = font;
-                if (needInvalidate)
+                if (mNeedInvalidate)
                     invalidateSelf();
-            } else {
-                logger.error("font is null");
             }
         }
     }
 
-    private int mTextColor = Defaults.DEFAULT_TEXT_COLOR;
-
     private void setTextColor(@ColorInt int textColor) {
         if (mTextColor != textColor) {
             mTextColor = textColor;
-            if (needInvalidate)
+            if (mNeedInvalidate)
                 invalidateSelf();
         }
     }
-
-    private int mTextAlpha = Defaults.DEFAULT_TEXT_ALPHA;
 
     private void setTextAlpha(int textAlpha) {
         if (mTextAlpha != textAlpha) {
             if (textAlpha >= 0 && textAlpha <= 0xFF) {
                 mTextAlpha = textAlpha;
-                if (needInvalidate)
+                if (mNeedInvalidate)
                     invalidateSelf();
             }
         }
     }
 
-    private int mNumber = 0;
-
     public void setNumber(int number) {
-        logger.debug("setNumber(), number=" + number);
         if (mNumber != number) {
             mNumber = number;
-            if (needInvalidate)
+            if (mNeedInvalidate)
                 invalidateSelf();
         }
     }
-
-    private int mTextSizeDP = Defaults.DEFAULT_TEXT_SIZE_DP;
 
     public void setTextSizeDp(int textSizeDP) {
         if (mTextSizeDP != textSizeDP) {
             if (textSizeDP > 0) {
                 mTextSizeDP = textSizeDP;
                 invalidateSelf();
-            } else {
-                logger.error("incorrect textSizeDP: " + textSizeDP);
             }
         }
     }
@@ -157,8 +132,6 @@ public class NumberDrawable extends BitmapDrawable {
 //        int dpi = (int) (displayMetrics.density * DisplayMetrics.DENSITY_MEDIUM);
         return GraphicUtils.dpToPx(mTextSizeDP, mContext);
     }
-
-    private final Paint mPaint = new Paint();
 
     {
         mPaint.setStyle(Paint.Style.FILL);
@@ -192,5 +165,17 @@ public class NumberDrawable extends BitmapDrawable {
 //        mPaint.setColorFilter(colorFilter);
 //        invalidateSelf();
 //    }
+
+    public interface Defaults {
+        Typeface DEFAULT_FONT = Typeface.create((String) null, Typeface.BOLD);
+        int DEFAULT_TEXT_COLOR = Color.BLACK;
+        int DEFAULT_TEXT_ALPHA = 0xBB;
+        int DEFAULT_TEXT_SIZE_DP = 18;
+    }
+
+    public interface NumberSetter {
+        int getNumber();
+    }
+
 
 }

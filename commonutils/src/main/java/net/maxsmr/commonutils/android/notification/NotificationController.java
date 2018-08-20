@@ -13,8 +13,8 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -23,13 +23,10 @@ import java.util.Iterator;
 import java.util.Map;
 
 
-/**
- * Created by maxsmirnov on 10.09.15.
- */
 @Deprecated
 public class NotificationController {
 
-    private static final Logger logger = LoggerFactory.getLogger(NotificationController.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(NotificationController.class);
 
     private static NotificationController instance;
 

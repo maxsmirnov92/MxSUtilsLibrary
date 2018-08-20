@@ -48,9 +48,9 @@ import android.view.WindowManager;
 import net.maxsmr.commonutils.android.gui.GuiUtils;
 import net.maxsmr.commonutils.android.media.MetadataRetriever;
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.ByteArrayOutputStream;
@@ -70,7 +70,7 @@ import java.util.Random;
 
 public final class GraphicUtils {
 
-    private static final Logger logger = LoggerFactory.getLogger(GraphicUtils.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(GraphicUtils.class);
 
     private GraphicUtils() {
         throw new AssertionError("no instances.");
@@ -782,10 +782,10 @@ public final class GraphicUtils {
                 int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
                 return getRotationAngleByExifOrientation(orientation);
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error(e);
             }
         }
-        return 0;
+        return -1;
     }
 
     public static boolean writeRotationAngleToExif(File imageFile, int degrees) {

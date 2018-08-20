@@ -4,6 +4,8 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -19,6 +21,8 @@ import java.io.Serializable;
 import java.util.List;
 
 public abstract class InstanceManager<T> {
+
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(InstanceManager.class);
 
     protected final File file;
 
@@ -48,19 +52,19 @@ public abstract class InstanceManager<T> {
                 out.writeObject(object);
                 return bos.toByteArray();
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error(e);
             } finally {
                 try {
                     if (out != null) {
                         out.close();
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
                 try {
                     bos.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
         }
@@ -76,7 +80,7 @@ public abstract class InstanceManager<T> {
                 objectOutput.writeObject(object);
                 bos.writeTo(outputStream);
             } catch (IOException e) {
-                e.printStackTrace();
+                logger.error(e);
             } finally {
                 try {
                     if (objectOutput != null) {
@@ -84,7 +88,7 @@ public abstract class InstanceManager<T> {
                     }
                     bos.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
         }
@@ -102,25 +106,26 @@ public abstract class InstanceManager<T> {
                     return (T) o;
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error(e);
             } finally {
                 try {
                     bis.close();
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
                 try {
                     if (in != null) {
                         in.close();
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
         }
         return null;
     }
 
+    @SuppressWarnings("unchecked")
     @Nullable
     public static <T extends Serializable> T fromInputStream(@NonNull Class<T> clazz, InputStream inputStream) {
         if (inputStream != null) {
@@ -132,14 +137,14 @@ public abstract class InstanceManager<T> {
                     return (T) o;
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                logger.error(e);
             } finally {
                 try {
                     if (objectInput != null) {
                         objectInput.close();
                     }
                 } catch (IOException e) {
-                    e.printStackTrace();
+                    logger.error(e);
                 }
             }
         }
@@ -154,6 +159,7 @@ public abstract class InstanceManager<T> {
         FileHelper.writeStringToFile(file, serializeAsString(inst), false);
     }
 
+    @Nullable
     public T loadFromByteArray() {
         byte[] data = FileHelper.readBytesFromFile(file);
         if (data != null && data.length > 0) {
@@ -162,9 +168,10 @@ public abstract class InstanceManager<T> {
         return null;
     }
 
+    @Nullable
     public T loadFromString() {
         List<String> data = FileHelper.readStringsFromFile(file);
-        if (data != null && data.size() > 0) {
+        if (data.size() > 0) {
             return deserializeFromString(data.get(0));
         }
         return null;

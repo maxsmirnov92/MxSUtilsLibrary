@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.logger.base;
 
-public abstract class BaseSimpleLogger implements Logger {
+public abstract class BaseLogger implements ILogger {
 
     private boolean mLoggingEnabled = true;
 
@@ -8,7 +8,7 @@ public abstract class BaseSimpleLogger implements Logger {
         return mLoggingEnabled;
     }
 
-    public void setLoggingEnabled(boolean mLoggingEnabled) {
-        this.mLoggingEnabled = mLoggingEnabled;
+    public void setLoggingEnabled(boolean toggle) {
+        this.mLoggingEnabled = toggle;
     }
 }

@@ -20,39 +20,45 @@ import net.maxsmr.commonutils.android.notification.NotificationActionInfo;
 import net.maxsmr.commonutils.android.notification.NotificationController;
 import net.maxsmr.commonutils.android.notification.NotificationInfo;
 import net.maxsmr.commonutils.data.FileHelper;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
 import java.util.List;
 
 public final class ServiceUtils {
 
-    private final static Logger logger = LoggerFactory.getLogger(ServiceUtils.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ServiceUtils.class);
 
     private ServiceUtils() {
         throw new AssertionError("no instances.");
     }
 
-    public static <S extends Service> boolean isServiceRunning(@NonNull Context context, @NonNull Class<S> serviceClass) {
+    public static <S extends Service> boolean isServiceRunning(@NonNull Context context, @NonNull final Class<S> serviceClass) {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName())) {
-                return true;
-            }
+        if (manager == null) {
+            throw new RuntimeException(ActivityManager.class.getSimpleName() + " is null");
         }
-        return false;
+        return Predicate.Methods.find(manager.getRunningServices(Integer.MAX_VALUE), new Predicate<ActivityManager.RunningServiceInfo>() {
+            @Override
+            public boolean apply(ActivityManager.RunningServiceInfo service) {
+                return serviceClass.getName().equals(service.service.getClassName());
+            }
+        }) != null;
     }
 
-    public static <S extends Service> boolean isServiceForeground(@NonNull Context context, @NonNull Class<S> serviceClass) {
+    public static <S extends Service> boolean isServiceForeground(@NonNull Context context, @NonNull final Class<S> serviceClass) {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        for (ActivityManager.RunningServiceInfo service : manager.getRunningServices(Integer.MAX_VALUE)) {
-            if (serviceClass.getName().equals(service.service.getClassName()) && service.foreground) {
-                return true;
-            }
+        if (manager == null) {
+            throw new RuntimeException(ActivityManager.class.getSimpleName() + " is null");
         }
-        return false;
+        return Predicate.Methods.find(manager.getRunningServices(Integer.MAX_VALUE), new Predicate<ActivityManager.RunningServiceInfo>() {
+            @Override
+            public boolean apply(ActivityManager.RunningServiceInfo service) {
+                return serviceClass.getName().equals(service.service.getClassName()) && service.foreground;
+            }
+        }) != null;
     }
 
     private static <S extends Service> void startNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass) {

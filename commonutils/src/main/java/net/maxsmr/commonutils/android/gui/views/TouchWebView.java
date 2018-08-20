@@ -25,13 +25,12 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import net.maxsmr.commonutils.data.Observable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 public class TouchWebView extends WebView implements Handler.Callback {
 
-    private static final Logger logger = LoggerFactory.getLogger(TouchWebView.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(TouchWebView.class);
 
     private static final int CLICK_ON_WEBVIEW = 1;
     private static final int CLICK_ON_URL = 2;
@@ -368,7 +367,7 @@ public class TouchWebView extends WebView implements Handler.Callback {
 
     public static String WebResourceErrorToString(WebResourceError error) {
         if (error != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 return "errorCode=" +
                         error.getErrorCode() +
                         ", description=" +

@@ -9,8 +9,12 @@ import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 public class PreferencesManager {
+
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(PreferencesManager.class);
 
     @NonNull
     protected final Context context;
@@ -99,7 +103,7 @@ public class PreferencesManager {
                 editor.putString(key, null);
             }
         } catch (ClassCastException e) {
-            e.printStackTrace();
+            logger.error(e);
         }
         if (editor.commit()) {
 
@@ -136,9 +140,9 @@ public class PreferencesManager {
         return b;
     }
 
-    protected static class ChangeObservable extends Observable<PreferenceChangeListener> {
+    private static class ChangeObservable extends Observable<PreferenceChangeListener> {
 
-        protected <T> void dispatchChanged(String name, String key, @Nullable T oldValue, @Nullable T newValue) {
+        private <T> void dispatchChanged(String name, String key, @Nullable T oldValue, @Nullable T newValue) {
             synchronized (mObservers) {
                 for (PreferenceChangeListener l : copyOfObservers()) {
                     l.onPreferenceChanged(name, key, oldValue, newValue);
@@ -146,7 +150,7 @@ public class PreferencesManager {
             }
         }
 
-        protected <T> void dispatchRemoved(String name, String key) {
+        private <T> void dispatchRemoved(String name, String key) {
             synchronized (mObservers) {
                 for (PreferenceChangeListener l : copyOfObservers()) {
                     l.onPreferenceRemoved(name, key);
@@ -154,7 +158,7 @@ public class PreferencesManager {
             }
         }
 
-        protected void dispatchAllRemoved(String name) {
+        private void dispatchAllRemoved(String name) {
             synchronized (mObservers) {
                 for (PreferenceChangeListener l : copyOfObservers()) {
                     l.onAllPreferencesRemoved(name);

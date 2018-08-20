@@ -3,7 +3,7 @@ package net.maxsmr.commonutils.logger;
 import android.support.annotation.NonNull;
 
 
-import net.maxsmr.commonutils.logger.base.BaseSimpleLogger;
+import net.maxsmr.commonutils.logger.base.BaseLogger;
 
 import org.slf4j.Logger;
 

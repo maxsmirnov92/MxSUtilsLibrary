@@ -104,8 +104,6 @@ dependencies {
     api "com.android.support:design:$appCompatVersion"
     javadocDependencies "com.android.support:appcompat-v7:$appCompatVersion"
     javadocDependencies "com.android.support:support-annotations:$appCompatVersion"
-    api "de.mindpipe.android:android-logging-log4j:$log4jVersion"
-    api "org.slf4j:slf4j-log4j12:$slf4jVersion"
     api "commons-net:commons-net:$commonsNetVersion"
     api "com.google.code.gson:gson:$gsonVersion"
     testCompile "junit:junit:$jUnitVersion"

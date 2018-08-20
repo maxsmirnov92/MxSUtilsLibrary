@@ -5,9 +5,6 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.util.Pair;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
@@ -48,7 +45,6 @@ public final class SocketFactoryInitializer {
                 sc.init(null, trustManagers, null);
                 return sc.getSocketFactory();
             } catch (NoSuchAlgorithmException | KeyManagementException e) {
-                e.printStackTrace();
                 throw new RuntimeException("can't initialize SSLContext", e);
             }
         } else {
