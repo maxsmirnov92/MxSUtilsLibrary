@@ -8,7 +8,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
 
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.util.ArrayList;
@@ -28,11 +28,11 @@ public class GsonHelper {
      */
     @Nullable
     public static <T> T fromJsonObjectString(@NonNull Gson gson, @Nullable String jsonString, @NonNull Class<T> type) {
-        logger.debug("fromJsonObjectString(), jsonString=" + jsonString + ", type=" + type);
+        logger.d("fromJsonObjectString(), jsonString=" + jsonString + ", type=" + type);
         try {
             return gson.fromJson(jsonString, type);
         } catch (Exception e) {
-            logger.error("an Exception occurred during fromJson(): " + e.getMessage(), e);
+            logger.e("an Exception occurred during fromJson(): " + e.getMessage(), e);
             return null;
         }
     }
@@ -42,23 +42,23 @@ public class GsonHelper {
      */
     @NonNull
     public static <T> List<T> fromJsonArrayString(@NonNull Gson gson, @Nullable String jsonString, @NonNull Class<T[]> type) {
-        logger.debug("fromJsonArrayString(), jsonString=" + jsonString + ", type=" + type);
+        logger.d("fromJsonArrayString(), jsonString=" + jsonString + ", type=" + type);
         try {
             return new ArrayList<>(Arrays.asList(gson.fromJson(jsonString, type)));
         } catch (Exception e) {
-            logger.error("an Exception occurred during fromJson(): " + e.getMessage(), e);
+            logger.e("an Exception occurred during fromJson(): " + e.getMessage(), e);
             return new ArrayList<>();
         }
     }
 
     @NonNull
     public static <T> String toJsonString(@NonNull Gson gson, T... what) {
-        logger.debug("toJsonString(), what=" + Arrays.toString(what));
+        logger.d("toJsonString(), what=" + Arrays.toString(what));
 
         try {
             return gson.toJson(what != null && what.length == 1? what[0] : what);
         } catch (Exception e) {
-            logger.error("an Exception occurred during toJson(): " + e.getMessage(), e);
+            logger.e("an Exception occurred during toJson(): " + e.getMessage(), e);
             return "null";
         }
     }

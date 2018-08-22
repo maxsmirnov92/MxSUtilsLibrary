@@ -10,7 +10,7 @@ import android.view.KeyEvent;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.lang.reflect.Field;
@@ -130,7 +130,7 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
         try {
             f = progressDialog.getClass().getDeclaredField("mProgress");
         } catch (NoSuchFieldException e) {
-            logger.error(e);
+            logger.e(e);
         }
 
         if (f != null) {
@@ -138,7 +138,7 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
             try {
                 return (ProgressBar) f.get(progressDialog);
             } catch (IllegalAccessException e) {
-                logger.error(e);
+                logger.e(e);
             }
         }
 
@@ -156,7 +156,7 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
         try {
             f = progressDialog.getClass().getDeclaredField("mMessageView");
         } catch (NoSuchFieldException e) {
-            logger.error(e);
+            logger.e(e);
         }
 
         if (f != null) {
@@ -164,7 +164,7 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
             try {
                 return (TextView) f.get(progressDialog);
             } catch (IllegalAccessException e) {
-                logger.error(e);
+                logger.e(e);
             }
         }
 

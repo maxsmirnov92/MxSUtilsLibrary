@@ -9,7 +9,7 @@ import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.Observable;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 public class PreferencesManager {
@@ -103,7 +103,7 @@ public class PreferencesManager {
                 editor.putString(key, null);
             }
         } catch (ClassCastException e) {
-            logger.error(e);
+            logger.e(e);
         }
         if (editor.commit()) {
 

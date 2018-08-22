@@ -3,7 +3,7 @@ package net.maxsmr.commonutils.data;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
@@ -35,7 +35,7 @@ public final class ChecksumHelper {
         try {
             mdEnc = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
-            logger.error("a NoSuchAlgorithmException occurred during getInstance()", e);
+            logger.e("a NoSuchAlgorithmException occurred during getInstance()", e);
         }
         if (mdEnc == null) {
             return null;
@@ -59,7 +59,7 @@ public final class ChecksumHelper {
         try {
             return !TextUtils.isEmpty(st)? md5Hash(st.getBytes(charsetName)) : null;
         } catch (UnsupportedEncodingException e) {
-            logger.error("a UnsupportedEncodingException occurred during getBytes()", e);
+            logger.e("a UnsupportedEncodingException occurred during getBytes()", e);
             return null;
         }
     }

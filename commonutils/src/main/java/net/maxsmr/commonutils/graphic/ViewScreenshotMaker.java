@@ -7,7 +7,7 @@ import android.view.View;
 import android.view.Window;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
@@ -26,7 +26,7 @@ public final class ViewScreenshotMaker {
         final File destFile = FileHelper.createNewFile(fileName, folderName);
 
         if (destFile == null) {
-            logger.error("can't create file: " + folderName + File.separator + fileName);
+            logger.e("can't create file: " + folderName + File.separator + fileName);
             return null;
         }
 
@@ -46,7 +46,7 @@ public final class ViewScreenshotMaker {
             return destFile;
 
         } catch (Throwable e) {
-            logger.error("an Exception occurred", e);
+            logger.e("an Exception occurred", e);
         }
 
         return null;

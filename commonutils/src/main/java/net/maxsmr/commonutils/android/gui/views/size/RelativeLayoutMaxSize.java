@@ -7,7 +7,7 @@ import android.util.AttributeSet;
 import android.widget.RelativeLayout;
 
 import net.maxsmr.commonutils.R;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 
@@ -95,7 +95,7 @@ public class RelativeLayoutMaxSize extends RelativeLayout {
             setMeasuredDimension(widthSize, heightSize);
 
         } catch (Exception e) {
-            logger.error(e);
+            logger.e(e);
         } finally {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }

@@ -3,11 +3,10 @@ package net.maxsmr.commonutils.shell;
 import android.os.Build;
 import android.support.annotation.Nullable;
 
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
-import java.util.Arrays;
 
 public final class RootShellCommands {
 
@@ -34,7 +33,7 @@ public final class RootShellCommands {
             return commandResult;
 
         } catch (RuntimeException e) {
-            logger.error("Failed to execute command \"" + command + "\": " + Arrays.asList(e.getStackTrace()));
+            logger.e("Failed to execute command \"" + command + "\": " + e.getMessage(), e);
         }
 
         return null;
@@ -147,7 +146,7 @@ public final class RootShellCommands {
             if (packageName != null) {
                 command = String.format("pm uninstall -k %s", packageName);
                 commandResult = executeCommand(command);
-                logger.info( "uninstall result: " + commandResult);
+                logger.i( "uninstall result: " + commandResult);
             }
 
             command = String.format("pm install -r %s", apkFile.getAbsolutePath());
@@ -155,7 +154,7 @@ public final class RootShellCommands {
 
         commandResult = executeCommand(command);
 
-        logger.info( "install result: " + commandResult);
+        logger.i( "install result: " + commandResult);
 
         if (commandResult != null && commandResult.isSuccessful()) {
             return commandResult.getStdOut().toLowerCase().contains("success");
@@ -185,7 +184,7 @@ public final class RootShellCommands {
 
         CommandResult commandResult = executeCommand(command);
 
-        logger.info( "uninstall result: " + commandResult);
+        logger.i( "uninstall result: " + commandResult);
 
         if (commandResult != null && commandResult.isSuccessful()) {
             return commandResult.getStdOut().toLowerCase().contains("success");

@@ -7,7 +7,7 @@ import android.support.annotation.RawRes;
 import android.text.TextUtils;
 import android.util.Pair;
 
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
@@ -56,7 +56,7 @@ public final class CertificateHelper {
             Certificate certificate;
             certificate = cf.generateCertificate(in);
             in.close();
-            logger.debug("generated certificate: " + ((X509Certificate) certificate).getSubjectDN());
+            logger.d("generated certificate: " + ((X509Certificate) certificate).getSubjectDN());
             return certificate;
         } catch (CertificateException | IOException e) {
             throw new RuntimeException("can't generate certificate", e);
@@ -83,7 +83,7 @@ public final class CertificateHelper {
         try {
 
             keyStoreType = TextUtils.isEmpty(keyStoreType) ? KeyStore.getDefaultType() : keyStoreType;
-            logger.debug("keyStoreType=" + keyStoreType);
+            logger.d("keyStoreType=" + keyStoreType);
             KeyStore keyStore = KeyStore.getInstance(keyStoreType);
             keyStore.load(keyStoreInitStream, !TextUtils.isEmpty(keyStoreInitStreamPassword) ? keyStoreInitStreamPassword.toCharArray() : null);
 
@@ -129,9 +129,9 @@ public final class CertificateHelper {
                 Certificate certificate = ks.getCertificate(alias);
                 certificates.add(new Pair<>(alias, certificate));
                 if (certificate instanceof X509Certificate) {
-                    logger.debug("retrieved cert > type: " + certificate.getType() + " | name: " + ((X509Certificate) certificate).getIssuerDN().getName());
+                    logger.d("retrieved cert > type: " + certificate.getType() + " | name: " + ((X509Certificate) certificate).getIssuerDN().getName());
                 } else {
-                    logger.debug("retrieved cert > type: " + certificate.getType());
+                    logger.d("retrieved cert > type: " + certificate.getType());
                 }
             }
         } catch (IOException | KeyStoreException | NoSuchAlgorithmException | CertificateException e) {

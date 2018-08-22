@@ -51,7 +51,7 @@ import android.widget.TextView;
 
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.StringUtils;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.lang.reflect.Field;
@@ -260,7 +260,7 @@ public final class GuiUtils {
         try {
             behaviourField = clazz.getDeclaredField("mBehavior");
         } catch (NoSuchFieldException e) {
-            logger.error(e);
+            logger.e(e);
         }
         if (behaviourField != null) {
             behaviourField.setAccessible(true);
@@ -268,7 +268,7 @@ public final class GuiUtils {
             try {
                 behavior = (BottomSheetBehavior<FrameLayout>) behaviourField.get(dialog);
             } catch (IllegalAccessException e) {
-                logger.error(e);
+                logger.e(e);
             }
             if (behavior != null) {
                 behavior.setHideable(toggle);
@@ -284,7 +284,7 @@ public final class GuiUtils {
             InputMethodManager inputManager = (InputMethodManager) view.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
             return inputManager.isActive(view);
         } catch (Exception e) {
-            logger.error(e);
+            logger.e(e);
         }
         return false;
     }
@@ -431,7 +431,7 @@ public final class GuiUtils {
                 return insets.bottom;
             }
         } catch (Exception e) {
-            logger.error(e);
+            logger.e(e);
 
         }
         return 0;
@@ -476,7 +476,7 @@ public final class GuiUtils {
             mErrorView.setTextColor(color);
             mErrorView.requestLayout();
         } catch (Exception e) {
-            logger.error(e);
+            logger.e(e);
         }
     }
 

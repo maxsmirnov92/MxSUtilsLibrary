@@ -16,7 +16,7 @@ import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
@@ -97,7 +97,7 @@ public final class MetadataRetriever {
         try {
             return createMediaMetadataRetriever(context, resourceUri, headers);
         } catch (RuntimeException e) {
-            logger.error("a RuntimeException occurred during createMediaMetadataRetriever()", e);
+            logger.e("a RuntimeException occurred during createMediaMetadataRetriever()", e);
             return null;
         }
     }
@@ -107,7 +107,7 @@ public final class MetadataRetriever {
         try {
             return createMediaMetadataRetriever(fileDescriptor);
         } catch (RuntimeException e) {
-            logger.error("a RuntimeException occurred during createMediaMetadataRetriever()", e);
+            logger.e("a RuntimeException occurred during createMediaMetadataRetriever()", e);
             return null;
         }
     }
@@ -268,14 +268,14 @@ public final class MetadataRetriever {
                 try {
                     return !isEmpty ? (M) Long.valueOf(value) : (defaultValue != null ? defaultValue : (M) Long.valueOf(0));
                 } catch (NumberFormatException e) {
-                    logger.error("a NumberFormatException occurred during valueOf(): " + e.getMessage(), e);
+                    logger.e("a NumberFormatException occurred during valueOf(): " + e.getMessage(), e);
                     return defaultValue;
                 }
             } else if (clazz.isAssignableFrom(Integer.class)) {
                 try {
                     return !isEmpty ? (M) Integer.valueOf(value) : (defaultValue != null ? defaultValue : (M) Integer.valueOf(0));
                 } catch (NumberFormatException e) {
-                    logger.error("a NumberFormatException occurred during valueOf(): " + e.getMessage(), e);
+                    logger.e("a NumberFormatException occurred during valueOf(): " + e.getMessage(), e);
                     return defaultValue;
                 }
             } else if (clazz.isAssignableFrom(Boolean.class)) {
@@ -284,7 +284,7 @@ public final class MetadataRetriever {
                 throw new UnsupportedOperationException("incorrect class: " + clazz);
             }
         } catch (ClassCastException e) {
-            logger.error("value " + value + " cannot be casted to " + clazz, e);
+            logger.e("value " + value + " cannot be casted to " + clazz, e);
             return defaultValue;
         }
     }
@@ -417,7 +417,7 @@ public final class MetadataRetriever {
     public static Bitmap extractFrameAtPosition(@NonNull MediaMetadataRetriever retriever, long positionMs, boolean release) {
         try {
             if (positionMs <= 0 || positionMs > extractMediaDuration(retriever, false)) {
-                logger.error("incorrect position: " + positionMs);
+                logger.e("incorrect position: " + positionMs);
                 return null;
             }
             return retriever.getFrameAtTime(positionMs * 1000, MediaMetadataRetriever.OPTION_CLOSEST_SYNC);
@@ -466,24 +466,24 @@ public final class MetadataRetriever {
         try {
 
             if (framesCount <= 0) {
-                logger.error("incorrect framesCount: " + framesCount);
+                logger.e("incorrect framesCount: " + framesCount);
                 return Collections.emptyMap();
             }
 
             final long duration = extractMediaDuration(retriever, false);
-            // logger.debug("video durationMs: " + durationMs + " ms");
+            // logger.d("video durationMs: " + durationMs + " ms");
 
             final long interval = duration / framesCount;
-            // logger.debug("interval between frames: " + interval + " ms");
+            // logger.d("interval between frames: " + interval + " ms");
             long lastPosition = 1;
 
             Map<Long, Bitmap> videoFrames = new LinkedHashMap<>(framesCount);
 
             while (lastPosition <= duration && videoFrames.size() < framesCount) { // (durationMs - interval)
-                // logger.debug("getting frame at position: " + lastPosition + " ms");
+                // logger.d("getting frame at position: " + lastPosition + " ms");
                 videoFrames.put(lastPosition, extractFrameAtPosition(retriever, lastPosition, false));
                 lastPosition += interval;
-                // logger.debug("next position: " + lastPosition + " ms");
+                // logger.d("next position: " + lastPosition + " ms");
             }
 
             return videoFrames;

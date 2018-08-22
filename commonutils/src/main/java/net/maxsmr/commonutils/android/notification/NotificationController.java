@@ -13,7 +13,7 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.lang.reflect.Field;
@@ -137,7 +137,7 @@ public class NotificationController {
                 ContextCompat.getDrawable(context, info.iconResId);
                 notificationBuilder.setSmallIcon(info.iconResId);
             } catch (Resources.NotFoundException e) {
-                logger.error("a Resources.NotFoundException occurred during getDrawable()", e);
+                logger.e("a Resources.NotFoundException occurred during getDrawable()", e);
                 return null;
             }
         }
@@ -159,9 +159,9 @@ public class NotificationController {
                         actions.clear();
                     }
                 } catch (IllegalAccessException e) {
-                    logger.error("an IllegalException occurred during get()", e);
+                    logger.e("an IllegalException occurred during get()", e);
                 } catch (ClassCastException e) {
-                    logger.error("a ClassCastException occurred", e);
+                    logger.e("a ClassCastException occurred", e);
                 }
             }
         }

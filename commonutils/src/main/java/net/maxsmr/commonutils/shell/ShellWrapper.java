@@ -5,7 +5,7 @@ import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
@@ -120,7 +120,7 @@ public class ShellWrapper {
     }
 
     public CommandResult executeCommand(List<String> commands, boolean useSU) {
-        logger.debug("Execute commands: \"" + commands + "\", useSU: " + useSU);
+        logger.d("Execute commands: \"" + commands + "\", useSU: " + useSU);
 
         if (isDisposed) {
             throw new IllegalStateException(ShellWrapper.class.getSimpleName() + " is disposed");
@@ -153,12 +153,12 @@ public class ShellWrapper {
 
             @Override
             public void shellOut(@NonNull StreamType from, String shellLine) {
-                logger.debug("Command \"" + commandInfo.getCommandsToRun() + "\" output " + from + ": " + shellLine);
+                logger.d("Command \"" + commandInfo.getCommandsToRun() + "\" output " + from + ": " + shellLine);
             }
 
             @Override
             public void processStartFailed(Throwable t) {
-                logger.debug("Command \"" + commandInfo.getCommandsToRun() + "\" start failed");
+                logger.d("Command \"" + commandInfo.getCommandsToRun() + "\" start failed");
 //                commandInfo.setResult(new CommandResult(targetCode, -1, null, null));
             }
 
@@ -174,7 +174,7 @@ public class ShellWrapper {
         });
 
         commandInfo.setResult(result);
-        logger.debug("Command completed: " + commandInfo);
+        logger.d("Command completed: " + commandInfo);
 
         return result;
     }

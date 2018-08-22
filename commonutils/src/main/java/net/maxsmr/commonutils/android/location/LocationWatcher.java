@@ -14,7 +14,7 @@ import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.android.location.info.TrackingStatus;
 import net.maxsmr.commonutils.data.CompareUtils;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.util.Collection;
@@ -91,20 +91,20 @@ public final class LocationWatcher {
     private boolean updateLocation(@NonNull Location location) {
 
         final boolean isSameLocationInfos = CompareUtils.objectsEqual(mLastLocation, location);
-        logger.info("last location info: " + mLastLocation + ", new location info: " + location + ", is same: " + isSameLocationInfos);
+        logger.i("last location info: " + mLastLocation + ", new location info: " + location + ", is same: " + isSameLocationInfos);
 
         final float accuracy = mLastLocation == null ? 0 : mLastLocation.getAccuracy();
         final boolean isBetterAccuracy = location.getAccuracy() > accuracy;
-        logger.info("last accuracy: " + accuracy + ", new is better: " + isBetterAccuracy);
+        logger.i("last accuracy: " + accuracy + ", new is better: " + isBetterAccuracy);
 
         final long time = mLastLocation == null ? 0 : mLastLocation.getTime();
         final boolean isLaterTime = location.getTime() - time > mLocationUpdateTime;
-        logger.info("last update time: " + time + ", new is later: " + isLaterTime);
+        logger.i("last update time: " + time + ", new is later: " + isLaterTime);
 
         if (!isSameLocationInfos && (isBetterAccuracy || isLaterTime)) {
 
             mLastLocation = location;
-            logger.info("last location info has been changed");
+            logger.i("last location info has been changed");
 
             mLocationObservable.dispatchLocationUpdated(mLastLocation);
             mLocationObservable.dispatchLocationTrackingStatusChanged(TrackingStatus.NEW_LOCATION);
@@ -145,7 +145,7 @@ public final class LocationWatcher {
                 }
             }
             if (!result) {
-                logger.error("providers " + disabledProviders + " is not enabled");
+                logger.e("providers " + disabledProviders + " is not enabled");
                 if (openGpsActivity)
                     H.startGpsSettingsActivity(ctx);
                 return false;
@@ -168,7 +168,7 @@ public final class LocationWatcher {
         }
 
         if (!result) {
-            logger.error("no enabled providers");
+            logger.e("no enabled providers");
             if (openGpsActivity)
                 H.startGpsSettingsActivity(ctx);
         }
@@ -189,7 +189,7 @@ public final class LocationWatcher {
 
         @Override
         public void onLocationChanged(Location loc) {
-            logger.debug("onLocationChanged(), loc=" + loc);
+            logger.d("onLocationChanged(), loc=" + loc);
             if (loc != null) {
                 updateLocation(loc);
             }
@@ -197,29 +197,29 @@ public final class LocationWatcher {
 
         @Override
         public void onProviderDisabled(String provider) {
-            logger.debug("onProviderDisabled(), provider=" + provider);
+            logger.d("onProviderDisabled(), provider=" + provider);
         }
 
         @Override
         public void onProviderEnabled(String provider) {
-            logger.debug("onProviderEnabled(), provider=" + provider);
+            logger.d("onProviderEnabled(), provider=" + provider);
         }
 
         @Override
         public void onStatusChanged(String provider, int status, Bundle extras) {
-            logger.debug("onStatusChanged(), provider=" + provider + ", status=" + status);
+            logger.d("onStatusChanged(), provider=" + provider + ", status=" + status);
 
             switch (status) {
                 case LocationProvider.AVAILABLE:
-                    logger.info("provider " + provider + " is available");
+                    logger.i("provider " + provider + " is available");
                     break;
 
                 case LocationProvider.OUT_OF_SERVICE:
-                    logger.warn("provider " + provider + " is out of service");
+                    logger.w("provider " + provider + " is out of service");
                     break;
 
                 case LocationProvider.TEMPORARILY_UNAVAILABLE:
-                    logger.warn("provider " + provider + " is temporary unavailable");
+                    logger.w("provider " + provider + " is temporary unavailable");
                     break;
             }
 
@@ -231,10 +231,10 @@ public final class LocationWatcher {
     }
 
     public void stopTracking(boolean resetLastLoc) {
-        logger.debug("stopTracking(), resetLastLoc=" + resetLastLoc);
+        logger.d("stopTracking(), resetLastLoc=" + resetLastLoc);
 
         if (!isTracking()) {
-            logger.debug("not tracking");
+            logger.d("not tracking");
             return;
         }
 
@@ -246,7 +246,7 @@ public final class LocationWatcher {
         }
 
         mLocationObservable.dispatchLocationTrackingStatusChanged(TrackingStatus.STOP_TRACKING);
-        logger.debug("tracking stopped");
+        logger.d("tracking stopped");
     }
 
     public void startTracking(long minTime, float minDistance, boolean resetLastLoc, boolean openGpsActivity) {
@@ -259,7 +259,7 @@ public final class LocationWatcher {
      * restarts tracking if it was already started
      */
     public void restartTracking(long minTime, float minDistance, boolean resetLastLoc, boolean openGpsActivity) {
-        logger.debug("restartTracking(), minTime=" + minTime + ", minDistance=" + minDistance + ", resetLastLoc=" + resetLastLoc + ", openGpsActivity=" + openGpsActivity);
+        logger.d("restartTracking(), minTime=" + minTime + ", minDistance=" + minDistance + ", resetLastLoc=" + resetLastLoc + ", openGpsActivity=" + openGpsActivity);
 
         stopTracking(resetLastLoc);
 
@@ -267,7 +267,7 @@ public final class LocationWatcher {
             mLocationUpdateTime = minTime;
             mLocationUpdateDistance = minDistance;
             mLocationObservable.dispatchLocationTrackingStatusChanged(TrackingStatus.START_TRACKING);
-            logger.debug("tracking started");
+            logger.d("tracking started");
         }
     }
 

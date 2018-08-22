@@ -2,7 +2,7 @@ package net.maxsmr.commonutils.logger.holder;
 
 import android.support.annotation.NonNull;
 
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -12,7 +12,7 @@ public abstract class BaseLoggerHolder {
 
     private static BaseLoggerHolder sInstance;
 
-    protected final Map<Class<?>, BaseLogger> loggersMap = new LinkedHashMap<>();
+    private final Map<Class<?>, BaseLogger> loggersMap = new LinkedHashMap<>();
 
     public static BaseLoggerHolder getInstance() {
         synchronized (BaseLoggerHolder.class) {

@@ -21,7 +21,7 @@ import net.maxsmr.commonutils.android.notification.NotificationController;
 import net.maxsmr.commonutils.android.notification.NotificationInfo;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.File;
@@ -67,20 +67,20 @@ public final class ServiceUtils {
     }
 
     public static <S extends Service> void start(@NonNull Context context, @NonNull Class<S> serviceClass) {
-        logger.debug("start(), serviceClass= " + serviceClass);
+        logger.d("start(), serviceClass= " + serviceClass);
         if (!isServiceRunning(context, serviceClass)) {
             restartNoCheck(context, serviceClass);
         }
     }
 
     private static <S extends Service> void restartNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass) {
-        logger.debug("restart(), serviceClass=" + serviceClass);
+        logger.d("restart(), serviceClass=" + serviceClass);
         stopNoCheck(context, serviceClass);
         startNoCheck(context, serviceClass);
     }
 
     public static <S extends Service> void restart(@NonNull Context context, @NonNull Class<S> serviceClass) {
-        logger.debug("restart(), serviceClass=" + serviceClass);
+        logger.d("restart(), serviceClass=" + serviceClass);
         stop(context, serviceClass);
         startNoCheck(context, serviceClass);
     }
@@ -91,7 +91,7 @@ public final class ServiceUtils {
     }
 
     public static <S extends Service> void stop(@NonNull Context context, @NonNull Class<S> serviceClass) {
-        logger.debug("stop(), serviceClass=" + serviceClass);
+        logger.d("stop(), serviceClass=" + serviceClass);
         if (isServiceRunning(context, serviceClass)) {
             stopNoCheck(context, serviceClass);
         }
@@ -102,7 +102,7 @@ public final class ServiceUtils {
     }
 
     public static <S extends Service> void cancelDelay(@NonNull Context context, @NonNull Class<S> serviceClass, int requestCode, int flags) {
-        logger.debug("cancelDelay(), serviceClass=" + serviceClass);
+        logger.d("cancelDelay(), serviceClass=" + serviceClass);
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) {
             throw new IllegalStateException("can't connect to " + AlarmManager.class.getSimpleName());
@@ -113,7 +113,7 @@ public final class ServiceUtils {
     }
 
     public static <S extends Service> void restartDelay(@NonNull Context context, @NonNull Class<S> serviceClass, long delay, boolean wakeUp) {
-        logger.debug("restartDelay(), serviceClass=" + serviceClass + ", delay=" + delay);
+        logger.d("restartDelay(), serviceClass=" + serviceClass + ", delay=" + delay);
 
         if (delay < 0) {
             throw new IllegalArgumentException("incorrect delay: " + delay);
@@ -139,14 +139,14 @@ public final class ServiceUtils {
     }
 
     public static <S extends Service> void startDelay(@NonNull Context context, @NonNull Class<S> serviceClass, long delay, boolean wakeUp) {
-        logger.debug("startDelay(), serviceClass=" + serviceClass + ", delay=" + delay);
+        logger.d("startDelay(), serviceClass=" + serviceClass + ", delay=" + delay);
         if (!isServiceRunning(context, serviceClass)) {
             restartDelayNoCheck(context, serviceClass, delay, wakeUp);
         }
     }
 
     public static void startServiceForeground(@NonNull Service service, int id, @NonNull NotificationInfo notificationInfo) {
-        logger.debug("startServiceForeground(), service=" + service + ", id=" + id + ", notificationInfo=" + notificationInfo);
+        logger.d("startServiceForeground(), service=" + service + ", id=" + id + ", notificationInfo=" + notificationInfo);
         startServiceForeground(service, id, notificationInfo.contentIntent, notificationInfo.tickerText, notificationInfo.contentTitle, notificationInfo.text, notificationInfo.iconResId, notificationInfo.actionInfos);
     }
 
@@ -174,7 +174,7 @@ public final class ServiceUtils {
     }
 
     public static <S extends Service> void stopServiceForeground(@NonNull S service, int id) {
-        logger.debug("stopServiceForeground(), service=" + service + ", id=" + id);
+        logger.d("stopServiceForeground(), service=" + service + ", id=" + id);
         if (isServiceForeground(service, service.getClass())) {
             service.stopForeground(true);
             NotificationController.getInstance().removeNotification(id);
@@ -182,15 +182,15 @@ public final class ServiceUtils {
     }
 
     public static <C extends ServiceConnection, S extends Service> boolean bindService(@NonNull Context ctx, @NonNull Class<S> serviceClass, @NonNull C serviceConnection, int flags) {
-        logger.debug("bindService(), serviceClass=" + serviceClass + ", serviceConnection=" + serviceConnection + ", flags=" + flags);
+        logger.d("bindService(), serviceClass=" + serviceClass + ", serviceConnection=" + serviceConnection + ", flags=" + flags);
         boolean bounded = false;
         try {
             bounded = ctx.bindService(new Intent(ctx, serviceClass), serviceConnection, flags);
         } catch (Exception e) {
-            logger.error("an Exception occurred during bindService()", e);
+            logger.e("an Exception occurred during bindService()", e);
         }
         if (!bounded) {
-            logger.error("binding to service " + serviceClass + " failed");
+            logger.e("binding to service " + serviceClass + " failed");
             restart(ctx, serviceClass);
             return false;
         }
@@ -198,18 +198,18 @@ public final class ServiceUtils {
     }
 
     public static <C extends ServiceConnection> void unbindService(@NonNull Context context, @NonNull C serviceConnection) {
-        logger.debug("unbindService(), serviceConnection=" + serviceConnection);
+        logger.d("unbindService(), serviceConnection=" + serviceConnection);
         try {
             context.unbindService(serviceConnection);
         } catch (Exception e) {
-            logger.error("an Exception occurred during unbindService()", e);
+            logger.e("an Exception occurred during unbindService()", e);
         }
     }
 
     @Nullable
     public static String getPackageNameFromApk(@NonNull Context context, File apkFile) {
         if (!FileHelper.isFileCorrect(apkFile) || !FileHelper.getFileExtension(apkFile.getName()).equalsIgnoreCase("apk")) {
-            logger.error("incorrect apk: " + apkFile);
+            logger.e("incorrect apk: " + apkFile);
             return null;
         }
         PackageManager pm = context.getPackageManager();

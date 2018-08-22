@@ -6,7 +6,7 @@ import android.util.AttributeSet;
 import android.widget.FrameLayout;
 
 import net.maxsmr.commonutils.R;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 
@@ -94,7 +94,7 @@ public class FrameLayoutMaxSize extends FrameLayout {
             setMeasuredDimension(widthSize, heightSize);
 
         } catch (Exception e) {
-            logger.error(e);
+            logger.e(e);
         } finally {
             super.onMeasure(widthMeasureSpec, heightMeasureSpec);
         }

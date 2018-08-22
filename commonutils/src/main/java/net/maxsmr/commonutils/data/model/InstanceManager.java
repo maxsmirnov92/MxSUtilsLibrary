@@ -4,7 +4,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.ByteArrayInputStream;
@@ -52,19 +52,19 @@ public abstract class InstanceManager<T> {
                 out.writeObject(object);
                 return bos.toByteArray();
             } catch (IOException e) {
-                logger.error(e);
+                logger.e(e);
             } finally {
                 try {
                     if (out != null) {
                         out.close();
                     }
                 } catch (IOException e) {
-                    logger.error(e);
+                    logger.e(e);
                 }
                 try {
                     bos.close();
                 } catch (IOException e) {
-                    logger.error(e);
+                    logger.e(e);
                 }
             }
         }
@@ -80,7 +80,7 @@ public abstract class InstanceManager<T> {
                 objectOutput.writeObject(object);
                 bos.writeTo(outputStream);
             } catch (IOException e) {
-                logger.error(e);
+                logger.e(e);
             } finally {
                 try {
                     if (objectOutput != null) {
@@ -88,7 +88,7 @@ public abstract class InstanceManager<T> {
                     }
                     bos.close();
                 } catch (IOException e) {
-                    logger.error(e);
+                    logger.e(e);
                 }
             }
         }
@@ -106,19 +106,19 @@ public abstract class InstanceManager<T> {
                     return (T) o;
                 }
             } catch (Exception e) {
-                logger.error(e);
+                logger.e(e);
             } finally {
                 try {
                     bis.close();
                 } catch (IOException e) {
-                    logger.error(e);
+                    logger.e(e);
                 }
                 try {
                     if (in != null) {
                         in.close();
                     }
                 } catch (IOException e) {
-                    logger.error(e);
+                    logger.e(e);
                 }
             }
         }
@@ -137,14 +137,14 @@ public abstract class InstanceManager<T> {
                     return (T) o;
                 }
             } catch (Exception e) {
-                logger.error(e);
+                logger.e(e);
             } finally {
                 try {
                     if (objectInput != null) {
                         objectInput.close();
                     }
                 } catch (IOException e) {
-                    logger.error(e);
+                    logger.e(e);
                 }
             }
         }

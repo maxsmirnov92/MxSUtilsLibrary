@@ -68,7 +68,7 @@ public class PeriodSensorListener {
 
         @Override
         public void onSensorChanged(SensorEvent event) {
-//            logger.debug("onSensorChanged(), event values:" + Arrays.toString(event.values));
+//            logger.d("onSensorChanged(), event values:" + Arrays.toString(event.values));
             final long currentTimestamp = System.currentTimeMillis();
             if (currentTimestamp - lastSensorChangedTimestamp >= period) {
                 lastSensorChangedTimestamp = currentTimestamp;
@@ -78,7 +78,7 @@ public class PeriodSensorListener {
 
         @Override
         public void onAccuracyChanged(Sensor sensor, int accuracy) {
-//            logger.debug("onAccuracyChanged(), sensor=" + sensor + ", accuracy=" + accuracy);
+//            logger.d("onAccuracyChanged(), sensor=" + sensor + ", accuracy=" + accuracy);
             final long currentTimestamp = System.currentTimeMillis();
             if (currentTimestamp - lastAccuracyChangedTimestamp >= period) {
                 lastAccuracyChangedTimestamp = currentTimestamp;

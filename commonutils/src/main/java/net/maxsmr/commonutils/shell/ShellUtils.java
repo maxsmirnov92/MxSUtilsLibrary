@@ -5,7 +5,7 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.BufferedReader;
@@ -42,7 +42,7 @@ public final class ShellUtils {
             if (FileHelper.isDirExists(workingDir)) {
                 pb.directory(new File(workingDir));
             } else {
-                logger.warn("working directory " + workingDir + " not exists");
+                logger.w("working directory " + workingDir + " not exists");
             }
         }
 
@@ -104,7 +104,7 @@ public final class ShellUtils {
      * @return true if started successfully, false - otherwise
      */
     public static boolean execProcessAsync(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
-        logger.debug("execProcessAsync(), cmds=" + cmds + ", workingDir=" + workingDir + ", sc=" + sc + ", tc=" + tc);
+        logger.d("execProcessAsync(), cmds=" + cmds + ", workingDir=" + workingDir + ", sc=" + sc + ", tc=" + tc);
         Process process = createAndStartProcess(cmds, workingDir, configurator, sc, tc);
         if (process != null) {
             Thread waitThread;
@@ -135,7 +135,7 @@ public final class ShellUtils {
                                             @Nullable IProcessBuilderConfigurator configurator,
                                             @Nullable Integer targetExitCode,
                                             @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
-        logger.debug("execProcess(), cmds=" + cmds + ", workingDir=" + workingDir + ", targetExitCode=" + targetExitCode + ", sc=" + sc + ", tc=" + tc);
+        logger.d("execProcess(), cmds=" + cmds + ", workingDir=" + workingDir + ", targetExitCode=" + targetExitCode + ", sc=" + sc + ", tc=" + tc);
 
         final List<String> stdOutLines = new ArrayList<>();
         final List<String> stdErrLines = new ArrayList<>();
@@ -182,7 +182,7 @@ public final class ShellUtils {
             exitCode = process != null ? process.waitFor() : -1;
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            e.printStackTrace();
+            logger.e("an InterruptedException occurred during waitFor(): " + e.getMessage(), e);
         } finally {
             if (process != null) {
                 process.destroy();
@@ -223,8 +223,7 @@ public final class ShellUtils {
                         sc.shellOut(type, line);
                     }
             } catch (IOException e) {
-                logger.error("an IOException occurred: " + e.getMessage());
-                e.printStackTrace();
+                logger.e("an IOException occurred: " + e.getMessage(), e);
             }
         }
     }
@@ -251,9 +250,8 @@ public final class ShellUtils {
             try {
                 exitVal = process.waitFor();
             } catch (InterruptedException e) {
-                logger.error("an InterruptedException occurred" + e.getMessage());
                 Thread.currentThread().interrupt();
-                e.printStackTrace();
+                logger.e("an InterruptedException occurred during waitFor(): " + e.getMessage(), e);
             }
 
             process.destroy();

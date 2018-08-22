@@ -25,7 +25,7 @@ import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
 import net.maxsmr.commonutils.data.Observable;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 public class TouchWebView extends WebView implements Handler.Callback {
@@ -124,7 +124,7 @@ public class TouchWebView extends WebView implements Handler.Callback {
         int height = (int) Math.floor(getContentHeight() * scale);
         int webViewHeight = getMeasuredHeight();
         int scrollY = getScrollY();
-//        logger.debug("height=" + height + ", webViewHeight=" + webViewHeight + ", scrollY=" + scrollY);
+//        logger.d("height=" + height + ", webViewHeight=" + webViewHeight + ", scrollY=" + scrollY);
         if (scrollY + webViewHeight >= height - 5) {
             return ScrollState.BOTTOM;
         } else if (height - scrollY - 5 <= webViewHeight) {
@@ -213,7 +213,7 @@ public class TouchWebView extends WebView implements Handler.Callback {
 
         @Override
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
-            logger.debug("shouldOverrideUrlLoading(), request=" + request);
+            logger.d("shouldOverrideUrlLoading(), request=" + request);
             mWebViewHandler.sendEmptyMessage(CLICK_ON_URL);
             return super.shouldOverrideUrlLoading(view, request);
         }
@@ -243,19 +243,19 @@ public class TouchWebView extends WebView implements Handler.Callback {
         @Override
         public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
             super.onReceivedError(view, request, error);
-            logger.error("onReceivedError(), request=" + WebResourceRequestToString(request) + ", error=" + WebResourceErrorToString(error));
+            logger.e("onReceivedError(), request=" + WebResourceRequestToString(request) + ", error=" + WebResourceErrorToString(error));
         }
 
         @Override
         public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
             super.onReceivedHttpError(view, request, errorResponse);
-            logger.error("onReceivedHttpError(), request=" + WebResourceRequestToString(request) + ", errorResponse=" + WebResourceResponseToString(errorResponse));
+            logger.e("onReceivedHttpError(), request=" + WebResourceRequestToString(request) + ", errorResponse=" + WebResourceResponseToString(errorResponse));
         }
 
         @Override
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
             super.onReceivedSslError(view, handler, error);
-            logger.error("onReceivedSslError(), handler=" + handler + ", error=" + error);
+            logger.e("onReceivedSslError(), handler=" + handler + ", error=" + error);
         }
 
         @Override
@@ -269,19 +269,19 @@ public class TouchWebView extends WebView implements Handler.Callback {
 
         @Override
         public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
-            logger.warn("onJsAlert(), url=" + ", message=" + message);
+            logger.w("onJsAlert(), url=" + ", message=" + message);
             return super.onJsAlert(view, url, message, result);
         }
 
         @Override
         public boolean onJsBeforeUnload(WebView view, String url, String message, JsResult result) {
-            logger.warn("onJsAlert(), url=" + ", message=" + message);
+            logger.w("onJsAlert(), url=" + ", message=" + message);
             return super.onJsBeforeUnload(view, url, message, result);
         }
 
         @Override
         public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
-            logger.debug("onConsoleMessage(), consoleMessage=" + ConsoleMessageToString(consoleMessage));
+            logger.d("onConsoleMessage(), consoleMessage=" + ConsoleMessageToString(consoleMessage));
             return super.onConsoleMessage(consoleMessage);
         }
 

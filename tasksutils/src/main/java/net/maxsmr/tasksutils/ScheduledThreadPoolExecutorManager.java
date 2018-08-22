@@ -1,9 +1,12 @@
-package net.maxsmr.tasksutils;
+package com.dit.suumu.agentutils.tasks;
 
+import android.os.Handler;
+import android.os.Looper;
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.dit.suumu.agentutils.log.Logger;
+import com.dit.suumu.agentutils.log.holder.LoggerHolder;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -13,18 +16,24 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
-public class ScheduledThreadPoolExecutorManager {
 
-    private final static Logger logger = LoggerFactory.getLogger(ScheduledThreadPoolExecutorManager.class);
+public final class ScheduledThreadPoolExecutorManager {
+
+    private static final Logger logger = LoggerHolder.getInstance().getLogger(ScheduledThreadPoolExecutorManager.class);
+
+    private final Object lock = new Object();
 
     private final List<Runnable> runnableList = new ArrayList<>();
 
     private final List<ScheduledFuture<?>> currentScheduledFutures = new ArrayList<>();
 
     @NonNull
-    protected final ScheduleMode scheduleMode;
+    private final ScheduleMode scheduleMode;
 
-    protected final String poolName;
+    private final String poolName;
+
+    @Nullable
+    private ExceptionHandler exceptionHandler;
 
     private ScheduledThreadPoolExecutor executor;
 
@@ -35,14 +44,25 @@ public class ScheduledThreadPoolExecutorManager {
     private int workersCount = 1;
 
     public ScheduledThreadPoolExecutorManager(@NonNull ScheduleMode scheduleMode, String poolName) {
-        logger.debug("ScheduledThreadPoolExecutorManager(), scheduleMode=" + scheduleMode + ", poolName=" + poolName);
-        this.scheduleMode = scheduleMode;
-        this.poolName = poolName;
+        this(scheduleMode, poolName, new ExceptionHandler.DefaultExceptionHandler());
     }
 
+    public ScheduledThreadPoolExecutorManager(@NonNull ScheduleMode scheduleMode, String poolName, @Nullable ExceptionHandler exceptionHandler) {
+        this.scheduleMode = scheduleMode;
+        this.poolName = poolName;
+        this.setExceptionHandler(exceptionHandler);
+    }
 
-    public List<Runnable> getRunnableList() {
-        return Collections.unmodifiableList(runnableList);
+    public void setExceptionHandler(@Nullable ExceptionHandler exceptionHandler) {
+        synchronized (lock) {
+            this.exceptionHandler = exceptionHandler;
+        }
+    }
+
+    public List<Runnable> getRunnableTasks() {
+        synchronized (lock) {
+            return Collections.unmodifiableList(runnableList);
+        }
     }
 
     public void addRunnableTasks(Collection<Runnable> runnables) {
@@ -53,54 +73,54 @@ public class ScheduledThreadPoolExecutorManager {
         }
     }
 
-    public void addRunnableTask(Runnable runnable) throws NullPointerException {
-        logger.debug("addRunnableTask(), runnable=" + runnable);
+    public void addRunnableTask(@NonNull Runnable runnable) throws NullPointerException {
 
-        if (runnable == null) {
-            throw new NullPointerException();
-        }
+        synchronized (lock) {
 
-        synchronized (runnableList) {
             runnableList.add(runnable);
-        }
 
-        if (isRunning()) {
-            restart(initialDelayMs, intervalMs, workersCount);
+            if (isRunning()) {
+                restart(initialDelayMs, intervalMs, workersCount);
+            }
+
         }
     }
 
     public void removeRunnableTask(Runnable runnable) {
-        logger.debug("removeRunnableTask(), runnable=" + runnable);
 
-        synchronized (runnableList) {
+        synchronized (lock) {
+
             if (runnableList.contains(runnable)) {
                 runnableList.remove(runnable);
+                if (isRunning()) {
+                    restart(initialDelayMs, intervalMs, workersCount);
+                }
             }
-        }
 
-        if (isRunning()) {
-            restart(initialDelayMs, intervalMs, workersCount);
         }
     }
 
     public void removeAllRunnableTasks() {
+        synchronized (lock) {
 
-        if (isRunning()) {
-            stop(false, 0);
-        }
+            if (isRunning()) {
+                stop(false, 0);
+            }
 
-        synchronized (runnableList) {
             runnableList.clear();
         }
     }
 
     public List<ScheduledFuture<?>> getCurrentScheduledFutures() {
-        return Collections.unmodifiableList(currentScheduledFutures);
+        synchronized (lock) {
+            return Collections.unmodifiableList(currentScheduledFutures);
+        }
     }
 
     public boolean isRunning() {
-        return executor != null && (!executor.isShutdown() || !executor.isTerminated());
-
+        synchronized (lock) {
+            return executor != null && (!executor.isShutdown() || !executor.isTerminated());
+        }
     }
 
     public long getInitialDelayMs() {
@@ -115,79 +135,89 @@ public class ScheduledThreadPoolExecutorManager {
         return workersCount;
     }
 
-    public synchronized void start(long intervalMs) {
+    public void start(long intervalMs) {
         start(0, intervalMs, 1);
     }
 
-    public synchronized void start(long delayMs, long intervalMs, int workersCount) {
+    public void start(long delayMs, long intervalMs, int workersCount) {
         if (!isRunning()) {
             restart(delayMs, intervalMs, workersCount);
         }
     }
 
-    public synchronized void restart(long intervalMs) {
+    public void restart(long intervalMs) {
         restart(0, intervalMs, 1);
     }
 
-    public synchronized void restart(long delayMs, long intervalMs, int workersCount) {
-        logger.debug("start(), initialDelayMs=" + delayMs + ", intervalMs=" + intervalMs + ", workersCount=" + workersCount);
+    public void restart(long delayMs, long intervalMs, int workersCount) {
 
-        if (intervalMs <= 0)
-            throw new IllegalArgumentException("can't start executor: incorrect intervalMs: " + intervalMs);
+        synchronized (lock) {
 
-        if (delayMs < 0)
-            throw new IllegalArgumentException("can't start executor: incorrect initialDelayMs: " + delayMs);
+            if (intervalMs <= 0)
+                throw new IllegalArgumentException("can't start executor: incorrect intervalMs: " + intervalMs);
 
-        if (workersCount < 1)
-            throw new IllegalArgumentException("can't start executor: incorrect workersCount: " + workersCount);
+            if (delayMs < 0)
+                throw new IllegalArgumentException("can't start executor: incorrect initialDelayMs: " + delayMs);
 
-        if (runnableList.isEmpty())
-            throw new RuntimeException("no runnables to schedule");
+            if (workersCount < 1)
+                throw new IllegalArgumentException("can't start executor: incorrect workersCount: " + workersCount);
 
-        stop(false, 0);
+            if (runnableList.isEmpty())
+                throw new RuntimeException("no runnables to schedule");
 
-        executor = new ScheduledThreadPoolExecutor(workersCount, new NamedThreadFactory(poolName));
+            stop(false, 0);
 
-        for (Runnable runnable : runnableList) {
-            switch (scheduleMode) {
-                case FIXED_RATE:
-                    logger.debug("scheduling runnable " + runnable + " with fixed interval " + intervalMs + " ms...");
-                    currentScheduledFutures.add(executor.scheduleAtFixedRate(new WrappedRunnable(runnable), this.initialDelayMs = delayMs, this.intervalMs = intervalMs, TimeUnit.MILLISECONDS));
-                    break;
-                case FIXED_DELAY:
-                    logger.debug("scheduling runnable " + runnable + " with fixed delay " + intervalMs + " ms...");
-                    currentScheduledFutures.add(executor.scheduleWithFixedDelay(new WrappedRunnable(runnable), this.initialDelayMs = delayMs, this.intervalMs = intervalMs, TimeUnit.MILLISECONDS));
-                    break;
+            executor = new ScheduledThreadPoolExecutor(workersCount, new NamedThreadFactory(poolName));
+
+            for (Runnable runnable : runnableList) {
+                switch (scheduleMode) {
+                    case FIXED_RATE:
+                        currentScheduledFutures.add(executor.scheduleAtFixedRate(new WrappedRunnable(runnable), this.initialDelayMs = delayMs, this.intervalMs = intervalMs, TimeUnit.MILLISECONDS));
+                        break;
+                    case FIXED_DELAY:
+                        currentScheduledFutures.add(executor.scheduleWithFixedDelay(new WrappedRunnable(runnable), this.initialDelayMs = delayMs, this.intervalMs = intervalMs, TimeUnit.MILLISECONDS));
+                        break;
+                }
             }
         }
     }
 
-    public synchronized void stop(boolean await, long timeoutMs) {
-        logger.debug("stop(), await=" + await + ", timeoutMs=" + timeoutMs);
+    /**
+     * not removing target runnables
+     */
+    public void stop(boolean await, long timeoutMs) {
 
-        if (!isRunning()) {
-            logger.debug("executor already not running");
-            return;
-        }
+        synchronized (lock) {
 
-        // executor.remove(runnable);
-        // executor.purge();
-
-        executor.shutdown();
-        if (await) {
-            try {
-                executor.awaitTermination(timeoutMs >= 0 ? timeoutMs : 0, TimeUnit.MILLISECONDS);
-            } catch (InterruptedException e) {
-                logger.error("an InterruptedException occurred during awaitTermination(): " + e.getMessage());
-                Thread.currentThread().interrupt();
+            if (!isRunning()) {
+                return;
             }
-        }
-        executor = null;
 
-        currentScheduledFutures.clear();
+            // executor.remove(runnable);
+            // executor.purge();
+
+            executor.shutdown();
+            if (await) {
+                try {
+                    executor.awaitTermination(timeoutMs >= 0 ? timeoutMs : 0, TimeUnit.MILLISECONDS);
+                } catch (InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    logger.e("an InterruptedException occurred during awaitTermination(): " + e.getMessage(), e);
+                }
+            }
+            executor = null;
+
+            for (ScheduledFuture<?> future : currentScheduledFutures) {
+                if (future != null) {
+                    future.cancel(true);
+                }
+            }
+
+            currentScheduledFutures.clear();
+        }
     }
 
-    static final class WrappedRunnable implements Runnable {
+    final class WrappedRunnable implements Runnable {
 
         @NonNull
         final Runnable command;
@@ -200,15 +230,39 @@ public class ScheduledThreadPoolExecutorManager {
         public void run() {
             try {
                 command.run();
-            } catch (Exception e) {
-                e.printStackTrace();
-                throw new RuntimeException("an exception was occurred during run()", e);
+            } catch (Throwable e) {
+                logger.e("an Exception occurred during run(): " + e.getMessage(), e);
+                synchronized (lock) {
+                    if (exceptionHandler != null) {
+                        exceptionHandler.onRunnableCrash(e);
+                    }
+                }
             }
         }
     }
 
     public enum ScheduleMode {
         FIXED_RATE, FIXED_DELAY
+    }
+
+    public interface ExceptionHandler {
+
+        void onRunnableCrash(Throwable e);
+
+        class DefaultExceptionHandler implements ExceptionHandler {
+
+            private final Handler handler = new Handler(Looper.getMainLooper());
+
+            @Override
+            public void onRunnableCrash(final Throwable e) {
+                handler.post(new Runnable() {
+                    @Override
+                    public void run() {
+                        throw new RuntimeException(e);
+                    }
+                });
+            }
+        }
     }
 
 }

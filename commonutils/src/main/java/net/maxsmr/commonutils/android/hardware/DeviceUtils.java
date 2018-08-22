@@ -22,7 +22,7 @@ import android.support.annotation.Nullable;
 import android.telephony.TelephonyManager;
 import android.view.WindowManager;
 
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.ShellUtils;
 
@@ -98,7 +98,7 @@ public final class DeviceUtils {
             } catch (Exception e) {
                 // saw an NPE on rooted Galaxy Nexus Android 4.1.1
                 // android.os.IPowerManager$Stub$Proxy.acquireWakeLock(IPowerManager.java:288)
-                logger.error("an Exception occurred during acquire()", e);
+                logger.e("an Exception occurred during acquire()", e);
             }
         }
         return false;
@@ -111,7 +111,7 @@ public final class DeviceUtils {
             }
         } catch (Exception e) {
             // just to make sure if the PowerManager crashes while acquiring a wake lock
-            logger.error("an Exception occurred during release()", e);
+            logger.e("an Exception occurred during release()", e);
         }
     }
 
@@ -221,7 +221,7 @@ public final class DeviceUtils {
         try {
             value = android.provider.Settings.System.getInt(context.getContentResolver(), android.provider.Settings.System.SCREEN_OFF_TIMEOUT);
         } catch (android.provider.Settings.SettingNotFoundException e) {
-            logger.error(e);
+            logger.e(e);
         }
         return value;
     }
@@ -258,7 +258,7 @@ public final class DeviceUtils {
             TimeInfo timeInfo = timeClient.getTime(inetAddress);
             return timeInfo.getMessage().getTransmitTimeStamp().getTime();
         } catch (IOException e) {
-            logger.error(e);
+            logger.e(e);
             timeClient.close();
         }
         return -1;
@@ -268,7 +268,7 @@ public final class DeviceUtils {
      * requires root
      */
     public static void setSystemTime(long timestamp) {
-        logger.debug("setSystemTime(), timestamp=" + timestamp);
+        logger.d("setSystemTime(), timestamp=" + timestamp);
 
         if (timestamp < 0) {
             throw new IllegalArgumentException("incorrect timestamp: " + timestamp);
@@ -284,17 +284,17 @@ public final class DeviceUtils {
 
             @Override
             public void shellOut(@NonNull StreamType from, String shellLine) {
-                logger.debug("shellOut(), from=" + from + ", shellLine=" + shellLine);
+                logger.d("shellOut(), from=" + from + ", shellLine=" + shellLine);
             }
 
             @Override
             public void processStartFailed(Throwable t) {
-                logger.error("processStartFailed(), t=" + t);
+                logger.e("processStartFailed(), t=" + t);
             }
 
             @Override
             public void processComplete(int exitValue) {
-                logger.debug("processComplete(), exitValue=" + exitValue);
+                logger.d("processComplete(), exitValue=" + exitValue);
             }
         };
 
@@ -308,7 +308,7 @@ public final class DeviceUtils {
     }
 
     public static boolean setAlarm(@NonNull Context context, @NonNull PendingIntent pIntent, long triggerTime, @NonNull AlarmType alarmType) {
-        logger.debug("setAlarm(), pIntent=" + pIntent + ", triggerTime=" + triggerTime + ", alarmType=" + alarmType);
+        logger.d("setAlarm(), pIntent=" + pIntent + ", triggerTime=" + triggerTime + ", alarmType=" + alarmType);
         boolean result = false;
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) {
@@ -318,9 +318,9 @@ public final class DeviceUtils {
             case RTC:
             case RTC_WAKE_UP:
                 long currentTime = System.currentTimeMillis();
-                logger.debug("currentTime=" + currentTime);
+                logger.d("currentTime=" + currentTime);
                 if (triggerTime <= currentTime) {
-                    logger.error("triggerTime (" + triggerTime + ") <= currentTime (" + currentTime + ")");
+                    logger.e("triggerTime (" + triggerTime + ") <= currentTime (" + currentTime + ")");
                     break;
                 }
                 if (SDK_INT < Build.VERSION_CODES.KITKAT) {
@@ -336,9 +336,9 @@ public final class DeviceUtils {
             case ELAPSED_REALTIME:
             case ELAPSED_REALTIME_WAKE_UP:
                 long elapsedTime = SystemClock.elapsedRealtime();
-                logger.debug("elapsedTime=" + elapsedTime);
+                logger.d("elapsedTime=" + elapsedTime);
                 if (triggerTime <= elapsedTime) {
-                    logger.error("triggerTime (" + triggerTime + ") <= elapsedTime (" + elapsedTime + ")");
+                    logger.e("triggerTime (" + triggerTime + ") <= elapsedTime (" + elapsedTime + ")");
                     break;
                 }
                 if (SDK_INT < Build.VERSION_CODES.KITKAT) {

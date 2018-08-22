@@ -8,7 +8,7 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.io.ByteArrayInputStream;
@@ -81,7 +81,7 @@ public final class SignatureUtils {
                 }
 
             } catch (CertificateException e) {
-               logger.error("a " + CertificateException.class.getSimpleName() + " occurred: " + e.getMessage());
+               logger.e("a " + CertificateException.class.getSimpleName() + " occurred: " + e.getMessage());
             }
         }
 

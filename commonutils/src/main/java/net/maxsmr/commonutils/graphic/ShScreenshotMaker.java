@@ -4,7 +4,7 @@ package net.maxsmr.commonutils.graphic;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.ShellUtils;
 
@@ -40,17 +40,17 @@ public final class ShScreenshotMaker {
      * @return true if started successfully, false - otherwise
      */
     public boolean makeScreenshotAsync(String folderName, String fileName, @Nullable ShellUtils.ShellCallback sc) {
-        logger.debug("makeScreenshotAsync(), folderName=" + folderName + ", fileName=" + fileName);
+        logger.d("makeScreenshotAsync(), folderName=" + folderName + ", fileName=" + fileName);
 
         if (watcher.isRunning()) {
-            logger.error(SCREENCAP_PROCESS_NAME + " is running at the moment");
+            logger.e(SCREENCAP_PROCESS_NAME + " is running at the moment");
             return false;
         }
 
         final File destFile = FileHelper.createNewFile(fileName, folderName);
 
         if (destFile == null) {
-            logger.error("can't create file: " + folderName + File.separator + fileName);
+            logger.e("can't create file: " + folderName + File.separator + fileName);
             return false;
         }
 
@@ -62,17 +62,17 @@ public final class ShScreenshotMaker {
      */
     @Nullable
     public File makeScreenshot(String folderName, String fileName, @Nullable ShellUtils.ShellCallback sc) {
-        logger.debug("makeScreenshot(), folderName=" + folderName + ", fileName=" + fileName);
+        logger.d("makeScreenshot(), folderName=" + folderName + ", fileName=" + fileName);
 
         if (watcher.isRunning()) {
-            logger.error("process " + SCREENCAP_PROCESS_NAME + " is running at the moment");
+            logger.e("process " + SCREENCAP_PROCESS_NAME + " is running at the moment");
             return null;
         }
 
         final File destFile = FileHelper.createNewFile(fileName, folderName);
 
         if (destFile == null) {
-            logger.error("can't create file: " + folderName + File.separator + fileName);
+            logger.e("can't create file: " + folderName + File.separator + fileName);
             return null;
         }
 

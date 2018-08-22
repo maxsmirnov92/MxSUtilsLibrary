@@ -48,7 +48,7 @@ import android.view.WindowManager;
 import net.maxsmr.commonutils.android.gui.GuiUtils;
 import net.maxsmr.commonutils.android.media.MetadataRetriever;
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.logger.base.BaseLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import org.xmlpull.v1.XmlPullParserException;
@@ -80,7 +80,7 @@ public final class GraphicUtils {
     public static String getFileExtByCompressFormat(Bitmap.CompressFormat compressFormat) {
 
         if (compressFormat == null) {
-            logger.error("compressFormat is null");
+            logger.e("compressFormat is null");
             return null;
         }
 
@@ -105,17 +105,17 @@ public final class GraphicUtils {
     public static Bitmap writeTextOnBitmap(Bitmap bitmap, String text, @ColorInt int textColor, int fontSize, Point textPos) {
 
         if (!isBitmapCorrect(bitmap)) {
-            logger.error("incorrect bitmap");
+            logger.e("incorrect bitmap");
             return bitmap;
         }
 
         if (!bitmap.isMutable()) {
-            logger.error("bitmap is immutable, cannot pass to canvas");
+            logger.e("bitmap is immutable, cannot pass to canvas");
             return bitmap;
         }
 
         if (TextUtils.isEmpty(text)) {
-            logger.error("text is null or empty");
+            logger.e("text is null or empty");
             return bitmap;
         }
 
@@ -147,17 +147,17 @@ public final class GraphicUtils {
     public static int fixFontSize(int fontSize, String text, Paint paint, Bitmap bitmap) {
 
         if (!isBitmapCorrect(bitmap)) {
-            logger.error("incorrect bitmap");
+            logger.e("incorrect bitmap");
             return fontSize;
         }
 
         if (paint == null) {
-            logger.error("paint is null");
+            logger.e("paint is null");
             return fontSize;
         }
 
         if (TextUtils.isEmpty(text)) {
-            logger.error("text is empty");
+            logger.e("text is empty");
             return fontSize;
         }
 
@@ -172,21 +172,21 @@ public final class GraphicUtils {
     }
 
     public static Bitmap makePreviewFromVideoFile(File videoFile, int gridSize, boolean writeDuration) {
-        logger.debug("makePreviewFromVideoFile, videoFile=" + videoFile + ", gridSize=" + gridSize);
+        logger.d("makePreviewFromVideoFile, videoFile=" + videoFile + ", gridSize=" + gridSize);
 
         if (!(FileHelper.isFileCorrect(videoFile) && FileHelper.isVideo(FileHelper.getFileExtension(videoFile.getName())))) {
-            logger.error("incorrect video file");
+            logger.e("incorrect video file");
             return null;
         }
 
         if (gridSize <= 0) {
-            logger.error("incorrect grid size");
+            logger.e("incorrect grid size");
             return null;
         }
 
         final Map<Long, Bitmap> videoFrames = MetadataRetriever.extractFrames(videoFile, gridSize * gridSize);
         if (videoFrames.isEmpty()) {
-            logger.error("videoFrames is empty");
+            logger.e("videoFrames is empty");
             return null;
         }
 
@@ -205,26 +205,26 @@ public final class GraphicUtils {
     public static File writeCompressedBitmapToFile(File file, Bitmap data, Bitmap.CompressFormat format) {
 
         if (file == null) {
-            logger.error("file not specified");
+            logger.e("file not specified");
             return null;
         }
 
         if (!isBitmapCorrect(data)) {
-            logger.error("bitmap is incorrect");
+            logger.e("bitmap is incorrect");
             return null;
         }
 
         String ext = getFileExtByCompressFormat(format);
 
         if (TextUtils.isEmpty(ext)) {
-            logger.error("unknown format: " + format);
+            logger.e("unknown format: " + format);
             return null;
         }
 
         file = FileHelper.createNewFile(FileHelper.removeExtension(file.getName()) + "." + ext, file.getParent());
 
         if (file == null) {
-            logger.error("file was not created");
+            logger.e("file was not created");
             return null;
         }
 
@@ -235,14 +235,14 @@ public final class GraphicUtils {
             fos.flush();
             return file;
         } catch (IOException e) {
-            logger.error("an IOException occurred", e);
+            logger.e("an IOException occurred", e);
         } finally {
             try {
                 if (fos != null) {
                     fos.close();
                 }
             } catch (IOException e) {
-                logger.error("an IOException occurred during close", e);
+                logger.e("an IOException occurred during close", e);
             }
         }
 
@@ -253,7 +253,7 @@ public final class GraphicUtils {
     public static byte[] compressedBitmapToByteArray(Bitmap data, Bitmap.CompressFormat format) {
 
         if (!isBitmapCorrect(data)) {
-            logger.error("bitmap is incorrect");
+            logger.e("bitmap is incorrect");
             return null;
         }
 
@@ -264,15 +264,15 @@ public final class GraphicUtils {
             try {
                 return baos.toByteArray();
             } catch (OutOfMemoryError e) {
-                logger.error("an OutOfMemoryError occurred during toByteArray()", e);
+                logger.e("an OutOfMemoryError occurred during toByteArray()", e);
             }
         } catch (IOException e) {
-            logger.error("an IOException occurred", e);
+            logger.e("an IOException occurred", e);
         } finally {
             try {
                 baos.close();
             } catch (IOException e) {
-                logger.error("an IOException occurred during close", e);
+                logger.e("an IOException occurred during close", e);
             }
         }
 
@@ -285,19 +285,19 @@ public final class GraphicUtils {
     public static Bitmap combineImagesToOne(Collection<Bitmap> chunkImages, int gridSize, boolean recycle) {
 
         if (chunkImages == null || chunkImages.size() == 0) {
-            logger.error("chunkImages is null or empty");
+            logger.e("chunkImages is null or empty");
             return null;
         }
 
         if (gridSize <= 0) {
-            logger.error("incorrect gridSize: " + gridSize);
+            logger.e("incorrect gridSize: " + gridSize);
             return null;
         }
 
         List<Bitmap> chunkImagesList = new ArrayList<>(chunkImages);
 
         if (gridSize * gridSize < chunkImagesList.size()) {
-            logger.warn("grid dimension is less than number of chunks, removing excessive chunks...");
+            logger.w("grid dimension is less than number of chunks, removing excessive chunks...");
             for (int i = chunkImagesList.size() - 1; i > gridSize * gridSize - 1; i--) {
                 Bitmap b = chunkImagesList.remove(i);
                 if (recycle && b != null) {
@@ -319,7 +319,7 @@ public final class GraphicUtils {
                 if (chunkWidth > 0 && chunkHeight > 0) {
 
                     if (chunk.getWidth() != chunkWidth || chunk.getHeight() != chunkHeight) {
-                        logger.error("chunk images in list have different dimensions, previous: " + chunkWidth + "x" + chunkHeight
+                        logger.e("chunk images in list have different dimensions, previous: " + chunkWidth + "x" + chunkHeight
                                 + ", current: " + chunk.getWidth() + "x" + chunk.getHeight());
                         return null;
                     }
@@ -330,16 +330,16 @@ public final class GraphicUtils {
                 }
 
             } else {
-                logger.error("chunk at index " + i + " is null");
+                logger.e("chunk at index " + i + " is null");
                 chunkImagesList.remove(i);
                 i = 0;
             }
         }
 
-        logger.debug("chunk: " + chunkWidth + " x " + chunkHeight);
+        logger.d("chunk: " + chunkWidth + " x " + chunkHeight);
 
         if (chunkWidth <= 0 || chunkHeight <= 0) {
-            logger.error("incorrect chunk dimensions");
+            logger.e("incorrect chunk dimensions");
             return null;
         }
 
@@ -349,7 +349,7 @@ public final class GraphicUtils {
         try {
             resultBitmap = Bitmap.createBitmap(chunkWidth * gridSize, chunkHeight * gridSize, Bitmap.Config.ARGB_8888);
         } catch (OutOfMemoryError e) {
-            logger.error("an OutOfMemoryError error occurred during createBitmap()", e);
+            logger.e("an OutOfMemoryError error occurred during createBitmap()", e);
             return null;
         }
 
@@ -399,17 +399,17 @@ public final class GraphicUtils {
     public static Bitmap cropBitmap(Bitmap srcBitmap, int fromX, int fromY, int toX, int toY) {
 
         if (!isBitmapCorrect(srcBitmap)) {
-            logger.error("incorrect bitmap");
+            logger.e("incorrect bitmap");
             return srcBitmap;
         }
 
         if (fromX < 0 || fromY < 0 || toX <= 0 || toY <= 0) {
-            logger.error("incorrect coords (1)");
+            logger.e("incorrect coords (1)");
             return srcBitmap;
         }
 
         if (toX <= fromX || toY <= fromY) {
-            logger.error("incorrect coords (2)");
+            logger.e("incorrect coords (2)");
             return srcBitmap;
         }
 
@@ -465,7 +465,7 @@ public final class GraphicUtils {
     public static Bitmap createBitmapFromUri(@NonNull Context context, Uri uri, int scale, @Nullable Bitmap.Config config) {
 
         if (!(uri != null && (uri.getScheme() == null || uri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_FILE)))) {
-            logger.error("incorrect resource uri: " + uri);
+            logger.e("incorrect resource uri: " + uri);
             return null;
         }
 
@@ -485,14 +485,14 @@ public final class GraphicUtils {
     public static Bitmap createBitmapFromFile(File file, int scale, @Nullable Bitmap.Config config) {
 
         if (!FileHelper.isFileCorrect(file) || !FileHelper.isPicture(FileHelper.getFileExtension(file.getName()))) {
-            logger.error("incorrect file: " + file);
+            logger.e("incorrect file: " + file);
             return null;
         }
 
         try {
             return createBitmapFromStream(new FileInputStream(file), scale, config);
         } catch (FileNotFoundException e) {
-            logger.error("a FileNotFoundException occurred during open FileInputStream", e);
+            logger.e("a FileNotFoundException occurred during open FileInputStream", e);
             return null;
         }
     }
@@ -506,7 +506,7 @@ public final class GraphicUtils {
     public static Bitmap createBitmapFromByteArray(byte[] data, int scale, @Nullable Bitmap.Config config) {
 
         if (data == null || data.length == 0) {
-            logger.error("data is null or empty");
+            logger.e("data is null or empty");
             return null;
         }
 
@@ -526,7 +526,7 @@ public final class GraphicUtils {
         try {
             return BitmapFactory.decodeByteArray(data, 0, data.length, options);
         } catch (OutOfMemoryError e) {
-            logger.error("an OutOfMemoryError error occurred during decodeByteArray()", e);
+            logger.e("an OutOfMemoryError error occurred during decodeByteArray()", e);
             return null;
         }
     }
@@ -555,7 +555,7 @@ public final class GraphicUtils {
         try {
             return BitmapFactory.decodeStream(is, null, options);
         } catch (OutOfMemoryError e) {
-            logger.error("an OutOfMemoryError error occurred during decodeByteArray()", e);
+            logger.e("an OutOfMemoryError error occurred during decodeByteArray()", e);
             return null;
         }
     }
@@ -588,7 +588,7 @@ public final class GraphicUtils {
         try {
             return BitmapFactory.decodeResource(context.getResources(), resId, options);
         } catch (OutOfMemoryError e) {
-            logger.error("an OutOfMemoryError error occurred during decodeResource()", e);
+            logger.e("an OutOfMemoryError error occurred during decodeResource()", e);
             return null;
         }
     }
@@ -716,7 +716,7 @@ public final class GraphicUtils {
                     int rotateAngle = getRotationAngleByExifOrientation(orientation);
                     return rotateBitmap(sourceBitmap, rotateAngle);
                 } catch (Exception e) {
-                    logger.error("an Exception occurred", e);
+                    logger.e("an Exception occurred", e);
                 }
             } else {
                 return sourceBitmap;
@@ -782,7 +782,7 @@ public final class GraphicUtils {
                 int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
                 return getRotationAngleByExifOrientation(orientation);
             } catch (Exception e) {
-                logger.error(e);
+                logger.e(e);
             }
         }
         return -1;
@@ -791,12 +791,12 @@ public final class GraphicUtils {
     public static boolean writeRotationAngleToExif(File imageFile, int degrees) {
 
         if (!GraphicUtils.canDecodeImage(imageFile)) {
-            logger.error("incorrect picture file: " + imageFile);
+            logger.e("incorrect picture file: " + imageFile);
             return false;
         }
 
         if (degrees < 0) {
-            logger.warn("incorrect angle: " + degrees);
+            logger.w("incorrect angle: " + degrees);
             return false;
         }
 
@@ -806,7 +806,7 @@ public final class GraphicUtils {
             exif.saveAttributes();
             return true;
         } catch (IOException e) {
-            logger.error("an IOException occurred", e);
+            logger.e("an IOException occurred", e);
             return false;
         }
     }
@@ -815,12 +815,12 @@ public final class GraphicUtils {
     public static Bitmap rotateBitmap(Bitmap sourceBitmap, int angle) {
 
         if (!isBitmapCorrect(sourceBitmap)) {
-            logger.error("incorrect bitmap: " + sourceBitmap);
+            logger.e("incorrect bitmap: " + sourceBitmap);
             return null;
         }
 
         if (angle < 0 || angle > 360) {
-            logger.error("incorrect angle: " + angle);
+            logger.e("incorrect angle: " + angle);
             return null;
         }
 
@@ -831,7 +831,7 @@ public final class GraphicUtils {
             return Bitmap.createBitmap(sourceBitmap, 0, 0, sourceBitmap.getWidth(),
                     sourceBitmap.getHeight(), matrix, true);
         } catch (OutOfMemoryError e) {
-            logger.error("an OutOfMemoryError occurred during createBitmap()", e);
+            logger.e("an OutOfMemoryError occurred during createBitmap()", e);
             return null;
         }
     }
@@ -840,7 +840,7 @@ public final class GraphicUtils {
     public static Bitmap mirrorBitmap(Bitmap sourceBitmap) {
 
         if (!isBitmapCorrect(sourceBitmap)) {
-            logger.error("incorrect bitmap: " + sourceBitmap);
+            logger.e("incorrect bitmap: " + sourceBitmap);
             return null;
         }
 
@@ -850,7 +850,7 @@ public final class GraphicUtils {
             return Bitmap.createBitmap(sourceBitmap, 0, 0, sourceBitmap.getWidth(),
                     sourceBitmap.getHeight(), matrix, true);
         } catch (OutOfMemoryError e) {
-            logger.error("an OutOfMemoryError occurred during createBitmap()", e);
+            logger.e("an OutOfMemoryError occurred during createBitmap()", e);
             return null;
         }
     }
@@ -859,7 +859,7 @@ public final class GraphicUtils {
     public static Bitmap cutBitmap(Bitmap sourceBitmap, @NonNull Rect range) {
 
         if (!isBitmapCorrect(sourceBitmap)) {
-            logger.error("incorrect bitmap: " + sourceBitmap);
+            logger.e("incorrect bitmap: " + sourceBitmap);
             return null;
         }
 
@@ -867,14 +867,14 @@ public final class GraphicUtils {
                 || range.top < 0 || range.top >= sourceBitmap.getHeight()
                 || range.width() > sourceBitmap.getWidth() - range.left
                 || range.height() > sourceBitmap.getHeight() - range.top) {
-            logger.error("incorrect bounds: " + range);
+            logger.e("incorrect bounds: " + range);
             return null;
         }
 
         try {
             return Bitmap.createBitmap(sourceBitmap, range.left, range.top, range.width(), range.height());
         } catch (OutOfMemoryError e) {
-            logger.error("an OutOfMemoryError occurred during createBitmap()", e);
+            logger.e("an OutOfMemoryError occurred during createBitmap()", e);
             return null;
         }
     }
@@ -902,7 +902,7 @@ public final class GraphicUtils {
     @Nullable
     public static byte[] getBitmapData(Bitmap b) {
         if (!isBitmapCorrect(b)) {
-            logger.error("incorrect bitmap");
+            logger.e("incorrect bitmap");
             return null;
         }
         ByteBuffer buffer = ByteBuffer.allocate(b.getHeight() * b.getRowBytes());
@@ -914,17 +914,17 @@ public final class GraphicUtils {
     public static Bitmap setBitmapData(byte[] data, int width, int height, Bitmap.Config config) {
 
         if (data == null || data.length == 0) {
-            logger.error("data is null or empty");
+            logger.e("data is null or empty");
             return null;
         }
 
         if (width <= 0 || height <= 0) {
-            logger.error("incorrect image size: " + width + "x" + height);
+            logger.e("incorrect image size: " + width + "x" + height);
             return null;
         }
 
         if (config == null) {
-            logger.error("config is null");
+            logger.e("config is null");
             return null;
         }
 
@@ -945,12 +945,12 @@ public final class GraphicUtils {
     public static Bitmap copyBitmap(Bitmap b, Bitmap.Config c) {
 
         if (!isBitmapCorrect(b)) {
-            logger.error("incorrect bitmap");
+            logger.e("incorrect bitmap");
             return b;
         }
 
         if (c == null) {
-            logger.error("config is null");
+            logger.e("config is null");
             return b;
         }
 
@@ -959,7 +959,7 @@ public final class GraphicUtils {
         try {
             convertedBitmap = Bitmap.createBitmap(b.getWidth(), b.getHeight(), c);
         } catch (OutOfMemoryError e) {
-            logger.error("an OutOfMemoryError error occurred during createBitmap()", e);
+            logger.e("an OutOfMemoryError error occurred during createBitmap()", e);
             return b;
         }
 
@@ -981,7 +981,7 @@ public final class GraphicUtils {
             return null;
 
         if (!b.isMutable()) {
-            logger.error("given bitmap is immutable!");
+            logger.e("given bitmap is immutable!");
             return null;
         }
 
@@ -1009,7 +1009,7 @@ public final class GraphicUtils {
         }
 
         if (width <= 0 || height <= 0) {
-            logger.error("incorrect bounds: " + width + "x" + height);
+            logger.e("incorrect bounds: " + width + "x" + height);
             return null;
         }
 
@@ -1024,7 +1024,7 @@ public final class GraphicUtils {
             return bitmap;
 
         } catch (Exception e) {
-            logger.error("an Exception occurred", e);
+            logger.e("an Exception occurred", e);
             return null;
         }
     }
@@ -1072,21 +1072,21 @@ public final class GraphicUtils {
     }
 
     public static byte[] convertYuvToJpeg(byte[] data, int format, int width, int height) {
-        logger.debug("convertYuvToJpeg(), data (length)=" + (data != null ? data.length : 0) + ", format=" + format + ", width=" + width
+        logger.d("convertYuvToJpeg(), data (length)=" + (data != null ? data.length : 0) + ", format=" + format + ", width=" + width
                 + ", height=" + height);
 
         if (data == null || data.length == 0) {
-            logger.error("data is null or emty");
+            logger.e("data is null or emty");
             return null;
         }
 
         if (!(format == ImageFormat.NV21 || format == ImageFormat.YUY2)) {
-            logger.error("incorrect image format: " + format);
+            logger.e("incorrect image format: " + format);
             return null;
         }
 
         if (width <= 0 || height <= 0) {
-            logger.error("incorrect resolution: " + width + "x" + height);
+            logger.e("incorrect resolution: " + width + "x" + height);
             return null;
         }
 
@@ -1097,15 +1097,15 @@ public final class GraphicUtils {
     }
 
     public static byte[] convertRgbToYuv420SP(int[] aRGB, int width, int height) {
-        // logger.debug("convertRgbToYuv420SP(), width=" + width + ", height=" + height);
+        // logger.d("convertRgbToYuv420SP(), width=" + width + ", height=" + height);
 
         if (aRGB == null || aRGB.length == 0) {
-            logger.error("data is null or empty");
+            logger.e("data is null or empty");
             return null;
         }
 
         if (width <= 0 || height <= 0) {
-            logger.error("incorrect image size");
+            logger.e("incorrect image size");
             return null;
         }
 
@@ -1148,12 +1148,12 @@ public final class GraphicUtils {
     public static Bitmap renderScriptNVToRGBA(@NonNull Context context, int width, int height, byte[] nv, @Nullable Bitmap.Config bitmapConfig) {
 
         if (width <= 0 || height <= 0) {
-            logger.error("incorrect size: " + width + "x" + height);
+            logger.e("incorrect size: " + width + "x" + height);
             return null;
         }
 
         if (nv == null || nv.length == 0) {
-            logger.error("incorrect source");
+            logger.e("incorrect source");
             return null;
         }
 
@@ -1201,7 +1201,7 @@ public final class GraphicUtils {
             try {
                 resultBitmap = Bitmap.createBitmap(width, height, bitmapConfig);
             } catch (OutOfMemoryError e) {
-                logger.error("an OutOfMemoryError occurred during createBitmap()", e);
+                logger.e("an OutOfMemoryError occurred during createBitmap()", e);
             }
 
             if (resultBitmap != null) {
@@ -1209,7 +1209,7 @@ public final class GraphicUtils {
                     out.copyTo(resultBitmap);
                     return resultBitmap;
                 } catch (Throwable e) {
-                    logger.error("an Exception occurred during copyTo()", e);
+                    logger.e("an Exception occurred during copyTo()", e);
                     if (!resultBitmap.isRecycled()) {
                         resultBitmap.recycle();
                     }
@@ -1217,7 +1217,7 @@ public final class GraphicUtils {
             }
 
         } catch (RuntimeException e) {
-            logger.error("a RuntimeException occurred during rendering", e);
+            logger.e("a RuntimeException occurred during rendering", e);
 
         } finally {
             if (out != null) {
@@ -1251,7 +1251,7 @@ public final class GraphicUtils {
         try {
             return ColorStateList.createFromXml(context.getResources(), parser);
         } catch (XmlPullParserException | IOException e) {
-            logger.error("an Exception occurred", e);
+            logger.e("an Exception occurred", e);
             return null;
         }
     }
@@ -1277,7 +1277,7 @@ public final class GraphicUtils {
             int index = (int) getStateDrawableIndex.invoke(stateListDrawable, state);
             return (Drawable) getStateDrawable.invoke(stateListDrawable, index);
         } catch (Exception e) {
-            logger.error("an Exception occurred", e);
+            logger.e("an Exception occurred", e);
         }
         return null;
     }
@@ -1425,12 +1425,12 @@ public final class GraphicUtils {
      * Resize bitmap if needed
      */
     public static Bitmap resizeBitmap(Bitmap bitmap, int screenWidth, int screenHeight, float screenAspectRatio, float wallpaperSizeThreshold, float wallpaperAspectRatioThreshold) {
-        logger.debug("Resizing bitmap");
-        logger.debug("Screen size: " + screenWidth + "x" + screenHeight + ", wallpaper size: " + bitmap.getWidth() + "x" + bitmap.getHeight());
+        logger.d("Resizing bitmap");
+        logger.d("Screen size: " + screenWidth + "x" + screenHeight + ", wallpaper size: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
         float wallpaperAspectRatio = bitmap.getWidth() / bitmap.getHeight();
 
-        logger.debug("Wallpaper aspect ratio: " + wallpaperAspectRatio +
+        logger.d("Wallpaper aspect ratio: " + wallpaperAspectRatio +
                 ", screen aspect ratio: " + screenAspectRatio);
 
         if (getSizeDelta(bitmap.getWidth(), screenWidth) > wallpaperSizeThreshold || getSizeDelta(bitmap.getHeight(), screenHeight) > wallpaperSizeThreshold) {
@@ -1438,7 +1438,7 @@ public final class GraphicUtils {
             float aspectRatioDelta = Math.abs(wallpaperAspectRatio - screenAspectRatio);
 
             if (aspectRatioDelta >= wallpaperAspectRatioThreshold) {
-                logger.debug("Wallpaper aspect ratio differs from screen: " + aspectRatioDelta);
+                logger.d("Wallpaper aspect ratio differs from screen: " + aspectRatioDelta);
                 return resizeBitmapFitXY(bitmap, screenWidth, screenHeight);
             }
         }

@@ -153,7 +153,7 @@ public class NumberDrawable extends BitmapDrawable {
             mPaint.setTypeface(mFont);
             mPaint.setTextSize(GraphicUtils.fixFontSize(getTextSizeByDensity(), String.valueOf(mNumber), mPaint, mSource)); // getBitmap()
             mNumber = mSetter != null ? mSetter.getNumber() : mNumber;
-//            logger.debug("drawing text " + String.valueOf(mNumber) + "...");
+//            logger.d("drawing text " + String.valueOf(mNumber) + "...");
             canvas.drawText(String.valueOf(mNumber), 0, 0, mPaint);
         } else {
             throw new RuntimeException("can't draw: source bitmap is incorrect");
