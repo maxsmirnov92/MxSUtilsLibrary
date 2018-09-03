@@ -15,7 +15,7 @@ public class CommandResult {
 
     private final int targetExitCode;
 
-    private Integer exitCode = null; // not defined
+    private Integer exitCode = null; // null == not completed
 
     @NonNull
     private List<String> stdOutLines;
@@ -32,19 +32,29 @@ public class CommandResult {
     }
 
     public CommandResult(Integer targetExitCode, Integer exitCode, @Nullable List<String> stdOutLines, @Nullable List<String> stdErrLines) {
-        this.targetExitCode = targetExitCode != null? targetExitCode : DEFAULT_TARGET_CODE;
+        this.targetExitCode = targetExitCode != null ? targetExitCode : DEFAULT_TARGET_CODE;
         this.exitCode = exitCode;
 
-        this.stdOutLines = stdOutLines != null? new ArrayList<>(stdOutLines) : new ArrayList<String>();
-        this.stdErrLines = stdErrLines != null? new ArrayList<>(stdErrLines) : new ArrayList<String>();
+        this.stdOutLines = stdOutLines != null ? new ArrayList<>(stdOutLines) : new ArrayList<String>();
+        this.stdErrLines = stdErrLines != null ? new ArrayList<>(stdErrLines) : new ArrayList<String>();
+    }
+
+    public CommandResult(@NonNull CommandResult from) {
+        this(from.targetExitCode, from.exitCode, from.stdOutLines, from.stdErrLines);
+    }
+
+    public int getTargetExitCode() {
+        return targetExitCode;
     }
 
     public Integer getExitCode() {
         return exitCode;
     }
 
-    public void setExitCode(Integer exitCode) {
+    @NonNull
+    CommandResult setExitCode(Integer exitCode) {
         this.exitCode = exitCode;
+        return this;
     }
 
     public boolean isCompleted() {
@@ -65,7 +75,7 @@ public class CommandResult {
         return new ArrayList<>(stdOutLines);
     }
 
-    public void setStdOutLines(@Nullable List<String> stdOutLines) {
+    void setStdOutLines(@Nullable List<String> stdOutLines) {
         this.stdOutLines.clear();
         if (stdOutLines != null) {
             this.stdOutLines.addAll(stdOutLines);
@@ -83,7 +93,7 @@ public class CommandResult {
         return new ArrayList<>(stdErrLines);
     }
 
-    public void setStdErrLines(@Nullable List<String> stdErrLines) {
+    void setStdErrLines(@Nullable List<String> stdErrLines) {
         this.stdErrLines.clear();
         if (stdErrLines != null) {
             this.stdErrLines = stdErrLines;

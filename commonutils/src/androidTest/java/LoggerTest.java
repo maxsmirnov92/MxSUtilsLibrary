@@ -1,3 +1,4 @@
+import android.support.annotation.CallSuper;
 import android.support.annotation.NonNull;
 
 import net.maxsmr.commonutils.logger.LogcatLogger;
@@ -15,8 +16,15 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class LoggerTest {
 
+    protected BaseLogger logger;
+
+    protected final Class<?> getLoggerClass() {
+        return getClass();
+    }
+
     @Before
-    public void init() {
+    @CallSuper
+    public void prepare() {
         Holder.initInstance(new ILoggerHolderProvider<Holder>() {
             @NonNull
             @Override
@@ -24,17 +32,21 @@ public class LoggerTest {
                 return new Holder();
             }
         });
+        logger = Holder.getInstance().getLogger(getLoggerClass());
     }
 
     @Test
-    public void start() {
-        BaseLogger logger = Holder.getInstance().getLogger(LoggerTest.class);
+    public void test() {
         logger.setLoggingEnabled(true);
         logger.d("abc");
         Assert.assertEquals(1, Holder.getInstance().getLoggersCount());
     }
 
     private static class Holder extends BaseLoggerHolder {
+
+        private Holder() {
+            super(false);
+        }
 
         @Override
         protected BaseLogger createLogger(@NonNull Class<?> clazz) {

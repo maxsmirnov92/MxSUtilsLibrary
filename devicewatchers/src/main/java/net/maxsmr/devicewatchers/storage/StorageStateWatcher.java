@@ -8,10 +8,9 @@ import android.text.TextUtils;
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.Collection;
@@ -25,7 +24,7 @@ import java.util.Set;
 
 public final class StorageStateWatcher {
 
-    private final static Logger logger = LoggerFactory.getLogger(StorageStateWatcher.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(StorageStateWatcher.class);
 
     public static final Comparator<File> DEFAULT_FILE_COMPARATOR = new FileHelper.FileComparator(Collections.singletonMap(FileHelper.FileComparator.SortOption.LAST_MODIFIED, true));
 
@@ -44,7 +43,7 @@ public final class StorageStateWatcher {
     private boolean isEnabled = true;
 
     public StorageStateWatcher(@NonNull StorageWatchSettings settings, @Nullable IDeleteConfirm confirmer) {
-        logger.debug("StorageStateWatcher(), settings=" + settings + ", confirmer=" + confirmer);
+        logger.d("StorageStateWatcher(), settings=" + settings + ", confirmer=" + confirmer);
         this.settings = settings;
         this.confirmer = confirmer;
     }
@@ -97,7 +96,7 @@ public final class StorageStateWatcher {
     }
 
     public void stop() {
-        logger.debug("stop()");
+        logger.d("stop()");
         if (isRunning()) {
             executor.removeAllRunnableTasks();
         }
@@ -113,7 +112,7 @@ public final class StorageStateWatcher {
     }
 
     public void start(long interval) {
-        logger.debug("start(), interval=" + interval);
+        logger.d("start(), interval=" + interval);
         if (!isRunning()) {
             restart(interval);
         }
@@ -130,13 +129,13 @@ public final class StorageStateWatcher {
         }
 
         private void doStateWatch(boolean notify) {
-            logger.debug("doStateWatch(), notify=" + notify);
+            logger.d("doStateWatch(), notify=" + notify);
 
             final long totalKb = (long) FileHelper.getPartitionTotalSpace(settings.targetPath, FileHelper.SizeUnit.KBYTES);
             final long freeKb = (long) FileHelper.getPartitionFreeSpace(settings.targetPath, FileHelper.SizeUnit.KBYTES);
             final long usedKb = totalKb - freeKb;
 
-            logger.info("=== storage total space: " + totalKb + " kB, free: " + freeKb + " kB, used: " + usedKb + " kB ===");
+            logger.i("=== storage total space: " + totalKb + " kB, free: " + freeKb + " kB, used: " + usedKb + " kB ===");
 
             if (totalKb == 0) {
                 if (notify) {
@@ -157,13 +156,13 @@ public final class StorageStateWatcher {
 
                 case RATIO:
                     final double ratio = (double) usedKb / (double) totalKb;
-                    logger.info("ratio: " + ratio * 100 + "% | threshold: " + settings.value * 100 + "%");
+                    logger.i("ratio: " + ratio * 100 + "% | threshold: " + settings.value * 100 + "%");
                     differenceRatio = (exceeds = ratio >= settings.value) ? ratio - settings.value : 0;
                     differenceKb = 0;
                     break;
 
                 case SIZE:
-                    logger.info("used: " + usedKb + " kB | threshold: " + settings.value + " kB");
+                    logger.i("used: " + usedKb + " kB | threshold: " + settings.value + " kB");
                     differenceRatio = 0;
                     differenceKb = (exceeds = usedKb >= settings.value) ? usedKb - settings.value : 0;
                     break;
@@ -189,7 +188,7 @@ public final class StorageStateWatcher {
 
             if (!exceeds) {
 
-                logger.info("storage size is less than given limit");
+                logger.i("storage size is less than given limit");
 
                 Collection<Set<File>> filesFoldersList = mapping.values();
 
@@ -203,7 +202,7 @@ public final class StorageStateWatcher {
 
             } else {
 
-                logger.warn("storage size exceeds given limit!");
+                logger.w("storage size exceeds given limit!");
 
                 if (settings.deleteOptionMap != null) {
 
@@ -211,7 +210,7 @@ public final class StorageStateWatcher {
                         for (Map.Entry<String, FileHelper.GetMode> entry : settings.deleteOptionMap.entrySet()) {
 
                             if (!isEnabled) {
-                                logger.error(StorageStateWatcher.class.getSimpleName() + " is disabled");
+                                logger.e(StorageStateWatcher.class.getSimpleName() + " is disabled");
                                 return;
                             }
 
@@ -246,7 +245,7 @@ public final class StorageStateWatcher {
                     for (Map.Entry<String, FileHelper.GetMode> entry : settings.deleteOptionMap.entrySet()) {
 
                         if (!isEnabled) {
-                            logger.error(StorageStateWatcher.class.getSimpleName() + " is disabled");
+                            logger.e(StorageStateWatcher.class.getSimpleName() + " is disabled");
                             return;
                         }
 
@@ -305,12 +304,12 @@ public final class StorageStateWatcher {
 
                                                 @Override
                                                 public void onDeleteFileFailed(File file) {
-                                                    logger.error("onDeleteFileFailed(), file=" + file);
+                                                    logger.e("onDeleteFileFailed(), file=" + file);
                                                 }
 
                                                 @Override
                                                 public void onDeleteFolderFailed(File folder) {
-                                                    logger.error("onDeleteFolderFailed(), folder=" + folder);
+                                                    logger.e("onDeleteFolderFailed(), folder=" + folder);
                                                 }
 
                                             }, FileHelper.DEPTH_UNLIMITED).size();
@@ -318,7 +317,7 @@ public final class StorageStateWatcher {
 
                                         if (deletedCount > 0) {
                                             if (!isEnabled) {
-                                                logger.error(StorageStateWatcher.class.getSimpleName() + " is disabled");
+                                                logger.e(StorageStateWatcher.class.getSimpleName() + " is disabled");
                                                 return;
                                             }
                                             doStateWatch(false);

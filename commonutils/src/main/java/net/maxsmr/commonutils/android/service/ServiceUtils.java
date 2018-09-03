@@ -8,9 +8,6 @@ import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.PackageInfo;
-import android.content.pm.PackageManager;
-import android.content.pm.ResolveInfo;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
@@ -19,13 +16,9 @@ import net.maxsmr.commonutils.android.hardware.DeviceUtils;
 import net.maxsmr.commonutils.android.notification.NotificationActionInfo;
 import net.maxsmr.commonutils.android.notification.NotificationController;
 import net.maxsmr.commonutils.android.notification.NotificationInfo;
-import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
-
-import java.io.File;
-import java.util.List;
 
 public final class ServiceUtils {
 
@@ -204,25 +197,6 @@ public final class ServiceUtils {
         } catch (Exception e) {
             logger.e("an Exception occurred during unbindService()", e);
         }
-    }
-
-    @Nullable
-    public static String getPackageNameFromApk(@NonNull Context context, File apkFile) {
-        if (!FileHelper.isFileCorrect(apkFile) || !FileHelper.getFileExtension(apkFile.getName()).equalsIgnoreCase("apk")) {
-            logger.e("incorrect apk: " + apkFile);
-            return null;
-        }
-        PackageManager pm = context.getPackageManager();
-        PackageInfo pi = pm.getPackageArchiveInfo(apkFile.getAbsolutePath(), 0);
-        if (pi != null) {
-            return pi.packageName;
-        }
-        return null;
-    }
-
-    public static boolean canHandleActivityIntent(@NonNull Context context, @Nullable Intent intent) {
-        List<ResolveInfo> resolveInfos = intent != null ? context.getPackageManager().queryIntentActivities(intent, 0) : null;
-        return resolveInfos != null && !resolveInfos.isEmpty();
     }
 
 

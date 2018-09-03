@@ -5,14 +5,13 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
 import net.maxsmr.commonutils.shell.ShellUtils;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -21,7 +20,7 @@ import java.util.List;
 
 public class UsbDeviceWatcher {
 
-    private static final Logger logger = LoggerFactory.getLogger(UsbDeviceWatcher.class);
+    private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(UsbDeviceWatcher.class);
 
     public static final int DEFAULT_WATCH_INTERVAL = 2000;
 
@@ -42,7 +41,7 @@ public class UsbDeviceWatcher {
     public static void initInstance() {
         if (sInstance == null) {
             synchronized (UsbDeviceWatcher.class) {
-                logger.debug("initInstance()");
+                logger.d("initInstance()");
                 sInstance = new UsbDeviceWatcher();
             }
         }
@@ -71,7 +70,7 @@ public class UsbDeviceWatcher {
     }
 
     public void stopDeviceListWatcher() {
-        logger.debug("stopDeviceListWatcher()");
+        logger.d("stopDeviceListWatcher()");
         if (isDeviceListWatcherRunning()) {
             deviceListWatcher.removeAllRunnableTasks();
             deviceListRunnable = null;
@@ -80,7 +79,7 @@ public class UsbDeviceWatcher {
 
     public void restartDeviceListWatcher(int interval, DeviceInfo... devicesToWatch) {
         List<DeviceInfo> deviceInfos = devicesToWatch != null ? Arrays.asList(devicesToWatch) : null;
-        logger.debug("restartDeviceWatcher(), interval=" + interval + ", devicesToWatch=" + deviceInfos);
+        logger.d("restartDeviceWatcher(), interval=" + interval + ", devicesToWatch=" + deviceInfos);
         if (interval <= 0) {
             throw new IllegalArgumentException("incorrect interval: " + interval);
         }
@@ -109,7 +108,7 @@ public class UsbDeviceWatcher {
     }
 
     public void stopDeviceFinder() {
-        logger.debug("stopDeviceFinder()");
+        logger.d("stopDeviceFinder()");
         if (isDeviceFinderRunning()) {
             deviceFinder.removeAllRunnableTasks();
             deviceFinderRunnable = null;
@@ -123,7 +122,7 @@ public class UsbDeviceWatcher {
     }
 
     public void startDeviceFinder(int evFlagsMask, boolean match) {
-        logger.debug("startDeviceFinder(), evFlagsMask=" + evFlagsMask + ", match=" + match);
+        logger.d("startDeviceFinder(), evFlagsMask=" + evFlagsMask + ", match=" + match);
         if (!isDeviceFinderRunning()) {
             restartDeviceFinderWatcher(evFlagsMask, match);
         }
@@ -183,14 +182,14 @@ public class UsbDeviceWatcher {
         }
     }
 
-    private class DeviceWatcherRunnable extends TaskRunnable<RunnableInfo> {
+    private class DeviceWatcherRunnable extends TaskRunnable<RunnableInfo, Void, CommandResult> {
 
         final List<DeviceInfo> currentDeviceInfos = new ArrayList<>();
         final List<DeviceInfo> devicesToWatch = new ArrayList<>();
 
         DeviceWatcherRunnable(@Nullable List<DeviceInfo> devicesToWatch) {
             super(new RunnableInfo(0, DeviceWatcherRunnable.class.getName()));
-            logger.debug("devicesToWatch=" + devicesToWatch);
+            logger.d("devicesToWatch=" + devicesToWatch);
             if (devicesToWatch != null) {
                 this.devicesToWatch.addAll(devicesToWatch);
             }
@@ -200,19 +199,19 @@ public class UsbDeviceWatcher {
             return currentDeviceInfos.contains(info);
         }
 
+        @Nullable
         @Override
-        public void run() {
-            doDeviceWatch();
+        protected CommandResult doWork() throws Throwable {
+            return ShellUtils.execProcess(Arrays.asList("su", "-c", "lsusb"), null, null, null);
         }
 
-        private void doDeviceWatch() {
-            logger.debug("doDeviceWatch()");
+        @Override
+        protected void onPostExecute(@Nullable CommandResult result) {
+            super.onPostExecute(result);
 
-            CommandResult result = ShellUtils.execProcess(Arrays.asList("su", "-c", "lsusb"), null, null, null);
-
-            if (result.isSuccessful()) {
+            if (result != null && result.isSuccessful()) {
                 List<DeviceInfo> infos = parseOutput(result.getStdOutLines());
-//                        logger.debug("parsed: " + infos + ", current: " + currentDeviceInfos);
+//                        logger.d("parsed: " + infos + ", current: " + currentDeviceInfos);
 
                 List<DeviceInfo> attached = new ArrayList<>();
                 List<DeviceInfo> detached = new ArrayList<>();
@@ -245,7 +244,7 @@ public class UsbDeviceWatcher {
 
             } else {
 
-                watchListeners.notifyReadFailed(result);
+                watchListeners.notifyReadFailed(result != null? result : new CommandResult());
             }
         }
 
@@ -270,8 +269,7 @@ public class UsbDeviceWatcher {
                         try {
                             bus = busStartIndex >= 0 && busStartIndex < busEndIndex && busStartIndex < str.length() && busEndIndex < str.length() ? Integer.parseInt(str.substring(busStartIndex, busEndIndex)) : 0;
                         } catch (NumberFormatException e) {
-                            logger.error("a NumberFormatException occurred during parseInt()", e);
-                            e.printStackTrace();
+                            logger.e("a NumberFormatException occurred during parseInt()", e);
                         }
 
                         int deviceStartIndex = str.contains("Device") ? str.indexOf("Device") + "Device".length() + 1 : -1;
@@ -281,8 +279,7 @@ public class UsbDeviceWatcher {
                         try {
                             device = deviceStartIndex >= 0 && deviceStartIndex < deviceEndIndex && deviceStartIndex < str.length() && deviceEndIndex < str.length() ? Integer.parseInt(str.substring(deviceStartIndex, deviceEndIndex)) : 0;
                         } catch (NumberFormatException e) {
-                            logger.error("a NumberFormatException occurred during parseInt()", e);
-                            e.printStackTrace();
+                            logger.e("a NumberFormatException occurred during parseInt()", e);
                         }
 
                         int idStartIndex = str.contains("ID") ? str.lastIndexOf("ID") + "ID".length() + 1 : -1;
@@ -300,8 +297,7 @@ public class UsbDeviceWatcher {
                                     vendorID = Integer.parseInt(parts[0], 16);
                                     productID = Integer.parseInt(parts[1], 16);
                                 } catch (NumberFormatException e) {
-                                    logger.error("a NumberFormatException occurred during parseInt()", e);
-                                    e.printStackTrace();
+                                    logger.e("a NumberFormatException occurred during parseInt()", e);
                                 }
                             }
                         }
@@ -337,7 +333,7 @@ public class UsbDeviceWatcher {
         return deviceFinderRunnable.containsEvFlags(evFlags, match);
     }
 
-    private class DeviceFinderRunnable extends TaskRunnable<RunnableInfo> {
+    private class DeviceFinderRunnable extends TaskRunnable<RunnableInfo, Void, CommandResult> {
 
         final List<Integer> lastEvFlags = new ArrayList<>();
 
@@ -354,22 +350,25 @@ public class UsbDeviceWatcher {
             return !scanFlags(lastEvFlags, evFlags, match).isEmpty();
         }
 
+        @Nullable
         @Override
-        public void run() {
+        protected CommandResult doWork() throws Throwable {
+            return ShellUtils.execProcess(Arrays.asList("su", "-c", "cat", "/proc/bus/input/devices"), null, null, null);
+        }
 
-            CommandResult result = ShellUtils.execProcess(Arrays.asList("su", "-c", "cat", "/proc/bus/input/devices"), null, null, null);
-
-            if (result.isSuccessful()) {
+        @Override
+        protected void onPostExecute(@Nullable CommandResult result) {
+            super.onPostExecute(result);
+            if (result != null && result.isSuccessful()) {
 
                 lastEvFlags.clear();
                 lastEvFlags.addAll(parseEventFlags(result.getStdOutLines()));
-//                        logger.debug("parsed: " + lastEvFlags);
+//               logger.d("parsed: " + lastEvFlags);
 
                 flagsListeners.notifyFlagsChanged(scanFlags(lastEvFlags, evFlagsMask, match), evFlagsMask);
 
-
             } else {
-                flagsListeners.notifyReadFailed(result);
+                flagsListeners.notifyReadFailed(result != null? result : new CommandResult());
             }
         }
 
@@ -386,8 +385,7 @@ public class UsbDeviceWatcher {
                                 int evFlags = Integer.parseInt(str.substring(evStartIndex, evEndIndex), 16);
                                 evFlagsList.add(evFlags);
                             } catch (NumberFormatException e) {
-                                logger.error("a NumberFormatException occurred", e);
-                                e.printStackTrace();
+                                logger.e("a NumberFormatException occurred", e);
                             }
                         }
                     }
@@ -433,7 +431,7 @@ public class UsbDeviceWatcher {
         void notifyDevicesChanged(List<DeviceInfo> attached, List<DeviceInfo> detached,
                                   List<DeviceInfo> specifiedAttached, List<DeviceInfo> specifiedDetached,
                                   List<DeviceInfo> currentDeviceInfos, List<DeviceInfo> previousDeviceInfos) {
-            synchronized (mObservers) {
+            synchronized (observers) {
                 for (DeviceWatchListener l : getObservers()) {
                     if (!attached.isEmpty())
                         l.onDevicesStatusChanged(new ArrayList<>(attached), true);
@@ -450,8 +448,8 @@ public class UsbDeviceWatcher {
         }
 
         void notifyReadFailed(@NonNull CommandResult result) {
-            synchronized (mObservers) {
-                for (DeviceWatchListener l : mObservers) {
+            synchronized (observers) {
+                for (DeviceWatchListener l : observers) {
                     l.onDevicesListReadFailed(result.getExitCode(), result.getStdErrLines());
                 }
             }
@@ -461,8 +459,8 @@ public class UsbDeviceWatcher {
     private static class DevicesFlagsObservable extends Observable<DevicesFlagsListener> {
 
         void notifyFlagsChanged(@NonNull List<Integer> found, int evFlagsMask) {
-            synchronized (mObservers) {
-                for (DevicesFlagsListener l : mObservers) {
+            synchronized (observers) {
+                for (DevicesFlagsListener l : observers) {
                     if (!found.isEmpty()) {
                         l.onDevicesFlagsFound(found, evFlagsMask);
                     } else {
@@ -473,8 +471,8 @@ public class UsbDeviceWatcher {
         }
 
         void notifyReadFailed(@NonNull CommandResult result) {
-            synchronized (mObservers) {
-                for (DevicesFlagsListener l : mObservers) {
+            synchronized (observers) {
+                for (DevicesFlagsListener l : observers) {
                     l.onDevicesFlagsReadFailed(result.getExitCode(), result.getStdErrLines());
                 }
             }

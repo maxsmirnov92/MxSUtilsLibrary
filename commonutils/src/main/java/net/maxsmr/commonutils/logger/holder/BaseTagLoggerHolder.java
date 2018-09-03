@@ -17,7 +17,8 @@ public abstract class BaseTagLoggerHolder extends BaseLoggerHolder {
 
     private final String logTag;
 
-    public BaseTagLoggerHolder(String logTag) {
+    public BaseTagLoggerHolder(String logTag, boolean isNullInstancesAllowed) {
+        super(isNullInstancesAllowed);
         if (TextUtils.isEmpty(logTag)) {
             throw new IllegalArgumentException("log tag is empty");
         }

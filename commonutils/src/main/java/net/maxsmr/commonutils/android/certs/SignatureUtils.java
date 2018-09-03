@@ -37,7 +37,6 @@ public final class SignatureUtils {
 
     @Nullable
     public static PackageSignatureInfo getInstalledPackageSignatureInfo(@NonNull Context context, String packageName) {
-
         try {
             return getPackageSignatureInfo(context.getPackageManager().getPackageInfo(packageName, PackageManager.GET_SIGNATURES));
         } catch (PackageManager.NameNotFoundException e) {

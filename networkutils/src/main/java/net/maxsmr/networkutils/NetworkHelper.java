@@ -14,13 +14,11 @@ import android.text.TextUtils;
 import android.util.Patterns;
 
 import net.maxsmr.commonutils.data.MathUtils;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+import net.maxsmr.commonutils.shell.CommandResult;
+import net.maxsmr.commonutils.shell.ShellUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.lang.reflect.Method;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
@@ -28,17 +26,17 @@ import java.net.SocketException;
 import java.net.URL;
 import java.net.URLEncoder;
 import java.net.UnknownHostException;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-public class NetworkHelper {
+public final class NetworkHelper {
 
-    private final static Logger logger = LoggerFactory.getLogger(NetworkHelper.class);
-
-    public final static int PING_TIME_NONE = -1;
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(NetworkHelper.class);
 
     public final static int NETWORK_TYPE_NONE = -1;
 
@@ -52,37 +50,42 @@ public class NetworkHelper {
             IPV4_PATTERN = Pattern.compile("(([01]?\\d\\d?|2[0-4]\\d|25[0-5])\\.){3}([01]?\\d\\d?|2[0-4]\\d|25[0-5])", Pattern.CASE_INSENSITIVE);
             IPV6_PATTERN = Pattern.compile("([0-9a-f]{1,4}:){7}([0-9a-f]){1,4}", Pattern.CASE_INSENSITIVE);
         } catch (PatternSyntaxException e) {
-            logger.error("Unable to compile pattern", e);
+            logger.e("Unable to compile pattern", e);
         }
+    }
+
+    private NetworkHelper() {
+        throw new AssertionError("no instances.");
     }
 
     public static boolean isOnline(@NonNull Context context) {
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager == null) {
+            throw new RuntimeException(ConnectivityManager.class.getSimpleName() + " is null");
+        }
         @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
         return activeNetInfo != null && activeNetInfo.isConnected() && activeNetInfo.isAvailable();
     }
 
     @NonNull
     public static NetworkInfo.State getCurrentNetworkState(@NonNull Context context) {
-
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
+        if (connectivityManager == null) {
+            throw new RuntimeException(ConnectivityManager.class.getSimpleName() + " is null");
+        }
         @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
 
         if (activeNetInfo != null) {
             NetworkInfo.State state = activeNetInfo.getState();
 
             if (state == null) {
-                logger.debug("network state: ", NetworkInfo.State.UNKNOWN);
                 return NetworkInfo.State.UNKNOWN;
             }
 
-            logger.debug("network state: ", state);
             return state;
 
-        } else {
-            logger.debug("network state: ", NetworkInfo.State.DISCONNECTED);
-            return NetworkInfo.State.DISCONNECTED;
         }
+        return NetworkInfo.State.DISCONNECTED;
     }
 
     public static int getActiveNetworkType(@NonNull Context context) {
@@ -151,14 +154,14 @@ public class NetworkHelper {
     public static InetAddress getInetAddressByIp(String ipAddr) {
 
         if (!isIpAddress(ipAddr)) {
-            logger.error("IP address " + ipAddr + " is not a valid IP address");
+            logger.e("IP address " + ipAddr + " is not a valid IP address");
             return null;
         }
 
         try {
             return InetAddress.getByName(ipAddr);
         } catch (UnknownHostException e) {
-            logger.error("an UnknownHostException occurred during getByName(): " + e.getMessage());
+            logger.e("an UnknownHostException occurred during getByName(): " + e.getMessage());
             return null;
         }
     }
@@ -167,14 +170,14 @@ public class NetworkHelper {
     public static InetAddress getInetAddressByDomain(String hostName) {
 
         if (!isDomain(hostName)) {
-            logger.error("hostName " + hostName + " is not a valid host name");
+            logger.e("hostName " + hostName + " is not a valid host name");
             return null;
         }
 
         try {
             return InetAddress.getByName(hostName);
         } catch (UnknownHostException e) {
-            logger.error("an UnknownHostException occurred during getByName(): " + e.getMessage());
+            logger.e("an UnknownHostException occurred during getByName(): " + e.getMessage());
             return null;
         }
     }
@@ -202,7 +205,7 @@ public class NetworkHelper {
                 }
             }
         } catch (SocketException e) {
-            logger.error("a SocketException occurred during getNetworkInterfaces(): " + e.getMessage());
+            logger.e("a SocketException occurred during getNetworkInterfaces(): " + e.getMessage());
         }
         return null;
     }
@@ -242,8 +245,11 @@ public class NetworkHelper {
         return "";
     }
 
+    /**
+     * ping using {@linkplain InetAddress}
+     * */
     public static boolean isReachable(InetAddress inetAddress, long timeOut) {
-        logger.debug("isReachable(), inetAddress=" + inetAddress + ", timeOut=" + timeOut);
+        logger.d("isReachable(), inetAddress=" + inetAddress + ", timeOut=" + timeOut);
 
         if (inetAddress == null) {
             return false;
@@ -254,96 +260,63 @@ public class NetworkHelper {
         }
 
         try {
-            logger.debug("pinging address " + inetAddress.getHostAddress() + "...");
+            logger.d("pinging address " + inetAddress.getHostAddress() + "...");
             return inetAddress.isReachable(MathUtils.safeLongToInt(timeOut));
         } catch (Exception e) {
-            logger.error("an Exception occurred during isReachable(): " + e.getMessage());
+            logger.e("an Exception occurred during isReachable(): " + e.getMessage());
             return false;
         }
     }
 
     /**
+     * ping using {@linkplain ShellUtils}
+     * @param timeoutUnit null == ms
      * @return ping time in ms or -1 if error occurred
      */
-    public static double isReachable(InetAddress inetAddress, int pingCount, int timeoutSec) {
-        logger.debug("isReachable(), inetAddress=" + inetAddress + ", pingCount=" + pingCount + ", timeoutSec=" + timeoutSec);
+    public static double pingHost(InetAddress inetAddress, int pingCount, long timeout, @Nullable TimeUnit timeoutUnit) {
 
         if (inetAddress == null) {
-            return PING_TIME_NONE;
+            return -1;
         }
 
         if (pingCount <= 0) {
             pingCount = 1;
         }
 
-        if (timeoutSec < 0) {
-            timeoutSec = 0;
+        if (timeout < 0) {
+            timeout = 0;
         }
 
-        Runtime runtime = Runtime.getRuntime();
+        logger.d("pinging address " + inetAddress.getHostAddress() + "...");
+        CommandResult result = ShellUtils.execProcess(Arrays.asList("ping", "-c " + pingCount, "-W " +
+                        (timeoutUnit == null? TimeUnit.MILLISECONDS.toSeconds(timeout) : timeoutUnit.toSeconds(timeout)), inetAddress.getHostAddress()),
+                null, null,null);
 
-        Process proc = null;
-        try {
-            logger.debug("pinging address " + inetAddress.getHostAddress() + "...");
-            proc = runtime.exec(new String[]{"ping", "-c " + pingCount, "-W " + timeoutSec, inetAddress.getHostAddress()});
-        } catch (IOException e) {
-            logger.error("an IOException occurred during exec()", e);
-            return PING_TIME_NONE;
+        String resultString = result.getStdOut();
+
+        if (!result.isSuccessful() || TextUtils.isEmpty(resultString)) {
+            logger.e("ping failed: " + result);
+            return -1;
         }
 
-        BufferedReader procReader = new BufferedReader(new InputStreamReader(proc.getInputStream()));
-        String inputLine = null;
-        StringBuilder resultLine = new StringBuilder();
-
-        try {
-            while ((inputLine = procReader.readLine()) != null) {
-                resultLine.append(inputLine);
-            }
-        } catch (IOException e) {
-            logger.error("an IOException occurred during readLine()", e);
-        } finally {
-            try {
-                procReader.close();
-            } catch (IOException e) {
-                logger.error("an IOException occurred close()", e);
-            }
-        }
-
-        String resultString = resultLine.toString();
-        logger.debug("ping result: " + resultString);
-
-        // Pattern pattern = Pattern.compile("=(.*?)ms");
-        // Matcher matcher = pattern.matcher(resultString);
-        // if (matcher.find()) {
-        // logger.debug("find by matcher: " + matcher.group(1));
-        // }
+        logger.d("ping result: " + resultString);
 
         int startIndex = resultString.indexOf("=", resultString.indexOf("=", resultString.indexOf("=", 0) + 1) + 1) + 1;
         int endIndex = resultString.indexOf(" ms");
 
         if (startIndex < 0 || endIndex < 0 || startIndex > endIndex) {
-            return PING_TIME_NONE;
+            return -1;
         }
 
-        logger.debug("ping time: " + resultString.substring(startIndex, endIndex) + " ms");
+        logger.d("ping time: " + resultString.substring(startIndex, endIndex) + " ms");
 
         try {
             return Double.parseDouble(resultString.substring(startIndex, endIndex));
         } catch (NumberFormatException e) {
-            logger.error("a NumberFormatException occurred during parseDouble(): " + e.getMessage());
+            logger.e("a NumberFormatException occurred during parseDouble(): " + e.getMessage());
         }
 
-        return PING_TIME_NONE;
-    }
-
-    public static boolean isSimCardInserted(@NonNull Context context) {
-
-        final TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-        if (telephonyManager.getSimState() != TelephonyManager.SIM_STATE_ABSENT) {
-            return true;
-        } else {
-            return false;
-        }
+        return -1;
     }
 
     public static boolean isGprsNetworkType(int type) {
@@ -368,17 +341,20 @@ public class NetworkHelper {
     }
 
     public static boolean isWifiEnabled(@NonNull Context context) {
-        final WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
+        final WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if (wifiManager == null) {
+            throw new RuntimeException(WifiManager.class.getSimpleName() + " is null");
+        }
         return wifiManager.isWifiEnabled();
     }
 
     @SuppressWarnings("ResourceType")
     public static boolean enableWifiConnection(@NonNull Context context, boolean enable) {
-        final WifiManager wifiManager = (WifiManager) context.getSystemService(Context.WIFI_SERVICE);
-        if (ContextCompat.checkSelfPermission(context, android.Manifest.permission.CHANGE_WIFI_STATE) == PackageManager.PERMISSION_GRANTED) {
-            return wifiManager.setWifiEnabled(enable);
+        final WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        if (wifiManager == null) {
+            throw new RuntimeException(WifiManager.class.getSimpleName() + " is null");
         }
-        return false;
+        return ContextCompat.checkSelfPermission(context, android.Manifest.permission.CHANGE_WIFI_STATE) == PackageManager.PERMISSION_GRANTED && wifiManager.setWifiEnabled(enable);
     }
 
     public static boolean enableMobileDataConnection(@NonNull Context context, boolean enable) {
@@ -390,7 +366,7 @@ public class NetworkHelper {
         try {
             setMobileDataEnabledMtd = ConnectivityManager.class.getDeclaredMethod("setMobileDataEnabled", boolean.class);
         } catch (NoSuchMethodException e) {
-            logger.error("a NoSuchMethodException occurred during getDeclaredMethod(): " + e.getMessage());
+            logger.e("a NoSuchMethodException occurred during getDeclaredMethod(): " + e.getMessage());
             return false;
         }
 
@@ -400,7 +376,7 @@ public class NetworkHelper {
             setMobileDataEnabledMtd.invoke(connectivityManager, enable);
             return true;
         } catch (Exception e) {
-            logger.error("an Exception occurred during invoke: " + e.getMessage());
+            logger.e("an Exception occurred during invoke: " + e.getMessage());
             return false;
         }
     }
@@ -413,7 +389,7 @@ public class NetworkHelper {
     @Nullable
     public static URL parseURL(String url, boolean encoded) {
         try {
-            return new URL(!encoded? URLEncoder.encode(url, "UTF-8") : url);
+            return new URL(!encoded ? URLEncoder.encode(url, "UTF-8") : url);
         } catch (Exception e) {
             return null;
         }

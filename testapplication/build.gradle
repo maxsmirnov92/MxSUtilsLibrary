@@ -27,11 +27,19 @@ android {
 
 }
 
+ext {
+    log4jVersion = "1.0.3"
+    slf4jVersion = "1.7.21"
+}
+
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
 
-    implementation project(':networkutils')
-//    implementation "net.maxsmr:networkutils:$networkUtilsVersion"
+    implementation "de.mindpipe.android:android-logging-log4j:$log4jVersion"
+    implementation "org.slf4j:slf4j-log4j12:$slf4jVersion"
+
+//    implementation project(':networkutils')
+    implementation "net.maxsmr:networkutils:$networkUtilsVersion"
 
     implementation "com.android.support:appcompat-v7:$appCompatVersion"
     testImplementation "junit:junit:$jUnitVersion"

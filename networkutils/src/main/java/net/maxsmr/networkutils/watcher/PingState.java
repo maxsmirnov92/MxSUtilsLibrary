@@ -1,6 +1,6 @@
 package net.maxsmr.networkutils.watcher;
 
-public enum PING_STATE {
+public enum PingState {
 
     NONE {
         @Override
@@ -34,12 +34,12 @@ public enum PING_STATE {
         return -1;
     }
 
-    public static PING_STATE fromNativeValue(int value) {
-        for (PING_STATE state : PING_STATE.values()) {
+    public static PingState fromNativeValue(int value) {
+        for (PingState state : PingState.values()) {
             if (state.getValue() == value) {
                 return state;
             }
         }
-        throw new IllegalArgumentException("Incorrect native value " + value + " for enum type " + PING_STATE.class.getName());
+        throw new IllegalArgumentException("Incorrect native value " + value + " for enum type " + PingState.class.getName());
     }
 }

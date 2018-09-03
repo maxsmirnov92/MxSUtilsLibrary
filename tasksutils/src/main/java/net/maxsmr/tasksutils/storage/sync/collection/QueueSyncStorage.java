@@ -150,5 +150,8 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
         dataQueue.clear();
     }
 
-
+    @Override
+    protected Class<?> getLoggerClass() {
+        return QueueSyncStorage.class;
+    }
 }

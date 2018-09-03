@@ -97,7 +97,7 @@ public class RunnableInfo implements Serializable {
     }
 
     @NonNull
-    public static <I extends RunnableInfo, T extends TaskRunnable<I>> List<I> fromTasks(@Nullable Collection<T> runnables) {
+    public static <I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> List<I> fromTasks(@Nullable Collection<T> runnables) {
         List<I> infos = new ArrayList<>();
         if (runnables != null) {
             for (T runnable : runnables) {

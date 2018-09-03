@@ -12,8 +12,6 @@ public abstract class BaseLoggerHolder {
 
     private static BaseLoggerHolder sInstance;
 
-    private final Map<Class<?>, BaseLogger> loggersMap = new LinkedHashMap<>();
-
     public static BaseLoggerHolder getInstance() {
         synchronized (BaseLoggerHolder.class) {
             if (sInstance == null) {
@@ -31,6 +29,14 @@ public abstract class BaseLoggerHolder {
         }
     }
 
+    private final Map<Class<?>, BaseLogger> loggersMap = new LinkedHashMap<>();
+
+    private final boolean isNullInstancesAllowed;
+
+    protected BaseLoggerHolder(boolean isNullInstancesAllowed) {
+        this.isNullInstancesAllowed = isNullInstancesAllowed;
+    }
+
     public Map<Class<?>, BaseLogger> getLoggersMap() {
         synchronized (loggersMap) {
             return Collections.unmodifiableMap(loggersMap);
@@ -41,25 +47,33 @@ public abstract class BaseLoggerHolder {
         return getLoggersMap().size();
     }
 
+    public boolean isNullInstancesAllowed() {
+        return isNullInstancesAllowed;
+    }
+
     /**
      * @param clazz object class to get/create logger for
-     * */
-    public BaseLogger getLogger(Class<?> clazz/*, Class<L> loggerClass*/) {
+     */
+    public BaseLogger getLogger(Class<?> clazz) {
         if (clazz == null) {
             throw new IllegalArgumentException("clazz is null");
         }
         synchronized (loggersMap) {
             BaseLogger logger = loggersMap.get(clazz);
             if (logger == null) {
+                boolean addToMap = true;
                 logger = createLogger(clazz);
                 if (logger == null) {
-                    throw new RuntimeException("Logger was not created for class: " + clazz);
+                    if (!isNullInstancesAllowed) {
+                        throw new RuntimeException("Logger was not created for class: " + clazz);
+                    }
+                    logger = new BaseLogger.Stub();
+                    addToMap = false;
                 }
-                loggersMap.put(clazz, logger);
+                if (addToMap) {
+                    loggersMap.put(clazz, logger);
+                }
             }
-//        if (!loggerClass.isAssignableFrom(logger.getClass())) {
-//            throw new IllegalStateException("Logger " + logger + " is incorrect for required class: " + loggerClass);
-//        }
             return logger;
         }
     }

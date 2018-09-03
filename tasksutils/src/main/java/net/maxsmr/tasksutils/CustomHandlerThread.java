@@ -6,15 +6,15 @@ import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 public class CustomHandlerThread extends HandlerThread {
 
-    private static final Logger logger = LoggerFactory.getLogger(CustomHandlerThread.class);
+    private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(CustomHandlerThread.class);
 
     private Handler handler = null;
 
@@ -104,7 +104,7 @@ public class CustomHandlerThread extends HandlerThread {
             try {
                 latch.await(milliseconds, TimeUnit.MILLISECONDS);
             } catch (InterruptedException e) {
-                logger.error("an InterruptedException occurred during await()", e);
+                logger.e("an InterruptedException occurred during await()", e);
                 if (callbackWhenExpired != null) {
                     callbackWhenExpired.run();
                 }
@@ -137,7 +137,7 @@ public class CustomHandlerThread extends HandlerThread {
                 latch.await();
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-                e.printStackTrace();
+                logger.e("an InterruptedException occurred during await(): " + e.getMessage(), e);
             }
         }
     }

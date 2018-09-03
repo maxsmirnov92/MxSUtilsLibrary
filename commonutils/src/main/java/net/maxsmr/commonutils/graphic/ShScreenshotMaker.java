@@ -1,6 +1,7 @@
 package net.maxsmr.commonutils.graphic;
 
 
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.FileHelper;
@@ -11,7 +12,8 @@ import net.maxsmr.commonutils.shell.ShellUtils;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 public final class ShScreenshotMaker {
 
@@ -81,7 +83,7 @@ public final class ShScreenshotMaker {
 
     private static class ThreadsWatcher implements ShellUtils.ThreadsCallback {
 
-        private final List<Thread> threads = new ArrayList<>();
+        private final Set<Thread> threads = new LinkedHashSet<>();
 
         public boolean isRunning() {
             for (Thread thread : threads) {
@@ -93,9 +95,13 @@ public final class ShScreenshotMaker {
         }
 
         @Override
-        public void onThreadsStarted(List<Thread> threads) {
-            this.threads.clear();
-            this.threads.addAll(threads);
+        public void onThreadStarted(@NonNull ShellUtils.CmdThreadInfo info, @NonNull Thread thread) {
+            threads.remove(thread);
+        }
+
+        @Override
+        public void onThreadFinished(@NonNull ShellUtils.CmdThreadInfo info, @NonNull Thread thread) {
+            threads.add(thread);
         }
     }
 

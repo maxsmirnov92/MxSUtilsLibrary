@@ -106,9 +106,9 @@ artifacts {
 
 dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
 
-    api "net.maxsmr:tasksutils:$taskUtilsVersion"
+//    api project(':tasksutils')
+    api "net.maxsmr:tasksutils:$tasksUtilsVersion"
 }
 
 uploadArchives {

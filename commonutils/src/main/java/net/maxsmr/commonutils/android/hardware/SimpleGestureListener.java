@@ -7,24 +7,19 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 
-import java.util.LinkedList;
-import java.util.List;
+import net.maxsmr.commonutils.data.Observable;
 
 public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestureListener, View.OnTouchListener {
 
-    public interface ScaleFactorChangeListener {
-        void onScaleFactorChanged(float from, float to);
-    }
-
     public static final float MIN_SCALE_FACTOR = 1.0f;
 
-    private final List<ScaleFactorChangeListener> listeners = new LinkedList<>();
+    private final ScaleFactorChangeObservable listeners = new ScaleFactorChangeObservable();
 
     private final ScaleGestureDetector scaleGestureDetector;
 
-    private float thresholdValue = MIN_SCALE_FACTOR;
+    private double thresholdValue = MIN_SCALE_FACTOR;
 
-    private float previousScaleFactor = MIN_SCALE_FACTOR, currentScaleFactor = previousScaleFactor;
+    private double previousScaleFactor = MIN_SCALE_FACTOR, currentScaleFactor = previousScaleFactor;
 
     private boolean isScaling = false;
 
@@ -34,18 +29,14 @@ public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestur
     }
 
     public void addScaleFactorChangeListener(@NonNull ScaleFactorChangeListener listener) {
-        if (!listeners.contains(listener)) {
-            listeners.add(listener);
-        }
+        listeners.registerObserver(listener);
     }
 
     public void removeScaleFactorChangeListener(@NonNull ScaleFactorChangeListener listener) {
-        if (listeners.contains(listener)) {
-            listeners.remove(listener);
-        }
+        listeners.unregisterObserver(listener);
     }
 
-    public float getThresholdValue() {
+    public double getThresholdValue() {
         return thresholdValue;
     }
 
@@ -57,7 +48,7 @@ public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestur
             if (thresholdValue < MIN_SCALE_FACTOR) {
                 throw new IllegalArgumentException("incorrect threshold value: " + thresholdValue);
             }
-            if (Float.compare(previousScaleFactor, thresholdValue) > 0 || Float.compare(currentScaleFactor, thresholdValue) > 0) {
+            if (Double.compare(previousScaleFactor, thresholdValue) > 0 || Double.compare(currentScaleFactor, thresholdValue) > 0) {
                 this.previousScaleFactor = this.currentScaleFactor = MIN_SCALE_FACTOR;
             }
             this.thresholdValue = thresholdValue;
@@ -70,13 +61,13 @@ public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestur
      * @return {previous : current} pair
      */
     @NonNull
-    public Pair<Float, Float> getScaleFactors() {
+    public Pair<Double, Double> getScaleFactors() {
         return new Pair<>(previousScaleFactor, currentScaleFactor);
     }
 
     public boolean setTo(float scale) {
         if (!isScaling) {
-            if (Float.compare(scale, MIN_SCALE_FACTOR) >= 0 && (Float.compare(thresholdValue, MIN_SCALE_FACTOR) == 0 || Float.compare(scale, thresholdValue) <= 0)) {
+            if (Double.compare(scale, MIN_SCALE_FACTOR) >= 0 && (Double.compare(thresholdValue, MIN_SCALE_FACTOR) == 0 || Double.compare(scale, thresholdValue) <= 0)) {
                 previousScaleFactor = currentScaleFactor = scale;
             } else {
                 throw new IllegalArgumentException("incorrect scale factor value: " + scale);
@@ -89,24 +80,19 @@ public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestur
     @Override
     public boolean onScale(ScaleGestureDetector detector) {
 
-        float newScaleFactor;
+        double newScaleFactor;
         newScaleFactor = currentScaleFactor * detector.getScaleFactor();
         newScaleFactor = (newScaleFactor < MIN_SCALE_FACTOR ? MIN_SCALE_FACTOR : newScaleFactor); // prevent our view from becoming too small //
         newScaleFactor = ((float) ((int) (newScaleFactor * 100f))) / 100f; // Change precision to help with jitter when user just rests their fingers
 
-        if (Float.compare(newScaleFactor, thresholdValue) <= 0) {
+        if (Double.compare(newScaleFactor, thresholdValue) <= 0) {
             previousScaleFactor = currentScaleFactor;
             currentScaleFactor = newScaleFactor;
 
-            synchronized (listeners) {
-                for (ScaleFactorChangeListener l : listeners) {
-                    l.onScaleFactorChanged(previousScaleFactor, currentScaleFactor);
-                }
-            }
+            listeners.notifyScaleFactorChanged(previousScaleFactor, currentScaleFactor);
         }
 
-        isScaling = false;
-        return false;
+        return isScaling = false;
     }
 
     @Override
@@ -123,5 +109,20 @@ public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestur
     public boolean onTouch(View v, MotionEvent event) {
         scaleGestureDetector.onTouchEvent(event);
         return true;
+    }
+
+    public interface ScaleFactorChangeListener {
+        void onScaleFactorChanged(double from, double to);
+    }
+
+    private static class ScaleFactorChangeObservable extends Observable<ScaleFactorChangeListener> {
+
+        private void notifyScaleFactorChanged(double previousScaleFactor, double currentScaleFactor) {
+            synchronized (observers) {
+                for (ScaleFactorChangeListener l : observers) {
+                    l.onScaleFactorChanged(previousScaleFactor, currentScaleFactor);
+                }
+            }
+        }
     }
 }

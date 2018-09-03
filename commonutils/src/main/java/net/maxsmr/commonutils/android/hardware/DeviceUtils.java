@@ -17,6 +17,7 @@ import android.os.BatteryManager;
 import android.os.Build;
 import android.os.PowerManager;
 import android.os.SystemClock;
+import android.provider.Settings;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.telephony.TelephonyManager;
@@ -199,6 +200,44 @@ public final class DeviceUtils {
         return isInBackground;
     }
 
+    /**
+     * requires reboot permission that granted only to system apps
+     */
+    public static boolean reboot(Context context) {
+        logger.d("reboot()");
+        PowerManager powerManager = ((PowerManager) context.getSystemService(Context.POWER_SERVICE));
+        if (powerManager == null) {
+            throw new RuntimeException(PowerManager.class.getSimpleName() + " is not null");
+        }
+        try {
+            powerManager.reboot(null);
+            return true;
+        } catch (Exception e) {
+            logger.e("an Exception occurred during reboot(): " + e.getMessage());
+            return false;
+        }
+    }
+
+    public static void toggleAirplaneMode(boolean enable, Context context) {
+        logger.d("toggleAirplaneMode(), enable=" + enable);
+
+        // boolean isEnabled = Settings.System.getInt(getContentResolver(), Settings.System.AIRPLANE_MODE_ON, 0) == 1;
+
+        Settings.System.putInt(context.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, enable ? 1 : 0); // isEnabled
+
+        // send an intent to reload
+        Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
+        intent.putExtra("state", enable); // !isEnabled
+        context.sendBroadcast(intent);
+    }
+
+    public static boolean isSimCardInserted(@NonNull Context context) {
+        final TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+        if (telephonyManager == null) {
+            throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null");
+        }
+        return telephonyManager.getSimState() != TelephonyManager.SIM_STATE_ABSENT;
+    }
 
     public static void turnOnScreen(@NonNull Activity activity) {
         activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED

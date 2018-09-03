@@ -106,11 +106,11 @@ dependencies {
     javadocDependencies "com.android.support:support-annotations:$appCompatVersion"
     api "commons-net:commons-net:$commonsNetVersion"
     api "com.google.code.gson:gson:$gsonVersion"
-    testCompile "junit:junit:$jUnitVersion"
-    androidTestCompile "com.android.support:support-annotations:$appCompatVersion"
-    androidTestCompile "com.android.support.test:runner:$testRunnerVersion"
-    androidTestCompile "com.android.support.test:rules:$testRunnerVersion"
-    androidTestCompile("com.android.support.test.espresso:espresso-core:$espressoVersion", {
+    testImplementation "junit:junit:$jUnitVersion"
+    androidTestImplementation "com.android.support:support-annotations:$appCompatVersion"
+    androidTestImplementation "com.android.support.test:runner:$testRunnerVersion"
+    androidTestImplementation "com.android.support.test:rules:$testRunnerVersion"
+    androidTestImplementation("com.android.support.test.espresso:espresso-core:$espressoVersion", {
         exclude group: 'com.android.support', module: 'support-annotations'
     })
 }

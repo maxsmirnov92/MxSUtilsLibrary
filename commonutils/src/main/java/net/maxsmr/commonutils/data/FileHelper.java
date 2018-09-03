@@ -15,6 +15,7 @@ import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
+import android.support.v4.util.ArraySet;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.R;
@@ -68,7 +69,7 @@ public final class FileHelper {
 
     public final static int DEPTH_UNLIMITED = -1;
 
-    public FileHelper() {
+    private FileHelper() {
         throw new AssertionError("no instances.");
     }
 
@@ -80,12 +81,83 @@ public final class FileHelper {
         return isExternalStorageMounted() && !Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED_READ_ONLY);
     }
 
+    @NonNull
+    public static Set<File> getExternalFilesDirs(@NonNull Context context) {
+        return getExternalFilesDirs(context, null);
+    }
+
+    @NonNull
+    public static Set<File> getExternalFilesDirs(@NonNull Context context, @Nullable String type) {
+        Set<File> result = null;
+        if (isExternalStorageMounted()) {
+            if (type == null) {
+                type = "";
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                result = new ArraySet<>(Arrays.asList(context.getExternalFilesDirs(type)));
+            } else {
+                result = new ArraySet<>(Collections.singletonList(context.getExternalFilesDir(type)));
+            }
+        }
+        return result != null? result : Collections.<File>emptySet();
+    }
+
+    public static Set<File> getFilteredExternalFilesDirs(@NonNull Context context, boolean includeNotRemovable, boolean includePrimaryExternalStorage, boolean onlyRootNames) {
+        return getFilteredExternalFilesDirs(context, null, includeNotRemovable, includePrimaryExternalStorage, onlyRootNames);
+    }
+
+    public static Set<File> getFilteredExternalFilesDirs(@NonNull Context context, @Nullable String type, boolean includeNotRemovable, boolean includePrimaryExternalStorage, boolean onlyRootNames) {
+        Set<File> result = new ArraySet<>();
+        Set<File> external = getExternalFilesDirs(context, type);
+        for (File d : external) {
+            if (d != null) {
+                String path = d.getAbsolutePath();
+                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP || (includeNotRemovable == !Environment.isExternalStorageRemovable(d))) {
+                    File primaryExternalStorage = Environment.getExternalStorageDirectory();
+                    if (includePrimaryExternalStorage || (primaryExternalStorage == null || !path.startsWith(primaryExternalStorage.getAbsolutePath()))){
+                        if (onlyRootNames) {
+                            int index = path.lastIndexOf(File.separator + "Android" + File.separator + "data");
+                            if (index > 0) {
+                                d = new File(path.substring(0, index));
+                            }
+                        }
+                        result.add(d);
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
+    public static boolean isFileLocked(File f) {
+        final FileLock l = lockFileChannel(f, false);
+        try {
+            return l == null;
+        } finally {
+            releaseLockNoThrow(l);
+        }
+    }
+
     public static float getPartitionTotalSpace(String path, @NonNull SizeUnit unit) {
-        return isDirExists(path) ? SizeUnit.convert(new File(path).getTotalSpace(), SizeUnit.BYTES, unit) : 0L;
+        if (isDirExists(path)) {
+            try {
+                return SizeUnit.convert(new File(path).getTotalSpace(), SizeUnit.BYTES, unit);
+            } catch (SecurityException e) {
+                logger.e("a SecurityException occurred during convert(): " + e.getMessage(), e);
+            }
+        }
+        return 0;
     }
 
     public static float getPartitionFreeSpace(String path, @NonNull SizeUnit unit) {
-        return isDirExists(path) ? SizeUnit.convert(new File(path).getFreeSpace(), SizeUnit.BYTES, unit) : 0L;
+        if (isDirExists(path)) {
+            try {
+                return SizeUnit.convert(new File(path).getFreeSpace(), SizeUnit.BYTES, unit);
+            } catch (SecurityException e) {
+                logger.e("a SecurityException occurred during convert(): " + e.getMessage(), e);
+            }
+        }
+        return 0;
     }
 
     public static boolean isSizeCorrect(File file) {
@@ -188,14 +260,6 @@ public final class FileHelper {
         return false;
     }
 
-    public static boolean isFileLocked(File f) {
-        final FileLock l = lockFileChannel(f, false);
-        try {
-            return l == null;
-        } finally {
-            releaseLockNoThrow(l);
-        }
-    }
 
     public static boolean isDirExists(String dirPath) {
 
@@ -1564,34 +1628,34 @@ public final class FileHelper {
     }
 
     /**
-     * users have read and run access to file; owner can modify
-     */
-    public final static String FILE_PERMISSIONS_ALL = "755";
-
-    /**
-     * only owner has r/w/x access to file
-     */
-    public final static String FILE_PERMISSIONS_OWNER = "700";
-
-    /**
      * Copies a raw resource file, given its ID to the given location
      *
      * @param ctx  context
      * @param mode file permissions (E.g.: "755")
-     * @throws IOException          on error
-     * @throws InterruptedException when interrupted
      */
-    public static boolean copyRawFile(Context ctx, @RawRes int resId, File destFile, String mode) throws IOException, InterruptedException {
+    public static boolean copyRawFile(Context ctx, @RawRes int resId, File destFile, int mode) {
         logger.d("copyRawFile(), resId=" + resId + ", destFile=" + destFile + ", mode=" + mode);
-
-        if (mode == null || mode.length() == 0)
-            mode = FILE_PERMISSIONS_ALL;
 
         final String destFilePath = destFile.getAbsolutePath();
 
-        revectorStream(ctx.getResources().openRawResource(resId), new FileOutputStream(destFile));
+        FileOutputStream out = null;
+        try {
+            out = new FileOutputStream(destFile);
+        } catch (FileNotFoundException e) {
+            logger.e("a FileNotFoundException occurred during open stream", e);
+        }
 
-        return (Runtime.getRuntime().exec("chmod " + mode + " " + destFilePath).waitFor() == 0);
+        boolean result = false;
+
+        if (out != null) {
+            result = revectorStream(ctx.getResources().openRawResource(resId), out);
+
+            if (result && mode > 0) {
+                return ShellUtils.execProcess(Arrays.asList("chmod", String.valueOf(mode), destFilePath), null, null, null).isSuccessful();
+            }
+        }
+
+        return result;
     }
 
     public static boolean copyFromAssets(Context ctx, String assetsPath, File to, boolean rewrite) {

@@ -12,11 +12,11 @@ public abstract class HandlerRunnable<T> implements Runnable {
     protected final Handler handler;
 
     @NonNull
-    private volatile AsyncTask.Status mStatus = AsyncTask.Status.PENDING;
+    private volatile AsyncTask.Status status = AsyncTask.Status.PENDING;
 
     @NonNull
     public final AsyncTask.Status getStatus() {
-        return mStatus;
+        return status;
     }
 
     public HandlerRunnable() {
@@ -39,8 +39,8 @@ public abstract class HandlerRunnable<T> implements Runnable {
     @Override
     public final void run() {
 
-        if (mStatus != AsyncTask.Status.PENDING) {
-            switch (mStatus) {
+        if (status != AsyncTask.Status.PENDING) {
+            switch (status) {
                 case RUNNING:
                     throw new IllegalStateException("Cannot execute task:"
                             + " the task is already running.");
@@ -48,10 +48,12 @@ public abstract class HandlerRunnable<T> implements Runnable {
                     throw new IllegalStateException("Cannot execute task:"
                             + " the task has already been executed "
                             + "(a task can be executed only once)");
+                default:
+                    throw new IllegalStateException("Unknown " + AsyncTask.Status.class.getSimpleName() + ": " + status);
             }
         }
 
-        mStatus = AsyncTask.Status.RUNNING;
+        status = AsyncTask.Status.RUNNING;
 
         handler.post(new Runnable() {
             @Override
@@ -69,7 +71,7 @@ public abstract class HandlerRunnable<T> implements Runnable {
             }
         });
 
-        mStatus = AsyncTask.Status.FINISHED;
+        status = AsyncTask.Status.FINISHED;
     }
 
 

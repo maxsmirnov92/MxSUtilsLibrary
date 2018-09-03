@@ -83,8 +83,7 @@ public abstract class BaseLogger {
         }
 
         private boolean isInRange(@NonNull Level level) {
-            int ordinal = ordinal();
-            return ordinal >= 0 && ordinal <= level.ordinal();
+            return ordinal() <= level.ordinal();
         }
 
         public static boolean contains(final Level level, Collection<Level> levels) {

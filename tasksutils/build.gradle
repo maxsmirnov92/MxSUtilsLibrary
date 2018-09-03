@@ -49,7 +49,7 @@ android {
         minSdkVersion minSdkVersion_
         targetSdkVersion sdkVersion
         versionCode 1
-        versionName project.taskUtilsVersion
+        versionName project.tasksUtilsVersion
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
     }
 
@@ -102,8 +102,8 @@ artifacts {
 
 dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
 
+//    api project(':commonutils')
     api "net.maxsmr:commonutils:$commonUtilsVersion"
 }
 
@@ -111,7 +111,7 @@ uploadArchives {
     repositories.mavenDeployer {
         pom.groupId = project.groupIdName
         pom.artifactId = project.archivesBaseName
-        pom.version = project.taskUtilsVersion
+        pom.version = project.tasksUtilsVersion
         repository(url: "file://${localReleaseDest}")
     }
 }
@@ -131,7 +131,7 @@ bintray {
         licenses = ['Apache-2.0']
         vcsUrl = gitUrl
         version {
-            name = project.taskUtilsVersion
+            name = project.tasksUtilsVersion
         }
         publicDownloadNumbers = true
     }
@@ -142,7 +142,7 @@ publishing {
         artifactPublication(MavenPublication) {
             groupId = project.groupIdName
             artifactId = project.archivesBaseName
-            version = project.taskUtilsVersion
+            version = project.tasksUtilsVersion
             artifact "${project.buildDir}/outputs/aar/${archivesBaseName}-release.aar"
             artifact sourcesJar
 //            artifact javadocsJar

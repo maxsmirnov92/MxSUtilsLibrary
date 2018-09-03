@@ -368,15 +368,15 @@ public final class GuiUtils {
     /**
      * @return true if focused, false otherwise
      */
-    public static boolean requestFocus(@Nullable View view, @Nullable Activity act) {
+    public static boolean requestFocus(@Nullable View view/*, @Nullable Activity act*/) {
         if (view != null) {
-            if (act != null) {
-                if (view.isFocusable()) {
-                    if (view.requestFocus()) {
+//            if (act != null) {
+            if (view.isFocusable()) {
+                if (view.requestFocus()) {
 //                        act.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-                        return true;
-                    }
+                    return true;
                 }
+//                }
             }
         }
         return false;
@@ -385,13 +385,11 @@ public final class GuiUtils {
     /**
      * @return true if focus cleared, false otherwise
      */
-    public static boolean clearFocus(@Nullable View view, @Nullable Activity act) {
+    public static boolean clearFocus(@Nullable View view) {
         if (view != null) {
-            if (act != null) {
-                view.clearFocus();
+            view.clearFocus();
 //                act.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-                return true;
-            }
+            return true;
         }
         return false;
     }
@@ -400,7 +398,7 @@ public final class GuiUtils {
      * @return true if focus cleared, false otherwise
      */
     public static boolean clearFocus(@Nullable Activity act) {
-        return clearFocus(act != null ? act.getCurrentFocus() : null, act);
+        return clearFocus(act != null ? act.getCurrentFocus() : null);
     }
 
     public static int getViewInset(View view) {
@@ -460,13 +458,14 @@ public final class GuiUtils {
         }
     }
 
-    public static void setError(@Nullable String errorMsg, @NonNull TextInputLayout on, @Nullable Activity act) {
+    public static void setError(@Nullable String errorMsg, @NonNull TextInputLayout on) {
         on.setErrorEnabled(true);
         on.setError(errorMsg);
 //        editText.getBackground().setColorFilter(act.getResources().getColor(R.color.textColorSecondary), PorterDuff.Mode.SRC_ATOP);
         on.refreshDrawableState();
-        requestFocus(on.getEditText(), act);
+        requestFocus(on.getEditText());
     }
+
 
     public static void setErrorTextColor(TextInputLayout textInputLayout, int color) {
         try {

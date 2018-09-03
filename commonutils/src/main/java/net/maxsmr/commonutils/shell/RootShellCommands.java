@@ -1,6 +1,7 @@
 package net.maxsmr.commonutils.shell;
 
 import android.os.Build;
+import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -22,7 +23,7 @@ public final class RootShellCommands {
     /**
      * Execute SU command
      */
-    @Nullable
+    @NonNull
     public static CommandResult executeCommand(String command) {
 
         try {
@@ -36,7 +37,7 @@ public final class RootShellCommands {
             logger.e("Failed to execute command \"" + command + "\": " + e.getMessage(), e);
         }
 
-        return null;
+        return new CommandResult().setExitCode(-1);
     }
 
     /**
@@ -44,7 +45,7 @@ public final class RootShellCommands {
      */
     public static boolean isRootAvailable() {
         CommandResult commandResult = executeCommand("id");
-        return commandResult != null && commandResult.isSuccessful() && commandResult.getStdOut().toLowerCase().contains("uid=0");
+        return commandResult.isSuccessful() && commandResult.getStdOut().toLowerCase().contains("uid=0");
 
     }
 
@@ -57,7 +58,7 @@ public final class RootShellCommands {
         String command = "mount -o remount,rw /system";
         CommandResult commandResult = executeCommand(command);
 
-        return commandResult != null && commandResult.isSuccessful();
+        return commandResult.isSuccessful();
     }
 
     /**
@@ -70,7 +71,7 @@ public final class RootShellCommands {
         String command = String.format("mkdir -p %s", path);
         CommandResult commandResult = executeCommand(command);
 
-        return commandResult != null && commandResult.isSuccessful();
+        return commandResult.isSuccessful();
     }
 
     /**
@@ -85,7 +86,7 @@ public final class RootShellCommands {
 
         CommandResult commandResult = executeCommand(command);
 
-        return commandResult != null && commandResult.isSuccessful();
+        return commandResult.isSuccessful();
     }
 
     /**
@@ -100,7 +101,7 @@ public final class RootShellCommands {
 
         CommandResult commandResult = executeCommand(command);
 
-        if (commandResult == null || !commandResult.isSuccessful()) {
+        if (!commandResult.isSuccessful()) {
             return null;
         }
 
@@ -118,16 +119,11 @@ public final class RootShellCommands {
 
         CommandResult commandResult = executeCommand(command);
 
-        return commandResult != null && commandResult.isSuccessful();
+        return commandResult.isSuccessful();
     }
 
-    /**
-     * Reboot the device
-     */
     public static boolean reboot() {
-        CommandResult commandResult = executeCommand("reboot");
-
-        return commandResult != null && commandResult.isSuccessful();
+        return executeCommand("reboot").isSuccessful();
     }
 
     /**
@@ -146,7 +142,7 @@ public final class RootShellCommands {
             if (packageName != null) {
                 command = String.format("pm uninstall -k %s", packageName);
                 commandResult = executeCommand(command);
-                logger.i( "uninstall result: " + commandResult);
+                logger.i("uninstall result: " + commandResult);
             }
 
             command = String.format("pm install -r %s", apkFile.getAbsolutePath());
@@ -154,13 +150,10 @@ public final class RootShellCommands {
 
         commandResult = executeCommand(command);
 
-        logger.i( "install result: " + commandResult);
+        logger.i("install result: " + commandResult);
 
-        if (commandResult != null && commandResult.isSuccessful()) {
-            return commandResult.getStdOut().toLowerCase().contains("success");
-        }
+        return commandResult.isSuccessful() && commandResult.getStdOut().toLowerCase().contains("success");
 
-        return false;
     }
 
     /**
@@ -186,7 +179,7 @@ public final class RootShellCommands {
 
         logger.i( "uninstall result: " + commandResult);
 
-        if (commandResult != null && commandResult.isSuccessful()) {
+        if (commandResult.isSuccessful()) {
             return commandResult.getStdOut().toLowerCase().contains("success");
         }
 
@@ -206,5 +199,15 @@ public final class RootShellCommands {
 
         return false;
     }
+
+    /**
+     * Kill process by pid
+     *
+     * @param pid PID
+     */
+    public static void killProcess(int pid) {
+        RootShellCommands.executeCommand("kill -9 " + pid);
+    }
+
 
 }

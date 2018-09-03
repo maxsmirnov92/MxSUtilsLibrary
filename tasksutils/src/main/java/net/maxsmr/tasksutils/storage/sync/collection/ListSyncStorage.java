@@ -130,5 +130,8 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
         dataList.clear();
     }
 
-
+    @Override
+    protected Class<?> getLoggerClass() {
+        return ListSyncStorage.class;
+    }
 }

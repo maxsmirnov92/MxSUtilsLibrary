@@ -101,8 +101,8 @@ artifacts {
 
 dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
 
+//    api project(':commonutils')
     api "net.maxsmr:commonutils:$commonUtilsVersion"
 }
 

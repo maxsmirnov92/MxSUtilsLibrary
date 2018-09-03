@@ -1,4 +1,4 @@
-package net.maxsmr.networkutils.monitor.stats;
+package net.maxsmr.networkutils.monitor.model;
 
 import java.io.Serializable;
 
@@ -22,13 +22,10 @@ public class NetworkTrafficStats implements Serializable {
 
     public final double highestDownloadSpeedKBs;
 
-    public final TRAFFIC_DIRECTION trafficDirection;
-
-    public final double pingTimeMs;
+    public final TrafficDirection trafficDirection;
 
     public NetworkTrafficStats(long totalBytesRx, long totalBytesTx, long totalPacketRx, long totalPacketsTx, double uploadSpeedKBs,
-                               double downloadSpeedKBs, double highestUploadSpeedKBs, double highestDownloadSpeedKBs, TRAFFIC_DIRECTION trafficDirection,
-                               double pingTime) {
+                               double downloadSpeedKBs, double highestUploadSpeedKBs, double highestDownloadSpeedKBs, TrafficDirection trafficDirection) {
         this.totalBytesRx = totalBytesRx;
         this.totalBytesTx = totalBytesTx;
         this.totalPacketsRx = totalPacketRx;
@@ -38,11 +35,10 @@ public class NetworkTrafficStats implements Serializable {
         this.highestUploadSpeedKBs = highestUploadSpeedKBs;
         this.highestDownloadSpeedKBs = highestDownloadSpeedKBs;
         this.trafficDirection = trafficDirection;
-        this.pingTimeMs = pingTime;
     }
 
     public NetworkTrafficStats() {
-        this(0, 0, 0, 0, 0, 0, 0, 0, TRAFFIC_DIRECTION.NONE, 0);
+        this(0, 0, 0, 0, 0, 0, 0, 0, TrafficDirection.NONE);
     }
 
     @Override
@@ -50,7 +46,7 @@ public class NetworkTrafficStats implements Serializable {
         return "NetworkTrafficStats [totalBytesRx=" + totalBytesRx + ", totalBytesTx=" + totalBytesTx + ", totalPacketsRx="
                 + totalPacketsRx + ", totalPacketsTx=" + totalPacketsTx + ", uploadSpeedKBs=" + uploadSpeedKBs + ", downloadSpeedKBs="
                 + downloadSpeedKBs + ", highestUploadSpeedKBs=" + highestUploadSpeedKBs + ", highestDownloadSpeedKBs="
-                + highestDownloadSpeedKBs + ", trafficDirection=" + trafficDirection + ", pingTimeMs=" + pingTimeMs + "]";
+                + highestDownloadSpeedKBs + ", trafficDirection=" + trafficDirection + "]";
     }
 
 }

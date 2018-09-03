@@ -8,6 +8,8 @@ import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;
 import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
@@ -17,9 +19,6 @@ import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.StatInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -32,27 +31,24 @@ import java.util.concurrent.TimeUnit;
 import static net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor.DEFAULT_KEEP_ALIVE_TIME;
 
 
-/**
- * @author maxsmirnov
- */
 public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends LoadRunnableInfo<B>,
-        R extends TaskRunnable<LI>> implements TaskRunnableExecutor.Callbacks<LI, R> {
-
-    private static final Logger logger = LoggerFactory.getLogger(BaseNetworkLoadManager.class);
+        R extends TaskRunnable<LI, Void, Void>> implements TaskRunnableExecutor.Callbacks<LI, Void, Void, R> {
 
     public static final int LOADS_NO_LIMIT = TaskRunnableExecutor.TASKS_NO_LIMIT;
 
-    protected final TaskRunnableExecutor<LI, R> mExecutor;
+    protected final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(getLoggerClass());
 
     protected final LoadObservable<LI> mLoadObservable = new LoadObservable<>();
 
+    protected final TaskRunnableExecutor<LI, Void, Void, R> mExecutor;
+
     public BaseNetworkLoadManager(int limit, int concurrentLoadsCount, @Nullable AbstractSyncStorage<LI> storage,
-                                  @Nullable TaskRunnable.ITaskResultValidator<LI, R> validator, @Nullable final TaskRunnable.ITaskRestorer<LI, R> restorer) {
+                                  @Nullable TaskRunnable.ITaskResultValidator<LI, Void, Void, R> validator, @Nullable final TaskRunnable.ITaskRestorer<LI, Void, Void, R> restorer) {
         this(limit, concurrentLoadsCount, storage, validator, new Handler(Looper.getMainLooper()));
     }
 
     public BaseNetworkLoadManager(int limit, int concurrentLoadsCount, @Nullable AbstractSyncStorage<LI> storage,
-                                  @Nullable TaskRunnable.ITaskResultValidator<LI, R> validator,
+                                  @Nullable TaskRunnable.ITaskResultValidator<LI, Void, Void, R> validator,
                                   @Nullable Handler callbacksHandler) {
         mExecutor = new TaskRunnableExecutor<>(limit, concurrentLoadsCount, DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS, getClass().getSimpleName(), validator, storage, callbacksHandler);
         mExecutor.registerCallback(this);
@@ -72,7 +68,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         }
     }
 
-    protected void doRestore(@NonNull final TaskRunnable.ITaskRestorer<LI, R> restorer) {
+    protected void doRestore(@NonNull final TaskRunnable.ITaskRestorer<LI, Void, Void, R> restorer) {
         mExecutor.restoreQueueByRestorer(restorer);
     }
 
@@ -100,7 +96,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
     }
 
     public final void enqueueLoad(@NonNull LI rInfo) {
-        logger.debug("enqueueLoad(), rInfo=" + rInfo);
+        logger.d("enqueueLoad(), rInfo=" + rInfo);
         synchronized (mExecutor) {
             if (rInfo.id < 0) {
                 throw new IllegalArgumentException("incorrect load id: " + rInfo.id);
@@ -120,12 +116,12 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
     }
 
     @Override
-    public void onBeforeExecute(@NonNull Thread t, @NonNull R r, @NonNull ExecInfo<LI, R> execInfo, int waitingCount, int activeCount) {
+    public void onBeforeExecute(@NonNull Thread t, @NonNull R r, @NonNull ExecInfo<LI, Void, Void, R> execInfo, int waitingCount, int activeCount) {
 
     }
 
     @Override
-    public void onAfterExecute(@NonNull R r, Throwable t, @NonNull ExecInfo<LI, R> execInfo, @NonNull StatInfo<LI, R> statInfo, int waitingCount, int activeCount) {
+    public void onAfterExecute(@NonNull R r, Throwable t, @NonNull ExecInfo<LI, Void, Void, R> execInfo, @NonNull StatInfo<LI, Void, Void, R> statInfo, int waitingCount, int activeCount) {
         mLoadObservable.notifyLoadRemovedFromQueue(r.rInfo, mExecutor.getWaitingTasksCount(), mExecutor.getActiveTasksCount());
     }
 
@@ -217,7 +213,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
     }
 
     public boolean cancelLoad(int id) {
-        logger.debug("cancelLoad(), id=" + id);
+        logger.d("cancelLoad(), id=" + id);
         synchronized (mExecutor) {
             checkReleased();
             return mExecutor.cancelTask(id);
@@ -225,7 +221,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
     }
 
     public void cancelAllLoads() {
-        logger.debug("cancelAllLoads()");
+        logger.d("cancelAllLoads()");
         synchronized (mExecutor) {
             checkReleased();
             mExecutor.cancelAllTasks();
@@ -233,7 +229,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
     }
 
     public void release() {
-        logger.debug("release()");
+        logger.d("release()");
         synchronized (mExecutor) {
             if (!isReleased()) {
                 clearLoadListeners();
@@ -244,6 +240,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         }
     }
 
+    protected abstract Class<?> getLoggerClass();
 
     public static boolean isResponseOk(@NonNull HttpURLConnection conn) throws IOException {
         return isResponseOk(conn.getResponseCode());
@@ -257,7 +254,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
 
         @Nullable
         public final LoadListener<I> findLoadListenerById(final int id) {
-            synchronized (mObservers) {
+            synchronized (observers) {
                 return Predicate.Methods.find(getObservers(), new Predicate<LoadListener<I>>() {
                     @Override
                     public boolean apply(LoadListener<I> element) {
@@ -268,7 +265,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         }
 
         public final void notifyLoadAddedToQueue(@NonNull I info, int waitingLoads, int activeLoads) {
-            synchronized (mObservers) {
+            synchronized (observers) {
                 for (LoadListener<I> l : copyOfObservers()) {
                     l.onLoadAddedToQueue(info.id, waitingLoads, activeLoads);
                 }
@@ -276,7 +273,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         }
 
         public final void notifyLoadRemovedFromQueue(@NonNull I info, int waitingLoads, int activeLoads) {
-            synchronized (mObservers) {
+            synchronized (observers) {
                 for (LoadListener<I> l : copyOfObservers()) {
                     l.onLoadRemovedFromQueue(info.id, waitingLoads, activeLoads);
                 }
@@ -284,7 +281,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         }
 
         public final void notifyStateChanged(@NonNull final I info, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, Throwable t) {
-            synchronized (mObservers) {
+            synchronized (observers) {
                 LoadListener<I> l = Predicate.Methods.find(copyOfObservers(), new Predicate<LoadListener<I>>() {
                     @Override
                     public boolean apply(LoadListener<I> listener) {

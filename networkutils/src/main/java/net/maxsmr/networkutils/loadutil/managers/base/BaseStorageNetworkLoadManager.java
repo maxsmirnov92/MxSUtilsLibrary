@@ -3,6 +3,8 @@ package net.maxsmr.networkutils.loadutil.managers.base;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;
 import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
@@ -10,9 +12,6 @@ import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.storage.sync.collection.QueueSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
@@ -22,7 +21,7 @@ import static net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage.MAX_SIZE_UN
 public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends LoadRunnableInfo<B>>
         implements LoadListener<LI>, AbstractSyncStorage.IStorageListener {
 
-    protected final Logger logger = LoggerFactory.getLogger(getClass());
+    protected final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(getClass());
 
     public static final int DEFAULT_LOAD_LIST_SYNCHRONIZE_INTERVAL = 20000;
 
@@ -41,7 +40,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
     private final ScheduledThreadPoolExecutorManager uploadListSynchronizer = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, getClass().getSimpleName() + "Synchronizer");
 
     public BaseStorageNetworkLoadManager(@NonNull NetworkLoadManager<B, LI> loadManager, @NonNull Class<LI> clazzInstance, String path) {
-        logger.debug("BaseStorageNetworkLoadManager(), loadManager=" + loadManager + ", clazzInstance=" + clazzInstance + ", path=" + path);
+        logger.d("BaseStorageNetworkLoadManager(), loadManager=" + loadManager + ", clazzInstance=" + clazzInstance + ", path=" + path);
         this.uploadStorage = new QueueSyncStorage<>(path, "dat", clazzInstance, true,
                 MAX_SIZE_UNLIMITED, new AbstractSyncStorage.IAddRule<LI>() {
             @Override
@@ -72,7 +71,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
     protected abstract void releaseLoadManager();
 
     protected synchronized void release() {
-        logger.debug("release()");
+        logger.d("release()");
         checkReleased();
         stopUploadSynchronizer();
         loadManager.unregisterLoadListener(this);
@@ -106,7 +105,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
 
     public final void restartUploadSynchronizer() {
         checkReleased();
-        logger.debug("synchronize interval: " + synchronizeInterval);
+        logger.d("synchronize interval: " + synchronizeInterval);
         uploadListSynchronizer.addRunnableTask(new SynchronizeUploadListRunnable());
         uploadListSynchronizer.restart(synchronizeInterval);
     }
@@ -120,7 +119,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
 
     public final void stopUploadSynchronizer() {
         checkReleased();
-        uploadListSynchronizer.stop(false, 0);
+        uploadListSynchronizer.stop();
     }
 
     public final boolean isStorageRestoreCompleted() {
@@ -177,7 +176,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
             case FAILED_RETRIES_EXCEEDED:
                 if (uploadStorage.contains(loadInfo.id)) {
                     if (state != STATE.FAILED_RETRIES_EXCEEDED || allowRemoveFailedLoads) {
-                        logger.debug("removing info with id " + loadInfo.id + " from storage...");
+                        logger.d("removing info with id " + loadInfo.id + " from storage...");
                         uploadStorage.removeById(loadInfo.id);
                     }
                 }
@@ -187,36 +186,36 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
 
     @Override
     public void onResponse(@NonNull LI loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NonNull NetworkLoadManager.Response response) {
-        logger.debug("onResponse(), loadInfo=" + loadInfo + ", loadProcessInfo=" + loadProcessInfo + ", response=" + response);
+        logger.d("onResponse(), loadInfo=" + loadInfo + ", loadProcessInfo=" + loadProcessInfo + ", response=" + response);
     }
 
     @Override
     public void onStorageSizeChanged(int currentSize, int previousSize) {
-        logger.debug("onStorageSizeChanged(), currentSize=" + currentSize + ", previousSize=" + previousSize);
+        logger.d("onStorageSizeChanged(), currentSize=" + currentSize + ", previousSize=" + previousSize);
     }
 
     @Override
     public void onStorageRestoreStarted(long startTime) {
-        logger.debug("onStorageRestoreStarted()");
+        logger.d("onStorageRestoreStarted()");
     }
 
     @Override
     public void onStorageRestoreFinished(long endTime, long processingTime, int restoredElementsCount) {
-        logger.debug("onStorageRestoreFinished(), processingTime=" + processingTime + ", restoredElementsCount=" + restoredElementsCount);
+        logger.d("onStorageRestoreFinished(), processingTime=" + processingTime + ", restoredElementsCount=" + restoredElementsCount);
     }
 
     private void doSynchronizeWithUploadManager() {
-        logger.debug("doSynchronizeWithUploadManager()");
+        logger.d("doSynchronizeWithUploadManager()");
 
         checkReleased();
 
         if (!isStorageRestoreCompleted()) {
-            logger.warn("upload storage restore was not completed");
+            logger.w("upload storage restore was not completed");
             return;
         }
 
         if (uploadStorage.isEmpty()) {
-            logger.debug("upload storage is empty");
+            logger.d("upload storage is empty");
             return;
         }
 

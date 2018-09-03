@@ -1,29 +1,26 @@
 package net.maxsmr.testapplication.taskutils;
 
 import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+public class TestTaskRunnable extends TaskRunnable<TestRunnableInfo, Void, Boolean> {
 
-public class TestTaskRunnable extends TaskRunnable<TestRunnableInfo> {
-
-    private static final Logger logger = LoggerFactory.getLogger(TestTaskRunnable.class);
+    private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(TestTaskRunnable.class);
 
     public TestTaskRunnable(@NonNull TestRunnableInfo rInfo) {
         super(rInfo);
     }
 
+    @Nullable
     @Override
-    public void run() {
-        logger.debug("starting sleeping...");
-        try {
-            Thread.sleep(rInfo.delay);
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            Thread.currentThread().interrupt();
-        }
-        logger.debug("stopped sleeping");
+    protected Boolean doWork() throws Throwable {
+        logger.d("starting sleeping...");
+        Thread.sleep(rInfo.delay);
+        logger.d("stopped sleeping");
+        return true;
     }
 }

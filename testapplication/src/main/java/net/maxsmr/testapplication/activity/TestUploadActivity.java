@@ -55,10 +55,10 @@ public class TestUploadActivity extends AppCompatActivity implements AbstractSyn
         storage.addStorageListener(this);
 
         loadManager = new NetworkLoadManager<>(
-                NetworkLoadManager.LOADS_NO_LIMIT, 1, storage, new TaskRunnable.ITaskResultValidator<LoadRunnableInfo<LoadRunnableInfo.FileBody>, TaskRunnable<LoadRunnableInfo<LoadRunnableInfo.FileBody>>>() {
+                NetworkLoadManager.LOADS_NO_LIMIT, 1, storage, new TaskRunnable.ITaskResultValidator<LoadRunnableInfo<LoadRunnableInfo.FileBody>, Void, Void, TaskRunnable<LoadRunnableInfo<LoadRunnableInfo.FileBody>, Void, Void>>() {
 
             @Override
-            public boolean needToReAddTask(TaskRunnable<LoadRunnableInfo<LoadRunnableInfo.FileBody>> runnable, Throwable t) {
+            public boolean needToReAddTask(TaskRunnable<LoadRunnableInfo<LoadRunnableInfo.FileBody>, Void, Void> runnable, Throwable t) {
                 LoadListener.STATE state = loadManager.getLastStateForId(runnable.getId());
                 return state == LoadListener.STATE.FAILED_RETRIES_EXCEEDED;
             }

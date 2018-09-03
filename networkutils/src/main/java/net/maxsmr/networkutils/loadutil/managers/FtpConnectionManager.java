@@ -7,6 +7,8 @@ import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.NetworkHelper;
 
 import org.apache.commons.net.ftp.FTP;
@@ -14,8 +16,6 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 import org.apache.commons.net.io.CopyStreamListener;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -30,7 +30,7 @@ import static net.maxsmr.commonutils.data.MathUtils.safeLongToInt;
 
 public class FtpConnectionManager {
 
-    private final static Logger logger = LoggerFactory.getLogger(FtpConnectionManager.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(FtpConnectionManager.class);
 
     public final static int DEFAULT_FTP_PORT = 21;
     public final static int DEFAULT_SFTP_PORT = 22;
@@ -100,7 +100,7 @@ public class FtpConnectionManager {
     }
 
     public boolean setAddress(String newAddr) {
-        logger.debug("setAddress(), newAddr=" + newAddr);
+        logger.d("setAddress(), newAddr=" + newAddr);
 
         InetAddress tmpFtpInetAddress = NetworkHelper.getInetAddressByDomain(newAddr);
 
@@ -116,10 +116,10 @@ public class FtpConnectionManager {
     }
 
     public boolean setPort(int newPort) {
-        logger.debug("setPort(), newPort=" + newPort);
+        logger.d("setPort(), newPort=" + newPort);
 
         if (!(newPort == DEFAULT_FTP_PORT || newPort == DEFAULT_SFTP_PORT)) {
-            logger.error("incorrect port: " + newPort);
+            logger.e("incorrect port: " + newPort);
             return false;
         }
 
@@ -128,7 +128,7 @@ public class FtpConnectionManager {
     }
 
     public boolean setUserAndPassword(String user, String password) {
-        logger.debug("setUserAndPassword(), user=" + user + ", password=" + password);
+        logger.d("setUserAndPassword(), user=" + user + ", password=" + password);
 
         if (user == null || password == null) {
             return false;
@@ -153,10 +153,10 @@ public class FtpConnectionManager {
     }
 
     public synchronized boolean disconnect() {
-        logger.debug("disconnect()");
+        logger.d("disconnect()");
 
         if (!isConnected()) {
-            logger.error("can't disconnect: null not connected");
+            logger.e("can't disconnect: null not connected");
             return false;
         }
 
@@ -171,16 +171,16 @@ public class FtpConnectionManager {
 
             if (FTPReply.isPositiveCompletion(ftpClient.getReplyCode())) {
                 ftpClient = null;
-                logger.error("disconnect success, time: " + lastDisconnectTime);
+                logger.e("disconnect success, time: " + lastDisconnectTime);
                 return true;
             }
 
         } catch (Exception e) {
-            logger.error("an Exception occurred", e);
+            logger.e("an Exception occurred", e);
 
         }
 
-        logger.error("disconnect failed");
+        logger.e("disconnect failed");
 
         if (listener != null && ftpClient != null) {
             listener.onFtpError(FtpAction.CLOSE_CONNECTION, ftpClient.getReplyCode(), ftpClient.getReplyString());
@@ -191,18 +191,18 @@ public class FtpConnectionManager {
 
     public synchronized boolean connect(boolean needToLogin, int connectionTimeoutMs, int soTimeoutMs, int dataTimeoutMs,
                                         int controlKeepAliveTimeout, int retryCount, long retryDelay) {
-        logger.debug("connect(), needToLogin=" + needToLogin);
+        logger.d("connect(), needToLogin=" + needToLogin);
 
 
         if (isConnected()) {
-            logger.debug("already connected, need to disconnect first...");
+            logger.d("already connected, need to disconnect first...");
             if (!disconnect()) {
                 return false;
             }
         }
 
         if (ftpInetAddress == null) {
-            logger.error("ftpInetAddress is null");
+            logger.e("ftpInetAddress is null");
             return false;
         }
 
@@ -251,7 +251,7 @@ public class FtpConnectionManager {
 
             if (!FTPReply.isPositiveCompletion(ftpClient.getReplyCode())) {
 
-                logger.error("connect failed: FTP server refused connection");
+                logger.e("connect failed: FTP server refused connection");
 
 
                 if (listener != null) {
@@ -259,13 +259,13 @@ public class FtpConnectionManager {
                 }
 
                 if (retryCount > 0) {
-                    logger.warn("retrying (retries left " + retryCount + ")...");
+                    logger.w("retrying (retries left " + retryCount + ")...");
                     disconnect();
                     if (retryDelay > 0) {
                         try {
                             Thread.sleep(retryDelay);
                         } catch (InterruptedException e) {
-                            logger.error("an InterruptedException occurred during sleep", e);
+                            logger.e("an InterruptedException occurred during sleep", e);
                             Thread.currentThread().interrupt();
                         }
                     }
@@ -279,7 +279,7 @@ public class FtpConnectionManager {
             long startLoginTime = System.currentTimeMillis();
 
             if (needToLogin && !ftpClient.login(user, password)) {
-                logger.error("can't login by user " + user + " and password " + password);
+                logger.e("can't login by user " + user + " and password " + password);
 
                 if (listener != null) {
                     listener.onFtpError(FtpAction.LOGIN, ftpClient.getReplyCode(), ftpClient.getReplyString());
@@ -293,28 +293,28 @@ public class FtpConnectionManager {
             ftpClient.setControlKeepAliveTimeout(controlKeepAliveTimeout);
 
             lastConnectTime = System.currentTimeMillis() - startLoginTime + connectTime;
-            logger.info("connect success, time: " + lastConnectTime + " ms");
+            logger.i("connect success, time: " + lastConnectTime + " ms");
 
             return true;
 
         } catch (Exception e) {
-            logger.error("an Exception occurred", e);
+            logger.e("an Exception occurred", e);
         }
 
-        logger.error("connect failed");
+        logger.e("connect failed");
 
         if (listener != null && ftpClient != null) {
             listener.onFtpError(FtpAction.ESTABLISH_CONNECTION, ftpClient.getReplyCode(), ftpClient.getReplyString());
         }
 
         if (retryCount > 0) {
-            logger.warn("retrying (retries left " + retryCount + ")...");
+            logger.w("retrying (retries left " + retryCount + ")...");
             disconnect();
             if (retryDelay > 0) {
                 try {
                     Thread.sleep(retryDelay);
                 } catch (InterruptedException e) {
-                    logger.error("an InterruptedException occurred during sleep", e);
+                    logger.e("an InterruptedException occurred during sleep", e);
                     Thread.currentThread().interrupt();
                 }
             }
@@ -324,7 +324,7 @@ public class FtpConnectionManager {
     }
 
     public synchronized boolean completePendingCommand() {
-        logger.debug("completePendingCommand()");
+        logger.d("completePendingCommand()");
 
         if (!isConnected()) {
             return false;
@@ -332,29 +332,29 @@ public class FtpConnectionManager {
 
         try {
             if (ftpClient.completePendingCommand()) { // HANGS IF STREAM IS NOT CLOSED
-                logger.debug("success complete pending command!");
+                logger.d("success complete pending command!");
                 return true;
 
             }
         } catch (Exception e) {
-            logger.error("an Exception occurred during completePendingCommand()", e);
+            logger.e("an Exception occurred during completePendingCommand()", e);
         }
 
-        logger.debug("fail complete pending command!");
+        logger.d("fail complete pending command!");
         return false;
     }
 
     @Nullable
     public synchronized Pair<InputStream, Long> retrieveFtpFileData(String workingDir, String fileName, FileType fileType) {
-        logger.debug("retrieveFtpFileData(), workingDir=" + workingDir + ", fileName=" + fileName + ", fileType=" + fileType);
+        logger.d("retrieveFtpFileData(), workingDir=" + workingDir + ", fileName=" + fileName + ", fileType=" + fileType);
 
         if (TextUtils.isEmpty(workingDir) || TextUtils.isEmpty(fileName)) {
-            logger.error("incorrect remote working directory name or remote file name");
+            logger.e("incorrect remote working directory name or remote file name");
             return null;
         }
 
         if (!isConnected()) {
-            logger.error("ftpClient not connected");
+            logger.e("ftpClient not connected");
             return null;
         }
 
@@ -365,7 +365,7 @@ public class FtpConnectionManager {
 
             if (!CompareUtils.stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
                 if (!ftpClient.changeWorkingDirectory(encodedWorkingDir)) {
-                    logger.error("can't change working dir");
+                    logger.e("can't change working dir");
 
                     if (listener != null && ftpClient != null) {
                         listener.onFtpError(FtpAction.CHANGE_WORKING_DIR, ftpClient.getReplyCode(), ftpClient.getReplyString());
@@ -373,7 +373,7 @@ public class FtpConnectionManager {
 
                     return null;
                 }
-                logger.debug("working directory changed to: " + workingDir);
+                logger.d("working directory changed to: " + workingDir);
             }
 
             if (fileType == FileType.TEXT) {
@@ -381,14 +381,14 @@ public class FtpConnectionManager {
             } else if (fileType == FileType.BINARY) {
                 ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
             }
-            logger.debug("set file type: " + fileType.getValue());
+            logger.d("set file type: " + fileType.getValue());
 
             final String encodedFileName = new String(fileName.getBytes("UTF-8"), "ISO-8859-1");
 
             FTPFile[] ftpFiles = ftpClient.listFiles(encodedFileName);
 
             if (ftpFiles == null || ftpFiles.length == 0) {
-                logger.error("no such file: " + fileName);
+                logger.e("no such file: " + fileName);
                 return null;
             }
 
@@ -396,12 +396,12 @@ public class FtpConnectionManager {
 
                 if (ftpFile.isFile() && ftpFile.getSize() > 0 && CompareUtils.stringsEqual(ftpFile.getName(), encodedFileName, false)) {
 
-                    logger.debug("starting retrieving stream...");
+                    logger.d("starting retrieving stream...");
 
                     InputStream inStream = ftpClient.retrieveFileStream(encodedFileName);
 
                     if (inStream != null) {
-                        logger.debug("retrieve stream from file success!");
+                        logger.d("retrieve stream from file success!");
                         return new Pair<>(inStream, ftpFile.getSize());
                     } else {
                         completePendingCommand();
@@ -410,14 +410,14 @@ public class FtpConnectionManager {
             }
 
         } catch (Exception e) {
-            logger.error("an Exception occurred", e);
+            logger.e("an Exception occurred", e);
         }
 
         if (listener != null && ftpClient != null) {
             listener.onFtpError(FtpAction.RETRIEVE_DATA, ftpClient.getReplyCode(), ftpClient.getReplyString());
         }
 
-        logger.error("retrieve stream file " + fileName + " from working directory " + workingDir + " failed");
+        logger.e("retrieve stream file " + fileName + " from working directory " + workingDir + " failed");
         return null;
     }
 
@@ -426,11 +426,11 @@ public class FtpConnectionManager {
     @Nullable
     public synchronized File downloadFtpFile(String localWorkingDir, String workingDir, String fileName, FileType fileType,
                                              boolean deleteOnSuccess, boolean withRestart, final FileHelper.IStreamNotifier notifier) {
-        logger.debug("downloadFtpFileWithRestart(), localWorkingDir=" + localWorkingDir + ", workingDir=" + workingDir + ", fileName=" + fileName
+        logger.d("downloadFtpFileWithRestart(), localWorkingDir=" + localWorkingDir + ", workingDir=" + workingDir + ", fileName=" + fileName
                 + ", fileType=" + fileType + ", deleteOnSuccess=" + deleteOnSuccess);
 
         if (!FileHelper.checkDirNoThrow(localWorkingDir)) {
-            logger.error("incorrect local working directory: " + localWorkingDir);
+            logger.e("incorrect local working directory: " + localWorkingDir);
             return null;
         }
 
@@ -455,7 +455,7 @@ public class FtpConnectionManager {
 
                     if (withRestart && localFileSize > 0 && localFileSize < ftpFileSize) {
                         randomAccessLocalFile.seek(localFileSize);
-                        logger.debug("setting restart offset: " + localFileSize + "...");
+                        logger.d("setting restart offset: " + localFileSize + "...");
                         ftpClient.setRestartOffset(localFileSize);
                     } else {
                         if (localFileSize > 0) {
@@ -464,8 +464,8 @@ public class FtpConnectionManager {
                         randomAccessLocalFile.seek(0);
                     }
 
-                    logger.debug("localFileSize=" + localFileSize + " bytes / ftpFileSize=" + ftpFileSize + " bytes");
-                    logger.debug("starting retrieving file...");
+                    logger.d("localFileSize=" + localFileSize + " bytes / ftpFileSize=" + ftpFileSize + " bytes");
+                    logger.d("starting retrieving file...");
 
                     final long startDownloadTime = System.currentTimeMillis();
 
@@ -487,21 +487,21 @@ public class FtpConnectionManager {
                                 dataStream.size());
 
                         lastDownloadTime = System.currentTimeMillis() - startDownloadTime;
-                        logger.info("retrieve success, time: " + lastDownloadTime + " ms");
+                        logger.i("retrieve success, time: " + lastDownloadTime + " ms");
 
                         if (deleteOnSuccess) {
 
                             boolean deleteResult = false;
 
-                            logger.debug("deleting remote file " + fileName + "...");
+                            logger.d("deleting remote file " + fileName + "...");
                             try {
                                 deleteResult = ftpClient.deleteFile(fileName);
                             } catch (IOException e) {
-                                logger.error("an IOException occurred during delete()", e);
+                                logger.e("an IOException occurred during delete()", e);
                             }
 
                             if (!deleteResult) {
-                                logger.error("cannot delete file " + fileName + " in working dir " + workingDir);
+                                logger.e("cannot delete file " + fileName + " in working dir " + workingDir);
 
                                 if (listener != null && ftpClient != null) {
                                     listener.onFtpError(FtpAction.DELETE, ftpClient.getReplyCode(), ftpClient.getReplyString());
@@ -515,7 +515,7 @@ public class FtpConnectionManager {
 
 
             } catch (IOException e) {
-                logger.error("an IOException occurred", e);
+                logger.e("an IOException occurred", e);
 
             } finally {
 
@@ -528,7 +528,7 @@ public class FtpConnectionManager {
                     inStream.first.close();
 
                 } catch (IOException e) {
-                    logger.error("an IOException occurred during close()", e);
+                    logger.e("an IOException occurred during close()", e);
                 }
 
                 completePendingCommand();
@@ -539,25 +539,25 @@ public class FtpConnectionManager {
             listener.onFtpError(FtpAction.RETRIEVE_DATA, ftpClient.getReplyCode(), ftpClient.getReplyString());
         }
 
-        logger.error("retrieve file " + fileName + " from working directory " + workingDir + " to directory " + localWorkingDir + " failed");
+        logger.e("retrieve file " + fileName + " from working directory " + workingDir + " to directory " + localWorkingDir + " failed");
         return null;
     }
 
     public synchronized boolean uploadLocalFile(String workingDir, String fileName, File localFile, FileType fileType, boolean deleteOnSuccess, @NonNull WriteMode writeMode, final FileHelper.IStreamNotifier notifier) {
-        logger.debug("uploadLocalFile(), workingDir=" + workingDir + ", fileName=" + fileName + ", localFile=" + localFile + ", fileType=" + fileType + ", deleteOnSuccess=" + deleteOnSuccess + ", notifier=" + notifier);
+        logger.d("uploadLocalFile(), workingDir=" + workingDir + ", fileName=" + fileName + ", localFile=" + localFile + ", fileType=" + fileType + ", deleteOnSuccess=" + deleteOnSuccess + ", notifier=" + notifier);
 
         if (workingDir == null || workingDir.length() == 0 || fileName == null || fileName.length() == 0) {
-            logger.error("incorrect remote working directory name or remote file name");
+            logger.e("incorrect remote working directory name or remote file name");
             return false;
         }
 
         if (!FileHelper.isFileCorrect(localFile)) {
-            logger.error("incorrect local file: " + localFile);
+            logger.e("incorrect local file: " + localFile);
             return false;
         }
 
         if (!isConnected()) {
-            logger.error("ftpClient is not connected");
+            logger.e("ftpClient is not connected");
             return false;
         }
 
@@ -571,7 +571,7 @@ public class FtpConnectionManager {
 
             if (!CompareUtils.stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
                 if (!ftpClient.changeWorkingDirectory(encodedWorkingDir)) {
-                    logger.error("can't change working dir");
+                    logger.e("can't change working dir");
 
                     if (listener != null && ftpClient != null) {
                         listener.onFtpError(FtpAction.CHANGE_WORKING_DIR, ftpClient.getReplyCode(), ftpClient.getReplyString());
@@ -579,7 +579,7 @@ public class FtpConnectionManager {
 
                     return false;
                 }
-                logger.debug("working directory changed to: " + workingDir);
+                logger.d("working directory changed to: " + workingDir);
             }
 
             if (exists) {
@@ -588,15 +588,15 @@ public class FtpConnectionManager {
 
                     boolean deleteResult = false;
 
-                    logger.debug("deleting remote file " + fileName + "...");
+                    logger.d("deleting remote file " + fileName + "...");
                     try {
                         deleteResult = ftpClient.deleteFile(fileName);
                     } catch (IOException e) {
-                        logger.error("an IOException occurred during delete()", e);
+                        logger.e("an IOException occurred during delete()", e);
                     }
 
                     if (!deleteResult) {
-                        logger.error("cannot delete file " + fileName + " in working dir " + workingDir);
+                        logger.e("cannot delete file " + fileName + " in working dir " + workingDir);
 
                         if (listener != null && ftpClient != null) {
                             listener.onFtpError(FtpAction.DELETE, ftpClient.getReplyCode(), ftpClient.getReplyString());
@@ -607,7 +607,7 @@ public class FtpConnectionManager {
 
 
                 } else if (writeMode == WriteMode.DO_NOTING) {
-                    logger.error("file " + fileName + " already exists in working dir " + workingDir);
+                    logger.e("file " + fileName + " already exists in working dir " + workingDir);
                     return  false;
                 }
             }
@@ -618,7 +618,7 @@ public class FtpConnectionManager {
                 } else if (fileType == FileType.BINARY) {
                     ftpClient.setFileType(FTP.BINARY_FILE_TYPE);
                 }
-                logger.debug("set file type: " + fileType);
+                logger.d("set file type: " + fileType);
 
                 final String encodedFileName = new String(fileName.getBytes("UTF-8"), "ISO-8859-1");
 
@@ -626,7 +626,7 @@ public class FtpConnectionManager {
 
                 ftpClient.setBufferSize(BUFFER_SIZE);
 
-                logger.debug("starting storing file...");
+                logger.d("starting storing file...");
 
                 final long startUploadTime = System.currentTimeMillis();
 
@@ -655,18 +655,18 @@ public class FtpConnectionManager {
 
                     if (deleteOnSuccess) {
                         if (!FileHelper.deleteFile(localFile)) {
-                            logger.error("cannot delete local file " + localFile);
+                            logger.e("cannot delete local file " + localFile);
                         }
                     }
 
                     lastUploadTime = System.currentTimeMillis() - startUploadTime;
-                    logger.info("storing success, time: " + lastUploadTime + " ms");
+                    logger.i("storing success, time: " + lastUploadTime + " ms");
 
                     return true;
                 }
 
         } catch (Exception e) {
-            logger.error("an Exception occurred", e);
+            logger.e("an Exception occurred", e);
 
         } finally {
 
@@ -674,7 +674,7 @@ public class FtpConnectionManager {
                 try {
                     localStream.close();
                 } catch (IOException e) {
-                    logger.error("an IOException occurred during close(): " + e.getMessage());
+                    logger.e("an IOException occurred during close(): " + e.getMessage());
 
                 }
             }
@@ -686,20 +686,20 @@ public class FtpConnectionManager {
             listener.onFtpError(FtpAction.SEND_DATA, ftpClient.getReplyCode(), ftpClient.getReplyString());
         }
 
-        logger.error("storing local file " + localFile + " failed, new name: " + fileName + ", working directory: " + workingDir);
+        logger.e("storing local file " + localFile + " failed, new name: " + fileName + ", working directory: " + workingDir);
         return false;
     }
 
     public synchronized boolean isFtpFileExists(String workingDir, String fileName) {
-        logger.debug("isFtpFileExists(), workingDir=" + workingDir + ", fileName=" + fileName);
+        logger.d("isFtpFileExists(), workingDir=" + workingDir + ", fileName=" + fileName);
 
         if (TextUtils.isEmpty(workingDir) || TextUtils.isEmpty(fileName)) {
-            logger.error("incorrect remote working directory name or remote file name");
+            logger.e("incorrect remote working directory name or remote file name");
             return false;
         }
 
         if (!isConnected()) {
-            logger.error("ftpClient not connected");
+            logger.e("ftpClient not connected");
             return false;
         }
 
@@ -710,7 +710,7 @@ public class FtpConnectionManager {
 
             if (!CompareUtils.stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
                 if (!ftpClient.changeWorkingDirectory(encodedWorkingDir)) {
-                    logger.error("can't change working dir");
+                    logger.e("can't change working dir");
 
                     if (listener != null && ftpClient != null) {
                         listener.onFtpError(FtpAction.CHANGE_WORKING_DIR, ftpClient.getReplyCode(), ftpClient.getReplyString());
@@ -718,7 +718,7 @@ public class FtpConnectionManager {
 
                     return false;
                 }
-                logger.debug("working directory changed to: " + workingDir);
+                logger.d("working directory changed to: " + workingDir);
             }
 
             final String encodedFileName = new String(fileName.getBytes("UTF-8"), "ISO-8859-1");
@@ -730,44 +730,42 @@ public class FtpConnectionManager {
 
                     if (ftpFile.isFile()) {
 
-                        logger.debug("current ftp file: " + ftpFile.getName());
+                        logger.d("current ftp file: " + ftpFile.getName());
 
                         final boolean equals = CompareUtils.stringsEqual(ftpFile.getName(), encodedFileName, false);
-                        logger.info("equals " + encodedFileName + ": " + equals);
+                        logger.i("equals " + encodedFileName + ": " + equals);
 
                         if (equals) {
-                            logger.info("ftp file exists");
+                            logger.i("ftp file exists");
                             return true;
                         }
                     }
                 }
             }
         } catch (Exception e) {
-            logger.error("an Exception occurred", e);
+            logger.e("an Exception occurred", e);
 
             if (listener != null && ftpClient != null) {
                 listener.onFtpError(FtpAction.CHECK_FILE, ftpClient.getReplyCode(), ftpClient.getReplyString());
             }
 
-            logger.error("check file " + fileName + " in working directory " + workingDir + " failed");
+            logger.e("check file " + fileName + " in working directory " + workingDir + " failed");
         }
 
         return false;
     }
 
     public synchronized boolean renameFtpFile(String workingDir, String srcFileName, String dstFileName, boolean overwriteExisting) {
-        logger.debug("renameFtpFile(), workingDir=" + workingDir + ", srcFileName=" + srcFileName + ", dstFileName=" + dstFileName,
-                ", overwriteExisting=" + overwriteExisting);
-
+        logger.d("renameFtpFile(), workingDir=" + workingDir + ", srcFileName=" + srcFileName + ", dstFileName=" + dstFileName + ", overwriteExisting=" + overwriteExisting);
 
         if (workingDir == null || workingDir.length() == 0 || srcFileName == null || srcFileName.length() == 0 || dstFileName == null
                 || dstFileName.length() == 0) {
-            logger.error("incorrect remote working directory name or remote source/destination file name");
+            logger.e("incorrect remote working directory name or remote source/destination file name");
             return false;
         }
 
         if (!isConnected()) {
-            logger.error("ftpClient not connected");
+            logger.e("ftpClient not connected");
             return false;
         }
 
@@ -778,7 +776,7 @@ public class FtpConnectionManager {
 
             if (!CompareUtils.stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
                 if (!ftpClient.changeWorkingDirectory(encodedWorkingDir)) {
-                    logger.error("can't change working dir");
+                    logger.e("can't change working dir");
 
                     if (listener != null && ftpClient != null) {
                         listener.onFtpError(FtpAction.CHANGE_WORKING_DIR, ftpClient.getReplyCode(), ftpClient.getReplyString());
@@ -786,7 +784,7 @@ public class FtpConnectionManager {
 
                     return false;
                 }
-                logger.debug("working directory changed to: " + workingDir);
+                logger.d("working directory changed to: " + workingDir);
             }
 
             final String encodedDstFileName = new String(dstFileName.getBytes("UTF-8"), "ISO-8859-1");
@@ -799,7 +797,7 @@ public class FtpConnectionManager {
                 for (String ftpFileName : dstFtpFileNames) {
                     if (!TextUtils.isEmpty(ftpFileName)) {
                         if (ftpFileName.equalsIgnoreCase(encodedDstFileName)) {
-                            logger.warn("ftp file with name " + encodedDstFileName + " already exists");
+                            logger.w("ftp file with name " + encodedDstFileName + " already exists");
                             if (!overwriteExisting) {
                                 proceed = false;
                                 break;
@@ -818,15 +816,15 @@ public class FtpConnectionManager {
                 if (ftpFiles != null && ftpFiles.length > 0) {
                     for (FTPFile ftpFile : ftpFiles) {
 
-                        logger.debug("current ftp file: " + ftpFile.getName());
+                        logger.d("current ftp file: " + ftpFile.getName());
 
                         final boolean equals = CompareUtils.stringsEqual(ftpFile.getName(), encodedSrcFileName, false);
-                        logger.info("equals " + encodedSrcFileName + ": " + equals);
+                        logger.i("equals " + encodedSrcFileName + ": " + equals);
 
                         if (equals) {
-                            logger.info("renaming to " + encodedDstFileName + "...");
+                            logger.i("renaming to " + encodedDstFileName + "...");
                             if (ftpClient.rename(encodedSrcFileName, encodedDstFileName)) {
-                                logger.debug("rename " + srcFileName + " to " + dstFileName + " was successful");
+                                logger.d("rename " + srcFileName + " to " + dstFileName + " was successful");
                                 return true;
                             }
                         }
@@ -836,7 +834,7 @@ public class FtpConnectionManager {
 
 
         } catch (Exception e) {
-            logger.error("an Exception occurred", e);
+            logger.e("an Exception occurred", e);
         }
 
         if (listener != null && ftpClient != null) {

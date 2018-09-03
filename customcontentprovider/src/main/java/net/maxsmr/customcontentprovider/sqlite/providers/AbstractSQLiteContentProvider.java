@@ -15,14 +15,13 @@ import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.StringUtils;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation;
 import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation.SQLiteOperation;
 import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher;
 import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher.URI_MATCH;
 import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher.UriMatcherPair;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +31,7 @@ import java.util.Set;
 
 public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
-    private final static Logger logger = LoggerFactory.getLogger(AbstractSQLiteContentProvider.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(AbstractSQLiteContentProvider.class);
 
     public static final String SCHEME_CONTENT_PROVIDER = ContentResolver.SCHEME_CONTENT;
 
@@ -99,7 +98,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
             checkFields();
             return true;
         } catch (RuntimeException e) {
-            logger.error("a RuntimeException occurred during checkFields()", e);
+            logger.e("a RuntimeException occurred during checkFields()", e);
             return false;
         }
     }
@@ -108,9 +107,9 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
     private List<UriMatcherPair> makeUriMatcherPairs() throws RuntimeException {
 
-        final String[] authorities = getAuthorities();
+        final Set<String> authorities = getAuthorities();
 
-        if (authorities == null || authorities.length == 0)
+        if (authorities.isEmpty())
             throw new RuntimeException("no authorities for this ContentProvider : " + getClass());
 
         if (tableProviders == null || tableProviders.isEmpty())
@@ -138,7 +137,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         return uriMatcherPairs;
     }
 
-    public final String[] getAuthorities() {
+    public final Set<String> getAuthorities() {
         Context context = getContext();
         if (context == null) {
             throw new RuntimeException("context is null");
@@ -171,7 +170,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
     @Override
     public final boolean onCreate() {
-        logger.debug("onCreate()");
+        logger.d("onCreate()");
 
         if (getContext() == null) {
             throw new RuntimeException("context is null");
@@ -186,7 +185,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
     @Override
     public final Cursor query(@NonNull Uri uri, String[] columns, String where, String[] whereArgs, String orderBy) {
-        logger.debug("query(), uri=" + uri + ", columns=" + Arrays.toString(columns) + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs) + ", orderBy=" + orderBy);
+        logger.d("query(), uri=" + uri + ", columns=" + Arrays.toString(columns) + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs) + ", orderBy=" + orderBy);
 
         if (getContext() == null) {
             throw new RuntimeException("context is null");
@@ -235,7 +234,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
     @Override
     public final Uri insert(@NonNull Uri uri, ContentValues values) {
-        logger.debug("insert(), uri=" + uri + ", values=" + values);
+        logger.d("insert(), uri=" + uri + ", values=" + values);
 
         if (getContext() == null) {
             throw new RuntimeException("context is null");
@@ -273,7 +272,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
     @Override
     public final int delete(@NonNull Uri uri, String where, String[] whereArgs) {
-        logger.debug("delete(), uri=" + uri + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs));
+        logger.d("delete(), uri=" + uri + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs));
 
         if (getContext() == null) {
             throw new RuntimeException("context is null");
@@ -323,7 +322,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
     @Override
     public final int update(@NonNull Uri uri, ContentValues values, String where, String[] whereArgs) {
-        logger.debug("update(), uri=" + uri + ", values=" + values + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs));
+        logger.d("update(), uri=" + uri + ", values=" + values + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs));
 
         if (getContext() == null) {
             throw new RuntimeException("context is null");

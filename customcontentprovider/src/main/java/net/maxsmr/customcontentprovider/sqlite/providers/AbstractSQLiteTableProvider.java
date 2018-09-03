@@ -11,19 +11,18 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation;
-
 public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteContentProvider> implements ISQLiteOperation {
 
-    private final static Logger logger = LoggerFactory.getLogger(AbstractSQLiteTableProvider.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(AbstractSQLiteTableProvider.class);
 
     @NonNull
     private final String tableName;
@@ -132,7 +131,7 @@ public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteConten
             }
 
         createScript.append(")");
-        logger.info(createScript.toString());
+        logger.i(createScript.toString());
         db.execSQL(createScript.toString());
     }
 

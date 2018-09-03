@@ -6,10 +6,10 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-public class StatInfo<I extends RunnableInfo, T extends TaskRunnable<I>> {
+public class StatInfo<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
 
     @NonNull
-    private final List<ExecInfo<I, T>> execInfos = new ArrayList<>();
+    private final List<ExecInfo<I, ProgressInfo, Result, T>> execInfos = new ArrayList<>();
 
     @NonNull
     private final T taskRunnable;
@@ -27,16 +27,16 @@ public class StatInfo<I extends RunnableInfo, T extends TaskRunnable<I>> {
         return execInfos.size();
     }
 
-    public List<ExecInfo<I, T>> getExecInfos() {
+    public List<ExecInfo<I, ProgressInfo, Result, T>> getExecInfos() {
         return Collections.unmodifiableList(execInfos);
     }
 
-    void addExecInfo(@NonNull ExecInfo<I, T> execInfo) {
+    void addExecInfo(@NonNull ExecInfo<I, ProgressInfo, Result, T> execInfo) {
         execInfos.add(execInfo);
     }
 
     void resetExecInfos() {
-        for (ExecInfo<I, T> e : execInfos) {
+        for (ExecInfo<I, ProgressInfo, Result, T> e : execInfos) {
             if (e != null) {
                 e.reset();
             }

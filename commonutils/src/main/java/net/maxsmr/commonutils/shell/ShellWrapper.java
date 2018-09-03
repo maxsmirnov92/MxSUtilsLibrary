@@ -20,7 +20,7 @@ import static net.maxsmr.commonutils.shell.CommandResult.DEFAULT_TARGET_CODE;
 
 public class ShellWrapper {
 
-    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ShellWrapper.class);
+    private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ShellWrapper.class);
 
     private static final String EMULATED_STORAGE_SOURCE;
     private static final String EMULATED_STORAGE_TARGET;
@@ -70,7 +70,7 @@ public class ShellWrapper {
             for (CommandInfo v : commandsMap.values()) {
                 if (v != null) {
                     v.result = null;
-                    v.runningThreads = null;
+                    v.startedThreads = null;
                 }
             }
             commandsMap.clear();
@@ -120,7 +120,7 @@ public class ShellWrapper {
     }
 
     public CommandResult executeCommand(List<String> commands, boolean useSU) {
-        logger.d("Execute commands: \"" + commands + "\", useSU: " + useSU);
+        logger.v("Execute commands: \"" + commands + "\", useSU: " + useSU);
 
         if (isDisposed) {
             throw new IllegalStateException(ShellWrapper.class.getSimpleName() + " is disposed");
@@ -153,12 +153,12 @@ public class ShellWrapper {
 
             @Override
             public void shellOut(@NonNull StreamType from, String shellLine) {
-                logger.d("Command \"" + commandInfo.getCommandsToRun() + "\" output " + from + ": " + shellLine);
+                logger.v("Command \"" + commandInfo.getCommandsToRun() + "\" output " + from + ": " + shellLine);
             }
 
             @Override
             public void processStartFailed(Throwable t) {
-                logger.d("Command \"" + commandInfo.getCommandsToRun() + "\" start failed");
+                logger.v("Command \"" + commandInfo.getCommandsToRun() + "\" start failed");
 //                commandInfo.setResult(new CommandResult(targetCode, -1, null, null));
             }
 
@@ -167,14 +167,22 @@ public class ShellWrapper {
 
             }
         }, new ShellUtils.ThreadsCallback() {
+
             @Override
-            public void onThreadsStarted(List<Thread> threads) {
-                commandInfo.setRunningThreads(threads);
+            public void onThreadStarted(@NonNull ShellUtils.CmdThreadInfo info, @NonNull Thread thread) {
+                commandInfo.getStartedThreads();
+                commandInfo.startedThreads.put(info, thread);
+            }
+
+            @Override
+            public void onThreadFinished(@NonNull ShellUtils.CmdThreadInfo info, @NonNull Thread thread) {
+                commandInfo.getStartedThreads();
+                commandInfo.startedThreads.remove(info);
             }
         });
 
         commandInfo.setResult(result);
-        logger.d("Command completed: " + commandInfo);
+        logger.v("Command completed: " + commandInfo);
 
         return result;
     }
@@ -207,7 +215,7 @@ public class ShellWrapper {
         @NonNull
         private final List<String> commandsToRun;
 
-        private List<Thread> runningThreads;
+        private Map<ShellUtils.CmdThreadInfo, Thread> startedThreads;
 
         @Nullable
         private CommandResult result;
@@ -218,7 +226,7 @@ public class ShellWrapper {
 
         public CommandInfo(@NonNull CommandInfo info) {
             this.commandsToRun = info.commandsToRun;
-            this.runningThreads = info.runningThreads;
+            this.startedThreads = info.startedThreads;
             this.result = info.result;
         }
 
@@ -228,7 +236,7 @@ public class ShellWrapper {
         }
 
         public boolean isAnyThreadRunning() {
-            return Predicate.Methods.find(getRunningThreads(), new Predicate<Thread>() {
+            return Predicate.Methods.find(getStartedThreads().values(), new Predicate<Thread>() {
                 @Override
                 public boolean apply(Thread e) {
                     return e != null && e.isAlive();
@@ -236,15 +244,11 @@ public class ShellWrapper {
             }) != null;
         }
 
-        public List<Thread> getRunningThreads() {
-            if (runningThreads == null) {
-                runningThreads = new ArrayList<>();
+        public Map<ShellUtils.CmdThreadInfo, Thread> getStartedThreads() {
+            if (startedThreads == null) {
+                startedThreads = new LinkedHashMap<>();
             }
-            return runningThreads;
-        }
-
-        public void setRunningThreads(@Nullable List<Thread> runningThreads) {
-            this.runningThreads = runningThreads != null ? new ArrayList<>(runningThreads) : new ArrayList<Thread>();
+            return new LinkedHashMap<>(startedThreads);
         }
 
         public boolean isCompleted() {
@@ -268,7 +272,7 @@ public class ShellWrapper {
         public String toString() {
             return "CommandInfo{" +
                     "commandsToRun=" + commandsToRun +
-                    ", runningThreads=" + runningThreads +
+                    ", startedThreads=" + startedThreads +
                     ", result=" + result +
                     '}';
         }

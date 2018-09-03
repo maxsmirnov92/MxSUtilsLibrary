@@ -8,13 +8,14 @@ import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
-public class GuiUtilsTest {
+public class GuiUtilsTest extends LoggerTest {
 
     private static final Point sourceSize = new Point(1920, 1080);
     private static final Point contentSize = new Point(1280, 1024);
 
     @Test
-    public void resizeMethodsTest() {
+    @Override
+    public void test() {
 
         float contentScale = (float) contentSize.x / contentSize.y;
 

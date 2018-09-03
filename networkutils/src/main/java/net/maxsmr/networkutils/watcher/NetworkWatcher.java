@@ -1,62 +1,38 @@
 package net.maxsmr.networkutils.watcher;
 
 import android.content.Context;
-import android.content.Intent;
 import android.net.ConnectivityManager;
-import android.os.PowerManager;
-import android.provider.Settings;
+import android.support.annotation.NonNull;
+import android.support.annotation.Nullable;
 
-import net.maxsmr.commonutils.data.MathUtils;
-import net.maxsmr.networkutils.NetworkType;
+import net.maxsmr.commonutils.android.hardware.DeviceUtils;
+import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+import net.maxsmr.commonutils.shell.RootShellCommands;
 import net.maxsmr.networkutils.NetworkHelper;
+import net.maxsmr.networkutils.NetworkType;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
+import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
+import net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor;
 
 import java.net.InetAddress;
-import java.util.LinkedList;
+import java.util.concurrent.TimeUnit;
+
 
 public class NetworkWatcher {
 
-    private final static Logger logger = LoggerFactory.getLogger(NetworkWatcher.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(NetworkWatcher.class);
 
     private final Context context;
-
-    public interface OnPhoneRebootListener {
-        void onPhoneReboot();
-
-        void onPhoneRebootFailed();
-    }
-
-    private final LinkedList<OnPhoneRebootListener> rebootListeners = new LinkedList<OnPhoneRebootListener>();
-
-    public void addOnPhoneRebootListener(OnPhoneRebootListener listener) throws NullPointerException {
-
-        if (listener == null)
-            throw new NullPointerException();
-
-        synchronized (rebootListeners) {
-            if (!rebootListeners.contains(listener)) {
-                rebootListeners.add(listener);
-            }
-        }
-    }
-
-    public void removeOnPhoneRebootListener(OnPhoneRebootListener listener) {
-        synchronized (rebootListeners) {
-            if (rebootListeners.contains(listener)) {
-                rebootListeners.remove(listener);
-            }
-        }
-    }
 
     private static NetworkWatcher sInstance;
 
     public static void initInstance(Context context) {
         if (sInstance == null) {
             synchronized (NetworkWatcher.class) {
-                logger.debug("initInstance()");
+                logger.d("initInstance()");
                 sInstance = new NetworkWatcher(context);
             }
         }
@@ -69,72 +45,115 @@ public class NetworkWatcher {
         return sInstance;
     }
 
+    public final static long MIN_PREFERABLE_NETWORK_TYPE_SWITCH_TIME = 600000;
+
+    public final static long DEFAULT_PREFERABLE_NETWORK_TYPE_SWITCH_TIME = MIN_PREFERABLE_NETWORK_TYPE_SWITCH_TIME;
+
+    public final static NetworkType DEFAULT_PREFERABLE_NETWORK_TYPE = NetworkType.WIFI;
+
+    public final static long DEFAULT_HOST_PING_PERIOD = 10000;
+
+    public final static long DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT = 60000;
+
+    public final static int DEFAULT_TOGGLE_AIRPLANE_MODE_ATTEMPTS_LIMIT = 3;
+
+    public final static int DEFAULT_AIRPLANE_MODE_TIME = 15000;
+
+    public final static int DEFAULT_AIRPLANE_MODE_POST_WAIT = 60000;
+
+    private final HostPingObserbable hostPingListeners = new HostPingObserbable();
+
+    private final RebootObservable rebootListeners = new RebootObservable();
+
+    private final TaskRunnableExecutor<RestoreNetworkRunnableInfo, Void, Void, RestoreNetworkRunnable> restoreExecutor = new TaskRunnableExecutor<>(TaskRunnableExecutor.TASKS_NO_LIMIT, 1,
+            TaskRunnableExecutor.DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS, "RestoreNetworkTask", null,
+            null, null);
+
+    private final ScheduledThreadPoolExecutorManager hostPingExecutor = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, "HostPingTask");
+
+    private HostPingRunnable hostPingRunnable;
+
+    private NetworkType preferableNetworkType = DEFAULT_PREFERABLE_NETWORK_TYPE;
+
+    private long preferableNetworkTypeSwitchTime = DEFAULT_PREFERABLE_NETWORK_TYPE_SWITCH_TIME;
+
+    private int toggleAirplaneModeAttemptsLimit = DEFAULT_TOGGLE_AIRPLANE_MODE_ATTEMPTS_LIMIT;
+
+    private boolean enableToggleAirplaneMode = false;
+
+    private boolean enableSwitchNetworkInterface = false;
+
+    private int airplaneModeTime = DEFAULT_AIRPLANE_MODE_TIME;
+
+    private int airplaneModePostWait = DEFAULT_AIRPLANE_MODE_POST_WAIT;
+
+    private double lastHostPingTime = -1;
+
     private NetworkWatcher(Context context) {
         this.context = context;
     }
 
-    public final static NetworkType DEFAULT_PREFERABLE_NETWORK_TYPE = NetworkType.WIFI;
-    private NetworkType preferableNetworkType = DEFAULT_PREFERABLE_NETWORK_TYPE;
+    public void addHostPingListener(@NonNull HostPingListener listener) throws NullPointerException {
+        hostPingListeners.registerObserver(listener);
+    }
+
+    public void removeHostPingListener(@NonNull HostPingListener listener) {
+        hostPingListeners.unregisterObserver(listener);
+    }
+
+    public void addOnPhoneRebootListener(@NonNull PhoneRebootListener listener) {
+        rebootListeners.registerObserver(listener);
+    }
+
+    public void removeOnPhoneRebootListener(@NonNull PhoneRebootListener listener) {
+        rebootListeners.unregisterObserver(listener);
+    }
 
     public NetworkType getPreferableNetworkType() {
         return preferableNetworkType;
     }
-
-    public final static long MIN_PREFERABLE_NETWORK_TYPE_SWITCH_TIME = 600000;
-    public final static long DEFAULT_PREFERABLE_NETWORK_TYPE_SWITCH_TIME = MIN_PREFERABLE_NETWORK_TYPE_SWITCH_TIME;
-    private long preferableNetworkTypeSwitchTime = DEFAULT_PREFERABLE_NETWORK_TYPE_SWITCH_TIME;
 
     public long getPreferableNetworkTypeSwitchTime() {
         return preferableNetworkTypeSwitchTime;
     }
 
     public void setPreferableNetworkTypeAndSwitchTime(NetworkType preferableNetworkType, long preferableNetworkTypeSwitchTime) {
-        logger.debug("setPreferableNetworkTypeAndSwitchTime(), preferableNetworkType=" + preferableNetworkType
+        logger.d("setPreferableNetworkTypeAndSwitchTime(), preferableNetworkType=" + preferableNetworkType
                 + ", preferableNetworkTypeSwitchTime=" + preferableNetworkTypeSwitchTime);
 
         if (preferableNetworkType != null && ConnectivityManager.isNetworkTypeValid(preferableNetworkType.getValue())
                 || preferableNetworkType == NetworkType.NONE) {
             this.preferableNetworkType = preferableNetworkType;
         } else {
-            logger.error("incorrect preferableNetworkType: " + preferableNetworkType);
+            logger.e("incorrect preferableNetworkType: " + preferableNetworkType);
         }
 
         if (preferableNetworkTypeSwitchTime >= MIN_PREFERABLE_NETWORK_TYPE_SWITCH_TIME) {
             this.preferableNetworkTypeSwitchTime = preferableNetworkTypeSwitchTime;
         } else {
-            logger.error("incorrect preferableNetworkTypeSwitchTime: " + preferableNetworkTypeSwitchTime);
+            logger.e("incorrect preferableNetworkTypeSwitchTime: " + preferableNetworkTypeSwitchTime);
         }
     }
-
-    private boolean enableToggleAirplaneMode = false;
 
     public boolean isToggleAirplaneModeEnabled() {
         return enableToggleAirplaneMode;
     }
 
-    public final static int DEFAULT_TOGGLE_AIRPLANE_MODE_ATTEMPTS_LIMIT = 3;
-    private int toggleAirplaneModeAttemptsLimit = DEFAULT_TOGGLE_AIRPLANE_MODE_ATTEMPTS_LIMIT;
-
     public int getToggleAirplaneModeAttemptsLimit() {
         return toggleAirplaneModeAttemptsLimit;
     }
 
-    public final static int DEFAULT_AIRPLANE_MODE_TIME = 15000;
-    private int airplaneModeTime = DEFAULT_AIRPLANE_MODE_TIME;
 
     public int getAirplaneModeTime() {
         return airplaneModeTime;
     }
-
-    public final static int DEFAULT_AIRPLANE_MODE_POST_WAIT = 60000;
-    private int airplaneModePostWait = DEFAULT_AIRPLANE_MODE_POST_WAIT;
 
     public int getAirplaneModePostWait() {
         return airplaneModePostWait;
     }
 
     public void enableToggleAirplaneMode(boolean enable, int attemptsLimit, int airplaneModeTime, int airplaneModePostWait) {
-        logger.debug("enableToggleAirplaneMode(), enable=" + enable + ", attemptsLimit=" + attemptsLimit + ", airplaneModeTime="
+        logger.d("enableToggleAirplaneMode(), enable=" + enable + ", attemptsLimit=" + attemptsLimit + ", airplaneModeTime="
                 + airplaneModeTime + ", airplaneModePostWait=" + airplaneModePostWait);
 
         enableToggleAirplaneMode = enable;
@@ -165,7 +184,7 @@ public class NetworkWatcher {
     }
 
     public void enableRebootingPhone(boolean enable) {
-        logger.debug("enableRebootingPhone(), enable=" + enable);
+        logger.d("enableRebootingPhone(), enable=" + enable);
 
         if (enable) {
             if (!enableToggleAirplaneMode) {
@@ -176,8 +195,6 @@ public class NetworkWatcher {
         enableRebootingPhone = enable;
     }
 
-    private boolean enableSwitchNetworkInterface = false;
-
     public boolean isSwitchingNetworkInterfaceEnabled() {
         return enableSwitchNetworkInterface;
     }
@@ -186,207 +203,134 @@ public class NetworkWatcher {
         enableSwitchNetworkInterface = enable;
     }
 
-    @SuppressWarnings("deprecation")
-    public static void toggleAirplaneMode(boolean enable, Context ctx) {
-        logger.debug("toggleAirplaneMode(), enable=" + enable);
-
-        if (ctx == null) {
-            return;
-        }
-
-        // boolean isEnabled = Settings.System.getInt(getContentResolver(), Settings.System.AIRPLANE_MODE_ON, 0) == 1;
-
-        Settings.System.putInt(ctx.getContentResolver(), Settings.System.AIRPLANE_MODE_ON, enable ? 1 : 0); // isEnabled
-
-        // send an intent to reload
-        Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-        intent.putExtra("state", enable); // !isEnabled
-        ctx.sendBroadcast(intent);
-    }
-
-    public static boolean rebootPhoneByShell() {
-        logger.debug("rebootPhoneByShell()");
-        try {
-            Process proc = Runtime.getRuntime().exec(new String[]{"su", "-c", "reboot"});
-            return proc.waitFor() == 0;
-        } catch (Exception e) {
-            logger.error("Could not reboot", e);
-            return false;
-        }
-    }
-
-    /**
-     * requires reboot permission that granted only to system apps
-     */
-    public static boolean rebootPhoneByPowerManager(Context ctx) {
-        logger.debug("rebootPhoneByPowerManager()");
-        try {
-            ((PowerManager) ctx.getSystemService(Context.POWER_SERVICE)).reboot(null);
-            return true;
-        } catch (Exception e) {
-            logger.error("an Exception occurred during reboot(): " + e.getMessage());
-            return false;
-        }
-    }
-
-    public final static long DEFAULT_HOST_PING_PERIOD = 10000;
-
-    private final ScheduledThreadPoolExecutorManager hostPingExecutor = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, "HostPingTask");
-    private HostPingTask hostPingTask;
-
     public boolean isHostPingTaskRunning() {
         return hostPingExecutor.isRunning();
     }
 
-    public synchronized void startHostPingTask(final long period, final String pingIpAddress, final int pingCount, final long timeout) {
-        logger.debug("startHostPingTask(), period=" + period + ", pingIpAddress=" + pingIpAddress + ", pingCount=" + pingCount
+    public synchronized void startHostPingTask(final long period, final String pingAddress, final int pingCount, final long timeout) {
+        logger.d("startHostPingTask(), period=" + period + ", pingAddress=" + pingAddress + ", pingCount=" + pingCount
                 + ", timeout=" + timeout);
 
-        new Thread(new Runnable() {
+        stopRestoreNetworkRunnable();
 
-            @Override
-            public void run() {
-
-                InetAddress pingInetAddress = NetworkHelper.getInetAddressByIp(pingIpAddress);
-
-                if (pingInetAddress == null) {
-                    logger.error("incorrect ping ip address: " + pingIpAddress);
-                    return;
-                }
-
-                stopRestoreNetworkThread();
-
-                hostPingExecutor.addRunnableTask(hostPingTask = new HostPingTask(pingInetAddress, pingCount, timeout >= 0 ? timeout
-                        : HostPingTask.DEFAULT_TIMEOUT));
-                hostPingExecutor.restart(period > 0 ? period : DEFAULT_HOST_PING_PERIOD);
-            }
-
-        }).start();
+        hostPingExecutor.addRunnableTask(hostPingRunnable = new HostPingRunnable(pingAddress, pingCount, timeout >= 0 ? timeout
+                : HostPingRunnable.DEFAULT_TIMEOUT));
+        hostPingExecutor.restart(period > 0 ? period : DEFAULT_HOST_PING_PERIOD);
     }
 
     public synchronized void stopHostPingTask() {
-        logger.debug("stopHostPingTask()");
+        logger.d("stopHostPingTask()");
 
         if (!isHostPingTaskRunning()) {
-            logger.debug("host ping task is not running");
+            logger.d("host ping task is not running");
             return;
         }
 
-        hostPingExecutor.removeRunnableTask(hostPingTask);
-        hostPingTask = null;
-        hostPingExecutor.stop(false, 0);
+        hostPingExecutor.removeRunnableTask(hostPingRunnable);
+        hostPingRunnable = null;
+        hostPingExecutor.stop();
 
-        stopRestoreNetworkThread();
+        stopRestoreNetworkRunnable();
     }
 
-    public interface HostPingListener {
-        void onHostPingStateChanged(PING_STATE state);
 
-        void onHostPingTimeChanged(double pingTime);
-    }
-
-    private final LinkedList<HostPingListener> hostPingListeners = new LinkedList<HostPingListener>();
-
-    public void addHostPingListener(HostPingListener listener) throws NullPointerException {
-
-        if (listener == null)
-            throw new NullPointerException();
-
-        synchronized (hostPingListeners) {
-            if (!hostPingListeners.contains(listener)) {
-                hostPingListeners.add(listener);
-            }
-        }
-    }
-
-    public void removeHostPingListener(HostPingListener listener) {
-        synchronized (hostPingListeners) {
-            if (hostPingListeners.contains(listener)) {
-                hostPingListeners.remove(listener);
-            }
-        }
-    }
-
-    public PING_STATE getLastHostPingState() {
+    public PingState getLastHostPingState() {
 
         if (!isHostPingTaskRunning()) {
-            logger.error("can't get last ping state: host ping task is not running");
-            return PING_STATE.NONE;
+            logger.e("can't get last ping state: host ping task is not running");
+            return PingState.NONE;
         }
 
-        return hostPingTask.getLastHostPingState();
+        return hostPingRunnable.getLastHostPingState();
     }
 
     public double getLastHostPingTime() {
 
         if (!isHostPingTaskRunning()) {
-            logger.error("can't get last ping time: host ping task is not running");
-            return NetworkHelper.PING_TIME_NONE;
+            logger.e("can't get last ping time: host ping task is not running");
+            return -1;
         }
 
-        return hostPingTask.getLastHostPingTime();
+        return hostPingRunnable.getLastHostPingTime();
     }
 
-    public class HostPingTask implements Runnable {
+    private boolean isRestoreNetworkRunnableRunning() {
+        return restoreExecutor.containsTask(RestoreNetworkRunnableInfo.RESTORE_RUNNABLE_ID, TaskRunnableExecutor.RunnableType.ACTIVE);
+    }
+
+    private void stopRestoreNetworkRunnable() {
+        if (isRestoreNetworkRunnableRunning()) {
+            restoreExecutor.cancelTask(RestoreNetworkRunnableInfo.RESTORE_RUNNABLE_ID);
+        }
+    }
+
+    public interface HostPingListener {
+
+        void onHostPingStateChanged(@NonNull PingState state);
+
+        void onHostPingTimeChanged(double pingTime);
+    }
+
+    public interface PhoneRebootListener {
+
+        void onPhoneRebootStarting();
+
+        void onPhoneRebootFailed();
+    }
+
+    private enum RestoreMethod {
+        NONE, TOGGLE_AIRPLANE_MODE, REBOOT_PHONE
+    }
+
+    public class HostPingRunnable implements Runnable {
+
+        public final static String DEFAULT_PING_IP_ADDRESS = "8.8.8.8";
+
+        public final static long DEFAULT_TIMEOUT = 20000;
+
+        public final static int DEFAULT_PING_COUNT = 10;
+
+        private final String pingAddress;
+
+        private final int pingCount;
+
+        private final long timeout;
+
+        private int lastActiveNetworkType = NetworkHelper.NETWORK_TYPE_NONE;
+        private long lastActiveNetworkTypeStartTime = 0;
 
         private int toggleAirplaneModeAttempts = 0;
 
-        private PING_STATE lastHostPingState = PING_STATE.NONE;
+        @NonNull
+        private PingState lastHostPingState = PingState.NONE;
 
-        public PING_STATE getLastHostPingState() {
+        @NonNull
+        public PingState getLastHostPingState() {
             return lastHostPingState;
         }
 
-        private void setLastPingState(PING_STATE state) {
-
-            lastHostPingState = state;
-            logger.debug("last host ping state: " + state);
-
-            synchronized (hostPingListeners) {
-                if (hostPingListeners.size() > 0) {
-                    for (HostPingListener l : hostPingListeners) {
-                        l.onHostPingStateChanged(lastHostPingState);
-                    }
-                }
+        private void setLastPingState(PingState state) {
+            if (lastHostPingState != state) {
+                lastHostPingState = state;
+                logger.d("last host ping state: " + state);
+                hostPingListeners.notifyHostPingStateChanged(state);
             }
         }
-
-        private double lastHostPingTime = NetworkHelper.PING_TIME_NONE;
 
         public double getLastHostPingTime() {
             return lastHostPingTime;
         }
 
         private void setLastPingTime(double time) {
-
-            lastHostPingTime = time;
-            logger.debug("last host ping time: " + time);
-
-            synchronized (hostPingListeners) {
-                if (hostPingListeners.size() > 0) {
-                    for (HostPingListener l : hostPingListeners) {
-                        l.onHostPingTimeChanged(time);
-                    }
-                }
+            if (Double.compare(time, lastHostPingTime) != 0) {
+                lastHostPingTime = time;
+                logger.d("last host ping time: " + time);
+                hostPingListeners.notifyHostPingTimeChanged(lastHostPingTime);
             }
         }
 
-        public final static String DEFAULT_PING_IP_ADDRESS = "8.8.8.8";
-        private final InetAddress inetAddress;
-
-        public final static long DEFAULT_TIMEOUT = 20000;
-        private final long timeout;
-
-        public final static int DEFAULT_PING_COUNT = 10;
-        private final int pingCount;
-
-        private int lastActiveNetworkType = NetworkHelper.NETWORK_TYPE_NONE;
-        private long lastActiveNetworkTypeStartTime = 0;
-
-        private HostPingTask(InetAddress inetAddress, int pingCount, long timeout) {
-            logger.debug("HostPingTask()");
-
-            this.inetAddress = inetAddress;
+        private HostPingRunnable(String pingAddress, int pingCount, long timeout) {
+            this.pingAddress = pingAddress;
             this.pingCount = pingCount < 1 ? DEFAULT_PING_COUNT : pingCount;
             this.timeout = timeout < 0 ? DEFAULT_TIMEOUT : timeout;
         }
@@ -397,46 +341,52 @@ public class NetworkWatcher {
         }
 
         private void doHostPing() {
-            logger.debug("doHostPing()");
+            logger.d("doHostPing()");
 
-            if (inetAddress == null) {
-                logger.error("inet address is null");
-                return;
+            InetAddress pingInetAddress = NetworkHelper.getInetAddressByIp(pingAddress);
+
+            if (pingInetAddress == null) {
+                pingInetAddress = NetworkHelper.getInetAddressByDomain(pingAddress);
+                if (pingInetAddress == null) {
+                    logger.e("incorrect ping ip or domain address: " + pingAddress);
+                    return;
+                }
             }
 
             if (lastActiveNetworkType != NetworkHelper.getActiveNetworkType(context)) {
-                logger.info("active network type has been changed: " + NetworkHelper.getActiveNetworkType(context) + " / previous: "
+                logger.i("active network type has been changed: " + NetworkHelper.getActiveNetworkType(context) + " / previous: "
                         + lastActiveNetworkType);
                 lastActiveNetworkType = NetworkHelper.getActiveNetworkType(context);
                 lastActiveNetworkTypeStartTime = System.currentTimeMillis();
             }
 
-            setLastPingState(PING_STATE.PINGING);
-            setLastPingTime(NetworkHelper.isReachable(inetAddress, pingCount, MathUtils.safeLongToInt(timeout / 1000)));
+            setLastPingState(PingState.PINGING);
+            setLastPingTime(NetworkHelper.pingHost(pingInetAddress, pingCount, timeout, TimeUnit.MILLISECONDS));
 
-            if (lastHostPingTime != NetworkHelper.PING_TIME_NONE) {
+            if (lastHostPingTime > 0) {
 
-                logger.info("remote host is reachable");
-                setLastPingState(PING_STATE.REACHABLE);
+                logger.i("remote host is reachable");
+                setLastPingState(PingState.REACHABLE);
 
                 toggleAirplaneModeAttempts = 0;
 
-                stopRestoreNetworkThread();
+                stopRestoreNetworkRunnable();
 
-                logger.info("active network type: " + NetworkHelper.getActiveNetworkType(context) + " / preferable network type: "
+                logger.i("active network type: " + NetworkHelper.getActiveNetworkType(context) + " / preferable network type: "
                         + preferableNetworkType);
 
-                final long lastActiveNetworkTypeTime = System.currentTimeMillis() - lastActiveNetworkTypeStartTime;
+                final long currentTime = System.currentTimeMillis();
+                final long lastActiveNetworkTypeTime = currentTime > lastActiveNetworkTypeStartTime? currentTime - lastActiveNetworkTypeStartTime : 0;
 
-                logger.info("last active network type time: " + lastActiveNetworkTypeTime / 1000 + " s");
+                logger.i("last active network type time: " + TimeUnit.MILLISECONDS.toSeconds(lastActiveNetworkTypeTime) + " s");
 
                 if (preferableNetworkType.getValue() != NetworkHelper.getActiveNetworkType(context)
                         && preferableNetworkType.getValue() != NetworkHelper.NETWORK_TYPE_NONE) {
 
-                    logger.info("active network type not equals preferable, switching (enabled: " + enableSwitchNetworkInterface + ")...");
+                    logger.i("active network type not equals preferable, switching (enabled: " + enableSwitchNetworkInterface + ")...");
 
-                    if (preferableNetworkType.getValue() == ConnectivityManager.TYPE_MOBILE && !NetworkHelper.isSimCardInserted(context)) {
-                        logger.warn("preferable network type is mobile but sim card is NOT inserted, NO need to switch");
+                    if (preferableNetworkType.getValue() == ConnectivityManager.TYPE_MOBILE && !DeviceUtils.isSimCardInserted(context)) {
+                        logger.w("preferable network type is mobile but sim card is NOT inserted, NO need to switch");
                         return;
                     }
 
@@ -444,19 +394,17 @@ public class NetworkWatcher {
 
                         if (enableSwitchNetworkInterface) {
 
-                            restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, preferableNetworkType,
-                                    DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT);
-                            restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
-                            restoreNetworkThread.start();
+                            restoreExecutor.execute(new RestoreNetworkRunnable(RestoreMethod.NONE, 0, 0, preferableNetworkType,
+                                    DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT));
 
                             return;
 
                         } else {
-                            logger.warn("switching network interface is NOT enabled");
+                            logger.w("switching network interface is NOT enabled");
                         }
 
                     } else {
-                        logger.warn("last active network type time is not enough (need " + preferableNetworkTypeSwitchTime / 1000
+                        logger.w("last active network type time is not enough (need " + preferableNetworkTypeSwitchTime / 1000
                                 + " s), NO switching to preferable network type");
                     }
 
@@ -465,60 +413,50 @@ public class NetworkWatcher {
                 return;
             }
 
-            // for (int i = 0; i < pingCount; i++) {
-            // if (NetworkHelper.isReachable(inetAddress, timeout)) {
-            //
-            // }
-            // }
+            logger.e("remote host " + pingInetAddress.getHostAddress() + " is not reachable");
+            setLastPingState(PingState.NOT_REACHABLE);
 
-            logger.error("remote host " + inetAddress.getHostAddress() + " is not reachable");
-            setLastPingState(PING_STATE.NOT_REACHABLE);
-
-            if (isRestoreNetworkThreadRunning()) {
-                logger.warn("restoring network is already running!");
+            if (isRestoreNetworkRunnableRunning()) {
+                logger.w("restoring network is already running!");
                 return;
             }
 
             if (NetworkHelper.isWifiNetworkType(NetworkHelper.getActiveNetworkType(context)) || NetworkHelper.isWifiEnabled(context)) {
 
-                logger.info("network type is wifi or wifi is enabled");
+                logger.i("network type is wifi or wifi is enabled");
 
-                if (!NetworkHelper.isSimCardInserted(context)) {
+                if (!DeviceUtils.isSimCardInserted(context)) {
 
-                    logger.info("sim card is NOT inserted");
+                    logger.i("sim card is NOT inserted");
 
                     if (enableSwitchNetworkInterface) {
 
-                        logger.info("switching wifi network ON/OFF...");
+                        logger.i("switching wifi network ON/OFF...");
 
-                        restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NetworkType.WIFI,
-                                DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT);
-                        restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
-                        restoreNetworkThread.start();
+                        restoreExecutor.execute(new RestoreNetworkRunnable(RestoreMethod.NONE, 0, 0, NetworkType.WIFI,
+                                DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT));
 
                         return;
 
                     } else {
-                        logger.warn("switching network interface is NOT enabled");
+                        logger.w("switching network interface is NOT enabled");
                     }
 
                 } else {
 
-                    logger.info("sim card is inserted");
+                    logger.i("sim card is inserted");
 
                     if (enableSwitchNetworkInterface) {
 
-                        logger.info("turning OFF wifi and turning ON mobile data connection...");
+                        logger.i("turning OFF wifi and turning ON mobile data connection...");
 
-                        restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NetworkType.MOBILE,
-                                DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT);
-                        restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
-                        restoreNetworkThread.start();
+                        restoreExecutor.execute(new RestoreNetworkRunnable(RestoreMethod.NONE, 0, 0, NetworkType.MOBILE,
+                                DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT));
 
                         return;
 
                     } else {
-                        logger.warn("switching network interface is NOT enabled");
+                        logger.w("switching network interface is NOT enabled");
                     }
 
                 }
@@ -526,88 +464,73 @@ public class NetworkWatcher {
 
             if (NetworkHelper.isMobileNetworkType(NetworkHelper.getActiveNetworkSubtype(context)) || !NetworkHelper.isOnline(context)) {
 
-                logger.info("network type is mobile or none");
+                logger.i("network type is mobile or none");
 
-                if (!NetworkHelper.isSimCardInserted(context)) {
-                    logger.info("sim card is NOT inserted");
+                if (!DeviceUtils.isSimCardInserted(context)) {
+                    logger.i("sim card is NOT inserted");
 
                     if (enableSwitchNetworkInterface) {
 
-                        logger.info("turning ON wifi...");
+                        logger.i("turning ON wifi...");
 
-                        restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NetworkType.WIFI,
-                                DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT);
-                        restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
-                        restoreNetworkThread.start();
-
-                        return;
+                        restoreExecutor.execute(new RestoreNetworkRunnable(RestoreMethod.NONE, 0, 0, NetworkType.WIFI,
+                                DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT));
 
                     } else {
-                        logger.warn("switching network interface is NOT enabled");
+                        logger.w("switching network interface is NOT enabled");
                     }
 
                 } else {
-                    logger.info("sim card is inserted");
+                    logger.i("sim card is inserted");
 
                     if (enableToggleAirplaneMode) {
 
-                        logger.info("toggle airplane mode is enabled, toggleAirplaneModeAttempts=" + toggleAirplaneModeAttempts + "/"
+                        logger.i("toggle airplane mode is enabled, toggleAirplaneModeAttempts=" + toggleAirplaneModeAttempts + "/"
                                 + toggleAirplaneModeAttemptsLimit);
 
                         if (toggleAirplaneModeAttempts < toggleAirplaneModeAttemptsLimit) {
 
+                            logger.i("turning ON airplane mode...");
+
+                            restoreExecutor.execute(new RestoreNetworkRunnable(RestoreMethod.TOGGLE_AIRPLANE_MODE, airplaneModeTime,
+                                    airplaneModePostWait, NetworkType.NONE, 0));
+
                             toggleAirplaneModeAttempts++;
-
-                            logger.info("turning ON airplane mode...");
-
-                            restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.TOGGLE_AIRPLANE_MODE, airplaneModeTime,
-                                    airplaneModePostWait, NetworkType.NONE, 0);
-                            restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
-                            restoreNetworkThread.start();
-
-                            return;
 
                         } else {
 
-                            logger.warn("toggle airplane mode attempts limit has been reached!");
+                            logger.w("toggle airplane mode attempts limit has been reached!");
 
                             if (enableRebootingPhone) {
 
-                                logger.info("rebooting phone is enabled");
+                                logger.i("rebooting phone is enabled");
 
                                 toggleAirplaneModeAttempts = 0;
 
-                                logger.info("rebooting...");
+                                logger.i("rebooting...");
 
-                                restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.REBOOT_PHONE, 0, 0, NetworkType.WIFI, 0);
-                                restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
-                                restoreNetworkThread.start();
+                                restoreExecutor.execute(new RestoreNetworkRunnable(RestoreMethod.REBOOT_PHONE, 0, 0, NetworkType.WIFI, 0));
 
-                                return;
 
                             } else {
 
-                                logger.warn("rebooting phone is NOT enabled");
+                                logger.w("rebooting phone is NOT enabled");
 
                                 if (enableSwitchNetworkInterface) {
 
-                                    logger.info("turning OFF mobile data connection and turning ON wifi...");
+                                    logger.i("turning OFF mobile data connection and turning ON wifi...");
 
-                                    restoreNetworkThread = new RestoreNetworkThread(RESTORE_METHOD.NONE, 0, 0, NetworkType.WIFI,
-                                            DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT);
-                                    restoreNetworkThread.setName(RestoreNetworkThread.class.getSimpleName());
-                                    restoreNetworkThread.start();
-
-                                    return;
+                                    restoreExecutor.execute(new RestoreNetworkRunnable(RestoreMethod.NONE, 0, 0, NetworkType.WIFI,
+                                            DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT));
 
                                 } else {
-                                    logger.warn("switching network interface is NOT enabled");
+                                    logger.w("switching network interface is NOT enabled");
                                 }
                             }
                         }
 
                     } else {
-                        logger.warn("toggle airplane mode is NOT enabled");
+                        logger.w("toggle airplane mode is NOT enabled");
                     }
 
                 }
@@ -616,29 +539,119 @@ public class NetworkWatcher {
         }
     }
 
-    private static enum RESTORE_METHOD {
-        NONE, TOGGLE_AIRPLANE_MODE, REBOOT_PHONE
-    }
 
-    public final static long DEFAULT_NETWORK_TYPE_SWITCH_POST_WAIT = 60000;
+    private class RestoreNetworkRunnable extends TaskRunnable<RestoreNetworkRunnableInfo, Void, Void> {
 
-    private RestoreNetworkThread restoreNetworkThread;
+        public RestoreNetworkRunnable(RestoreMethod restoreMethod, long airplaneModeTime, long airplaneModePostWait,
+                                      NetworkType networkTypeToSwitch, long networkTypeSwitchPostWait) {
+            super(new RestoreNetworkRunnableInfo(restoreMethod, airplaneModeTime, airplaneModePostWait, networkTypeToSwitch, networkTypeSwitchPostWait));
+        }
 
-    private boolean isRestoreNetworkThreadRunning() {
-        return (restoreNetworkThread != null && restoreNetworkThread.isAlive());
-    }
+        @Nullable
+        @Override
+        protected Void doWork() throws Throwable {
+            logger.d("network type to switch: " + rInfo.networkTypeToSwitch);
 
-    private void stopRestoreNetworkThread() {
-        if (isRestoreNetworkThreadRunning()) {
-            logger.debug("restoring network thread is running, interrupting...");
-            restoreNetworkThread.interrupt();
-            restoreNetworkThread = null;
+            switch (rInfo.networkTypeToSwitch) {
+                case WIFI:
+
+                    logger.d("disabling mobile data connection...");
+                    NetworkHelper.enableMobileDataConnection(context, false);
+
+                    logger.d("enabling wifi connection...");
+                    if (NetworkHelper.isWifiEnabled(context)) {
+                        logger.d("wifi already enabled, disabling first...");
+                        NetworkHelper.enableWifiConnection(context, false);
+                    }
+                    NetworkHelper.enableWifiConnection(context, true);
+
+                    break;
+
+                case MOBILE:
+
+                    logger.d("disabling wifi connection...");
+                    NetworkHelper.enableWifiConnection(context, false);
+
+                    logger.d("enabling mobile connection...");
+                    NetworkHelper.enableMobileDataConnection(context, true);
+                    break;
+
+                default:
+                    break;
+            }
+
+            if (rInfo.networkTypeToSwitch != NetworkType.NONE) {
+
+                if (rInfo.networkTypeSwitchPostWait > 0) {
+                    try {
+                        Thread.sleep(rInfo.networkTypeSwitchPostWait);
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        logger.e("an InterruptedException exception occurred during sleep(): " + e.getMessage());
+                    }
+                }
+            }
+
+            logger.d("restore method: " + rInfo.restoreMethod);
+
+            switch (rInfo.restoreMethod) {
+
+                case NONE:
+                    break;
+
+                case TOGGLE_AIRPLANE_MODE:
+
+                    logger.w("turning ON airplane mode...");
+                    DeviceUtils.toggleAirplaneMode(true, context);
+
+                    if (rInfo.airplaneModeTime > 0) {
+                        logger.d("sleeping " + rInfo.airplaneModeTime + " ms...");
+                        try {
+                            Thread.sleep(rInfo.airplaneModeTime);
+                        } catch (InterruptedException e) {
+                            logger.e("an InterruptedException occurred during sleep(): " + e.getMessage());
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+
+                    logger.i("turning OFF airplane mode...");
+                    DeviceUtils.toggleAirplaneMode(false, context);
+
+                    if (rInfo.airplaneModePostWait > 0) {
+                        logger.d("sleeping " + rInfo.airplaneModePostWait + " ms...");
+                        try {
+                            Thread.sleep(rInfo.airplaneModePostWait);
+                        } catch (InterruptedException e) {
+                            logger.e("an InterruptedException occurred during sleep(): " + e.getMessage());
+                            Thread.currentThread().interrupt();
+                        }
+                    }
+
+                    break;
+
+                case REBOOT_PHONE:
+
+                    rebootListeners.notifyRebootStarting();
+
+                    logger.w("trying to reboot phone by shell...");
+                    if (!RootShellCommands.reboot()) {
+                        logger.e("reboot failed");
+
+                        rebootListeners.notifyRebootFailed();
+                    }
+
+                    break;
+            }
+
+            return null;
         }
     }
 
-    private class RestoreNetworkThread extends Thread {
+    private static class RestoreNetworkRunnableInfo extends RunnableInfo {
 
-        private final RESTORE_METHOD restoreMethod;
+        final static int RESTORE_RUNNABLE_ID = 1;
+
+        private final RestoreMethod restoreMethod;
 
         private final long airplaneModeTime;
         private final long airplaneModePostWait;
@@ -646,13 +659,14 @@ public class NetworkWatcher {
         private final NetworkType networkTypeToSwitch;
         private final long networkTypeSwitchPostWait;
 
-        public RestoreNetworkThread(RESTORE_METHOD restoreMethod, long airplaneModeTime, long airplaneModePostWait,
-                                    NetworkType networkTypeToSwitch, long networkTypeSwitchPostWait) {
+        public RestoreNetworkRunnableInfo(RestoreMethod restoreMethod, long airplaneModeTime, long airplaneModePostWait,
+                                          NetworkType networkTypeToSwitch, long networkTypeSwitchPostWait) {
+            super(RESTORE_RUNNABLE_ID);
 
             if (restoreMethod != null) {
                 this.restoreMethod = restoreMethod;
             } else {
-                this.restoreMethod = RESTORE_METHOD.NONE;
+                this.restoreMethod = RestoreMethod.NONE;
             }
 
             if (airplaneModeTime < 0) {
@@ -686,115 +700,45 @@ public class NetworkWatcher {
             } else {
                 this.networkTypeSwitchPostWait = networkTypeSwitchPostWait;
             }
-
         }
+    }
 
-        @Override
-        public void run() {
+    private static class HostPingObserbable extends Observable<HostPingListener> {
 
-            logger.debug("network type to switch: " + networkTypeToSwitch);
-
-            switch (networkTypeToSwitch) {
-                case WIFI:
-
-                    logger.debug("disabling mobile data connection...");
-                    NetworkHelper.enableMobileDataConnection(context, false);
-
-                    logger.debug("enabling wifi connection...");
-                    if (NetworkHelper.isWifiEnabled(context)) {
-                        logger.debug("wifi already enabled, disabling first...");
-                        NetworkHelper.enableWifiConnection(context, false);
-                    }
-                    NetworkHelper.enableWifiConnection(context, true);
-
-                    break;
-
-                case MOBILE:
-
-                    logger.debug("disabling wifi connection...");
-                    NetworkHelper.enableWifiConnection(context, false);
-
-                    logger.debug("enabling mobile connection...");
-                    NetworkHelper.enableMobileDataConnection(context, true);
-                    break;
-
-                default:
-                    break;
-            }
-
-            if (networkTypeToSwitch != NetworkType.NONE) {
-
-                try {
-                    Thread.sleep(networkTypeSwitchPostWait);
-                } catch (InterruptedException e) {
-                    logger.error("an InterruptedException exception occurred during sleep(): " + e.getMessage());
-                    Thread.currentThread().interrupt();
+        private void notifyHostPingTimeChanged(double pingTime) {
+            synchronized (observers) {
+                for (HostPingListener l : observers) {
+                    l.onHostPingTimeChanged(pingTime);
                 }
             }
+        }
 
-            logger.debug("restore method: " + restoreMethod);
-
-            switch (restoreMethod) {
-
-                case NONE:
-                    break;
-
-                case TOGGLE_AIRPLANE_MODE:
-
-                    logger.warn("turning ON airplane mode...");
-                    toggleAirplaneMode(true, context);
-
-                    if (airplaneModeTime > 0) {
-                        logger.debug("sleeping " + airplaneModeTime + " ms...");
-                        try {
-                            Thread.sleep(airplaneModeTime);
-                        } catch (InterruptedException e) {
-                            logger.error("an InterruptedException occurred during sleep(): " + e.getMessage());
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-
-                    logger.info("turning OFF airplane mode...");
-                    toggleAirplaneMode(false, context);
-
-                    if (airplaneModePostWait > 0) {
-                        logger.debug("sleeping " + airplaneModePostWait + " ms...");
-                        try {
-                            Thread.sleep(airplaneModePostWait);
-                        } catch (InterruptedException e) {
-                            logger.error("an InterruptedException occurred during sleep(): " + e.getMessage());
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-
-                    break;
-
-                case REBOOT_PHONE:
-
-                    synchronized (rebootListeners) {
-                        if (rebootListeners.size() > 0) {
-                            for (OnPhoneRebootListener l : rebootListeners) {
-                                l.onPhoneReboot();
-                            }
-                        }
-                    }
-
-                    logger.warn("trying to reboot phone by shell...");
-                    if (!rebootPhoneByShell()) {
-                        logger.error("reboot failed");
-
-                        synchronized (rebootListeners) {
-                            if (rebootListeners.size() > 0) {
-                                for (OnPhoneRebootListener l : rebootListeners) {
-                                    l.onPhoneRebootFailed();
-                                }
-                            }
-                        }
-                    }
-
-                    break;
+        private void notifyHostPingStateChanged(@NonNull PingState state) {
+            synchronized (observers) {
+                for (HostPingListener l : observers) {
+                    l.onHostPingStateChanged(state);
+                }
             }
+        }
 
+    }
+
+    private static class RebootObservable extends Observable<PhoneRebootListener> {
+
+        private void notifyRebootStarting() {
+            synchronized (observers) {
+                for (PhoneRebootListener l : observers) {
+                    l.onPhoneRebootStarting();
+                }
+            }
+        }
+
+        private void notifyRebootFailed() {
+            synchronized (observers) {
+                for (PhoneRebootListener l : observers) {
+                    l.onPhoneRebootFailed();
+                }
+            }
         }
     }
 

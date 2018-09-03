@@ -46,27 +46,27 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
     @Override
     protected final int restoreStorage() {
-        logger.debug("restoreStorage()");
+        logger.d("restoreStorage()");
 
         int restoredCount = 0;
 
         if (allowSync) {
 
             if (!FileHelper.checkDirNoThrow(storageDirPath)) {
-                logger.error("incorrect storage dir path: " + storageDirPath);
+                logger.e("incorrect storage dir path: " + storageDirPath);
                 return restoredCount;
             }
 
             Set<File> files = FileHelper.getFiles(Collections.singleton(new File(storageDirPath)), FileHelper.GetMode.FILES, null, null, 0);
 
             if (files.isEmpty()) {
-                logger.info("no files to restore");
+                logger.i("no files to restore");
                 return restoredCount;
             }
 
             FileHelper.sortFilesByLastModified(files, true, false);
 
-            logger.info("restoring " + runnableInfoClass.getSimpleName() + " objects by files...");
+            logger.i("restoring " + runnableInfoClass.getSimpleName() + " objects by files...");
 
             for (File f : files) {
 
@@ -89,31 +89,31 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
                         fis = new FileInputStream(f);
                         runnableInfo = deserializeRunnableInfoFromInputStream(fis);
                     } catch (IOException e) {
-                        logger.error("an Exception occurred", e);
+                        logger.e("an Exception occurred", e);
                     } finally {
                         if (fis != null) {
                             try {
                                 fis.close();
                             } catch (IOException e) {
-                                logger.error("an Exception occurred", e);
+                                logger.e("an Exception occurred", e);
                             }
                         }
                     }
 
-                    logger.debug("runnableInfo from byte array: " + runnableInfo);
+                    logger.d("runnableInfo from byte array: " + runnableInfo);
                     if (runnableInfo != null && checkRunnableInfo(runnableInfo) && addInternal(runnableInfo)) {
                         restoredCount++;
                     } else {
-                        logger.error("runnableInfo " + runnableInfo + " was not added to deque, deleting file " + f + "...");
+                        logger.e("runnableInfo " + runnableInfo + " was not added to deque, deleting file " + f + "...");
                         if (!FileHelper.deleteFile(f)) {
-                            logger.error("can't delete file");
+                            logger.e("can't delete file");
                         }
                     }
 
                 } else {
-                    logger.error("incorrect storage file: " + f + ", deleting...");
+                    logger.e("incorrect storage file: " + f + ", deleting...");
                     if (!FileHelper.deleteFile(f)) {
-                        logger.error("can't delete file: " + f);
+                        logger.e("can't delete file: " + f);
                     }
                 }
             }
@@ -130,17 +130,17 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
     @Override
     protected boolean serializeRunnableInfo(I info) {
-        logger.debug("serializeRunnableInfo(), info=" + info);
+        logger.d("serializeRunnableInfo(), info=" + info);
 
         if (allowSync) {
 
             if (!checkRunnableInfo(info)) {
-                logger.error("incorrect info: " + info);
+                logger.e("incorrect info: " + info);
                 return false;
             }
 
             if (!FileHelper.checkDirNoThrow(storageDirPath)) {
-                logger.error("incorrect storage dir path: " + storageDirPath);
+                logger.e("incorrect storage dir path: " + storageDirPath);
                 return false;
             }
 
@@ -151,13 +151,13 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
                 info.toOutputStream(fos = new FileOutputStream((new File(storageDirPath, infoFileName)), false));
                 return true;
             } catch (FileNotFoundException e) {
-                e.printStackTrace();
+                logger.e("a FileNotFoundException occurred: " + e.getMessage(), e);
             } finally {
                 if (fos != null) {
                     try {
                         fos.close();
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        logger.e("an IOException occurred during close(): " + e.getMessage(), e);
                     }
                 }
             }
@@ -168,12 +168,12 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
     @Override
     protected boolean deleteSerializedRunnableInfo(I info) {
-        logger.debug("deleteSerializedRunnableInfo(), info=" + info);
+        logger.d("deleteSerializedRunnableInfo(), info=" + info);
 
         if (allowSync) {
 
             if (!checkRunnableInfo(info)) {
-                logger.error("incorrect info: " + info);
+                logger.e("incorrect info: " + info);
                 return false;
             }
 
@@ -244,7 +244,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
             int prev = getSize();
             iterator.remove();
             if (!deleteSerializedRunnableInfo(next)) {
-                logger.error("can't delete file by info " + next);
+                logger.e("can't delete file by info " + next);
             }
             storageObservable.dispatchStorageSizeChanged(getSize(), prev, callbacksHandler);
             next = null;
@@ -265,7 +265,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 //            File file = info.getFile();
 //            if (deleteSourceFiles) {
 //                if (!FileHelper.deleteFile(file)) {
-//                    logger.error("can't delete file: " + file);
+//                    logger.e("can't delete file: " + file);
 //                }
 //            }
 //        }

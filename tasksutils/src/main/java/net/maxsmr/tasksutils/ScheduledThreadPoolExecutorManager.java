@@ -1,12 +1,12 @@
-package com.dit.suumu.agentutils.tasks;
+package net.maxsmr.tasksutils;
 
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
-import com.dit.suumu.agentutils.log.Logger;
-import com.dit.suumu.agentutils.log.holder.LoggerHolder;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,9 +17,9 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 
-public final class ScheduledThreadPoolExecutorManager {
+public class ScheduledThreadPoolExecutorManager {
 
-    private static final Logger logger = LoggerHolder.getInstance().getLogger(ScheduledThreadPoolExecutorManager.class);
+    private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ScheduledThreadPoolExecutorManager.class);
 
     private final Object lock = new Object();
 
@@ -104,7 +104,7 @@ public final class ScheduledThreadPoolExecutorManager {
         synchronized (lock) {
 
             if (isRunning()) {
-                stop(false, 0);
+                stop();
             }
 
             runnableList.clear();
@@ -119,7 +119,7 @@ public final class ScheduledThreadPoolExecutorManager {
 
     public boolean isRunning() {
         synchronized (lock) {
-            return executor != null && (!executor.isShutdown() || !executor.isTerminated());
+            return executor != null && !executor.isShutdown();
         }
     }
 
@@ -165,7 +165,7 @@ public final class ScheduledThreadPoolExecutorManager {
             if (runnableList.isEmpty())
                 throw new RuntimeException("no runnables to schedule");
 
-            stop(false, 0);
+            stop();
 
             executor = new ScheduledThreadPoolExecutor(workersCount, new NamedThreadFactory(poolName));
 
@@ -180,6 +180,13 @@ public final class ScheduledThreadPoolExecutorManager {
                 }
             }
         }
+    }
+
+    /**
+     * not removing target runnables
+     */
+    public void stop() {
+        stop(false, 0);
     }
 
     /**

@@ -297,15 +297,15 @@ public class TouchWebView extends WebView implements Handler.Callback {
     private static class PageLoadObservable extends Observable<OnPageLoadListener> {
 
         void dispatchLoadPageStarted(String url, Bitmap favicon) {
-            synchronized (mObservers) {
-                for (OnPageLoadListener l : mObservers)
+            synchronized (observers) {
+                for (OnPageLoadListener l : observers)
                     l.onPageStarted(url, favicon);
             }
         }
 
         void dispatchLoadPageFinished(String url) {
-            synchronized (mObservers) {
-                for (OnPageLoadListener l : mObservers)
+            synchronized (observers) {
+                for (OnPageLoadListener l : observers)
                     l.onPageFinished(url);
             }
         }
@@ -323,23 +323,23 @@ public class TouchWebView extends WebView implements Handler.Callback {
     private static class ScrollChangeObservable extends Observable<OnScrollChangeListener> {
 
         void dispatchScrolledToTop() {
-            synchronized (mObservers) {
-                for (OnScrollChangeListener l : mObservers)
+            synchronized (observers) {
+                for (OnScrollChangeListener l : observers)
                     l.onScrolledToTop();
             }
         }
 
         void dispatchScrollChanged(int l, int t, int oldl, int oldt) {
-            synchronized (mObservers) {
-                for (OnScrollChangeListener listener : mObservers) {
+            synchronized (observers) {
+                for (OnScrollChangeListener listener : observers) {
                     listener.onScrollChanged(l, t, oldl, oldt);
                 }
             }
         }
 
         void dispatchScrolledToBottom() {
-            synchronized (mObservers) {
-                for (OnScrollChangeListener l : mObservers)
+            synchronized (observers) {
+                for (OnScrollChangeListener l : observers)
                     l.onScrolledToBottom();
             }
         }

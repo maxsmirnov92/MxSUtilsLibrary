@@ -9,7 +9,7 @@ import java.util.Date;
 import java.util.Locale;
 
 
-public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> implements Serializable {
+public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> implements Serializable {
 
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
 
@@ -31,7 +31,7 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
         this.taskRunnable = taskRunnable;
     }
 
-    public ExecInfo(@NonNull ExecInfo<I, T> execInfo) {
+    public ExecInfo(@NonNull ExecInfo<I, ProgressInfo, Result, T> execInfo) {
         this.taskRunnable = execInfo.taskRunnable;
         this.timeWaitingInQueue = execInfo.timeWaitingInQueue;
         timeExecuting = execInfo.timeExecuting;
@@ -65,7 +65,7 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
     }
 
     @NonNull
-    synchronized ExecInfo<I, T> setTimeWhenAddedToQueue(long timeWhenAddedToQueue) {
+    synchronized ExecInfo<I, ProgressInfo, Result, T> setTimeWhenAddedToQueue(long timeWhenAddedToQueue) {
         if (this.timeWhenAddedToQueue > 0) {
             throw new IllegalStateException("timeWhenAddedToQueue is already specified");
         }
@@ -80,7 +80,7 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
     }
 
     @NonNull
-    synchronized ExecInfo<I, T> setTimeWhenStarted(long timeWhenStarted) {
+    synchronized ExecInfo<I, ProgressInfo, Result, T> setTimeWhenStarted(long timeWhenStarted) {
         if (this.timeWhenStarted > 0) {
             throw new IllegalStateException("timeWhenStarted is already specified");
         }
@@ -98,7 +98,7 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
     }
 
     @NonNull
-    synchronized ExecInfo<I, T> finishedWaitingInQueue(long when) {
+    synchronized ExecInfo<I, ProgressInfo, Result, T> finishedWaitingInQueue(long when) {
         if (timeWaitingInQueue > 0) {
             throw new IllegalStateException("timeWaitingInQueue is already calculated");
         }
@@ -114,7 +114,7 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
     }
 
     @NonNull
-    synchronized ExecInfo<I, T> finishedExecution(long when, @Nullable Throwable execException) {
+    synchronized ExecInfo<I, ProgressInfo, Result, T> finishedExecution(long when, @Nullable Throwable execException) {
         if (timeExecuting > 0) {
             throw new IllegalStateException("timeExecuting is already calculated");
         }
@@ -130,7 +130,7 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
     }
 
     @NonNull
-    synchronized ExecInfo<I, T> reset() {
+    synchronized ExecInfo<I, ProgressInfo, Result, T> reset() {
         timeWaitingInQueue = 0;
         timeExecuting = 0;
         timeWhenAddedToQueue = 0;
@@ -143,7 +143,7 @@ public class ExecInfo<I extends RunnableInfo, T extends TaskRunnable<I>> impleme
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
 
-        ExecInfo<?, ?> execInfo = (ExecInfo<?, ?>) o;
+        ExecInfo<?, ?, ?, ?> execInfo = (ExecInfo<?, ?, ?, ?>) o;
 
         if (timeWaitingInQueue != execInfo.timeWaitingInQueue) return false;
         if (timeExecuting != execInfo.timeExecuting) return false;

@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 @RunWith(AndroidJUnit4.class)
-public class FileHelperTest {
+public class FileHelperTest extends LoggerTest {
 
     private Context context;
 
@@ -33,6 +33,7 @@ public class FileHelperTest {
 
     @Before
     public void prepare() {
+        super.prepare();
         context = InstrumentationRegistry.getTargetContext();
         sourceDir = new File(context.getFilesDir(), SOURCE_NAME);
         destinationDir = new File(context.getFilesDir(), DEST_NAME);
@@ -72,6 +73,11 @@ public class FileHelperTest {
         }
     }
 
+    @Override
+    @Test
+    public void test() {
+
+    }
 
     @Test
     public void testGet() {

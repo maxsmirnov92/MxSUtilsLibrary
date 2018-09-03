@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.android.logging;
+package net.maxsmr.testapplication.logger;
 
 import android.support.annotation.Nullable;
 
@@ -10,15 +10,22 @@ import de.mindpipe.android.logging.log4j.LogConfigurator;
 
 public class ConfigureLog4J {
 
-    public static final long DEFAULT_MIN_FILE_SIZE = 1024 * 1024;
+    public static final long DEFAULT_MIN_FILE_SIZE = FileHelper.SizeUnit.MBYTES.toBytes(1);
 
     private static ConfigureLog4J mInstance = null;
 
     public static void initInstance() {
-        if (mInstance == null) {
-            synchronized (ConfigureLog4J.class) {
+        synchronized (ConfigureLog4J.class) {
+            if (mInstance == null) {
                 mInstance = new ConfigureLog4J();
             }
+        }
+    }
+
+    public static void reInitInstance() {
+        synchronized (ConfigureLog4J.class) {
+            mInstance = null;
+            initInstance();
         }
     }
 
@@ -27,8 +34,13 @@ public class ConfigureLog4J {
         return mInstance;
     }
 
+    private boolean isInitialized = false;
 
     private ConfigureLog4J() {
+    }
+
+    public synchronized boolean isInitialized() {
+        return isInitialized;
     }
 
     /**
@@ -36,7 +48,11 @@ public class ConfigureLog4J {
      * @param maxFileSize   log file size in bytes
      * @param maxBackupSize number of log backups
      */
-    public void configure(Level level, boolean useFile, @Nullable String filePath, long maxFileSize, int maxBackupSize) {
+    public synchronized void configure(Level level, boolean useFile, @Nullable String filePath, long maxFileSize, int maxBackupSize) {
+
+        if (isInitialized) {
+            throw new IllegalStateException(ConfigureLog4J.class.getSimpleName() + " is already initialized");
+        }
 
         if (level == null)
             throw new NullPointerException("level is null");
@@ -67,6 +83,8 @@ public class ConfigureLog4J {
         logConfigurator.setRootLevel(level);
 
         logConfigurator.configure();
+
+        isInitialized = true;
     }
 
 }

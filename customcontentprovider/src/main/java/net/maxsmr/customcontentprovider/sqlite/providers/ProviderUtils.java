@@ -12,17 +12,20 @@ import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 public final class ProviderUtils {
 
-    private final static Logger logger = LoggerFactory.getLogger(ProviderUtils.class);
+    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ProviderUtils.class);
 
     private ProviderUtils() {
         throw new AssertionError("no instances.");
@@ -32,45 +35,40 @@ public final class ProviderUtils {
         return uri != null && !TextUtils.isEmpty(uri.getScheme()) && uri.getScheme().equalsIgnoreCase(AbstractSQLiteContentProvider.SCHEME_CONTENT_PROVIDER);
     }
 
-    public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NonNull Context context, @Nullable String packageName, @NonNull Class<P> providerClass, int flags)
-            throws PackageManager.NameNotFoundException {
+    public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NonNull Context context, @Nullable String packageName, @NonNull Class<P> providerClass) {
+        return getProviderInfo(context, packageName,  providerClass,0);
+    }
 
-        return context.getPackageManager().getProviderInfo(new ComponentName(packageName, providerClass.getName()), flags);
+    public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NonNull Context context, @Nullable String packageName, @NonNull Class<P> providerClass, int flags) {
+        if (!TextUtils.isEmpty(packageName)) {
+            try {
+                return context.getPackageManager().getProviderInfo(new ComponentName(packageName, providerClass.getName()), flags);
+            } catch (PackageManager.NameNotFoundException e) {
+                logger.e("a NameNotFoundException occurred during getProviderInfo(): " + e.getMessage(), e);
+            }
+        }
+        return null;
     }
 
     /**
      * @return authorities associated with this ContentProvider (defined in AndroidManifest.xml)
      */
-    @Nullable
-    public static <P extends ContentProvider> String[] getAuthorities(@NonNull Context context, String packageName, @NonNull Class<P> providerClass) {
-
-        final ProviderInfo pi;
-
-        try {
-            pi = getProviderInfo(context, packageName, providerClass, PackageManager.GET_META_DATA);
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
-            logger.error("a NameNotFoundException occurred during getProviderInfo()", e);
-            return null;
-        }
-
-        return TextUtils.split(pi.authority, ";");
+    @NonNull
+    public static <P extends ContentProvider> Set<String> getAuthorities(@NonNull Context context, String packageName, @NonNull Class<P> providerClass) {
+        final ProviderInfo pi = getProviderInfo(context, packageName, providerClass, PackageManager.GET_META_DATA);
+        return pi != null? new LinkedHashSet<>(Arrays.asList(TextUtils.split(pi.authority, ";"))) : Collections.<String>emptySet();
     }
 
     @Nullable
     public static <P extends ContentProvider> Uri getContentProviderUri(@NonNull Context context, @Nullable String packageName, @NonNull Class<P> providerClass) {
-        ProviderInfo providerInfo;
-        try {
-            providerInfo = getProviderInfo(context, packageName, providerClass, PackageManager.GET_META_DATA);
-        } catch (PackageManager.NameNotFoundException e) {
-            e.printStackTrace();
-            logger.error("a NameNotFoundException occurred during getProviderInfo()", e);
-            return null;
+        ProviderInfo providerInfo = getProviderInfo(context, packageName, providerClass, PackageManager.GET_META_DATA);
+        if (providerInfo != null) {
+            Uri.Builder uriBuilder = new Uri.Builder();
+            uriBuilder.scheme(AbstractSQLiteContentProvider.SCHEME_CONTENT_PROVIDER);
+            uriBuilder.encodedAuthority(providerInfo.authority);
+            return uriBuilder.build();
         }
-        Uri.Builder uriBuilder = new Uri.Builder();
-        uriBuilder.scheme(AbstractSQLiteContentProvider.SCHEME_CONTENT_PROVIDER);
-        uriBuilder.encodedAuthority(providerInfo.authority);
-        return uriBuilder.build();
+        return null;
     }
 
     @Nullable
@@ -131,8 +129,7 @@ public final class ProviderUtils {
                         throw new UnsupportedOperationException("incorrect data class: " + dataClass);
                     }
                 } catch (ClassCastException e) {
-                    e.printStackTrace();
-                    logger.error("a ClassCastException occurred", e);
+                    logger.e("a ClassCastException occurred: " + e.getMessage(), e);
                 }
             }
         }

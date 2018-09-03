@@ -8,12 +8,11 @@ import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 
 import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.CustomHandlerThread;
 import net.maxsmr.tasksutils.handler.HandlerRunnable;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.util.Iterator;
@@ -29,10 +28,10 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
 
     protected final StorageObservable storageObservable = new StorageObservable();
 
-    protected final Logger logger;
-
     @NonNull
     protected final Class<I> runnableInfoClass;
+
+    protected final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(getLoggerClass());
 
     protected boolean allowSync;
 
@@ -51,7 +50,6 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
 
     public AbstractSyncStorage(@NonNull Class<I> runnableInfoClass,
                                boolean allowSync, int maxSize, @Nullable IAddRule<I> addRule) {
-        this.logger = LoggerFactory.getLogger(getClass());
         this.runnableInfoClass = runnableInfoClass;
         setAllowSync(allowSync);
         setMaxSize(maxSize);
@@ -178,7 +176,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
                 if (result == null) {
                     result = new Pair<>(index, item);
                 }
-                if (min ? item.id < result.second.id : item.id > result.second.id || result.second.id == NO_ID) {
+                if (result.second != null && min ? item.id < result.second.id : item.id > result.second.id || result.second.id == NO_ID) {
                     result = new Pair<>(index, item);
                 }
             }
@@ -276,7 +274,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         int previousSize = getSize();
         if (result && addInternal(info, index)) {
             if (!serializeRunnableInfo(info)) {
-                logger.error("can't serialize info " + info);
+                logger.e("can't serialize info " + info);
             }
             storageObservable.dispatchStorageSizeChanged(getSize(), previousSize, callbacksHandler);
             return true;
@@ -307,10 +305,10 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         if (setInternal(info, index)) {
 
             if (!deleteSerializedRunnableInfo(previous)) {
-                logger.error("can't delete file by info " + info);
+                logger.e("can't delete file by info " + info);
             }
             if (!serializeRunnableInfo(info)) {
-                logger.error("can't write info " + info + " to file");
+                logger.e("can't write info " + info + " to file");
             }
 
             return true;
@@ -348,7 +346,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
 
         if (info != null) {
             if (!deleteSerializedRunnableInfo(info)) {
-                logger.error("can't delete serialized info " + info);
+                logger.e("can't delete serialized info " + info);
             }
             storageObservable.dispatchStorageSizeChanged(getSize(), prev, callbacksHandler);
             return info;
@@ -381,7 +379,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         int prev = getSize();
         clearNoDelete();
         if (deleteAllSerializedRunnableInfos()) {
-            logger.error("can't delete serialized infos");
+            logger.e("can't delete serialized infos");
         }
         storageObservable.dispatchStorageSizeChanged(getSize(), prev, callbacksHandler);
     }
@@ -451,14 +449,16 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         return info != null && info.isValid();
     }
 
+    protected abstract Class<?> getLoggerClass();
+
     protected static class StorageObservable extends Observable<IStorageListener> {
 
         public void dispatchStorageRestoreStarted(final long startTime, @Nullable Handler handler) {
             Runnable run = new Runnable() {
                 @Override
                 public void run() {
-                    synchronized (mObservers) {
-                        for (IStorageListener l : mObservers) {
+                    synchronized (observers) {
+                        for (IStorageListener l : observers) {
                             l.onStorageRestoreStarted(startTime);
                         }
                     }
@@ -475,8 +475,8 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
             Runnable run = new Runnable() {
                 @Override
                 public void run() {
-                    synchronized (mObservers) {
-                        for (IStorageListener l : mObservers) {
+                    synchronized (observers) {
+                        for (IStorageListener l : observers) {
                             l.onStorageRestoreFinished(endTime, processingTime, elemCount);
                         }
                     }
@@ -500,8 +500,8 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
                         throw new IllegalArgumentException("incorrect previousSize: " + previousSize);
                     }
                     if (currentSize != previousSize) {
-                        synchronized (mObservers) {
-                            for (IStorageListener l : mObservers) {
+                        synchronized (observers) {
+                            for (IStorageListener l : observers) {
                                 l.onStorageSizeChanged(currentSize, previousSize);
                             }
                         }
@@ -562,8 +562,8 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         @Override
         protected void postExecute(Integer result) {
             long processingTime = endTime > startTime ? endTime - startTime : 0;
-            logger.info("restoring complete, time: " + processingTime + " ms");
-            logger.info("restored " + runnableInfoClass.getSimpleName() + " objects count: " + result + ", queues total size: " + getSize());
+            logger.i("restoring complete, time: " + processingTime + " ms");
+            logger.i("restored " + runnableInfoClass.getSimpleName() + " objects count: " + result + ", queues total size: " + getSize());
             storageObservable.dispatchStorageRestoreFinished(endTime, processingTime, result, callbacksHandler);
         }
     }

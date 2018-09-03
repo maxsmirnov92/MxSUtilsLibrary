@@ -143,24 +143,24 @@ public class PreferencesManager {
     private static class ChangeObservable extends Observable<PreferenceChangeListener> {
 
         private <T> void dispatchChanged(String name, String key, @Nullable T oldValue, @Nullable T newValue) {
-            synchronized (mObservers) {
-                for (PreferenceChangeListener l : copyOfObservers()) {
+            synchronized (observers) {
+                for (PreferenceChangeListener l : observers) {
                     l.onPreferenceChanged(name, key, oldValue, newValue);
                 }
             }
         }
 
         private <T> void dispatchRemoved(String name, String key) {
-            synchronized (mObservers) {
-                for (PreferenceChangeListener l : copyOfObservers()) {
+            synchronized (observers) {
+                for (PreferenceChangeListener l : observers) {
                     l.onPreferenceRemoved(name, key);
                 }
             }
         }
 
         private void dispatchAllRemoved(String name) {
-            synchronized (mObservers) {
-                for (PreferenceChangeListener l : copyOfObservers()) {
+            synchronized (observers) {
+                for (PreferenceChangeListener l : observers) {
                     l.onAllPreferencesRemoved(name);
                 }
             }

@@ -1,12 +1,13 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
+import android.os.AsyncTask;
 import android.os.Handler;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Observable;
-import net.maxsmr.commonutils.logger.AndroidSimpleLogger;
-import net.maxsmr.commonutils.logger.base.BaseSimpleLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.NamedThreadFactory;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable.ITaskRestorer;
@@ -27,30 +28,30 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 
-public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable<I>> {
+public class TaskRunnableExecutor<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
 
     public static final int DEFAULT_KEEP_ALIVE_TIME = 60;
 
     public static final int TASKS_NO_LIMIT = 0;
 
-    private static BaseSimpleLogger logger = new AndroidSimpleLogger(TaskRunnableExecutor.class.getSimpleName());
+    private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(TaskRunnableExecutor.class);
 
     private final Object lock = new Object();
 
     private final ThreadPoolExecutor executor;
 
-    private final Map<Integer, WrappedTaskRunnable<I, T>> activeTasksRunnables = new LinkedHashMap<>();
+    private final Map<Integer, WrappedTaskRunnable<I, ProgressInfo, Result, T>> activeTasksRunnables = new LinkedHashMap<>();
 
-    private final Map<Integer, ExecInfo<I, T>> tasksRunnableExecInfos = new LinkedHashMap<>();
+    private final Map<Integer, ExecInfo<I, ProgressInfo, Result, T>> tasksRunnableExecInfos = new LinkedHashMap<>();
 
-    private final Map<Integer, StatInfo<I, T>> tasksRunnableStatInfos = new LinkedHashMap<>();
+    private final Map<Integer, StatInfo<I, ProgressInfo, Result, T>> tasksRunnableStatInfos = new LinkedHashMap<>();
 
-    private final CallbacksObservable<I, T> callbacksObservable = new CallbacksObservable<>();
+    private final CallbacksObservable<I, ProgressInfo, Result, T> callbacksObservable = new CallbacksObservable<>();
 
     public int queuedTasksLimit;
 
     @Nullable
-    private ITaskResultValidator<I, T> resultValidator;
+    private ITaskResultValidator<I, ProgressInfo, Result, T> resultValidator;
 
     @Nullable
     private AbstractSyncStorage<I> syncStorage;
@@ -59,10 +60,10 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     private Handler callbacksHandler;
 
     public TaskRunnableExecutor(int queuedTasksLimit, int concurrentTasksLimit, long keepAliveTime, TimeUnit unit, String poolName,
-                                @Nullable ITaskResultValidator<I, T> resultValidator,
+                                @Nullable ITaskResultValidator<I, ProgressInfo, Result, T> resultValidator,
                                 @Nullable final AbstractSyncStorage<I> syncStorage,
                                 @Nullable Handler callbacksHandler) {
-        logger.debug("TaskRunnableExecutor(), queuedTasksLimit=" + queuedTasksLimit + ", concurrentTasksLimit=" + concurrentTasksLimit
+        logger.d("TaskRunnableExecutor(), queuedTasksLimit=" + queuedTasksLimit + ", concurrentTasksLimit=" + concurrentTasksLimit
                 + ", keepAliveTime=" + keepAliveTime + ", unit=" + unit + ", poolName=" + poolName);
 
         executor = new ThreadPoolExecutorImpl(concurrentTasksLimit, concurrentTasksLimit, keepAliveTime, unit, new LinkedBlockingQueue<Runnable>(), new NamedThreadFactory(poolName));
@@ -73,12 +74,8 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
         setCallbacksHandler(callbacksHandler);
     }
 
-    public static void setLogger(BaseSimpleLogger logger) {
-        TaskRunnableExecutor.logger = logger;
-    }
-
-    public void restoreQueueByRestorer(@NonNull final ITaskRestorer<I, T> restorer) {
-        logger.debug("restoreQueueByRestorer(), restorer=" + restorer);
+    public void restoreQueueByRestorer(@NonNull final ITaskRestorer<I, ProgressInfo, Result, T> restorer) {
+        logger.d("restoreQueueByRestorer(), restorer=" + restorer);
         if (!isRunning()) {
             throw new IllegalStateException(TaskRunnableExecutor.class.getSimpleName() + " was shutdown");
         }
@@ -88,12 +85,12 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                 syncStorage.addStorageListener(new AbstractSyncStorage.IStorageListener() {
                     @Override
                     public void onStorageRestoreStarted(long startTime) {
-                        logger.debug("onStorageRestoreStarted(), startTime=" + startTime);
+                        logger.d("onStorageRestoreStarted(), startTime=" + startTime);
                     }
 
                     @Override
                     public void onStorageRestoreFinished(long endTime, long processingTime, int restoredElementsCount) {
-                        logger.debug("onStorageRestoreFinished(), endTime=" + endTime + ", processingTime=" + processingTime + ", restoredElementsCount=" + restoredElementsCount);
+                        logger.d("onStorageRestoreFinished(), endTime=" + endTime + ", processingTime=" + processingTime + ", restoredElementsCount=" + restoredElementsCount);
                         executeUniqueFromInfoList(restorer, syncStorage.getAll());
                         syncStorage.removeStorageListener(this);
                     }
@@ -109,14 +106,14 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
         }
     }
 
-    public void registerCallback(Callbacks<I, T> callbacks) {
+    public void registerCallback(Callbacks<I, ProgressInfo, Result, T> callbacks) {
         if (!isRunning()) {
             throw new IllegalStateException(TaskRunnableExecutor.class.getSimpleName() + " was shutdown");
         }
         callbacksObservable.registerObserver(callbacks);
     }
 
-    public void unregisterCallback(Callbacks<I, T> callbacks) {
+    public void unregisterCallback(Callbacks<I, ProgressInfo, Result, T> callbacks) {
         if (!isRunning()) {
             throw new IllegalStateException(TaskRunnableExecutor.class.getSimpleName() + " was shutdown");
         }
@@ -147,13 +144,13 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     }
 
     @Nullable
-    public ITaskResultValidator<I, T> getResultValidator() {
+    public ITaskResultValidator<I, ProgressInfo, Result, T> getResultValidator() {
         synchronized (lock) {
             return resultValidator;
         }
     }
 
-    public void setResultValidator(@Nullable ITaskResultValidator<I, T> resultValidator) {
+    public void setResultValidator(@Nullable ITaskResultValidator<I, ProgressInfo, Result, T> resultValidator) {
         synchronized (lock) {
             this.resultValidator = resultValidator;
         }
@@ -206,16 +203,17 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
         return RunnableInfo.fromTasks(getAllTasks());
     }
 
+    @SuppressWarnings("unchecked")
     @NonNull
     public List<T> getWaitingTasks() {
         synchronized (lock) {
             List<T> result = new LinkedList<>();
             for (Runnable r : executor.getQueue()) { // очередь содержит все добавленные таски, включая выполняемые в данный момент; вычищается после afterExecute
-                WrappedTaskRunnable<I, T> taskRunnable;
+                WrappedTaskRunnable<I, ProgressInfo, Result, T> taskRunnable;
                 if (!(r instanceof WrappedTaskRunnable)) {
                     throw new RuntimeException("incorrect runnable type: " + r.getClass() + ", must be: " + WrappedTaskRunnable.class.getName());
                 }
-                taskRunnable = (WrappedTaskRunnable<I, T>) r;
+                taskRunnable = (WrappedTaskRunnable<I, ProgressInfo, Result, T>) r;
                 if (!containsTask(taskRunnable.command, RunnableType.ACTIVE)) {
                     result.add((taskRunnable.command));
                 }
@@ -233,7 +231,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     public List<T> getActiveTasks() {
         synchronized (lock) {
             List<T> list = new LinkedList<>();
-            for (WrappedTaskRunnable<I, T> r : activeTasksRunnables.values()) {
+            for (WrappedTaskRunnable<I, ProgressInfo, Result, T> r : activeTasksRunnables.values()) {
                 if (r.command.isRunning()) {
                     list.add(r.command);
                 }
@@ -330,31 +328,31 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     }
 
     public boolean cancelTask(@Nullable T t) {
-        logger.debug("cancelTask(), t=" + t);
+        logger.d("cancelTask(), t=" + t);
         return t != null && cancelTask(t.getId());
     }
 
     public boolean cancelTask(@Nullable I rInfo) {
-        logger.debug("cancelTask(), rInfo=" + rInfo);
+        logger.d("cancelTask(), rInfo=" + rInfo);
         return rInfo != null && cancelTask(rInfo.id);
     }
 
     public boolean cancelTask(int id) {
-        logger.debug("cancelTask(), id=" + id);
+        logger.d("cancelTask(), id=" + id);
         synchronized (lock) {
             T runnable = findRunnableById(id);
             if (runnable != null) {
-                logger.debug("runnable found, cancelling...");
+                logger.d("runnable found, cancelling...");
                 runnable.cancel();
                 return true;
             }
-            logger.error("can't cancel: runnable not found");
+            logger.e("can't cancel: runnable not found");
             return false;
         }
     }
 
     public void cancelAllTasks() {
-        logger.debug("cancelAllTasks()");
+        logger.d("cancelAllTasks()");
         synchronized (lock) {
             for (T task : getAllTasks()) {
                 task.cancel();
@@ -362,7 +360,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
         }
     }
 
-    public List<StatInfo<I, T>> getCompletedTasksStatInfos() {
+    public List<StatInfo<I, ProgressInfo, Result, T>> getCompletedTasksStatInfos() {
         synchronized (lock) {
             return new ArrayList<>(tasksRunnableStatInfos.values());
         }
@@ -371,7 +369,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     public List<T> getCompletedTasks() {
         synchronized (lock) {
             List<T> result = new LinkedList<>();
-            for (StatInfo<I, T> info : getCompletedTasksStatInfos()) {
+            for (StatInfo<I, ProgressInfo, Result, T> info : getCompletedTasksStatInfos()) {
                 result.add(info.getTaskRunnable());
             }
             return result;
@@ -404,23 +402,23 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     }
 
     @Nullable
-    public StatInfo<I, T> findStatInfoById(int id) {
+    public StatInfo<I, ProgressInfo, Result, T> findStatInfoById(int id) {
         T r = findCompletedRunnableById(id);
         return r != null ? getStatInfoForRunnable(r) : null;
     }
 
-    private void executeUniqueFromInfoList(@NonNull ITaskRestorer<I, T> restorer, Collection<I> target) {
+    private void executeUniqueFromInfoList(@NonNull ITaskRestorer<I,ProgressInfo, Result, T> restorer, Collection<I> target) {
         List<I> currentTasks = getAllTasksRunnableInfos();
         List<I> filtered = RunnableInfo.filter(target, currentTasks, false);
-        logger.debug("runnable infos ids, target: " + RunnableInfo.idsFromInfos(target));
-        logger.debug("runnable infos ids, current: " + RunnableInfo.idsFromInfos(currentTasks));
-        logger.debug("runnable infos ids, filtered: " + RunnableInfo.idsFromInfos(filtered));
+        logger.d("runnable infos ids, target: " + RunnableInfo.idsFromInfos(target));
+        logger.d("runnable infos ids, current: " + RunnableInfo.idsFromInfos(currentTasks));
+        logger.d("runnable infos ids, filtered: " + RunnableInfo.idsFromInfos(filtered));
         RunnableInfo.setRunning(filtered, false);
         executeAll(restorer.fromRunnableInfos(filtered));
     }
 
     public void executeAll(Collection<T> commands) {
-        logger.debug("executeAll(), commands count: " + (commands != null ? commands.size() : 0));
+        logger.d("executeAll(), commands count: " + (commands != null ? commands.size() : 0));
         if (commands != null) {
             for (T c : commands) {
                 execute(c);
@@ -433,7 +431,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     }
 
     public void executeInternal(T command, boolean reAdd) {
-        logger.debug("executeInternal(), command=" + command + ", reAdd=" + reAdd);
+        logger.d("executeInternal(), command=" + command + ", reAdd=" + reAdd);
 
         synchronized (lock) {
 
@@ -465,11 +463,15 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                 throw new RuntimeException("can't add task " + command + ": already added");
             }
 
+            if (reAdd) {
+                command.status = AsyncTask.Status.PENDING;
+            }
+
             if (syncStorage != null) {
                 syncStorage.addLast(command.rInfo);
             }
 
-            WrappedTaskRunnable<I, T> wrapped = new WrappedTaskRunnable<>(command);
+            WrappedTaskRunnable<I, ProgressInfo, Result, T> wrapped = new WrappedTaskRunnable<>(command);
             getExecInfoForRunnable(wrapped).reset().setTimeWhenAddedToQueue(System.currentTimeMillis());
             executor.execute(wrapped);
             callbacksObservable.dispatchAddedToQueue(command, getWaitingTasksCount(), getActiveTasksCount(), callbacksHandler);
@@ -477,10 +479,10 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     }
 
     @NonNull
-    private ExecInfo<I, T> getExecInfoForRunnable(@NonNull WrappedTaskRunnable<I, T> r) {
+    private ExecInfo<I, ProgressInfo, Result, T> getExecInfoForRunnable(@NonNull WrappedTaskRunnable<I, ProgressInfo, Result, T> r) {
         synchronized (lock) {
             int id = r.command.getId();
-            ExecInfo<I, T> execInfo = tasksRunnableExecInfos.get(id);
+            ExecInfo<I, ProgressInfo, Result, T> execInfo = tasksRunnableExecInfos.get(id);
             if (execInfo == null) {
                 execInfo = new ExecInfo<>(r.command);
                 tasksRunnableExecInfos.put(id, execInfo);
@@ -490,17 +492,17 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
     }
 
     @Nullable
-    private ExecInfo<I, T> removeExecInfoForRunnable(@NonNull WrappedTaskRunnable<I, T> r) {
+    private ExecInfo<I, ProgressInfo, Result, T> removeExecInfoForRunnable(@NonNull WrappedTaskRunnable<I, ProgressInfo, Result, T> r) {
         synchronized (lock) {
             return tasksRunnableExecInfos.remove(r.command.getId());
         }
     }
 
     @NonNull
-    private StatInfo<I, T> getStatInfoForRunnable(@NonNull T r) {
+    private StatInfo<I, ProgressInfo, Result, T> getStatInfoForRunnable(@NonNull T r) {
         synchronized (lock) {
             int id = r.getId();
-            StatInfo<I, T> statInfo = tasksRunnableStatInfos.get(id);
+            StatInfo<I, ProgressInfo, Result, T> statInfo = tasksRunnableStatInfos.get(id);
             if (statInfo == null) {
                 statInfo = new StatInfo<>(r);
                 tasksRunnableStatInfos.put(id, statInfo);
@@ -527,13 +529,13 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
         return executor.awaitTermination(timeout, unit);
     }
 
-    public interface Callbacks<I extends RunnableInfo, T extends TaskRunnable<I>> {
+    public interface Callbacks<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
 
         void onAddedToQueue(@NonNull T r, int waitingCount, int activeCount);
 
-        void onBeforeExecute(@NonNull Thread t, @NonNull T r, @NonNull ExecInfo<I, T> execInfo, int waitingCount, int activeCount);
+        void onBeforeExecute(@NonNull Thread t, @NonNull T r, @NonNull ExecInfo<I, ProgressInfo, Result, T> execInfo, int waitingCount, int activeCount);
 
-        void onAfterExecute(@NonNull T r, @Nullable Throwable t, @NonNull ExecInfo<I, T> execInfo, @NonNull StatInfo<I, T> statInfo, int waitingCount, int activeCount);
+        void onAfterExecute(@NonNull T r, @Nullable Throwable t, @NonNull ExecInfo<I, ProgressInfo, Result, T> execInfo, @NonNull StatInfo<I, ProgressInfo, Result, T> statInfo, int waitingCount, int activeCount);
     }
 
     public enum RunnableType {
@@ -548,10 +550,10 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
 
         @Override
         protected void beforeExecute(Thread t, Runnable r) {
-            logger.debug("beforeExecute(), t=" + t + ", r=" + r);
+            logger.d("beforeExecute(), t=" + t + ", r=" + r);
 
             if (isShutdown()) {
-                logger.warn(ThreadPoolExecutor.class.getSimpleName() + " was shutdown");
+                logger.w(ThreadPoolExecutor.class.getSimpleName() + " was shutdown");
                 return;
             }
 
@@ -559,11 +561,11 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
 
             final long time = System.currentTimeMillis();
 
-            WrappedTaskRunnable<I, T> taskRunnable;
+            WrappedTaskRunnable<I, ProgressInfo, Result, T> taskRunnable;
             if (!(r instanceof WrappedTaskRunnable)) {
                 throw new RuntimeException("incorrect command type: " + r.getClass() + ", must be: " + WrappedTaskRunnable.class.getName());
             }
-            taskRunnable = (WrappedTaskRunnable<I, T>) r;
+            taskRunnable = (WrappedTaskRunnable<I, ProgressInfo, Result, T>) r;
 
             callbacksObservable.dispatchBeforeExecute(t, taskRunnable.command,
                     getExecInfoForRunnable(taskRunnable).finishedWaitingInQueue(time), getWaitingTasksCount(), getActiveTasksCount(), callbacksHandler);
@@ -571,7 +573,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
             taskRunnable.command.rInfo.isRunning = true;
 
             if (taskRunnable.command.isCanceled()) {
-                logger.warn("task: " + taskRunnable.command + ": cancelled");
+                logger.w("task: " + taskRunnable.command + ": cancelled");
             }
 
             synchronized (lock) {
@@ -581,10 +583,10 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
 
         @Override
         protected void afterExecute(Runnable r, Throwable t) {
-            logger.debug("afterExecute(), r=" + r + ", t=" + t);
+            logger.d("afterExecute(), r=" + r + ", t=" + t);
 
             if (isShutdown()) {
-                logger.warn(ThreadPoolExecutor.class.getSimpleName() + " was shutdown");
+                logger.w(ThreadPoolExecutor.class.getSimpleName() + " was shutdown");
                 return;
             }
 
@@ -592,11 +594,12 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
 
             final long time = System.currentTimeMillis();
 
-            WrappedTaskRunnable<I, T> taskRunnable;
+            WrappedTaskRunnable<I, ProgressInfo, Result, T> taskRunnable;
             if (!(r instanceof WrappedTaskRunnable)) {
                 throw new RuntimeException("incorrect command type: " + r.getClass() + ", must be: " + WrappedTaskRunnable.class.getName());
             }
-            taskRunnable = (WrappedTaskRunnable<I, T>) r;
+            //noinspection unchecked
+            taskRunnable = (WrappedTaskRunnable<I, ProgressInfo, Result, T>) r;
 
             boolean reAdd = !taskRunnable.command.isCanceled() &&
                     resultValidator != null && resultValidator.needToReAddTask(taskRunnable.command, t);
@@ -614,7 +617,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
                 activeTasksRunnables.remove(taskRunnable.command.getId());
             }
 
-            ExecInfo<I, T> execInfo = getExecInfoForRunnable(taskRunnable).finishedExecution(time, t);
+            ExecInfo<I, ProgressInfo, Result, T> execInfo = getExecInfoForRunnable(taskRunnable).finishedExecution(time, t);
             removeExecInfoForRunnable(taskRunnable);
 
             getStatInfoForRunnable(taskRunnable.command).addExecInfo(new ExecInfo<>(execInfo));
@@ -627,14 +630,14 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
         }
     }
 
-    private static class CallbacksObservable<I extends RunnableInfo, T extends TaskRunnable<I>> extends Observable<Callbacks<I, T>> {
+    private static class CallbacksObservable<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> extends Observable<Callbacks<I, ProgressInfo, Result, T>> {
 
         private void dispatchAddedToQueue(final T r, final int waitingCount, final int activeCount, Handler handler) {
             final Runnable run = new Runnable() {
                 @Override
                 public void run() {
-                    synchronized (mObservers) {
-                        for (Callbacks<I, T> c : mObservers) {
+                    synchronized (observers) {
+                        for (Callbacks<I, ProgressInfo, Result, T> c : observers) {
                             c.onAddedToQueue(r, waitingCount, activeCount);
                         }
                     }
@@ -647,12 +650,12 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
             }
         }
 
-        private void dispatchBeforeExecute(final Thread t, final T r, final ExecInfo<I, T> execInfo, final int waitingCount, final int activeCount, Handler handler) {
+        private void dispatchBeforeExecute(final Thread t, final T r, final ExecInfo<I, ProgressInfo, Result, T> execInfo, final int waitingCount, final int activeCount, Handler handler) {
             final Runnable run = new Runnable() {
                 @Override
                 public void run() {
-                    synchronized (mObservers) {
-                        for (Callbacks<I, T> c : mObservers) {
+                    synchronized (observers) {
+                        for (Callbacks<I, ProgressInfo, Result, T> c : observers) {
                             c.onBeforeExecute(t, r, execInfo, waitingCount, activeCount);
                         }
                     }
@@ -665,12 +668,12 @@ public class TaskRunnableExecutor<I extends RunnableInfo, T extends TaskRunnable
             }
         }
 
-        private void dispatchAfterExecute(@NonNull final T r, @Nullable final Throwable t, @NonNull final ExecInfo<I, T> execInfo, @NonNull final StatInfo<I, T> statInfo, final int waitingCount, final int activeCount, Handler handler) {
+        private void dispatchAfterExecute(@NonNull final T r, @Nullable final Throwable t, @NonNull final ExecInfo<I, ProgressInfo, Result, T> execInfo, @NonNull final StatInfo<I, ProgressInfo, Result, T> statInfo, final int waitingCount, final int activeCount, Handler handler) {
             final Runnable run = new Runnable() {
                 @Override
                 public void run() {
-                    synchronized (mObservers) {
-                        for (Callbacks<I, T> c : mObservers) {
+                    synchronized (observers) {
+                        for (Callbacks<I, ProgressInfo, Result, T> c : observers) {
                             c.onAfterExecute(r, t, execInfo, statInfo, waitingCount, activeCount);
                         }
                     }

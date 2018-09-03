@@ -848,8 +848,8 @@ public class MaskClickLayout extends FrameLayout {
 
         private boolean dispatchItemPreHit(@NonNull Point clickPoint, @NonNull Item item) {
             boolean b = true;
-            synchronized (mObservers) {
-                for (ItemHitCallback c : mObservers) {
+            synchronized (observers) {
+                for (ItemHitCallback c : observers) {
                     if (!c.onItemPreHit(clickPoint, item)) {
                         b = false;
                     }
@@ -860,8 +860,8 @@ public class MaskClickLayout extends FrameLayout {
 
         private boolean dispatchItemsHit(@NonNull Point clickPoint, @NonNull List<Item> items) {
             boolean b = true;
-            synchronized (mObservers) {
-                for (ItemHitCallback c : mObservers) {
+            synchronized (observers) {
+                for (ItemHitCallback c : observers) {
                     if (!c.onItemsHit(clickPoint, items)) {
                         b = false;
                     }
@@ -874,16 +874,16 @@ public class MaskClickLayout extends FrameLayout {
     private static class LayoutChangeObservable extends Observable<LayoutChangeListener> {
 
         private void dispatchChoiceModeChanged(@NonNull ChoiceMode choiceMode) {
-            synchronized (mObservers) {
-                for (LayoutChangeListener l : mObservers) {
+            synchronized (observers) {
+                for (LayoutChangeListener l : observers) {
                     l.onChoiceModeChanged(choiceMode);
                 }
             }
         }
 
         private void dispatchSelectionChanged(@NonNull Item item, boolean isSelected) {
-            synchronized (mObservers) {
-                for (LayoutChangeListener l : mObservers) {
+            synchronized (observers) {
+                for (LayoutChangeListener l : observers) {
                     l.onSelectedChanged(item, isSelected);
                 }
             }

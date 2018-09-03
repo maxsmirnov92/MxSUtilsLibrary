@@ -4,10 +4,10 @@ import android.os.Environment;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 import android.test.suitebuilder.annotation.SmallTest;
-import android.util.Log;
 
 import net.maxsmr.commonutils.android.media.MetadataRetriever;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -16,16 +16,23 @@ import java.util.Map;
 
 @RunWith(AndroidJUnit4.class)
 @SmallTest
-public class MetadataRetrieverTest {
+public class MetadataRetrieverTest extends LoggerTest {
 
-    public static final String TAG = MetadataRetrieverTest.class.getSimpleName();
+    private Context context;
 
+    @Before
+    @Override
+    public void prepare() {
+        super.prepare();
+        context = InstrumentationRegistry.getContext();
+    }
+    
     @Test
-    public void testExtractFrames() {
-        Context context = InstrumentationRegistry.getContext();
-        Log.d(TAG, "registry context: " + context);
-        Log.d(TAG, "registry target context: " + InstrumentationRegistry.getTargetContext());
-        Log.d(TAG, "app dir: " + context.getFilesDir());
+    @Override
+    public void test() {
+        logger.d("registry context: " + context);
+        logger.d("registry target context: " + InstrumentationRegistry.getTargetContext());
+        logger.d("app dir: " + context.getFilesDir());
 //        Map<Long, Bitmap> frames = MetadataRetriever.extractFrames(context, Uri.parse("file:///android_asset/video/1.mp4"), null, 5);
 //        Map<Long, Bitmap> frames = null;
 //
@@ -38,7 +45,7 @@ public class MetadataRetrieverTest {
 
         Map<Long, Bitmap> frames = MetadataRetriever.extractFrames(new File(Environment.getExternalStorageDirectory() + File.separator + "Download", "SampleVideo_1280x720_1mb.mp4"), 5);
 
-        Log.i(TAG, "frames: " + frames);
+        logger.i("frames: " + frames);
     }
 
 }

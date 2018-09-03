@@ -14,14 +14,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
+import java.util.concurrent.CountDownLatch;
 
 public final class ShellUtils {
 
-    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ShellUtils.class);
+    private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ShellUtils.class);
 
     private ShellUtils() {
         throw new AssertionError("no instances.");
@@ -30,7 +30,7 @@ public final class ShellUtils {
     @Nullable
     private static Process createAndStartProcess(@NonNull List<String> cmds, @Nullable String workingDir,
                                                  @Nullable IProcessBuilderConfigurator configurator,
-                                                 @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
+                                                 @Nullable ShellCallback sc, @Nullable ThreadsCallback tc, @Nullable CountDownLatch latch) {
 
         for (int i = 0; i < cmds.size(); i++) {
             cmds.set(i, String.format(Locale.US, "%s", cmds.get(i)));
@@ -76,12 +76,17 @@ public final class ShellUtils {
         }
 
         Thread outThread;
-        (outThread = new StreamConsumeThread(process.getInputStream(), ShellCallback.StreamType.OUT, sc)).start();
-        Thread errThread;
-        (errThread = new StreamConsumeThread(process.getErrorStream(), ShellCallback.StreamType.ERR, sc)).start();
-
+        CmdThreadInfo outThreadInfo = new CmdThreadInfo(cmds, workingDir, ShellCallback.StreamType.OUT);
+        (outThread = new StreamConsumeThread(outThreadInfo, process.getInputStream(), sc, tc, latch)).start();
         if (tc != null) {
-            tc.onThreadsStarted(new ArrayList<>(Arrays.asList(outThread, errThread)));
+            tc.onThreadStarted(outThreadInfo, outThread);
+        }
+
+        Thread errThread;
+        CmdThreadInfo errThreadInfo = new CmdThreadInfo(cmds, workingDir, ShellCallback.StreamType.ERR);
+        (errThread = new StreamConsumeThread(errThreadInfo, process.getErrorStream(), sc, tc, latch)).start();
+        if (tc != null) {
+            tc.onThreadStarted(errThreadInfo, errThread);
         }
 
         return process;
@@ -104,26 +109,27 @@ public final class ShellUtils {
      * @return true if started successfully, false - otherwise
      */
     public static boolean execProcessAsync(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
-        logger.d("execProcessAsync(), cmds=" + cmds + ", workingDir=" + workingDir + ", sc=" + sc + ", tc=" + tc);
-        Process process = createAndStartProcess(cmds, workingDir, configurator, sc, tc);
+        logger.v("execProcessAsync(), cmds=" + cmds + ", workingDir=" + workingDir + ", configurator=" + configurator + ", sc=" + sc + ", tc=" + tc);
+        final CountDownLatch latch = new CountDownLatch(2);
+        Process process = createAndStartProcess(cmds, workingDir, configurator, sc, tc, latch);
         if (process != null) {
-            Thread waitThread;
-            (waitThread = new ProcessWaitThread(process, sc)).start();
-            if (tc != null) {
-                tc.onThreadsStarted(Collections.singletonList(waitThread));
-            }
+            new ProcessWaitThread(process, sc, latch).start();
+            return true;
         }
-        return process != null;
+        return false;
     }
 
+    @NonNull
     public static CommandResult execProcess(@NonNull String cmd, @Nullable String workingDir, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
         return execProcess(cmd, workingDir, null, CommandResult.DEFAULT_TARGET_CODE, sc, tc);
     }
 
+    @NonNull
     public static CommandResult execProcess(@NonNull String cmd, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable Integer targetExitCode, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
         return execProcess(Collections.singletonList(cmd), workingDir, configurator, targetExitCode, sc, tc);
     }
 
+    @NonNull
     public static CommandResult execProcess(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
         return execProcess(cmds, workingDir, null, CommandResult.DEFAULT_TARGET_CODE, sc, tc);
     }
@@ -131,14 +137,17 @@ public final class ShellUtils {
     /**
      * @return result code; -1 if start failed or interrupted
      */
+    @NonNull
     public static CommandResult execProcess(@NonNull List<String> cmds, @Nullable String workingDir,
                                             @Nullable IProcessBuilderConfigurator configurator,
                                             @Nullable Integer targetExitCode,
                                             @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
-        logger.d("execProcess(), cmds=" + cmds + ", workingDir=" + workingDir + ", targetExitCode=" + targetExitCode + ", sc=" + sc + ", tc=" + tc);
+        logger.v("execProcess(), cmds=" + cmds + ", workingDir=" + workingDir + ", configurator=" + configurator  + ", targetExitCode=" + targetExitCode + ", sc=" + sc + ", tc=" + tc);
 
         final List<String> stdOutLines = new ArrayList<>();
         final List<String> stdErrLines = new ArrayList<>();
+
+        final CountDownLatch latch = new CountDownLatch(2);
 
         Process process = createAndStartProcess(cmds, workingDir, configurator, new ShellCallback() {
 
@@ -175,7 +184,13 @@ public final class ShellUtils {
                     sc.processComplete(exitValue);
                 }
             }
-        }, tc);
+        }, tc, latch);
+
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            logger.e("an InterruptedException occurred during await(): " + e.getMessage(), e);
+        }
 
         int exitCode = -1;
         try {
@@ -198,19 +213,27 @@ public final class ShellUtils {
     private static class StreamConsumeThread extends Thread {
 
         @NonNull
-        final InputStream is;
+        private final CmdThreadInfo threadInfo;
 
         @NonNull
-        final ShellCallback.StreamType type;
+        final InputStream is;
 
         @Nullable
         final ShellCallback sc;
 
-        StreamConsumeThread(@NonNull InputStream is, @NonNull ShellCallback.StreamType type, @Nullable ShellCallback sc) {
+        @Nullable
+        final ThreadsCallback tc;
+
+        @Nullable
+        final CountDownLatch latch;
+
+        StreamConsumeThread(@NonNull CmdThreadInfo threadInfo, @NonNull InputStream is, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc, @Nullable CountDownLatch latch) {
+            this.threadInfo = threadInfo;
             this.is = is;
-            this.type = type;
             this.sc = sc;
-            this.setName(type.name);
+            this.tc = tc;
+            this.latch = latch;
+            this.setName(threadInfo.type.name);
         }
 
         public void run() {
@@ -220,10 +243,16 @@ public final class ShellUtils {
                 String line;
                 while (!isInterrupted() && (line = br.readLine()) != null)
                     if (sc != null) {
-                        sc.shellOut(type, line);
+                        sc.shellOut(threadInfo.type, line);
                     }
             } catch (IOException e) {
                 logger.e("an IOException occurred: " + e.getMessage(), e);
+            }
+            if (latch != null) {
+                latch.countDown();
+            }
+            if (tc != null) {
+                tc.onThreadFinished(threadInfo, this);
             }
         }
     }
@@ -236,16 +265,28 @@ public final class ShellUtils {
         @Nullable
         final ShellCallback sc;
 
-        public ProcessWaitThread(@NonNull Process process, @Nullable ShellCallback sc) {
+        @Nullable
+        final CountDownLatch latch;
+
+        public ProcessWaitThread(@NonNull Process process, @Nullable ShellCallback sc, @Nullable CountDownLatch latch) {
             super(ProcessWaitThread.class.getName());
             this.process = process;
             this.sc = sc;
+            this.latch = latch;
         }
 
         @Override
         public void run() {
 
             int exitVal = -1;
+
+            if (latch != null && getLatchCounts() > 0) {
+                try {
+                    latch.await();
+                } catch (InterruptedException e) {
+                    logger.e("an InterruptedException occurred during await(): " + e.getMessage(), e);
+                }
+            }
 
             try {
                 exitVal = process.waitFor();
@@ -260,6 +301,37 @@ public final class ShellUtils {
                 sc.processComplete(exitVal);
             }
 
+        }
+
+        private long getLatchCounts() {
+            return latch != null? latch.getCount() : 0;
+        }
+    }
+
+    public static class CmdThreadInfo {
+
+        @NonNull
+        private final List<String> cmds;
+
+        @Nullable
+        private final String workingDir;
+
+        @NonNull
+        final ShellCallback.StreamType type;
+
+        public CmdThreadInfo(@Nullable List<String> cmds, @Nullable String workingDir, @NonNull ShellCallback.StreamType type) {
+            this.cmds = cmds != null? new ArrayList<>(cmds) : new ArrayList<String>();
+            this.workingDir = workingDir;
+            this.type = type;
+        }
+
+        @Override
+        public String toString() {
+            return "CmdThreadInfo{" +
+                    "cmds=" + cmds +
+                    ", workingDir='" + workingDir + '\'' +
+                    ", type=" + type +
+                    '}';
         }
     }
 
@@ -286,7 +358,9 @@ public final class ShellUtils {
 
     public interface ThreadsCallback {
 
-        void onThreadsStarted(List<Thread> threads);
+        void onThreadStarted(@NonNull CmdThreadInfo info, @NonNull Thread thread);
+
+        void onThreadFinished(@NonNull CmdThreadInfo info, @NonNull Thread thread);
     }
 
     public interface IProcessBuilderConfigurator {

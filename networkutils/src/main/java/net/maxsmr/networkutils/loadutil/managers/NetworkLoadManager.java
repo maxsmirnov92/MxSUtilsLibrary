@@ -7,8 +7,8 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.logger.AndroidSimpleLogger;
-import net.maxsmr.commonutils.logger.base.BaseSimpleLogger;
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.loadutil.managers.base.BaseNetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
@@ -48,33 +48,30 @@ import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableIn
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.ReadBodyMode.BYTE_ARRAY;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.ReadBodyMode.FILE;
 
-/**
- * @author maxsmirnov
- */
 public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends LoadRunnableInfo<B>>
-        extends BaseNetworkLoadManager<B, LI, TaskRunnable<LI>> {
+        extends BaseNetworkLoadManager<B, LI, TaskRunnable<LI, Void, Void>> {
 
-    private static BaseSimpleLogger logger = new AndroidSimpleLogger(NetworkLoadManager.class.getSimpleName());
+    private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(NetworkLoadManager.class);
 
     private static final String LINE_FEED = "\r\n";
 
     public static final int BUF_SIZE = 1024;
 
     public NetworkLoadManager(int limit, int concurrentLoadsCount, @Nullable AbstractSyncStorage<LI> storage,
-                              @Nullable TaskRunnable.ITaskResultValidator<LI, TaskRunnable<LI>> validator) {
+                              @Nullable TaskRunnable.ITaskResultValidator<LI, Void, Void, TaskRunnable<LI, Void, Void>> validator) {
         this(limit, concurrentLoadsCount, storage, validator, null);
     }
 
     public NetworkLoadManager(int limit, int concurrentLoadsCount, @Nullable AbstractSyncStorage<LI> storage,
-                              @Nullable TaskRunnable.ITaskResultValidator<LI, TaskRunnable<LI>> validator,
+                              @Nullable TaskRunnable.ITaskResultValidator<LI, Void, Void, TaskRunnable<LI, Void, Void>> validator,
                               @Nullable Handler callbacksHandler) {
         super(limit, concurrentLoadsCount, storage, validator, callbacksHandler);
 
-        doRestore(new TaskRunnable.ITaskRestorer<LI, TaskRunnable<LI>>() {
+        doRestore(new TaskRunnable.ITaskRestorer<LI, Void, Void, TaskRunnable<LI, Void, Void>>() {
 
             @Override
-            public List<TaskRunnable<LI>> fromRunnableInfos(Collection<LI> runnableInfos) {
-                List<TaskRunnable<LI>> result = new ArrayList<>();
+            public List<TaskRunnable<LI, Void, Void>> fromRunnableInfos(Collection<LI> runnableInfos) {
+                List<TaskRunnable<LI, Void, Void>> result = new ArrayList<>();
                 if (runnableInfos != null) {
                     for (LI info : runnableInfos) {
                         result.add(newRunnable(info));
@@ -83,10 +80,6 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                 return result;
             }
         });
-    }
-
-    public static void setLogger(BaseSimpleLogger logger) {
-        NetworkLoadManager.logger = logger;
     }
 
     @Nullable
@@ -122,7 +115,12 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         return new LoadRunnable(rInfo);
     }
 
-    private final class LoadRunnable extends TaskRunnable<LI> {
+    @Override
+    protected Class<?> getLoggerClass() {
+        return NetworkLoadManager.class;
+    }
+
+    private final class LoadRunnable extends TaskRunnable<LI, Void, Void> {
 
         @NonNull
         LoadProcessInfo currentLoadInfo = new LoadProcessInfo();
@@ -189,10 +187,12 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             l.onUpdateState(rInfo, currentLoadInfo, lastException);
         }
 
+        @Nullable
         @Override
-        public void run() {
+        protected Void doWork() throws Throwable {
             checkArgs();
             doLoad();
+            return null;
         }
 
         private void doLoad() {
@@ -224,7 +224,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                 lastUploadFiles = null;
 
                 if (Thread.currentThread().isInterrupted()) {
-                    logger.warn("thread is interrupted, cancelling load...");
+                    logger.w("thread is interrupted, cancelling load...");
                     rInfo.cancel();
                 }
 
@@ -305,7 +305,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                         innerException = e;
                     }
 
-                    logger.debug("opening connection on " + rInfo.url + "...");
+                    logger.d("opening connection on " + rInfo.url + "...");
                     connection = url != null ? (HttpURLConnection) url.openConnection() : null;
 
                     if (connection == null) {
@@ -314,9 +314,9 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                     if (rInfo.settings.logRequestData) {
                         String query = url.getQuery();
-                        logger.debug("URL: " + rInfo.url);
-                        logger.debug(rInfo.requestMethod.toString() + " " + url.getPath() + (!TextUtils.isEmpty(query) ? "?" + query : ""));
-                        logger.debug("Host: " + url.getHost());
+                        logger.d("URL: " + rInfo.url);
+                        logger.d(rInfo.requestMethod.toString() + " " + url.getPath() + (!TextUtils.isEmpty(query) ? "?" + query : ""));
+                        logger.d("Host: " + url.getHost());
                     }
 
                     connection.setConnectTimeout((int) rInfo.settings.connectionTimeout);
@@ -333,8 +333,8 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     connection.setRequestProperty("Cache-Control", "no-cache");
 
                     if (rInfo.settings.logRequestData) {
-                        logger.debug("Connection: " + "Keep-Alive");
-                        logger.debug("Cache-Control: " + "no-cache");
+                        logger.d("Connection: " + "Keep-Alive");
+                        logger.d("Cache-Control: " + "no-cache");
                     }
 
                     for (LoadRunnableInfo.NameValuePair h : rInfo.getHeaders()) {
@@ -342,7 +342,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 //                        Utils.addHeaderField(requestStream, h.name, h.value, rInfo.settings.logRequestData);
                             connection.setRequestProperty(h.name, h.value);
                             if (rInfo.settings.logRequestData)
-                                logger.debug(h.name + ": " + h.value);
+                                logger.d(h.name + ": " + h.value);
                         } else {
                             throw new RuntimeException("header name might not be empty");
                         }
@@ -354,14 +354,14 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                 connection.setRequestProperty("Content-Type",
                                         rInfo.contentType.value + "; boundary=" + boundary);
                                 if (rInfo.settings.logRequestData) {
-                                    logger.debug("Content-Type: " + rInfo.contentType.value + "; boundary=" + boundary);
+                                    logger.d("Content-Type: " + rInfo.contentType.value + "; boundary=" + boundary);
                                 }
                                 break;
                             default:
                                 connection.setRequestProperty("Content-Type",
                                         rInfo.contentType.value);
                                 if (rInfo.settings.logRequestData) {
-                                    logger.debug("Content-Type: " + rInfo.contentType.value);
+                                    logger.d("Content-Type: " + rInfo.contentType.value);
                                 }
                                 break;
                         }
@@ -374,10 +374,10 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     }
 
 //                    if (currentLoadInfo.totalUploadBytesCount > 0) {
-//                        logger.debug("total=" + requestStream.size());
+//                        logger.d("total=" + requestStream.size());
 //                        connection.setRequestProperty("Content-Length", String.valueOf(requestStream.size()));
 //                        if (rInfo.settings.logRequestData) {
-//                            logger.debug("Content-Length: " + currentLoadInfo.totalUploadBytesCount);
+//                            logger.d("Content-Length: " + currentLoadInfo.totalUploadBytesCount);
 //                        }
 //                    }
 
@@ -388,14 +388,14 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                     notifyStateChanged(LoadListener.STATE.CONNECTING);
 
-                    logger.debug("connecting...");
+                    logger.d("connecting...");
                     connection.connect();
 
                     notifyStateChanged(LoadListener.STATE.CONNECTED);
 
 //                    if (rInfo.requestMethod != LoadRunnableInfo.RequestMethod.GET) {
 
-                    logger.debug("writing request to output stream...");
+                    logger.d("writing request to output stream...");
                     final long startUploadTime = System.currentTimeMillis();
 
                     requestStream = new DataOutputStream(connection.getOutputStream()); // new PrintWriter(new OutputStreamWriter(output, DEFAULT_CHARSET), true);
@@ -436,7 +436,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                                 targetInterval = targetInterval == LoadListener.INTERVAL_NOT_SPECIFIED ? LoadListener.DEFAULT_PROCESSING_NOTIFY_INTERVAL : targetInterval;
                                                 if (targetInterval > 0 && interval >= targetInterval || currentLoadInfo.uploadedBytesCount >= currentLoadInfo.totalUploadBytesCount) {
                                                     long currentTime = System.currentTimeMillis();
-//                                                        logger.debug("updating uploading state (processing)...");
+//                                                        logger.d("updating uploading state (processing)...");
                                                     notifyStateProcessing(LoadListener.STATE.UPLOADING, l);
                                                     waitTime += System.currentTimeMillis() - currentTime;
                                                     notified = true;
@@ -499,7 +499,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                             Utils.addFileParts(requestStream, rInfo.body.name, lastUploadFiles, ((LoadRunnableInfo.FilesBody) rInfo.body).ignoreIncorrect, writeNotifier, boundary, rInfo.settings.logRequestData);
                                         }
                                     } else {
-                                        logger.error("no correct files in body: " + rInfo.body);
+                                        logger.e("no correct files in body: " + rInfo.body);
                                     }
                                 }
                             }
@@ -515,18 +515,18 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                         }
                     }
 
-                    logger.debug("closing output stream...");
+                    logger.d("closing output stream...");
                     requestStream.close();
 //                    requestStream = null;
 //                    }
 
                     if (!rInfo.isCanceled()) {
 
-                        logger.debug("reading response...");
+                        logger.d("reading response...");
                         lastResponse = new Response();
                         lastResponse.code = connection.getResponseCode(); // FIXME hang
                         lastResponse.message = connection.getResponseMessage();
-                        logger.debug("response acquired!");
+                        logger.d("response acquired!");
 
                         boolean accepted;
 
@@ -603,7 +603,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                                 targetInterval = targetInterval == LoadListener.INTERVAL_NOT_SPECIFIED ? LoadListener.DEFAULT_PROCESSING_NOTIFY_INTERVAL : targetInterval;
                                                 if (targetInterval > 0 && interval >= targetInterval || currentLoadInfo.downloadedBytesCount >= currentLoadInfo.totalDownloadBytesCount) {
                                                     long currentTime = System.currentTimeMillis();
-//                                                        logger.debug("updating downloading state (processing)...");
+//                                                        logger.d("updating downloading state (processing)...");
                                                     notifyStateProcessing(LoadListener.STATE.DOWNLOADING, l);
                                                     waitTime += System.currentTimeMillis() - currentTime;
                                                     notified = true;
@@ -619,7 +619,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                         if (rInfo.settings.readBodyMode != LoadRunnableInfo.LoadSettings.ReadBodyMode.FILE || !isResponseOk(lastResponse.code)) {
 
-                            logger.debug("reading response to memory...");
+                            logger.d("reading response to memory...");
 
                             LoadRunnableInfo.LoadSettings.ReadBodyMode mode = rInfo.settings.readBodyMode == LoadRunnableInfo.LoadSettings.ReadBodyMode.FILE ? BYTE_ARRAY : rInfo.settings.readBodyMode;
 
@@ -637,11 +637,11 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                             }
 
                             readSuccess = true;
-                            logger.debug("response body successfully acquired to memory");
+                            logger.d("response body successfully acquired to memory");
 
                         } else {
 
-                            logger.debug("reading response to file...");
+                            logger.d("reading response to file...");
 
                             try {
                                 doStuffWithDownloadFile();
@@ -659,12 +659,12 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                             lastResponse.body = new LoadRunnableInfo.FileBody(lastDownloadFile.getName(), lastDownloadFile, false, false);
                             readSuccess = true;
-                            logger.debug("response body successfully acquired to file: " + lastDownloadFile + " / size: " + lastDownloadFile.length());
+                            logger.d("response body successfully acquired to file: " + lastDownloadFile + " / size: " + lastDownloadFile.length());
                         }
 
                         if (rInfo.settings.logResponseData) {
-                            logger.debug("code: " + lastResponse.code + ", message: " + lastResponse.message + ", data: " + lastResponse.body);
-                            logger.debug("headers: " + lastResponse.headers);
+                            logger.d("code: " + lastResponse.code + ", message: " + lastResponse.message + ", data: " + lastResponse.body);
+                            logger.d("headers: " + lastResponse.headers);
                         }
 
                         synchronized (mLoadObservable) {
@@ -678,7 +678,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                         if (!accepted) {
                             success = false;
-                            logger.error("not accepted: read success: " + readSuccess + ", response: " + lastResponse);
+                            logger.e("not accepted: read success: " + readSuccess + ", response: " + lastResponse);
 //                            currentLoadInfo.retriesCount = rInfo.settings.retryLimit;
 //                            return;
                         } else {
@@ -687,11 +687,10 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     }
 
                 } catch (Exception e) {
-                    logger.error("an Exception occurred", lastException = e);
-                    e.printStackTrace();
+                    logger.e("an Exception occurred: " + e.getMessage(), lastException = e);
 
                 } finally {
-                    logger.debug("finally");
+                    logger.d("finally");
 
                     try {
 
@@ -706,7 +705,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                         }
 
                     } catch (IOException e) {
-                        logger.error("an IOException occurred during close()", e);
+                        logger.e("an IOException occurred during close()", e);
                     }
 
 //                    if (uploadLock != null) {
@@ -724,7 +723,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     if (success && !rInfo.isCanceled()) {
 
                         lastException = null;
-                        logger.info("load " + rInfo + " success");
+                        logger.i("load " + rInfo + " success");
                         notifyStateChanged(LoadListener.STATE.SUCCESS);
 
                         if (currentLoadInfo.totalUploadBytesCount > 0 && rInfo.contentType == MULTIPART_FORM_DATA) {
@@ -732,9 +731,9 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                 if (lastUploadFiles != null) {
                                     for (File uploadFile : lastUploadFiles) {
                                         if (uploadFile != null) {
-                                            logger.info("deleting successfully uploaded file: " + uploadFile + "...");
+                                            logger.i("deleting successfully uploaded file: " + uploadFile + "...");
                                             if (!FileHelper.deleteFile(uploadFile)) {
-                                                logger.error("can't delete successfully uploaded file: " + uploadFile);
+                                                logger.e("can't delete successfully uploaded file: " + uploadFile);
                                             }
                                         }
                                     }
@@ -748,9 +747,9 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                             if (lastDownloadFile != null) {
                                 if (rInfo.settings.allowDeleteDownloadFile && FileHelper.isFileExists(lastDownloadFile.getAbsolutePath())) {
-                                    logger.info("deleting unfinished download file: " + lastDownloadFile + "...");
+                                    logger.i("deleting unfinished download file: " + lastDownloadFile + "...");
                                     if (!FileHelper.deleteFile(lastDownloadFile)) {
-                                        logger.error("can't delete unfinished download file: " + lastDownloadFile);
+                                        logger.e("can't delete unfinished download file: " + lastDownloadFile);
                                     }
                                 }
                             }
@@ -762,26 +761,25 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                                 notifyStateChanged(!isFileReasonFail? LoadListener.STATE.FAILED : LoadListener.STATE.FAILED_FILE_REASON);
 
-                                logger.error("load " + rInfo + " failed");
+                                logger.e("load " + rInfo + " failed");
                                 if (rInfo.settings.retryLimit == LoadRunnableInfo.LoadSettings.RETRY_LIMIT_UNLIMITED ||
                                         rInfo.settings.retryLimit != LoadRunnableInfo.LoadSettings.RETRY_LIMIT_NONE && currentLoadInfo.retriesCount < rInfo.settings.retryLimit) {
 
                                     int retriesLeft = rInfo.settings.retryLimit - currentLoadInfo.retriesCount;
-                                    logger.error("load with id " + rInfo.id + " failed, retries left: " + retriesLeft);
+                                    logger.e("load with id " + rInfo.id + " failed, retries left: " + retriesLeft);
 
                                     if (rInfo.settings.retryDelay > 0) {
                                         try {
                                             Thread.sleep(rInfo.settings.retryDelay);
                                         } catch (InterruptedException e) {
-                                            e.printStackTrace();
                                             Thread.currentThread().interrupt();
-                                            logger.warn("thread interrupted, cancelling load...");
+                                            logger.w("thread interrupted, cancelling load...");
                                             rInfo.cancel();
                                         }
                                     }
 
                                 } else {
-                                    logger.error("no retries left");
+                                    logger.e("no retries left");
                                     notifyStateChanged(LoadListener.STATE.FAILED_RETRIES_EXCEEDED);
                                 }
 
@@ -789,7 +787,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                         }
 
                         if (rInfo.isCanceled()) {
-                            logger.warn("load " + rInfo + " canceled");
+                            logger.w("load " + rInfo + " canceled");
                             final String message = "load with id " + rInfo.id + " was canceled";
                             lastException = lastException != null? new RuntimeException(message, lastException) : new RuntimeException(message);
                             notifyStateChanged(LoadListener.STATE.CANCELLED);
@@ -962,10 +960,10 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
          * @param value - value of the header field
          */
         static void addHeaderField(@NonNull DataOutputStream requestStream, @NonNull String name, @NonNull String value, boolean log) throws IOException {
-            logger.debug("addHeaderField(), name=" + name + ", value=" + value + ", log=" + log);
+            logger.d("addHeaderField(), name=" + name + ", value=" + value + ", log=" + log);
 
             if (log)
-                logger.debug("headerField=" + name + ": " + value + " LINE_FEED ");
+                logger.d("headerField=" + name + ": " + value + " LINE_FEED ");
 
             requestStream.writeBytes(name + ": " + value);
             requestStream.writeBytes(LINE_FEED);
@@ -978,10 +976,10 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
          * @param value field value
          */
         static void addFormFieldMultipart(@NonNull DataOutputStream requestStream, @NonNull String name, @NonNull String value, String charset, String boundary, boolean log) throws IOException {
-            logger.debug("addFormField(), name=" + name + ", value=" + value + ", log=" + log);
+            logger.d("addFormField(), name=" + name + ", value=" + value + ", log=" + log);
 
             if (log)
-                logger.debug("formFieldMultipart=" + "--" + boundary + " LINE_FEED " + "Content-Disposition: form-data; name=" + name + " LINE_FEED " + "Content-Type: text/plain; charset=" + charset + " LINE_FEED " + " LINE_FEED " + value + " LINE_FEED ");
+                logger.d("formFieldMultipart=" + "--" + boundary + " LINE_FEED " + "Content-Disposition: form-data; name=" + name + " LINE_FEED " + "Content-Type: text/plain; charset=" + charset + " LINE_FEED " + " LINE_FEED " + value + " LINE_FEED ");
 
             requestStream.writeBytes("--" + boundary);
             requestStream.writeBytes(LINE_FEED);
@@ -1001,16 +999,16 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
          * @throws RuntimeException, IOException
          */
         static void addFileParts(@NonNull DataOutputStream requestStream, @NonNull Map<File, String> uploadFiles, boolean ignoreIncorrect, @Nullable IWriteNotifier notifier, String boundary, boolean log) throws RuntimeException, IOException {
-            logger.debug("addFileParts(), uploadFiles=" + uploadFiles + ", ignoreIncorrect=" + ignoreIncorrect + ", boundary=" + boundary + ", log=" + log);
+            logger.d("addFileParts(), uploadFiles=" + uploadFiles + ", ignoreIncorrect=" + ignoreIncorrect + ", boundary=" + boundary + ", log=" + log);
 
             int bodySize = 0;
 
             for (File file : uploadFiles.keySet()) {
 
                 if (!FileHelper.isFileCorrect(file) || !file.canRead()) {
-                    logger.error("incorrect upload file: " + file);
+                    logger.e("incorrect upload file: " + file);
                     if (!ignoreIncorrect) {
-                        logger.error("aborting adding file parts...");
+                        logger.e("aborting adding file parts...");
                         throw new RuntimeException("incorrect upload file: " + file);
                     } else {
                         continue;
@@ -1023,7 +1021,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                 String contentType = URLConnection.guessContentTypeFromName(fileName);
 
                 if (log)
-                    logger.debug("filePart=" + "--" + boundary + " LINE_FEED " + "Content-Disposition: form-data; name=" + fieldName + "; filename=" + fileName + "LINE_FEED " + "Content-Type: " + contentType + " LINE_FEED " + "Content-Transfer-Encoding: binary" + " LINE_FEED " + " LINE_FEED " + "-----file------" + " LINE_FEED");
+                    logger.d("filePart=" + "--" + boundary + " LINE_FEED " + "Content-Disposition: form-data; name=" + fieldName + "; filename=" + fileName + "LINE_FEED " + "Content-Type: " + contentType + " LINE_FEED " + "Content-Transfer-Encoding: binary" + " LINE_FEED " + " LINE_FEED " + "-----file------" + " LINE_FEED");
 
                 requestStream.writeBytes("--" + boundary);
                 requestStream.writeBytes(LINE_FEED);
@@ -1059,8 +1057,8 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             }
 
             if (bodySize > 0) {
-                logger.debug("body size: " + bodySize);
-                logger.debug("body added");
+                logger.d("body size: " + bodySize);
+                logger.d("body added");
             }
         }
 
@@ -1083,10 +1081,10 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         }
 
         static void addCloseLineMultipart(@NonNull DataOutputStream requestStream, String boundary, boolean log) throws IOException {
-            logger.debug("addCloseLineMultipart()");
+            logger.d("addCloseLineMultipart()");
 
             if (log)
-                logger.debug("closeLine=" + " LINE_FEED " + "--" + boundary + "--" + " LINE_FEED");
+                logger.d("closeLine=" + " LINE_FEED " + "--" + boundary + "--" + " LINE_FEED");
 
             requestStream.writeBytes(LINE_FEED);
             requestStream.writeBytes("--" + boundary + "--");
@@ -1100,10 +1098,10 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
          * @param value field value
          */
         static void addFormFieldUrlEncoded(@NonNull DataOutputStream requestStream, @NonNull String name, @NonNull String value, boolean log) throws IOException {
-            logger.debug("addFormFieldUrlEncoded(), name=" + name + ", value=" + value + ", log=" + log);
+            logger.d("addFormFieldUrlEncoded(), name=" + name + ", value=" + value + ", log=" + log);
 
             if (log)
-                logger.debug("formFieldUrlEncoded=" + "LINE_FEED " + name + "=" + value + " LINE_FEED");
+                logger.d("formFieldUrlEncoded=" + "LINE_FEED " + name + "=" + value + " LINE_FEED");
 
             requestStream.writeBytes(LINE_FEED);
             requestStream.writeBytes(name + "=" + value);
@@ -1111,23 +1109,23 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         }
 
         static void addBody(@NonNull DataOutputStream requestStream, @NonNull LoadRunnableInfo.StringBody body, boolean log) throws RuntimeException, IOException {
-            logger.debug("addBody(), body=" + body + ", log=" + log);
+            logger.d("addBody(), body=" + body + ", log=" + log);
 
             if (body.isEmpty()) {
-                logger.debug("body is empty");
+                logger.d("body is empty");
                 return;
             }
 
             if (log)
-                logger.debug("body=" + "LINE_FEED " + body.getString() + " LINE_FEED ");
+                logger.d("body=" + "LINE_FEED " + body.getString() + " LINE_FEED ");
 
             byte[] data = body.getBytes();
-            logger.debug("body size: " + data.length);
+            logger.d("body size: " + data.length);
 
             requestStream.writeBytes(LINE_FEED);
             requestStream.write(data);
             requestStream.writeBytes(LINE_FEED);
-            logger.debug("body added");
+            logger.d("body added");
         }
 
         @NonNull
@@ -1322,49 +1320,19 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             return uploadedBytesCount;
         }
 
-        public float getUploadedKBytesCount() {
-            return FileHelper.SizeUnit.BYTES.toKBytes(uploadedBytesCount);
-        }
-
-        public float getUploadedMBytesCount() {
-            return FileHelper.SizeUnit.BYTES.toMBytes(uploadedBytesCount);
-        }
-
         public long getDownloadedBytesCount() {
             return downloadedBytesCount;
         }
 
-        public float getDownloadedKBytesCount() {
-            return FileHelper.SizeUnit.BYTES.toKBytes(downloadedBytesCount);
-        }
-
-        public float getDownloadedMBytesCount() {
-            return FileHelper.SizeUnit.BYTES.toMBytes(downloadedBytesCount);
-        }
 
         public long getTotalUploadBytesCount() {
             return totalUploadBytesCount;
-        }
-
-        public float getTotalUploadKBytesCount() {
-            return FileHelper.SizeUnit.BYTES.toKBytes(totalUploadBytesCount);
-        }
-
-        public float getTotalUploadMBytesCount() {
-            return FileHelper.SizeUnit.BYTES.toMBytes(totalUploadBytesCount);
         }
 
         public long getTotalDownloadBytesCount() {
             return totalDownloadBytesCount;
         }
 
-        public float getTotalDownloadKBytesCount() {
-            return FileHelper.SizeUnit.BYTES.toKBytes(totalDownloadBytesCount);
-        }
-
-        public float getTotalDownloadMBytesCount() {
-            return FileHelper.SizeUnit.BYTES.toMBytes(totalDownloadBytesCount);
-        }
 
         /**
          * bytes/ms
@@ -1378,14 +1346,6 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
          */
         public float getUploadSpeed() {
             return uploadSpeed;
-        }
-
-        public float getDownloadSpeedKBytesSec() {
-            return FileHelper.SizeUnit.BYTES.toKBytes((long) downloadSpeed) * 1000f;
-        }
-
-        public float getUploadSpeedKBytesSec() {
-            return FileHelper.SizeUnit.BYTES.toKBytes((long) uploadSpeed) * 1000f;
         }
 
         public float getUploadedPercentage() {

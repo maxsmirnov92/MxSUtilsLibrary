@@ -3,12 +3,11 @@ package net.maxsmr.tasksutils.taskexecutor;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable.ITaskRestorer;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable.ITaskResultValidator;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -17,28 +16,28 @@ import java.util.List;
 
 import static net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor.TASKS_NO_LIMIT;
 
-public class SimpleWorkQueue<I extends RunnableInfo> {
+public class SimpleWorkQueue<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
 
-    private static final Logger logger = LoggerFactory.getLogger(SimpleWorkQueue.class);
+    private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(SimpleWorkQueue.class);
 
     @NonNull
-    private final LinkedList<TaskRunnable<I>> runnableQueue = new LinkedList<>();
+    private final LinkedList<T> runnableQueue = new LinkedList<>();
 
     private final List<PoolWorker> poolWorkers;
 
     private int maxRunnableQueueSize;
 
     @Nullable
-    private ITaskResultValidator<I, TaskRunnable<I>> resultValidator;
+    private ITaskResultValidator<I, ProgressInfo, Result, T> resultValidator;
 
     @Nullable
     private AbstractSyncStorage<I> syncStorage;
 
     public SimpleWorkQueue(int nPoolWorkers, String workQueueName,
                            int maxRunnableQueueSize,
-                           @Nullable ITaskResultValidator<I, TaskRunnable<I>> resultValidator,
+                           @Nullable ITaskResultValidator<I, ProgressInfo, Result, T> resultValidator,
                            @Nullable final AbstractSyncStorage<I> syncStorage,
-                           @Nullable final ITaskRestorer<I, TaskRunnable<I>> restorer) {
+                           @Nullable final ITaskRestorer<I, ProgressInfo, Result, T> restorer) {
 
         if (nPoolWorkers <= 0)
             nPoolWorkers = 1;
@@ -92,11 +91,11 @@ public class SimpleWorkQueue<I extends RunnableInfo> {
     }
 
     @Nullable
-    public ITaskResultValidator<I, TaskRunnable<I>> getResultValidator() {
+    public ITaskResultValidator<I, ProgressInfo, Result, T> getResultValidator() {
         return resultValidator;
     }
 
-    public void setResultValidator(@Nullable ITaskResultValidator<I, TaskRunnable<I>> resultValidator) {
+    public void setResultValidator(@Nullable ITaskResultValidator<I, ProgressInfo, Result, T> resultValidator) {
         this.resultValidator = resultValidator;
     }
 
@@ -113,10 +112,10 @@ public class SimpleWorkQueue<I extends RunnableInfo> {
         return runnableQueue.size();
     }
 
-    public boolean executeAll(Collection<TaskRunnable<I>> commands) {
+    public boolean executeAll(Collection<T> commands) {
         boolean result = true;
         if (commands != null) {
-            for (TaskRunnable<I> c : commands) {
+            for (T c : commands) {
                 if (!execute(c)) {
                     result = false;
                 }
@@ -125,8 +124,8 @@ public class SimpleWorkQueue<I extends RunnableInfo> {
         return result;
     }
 
-    public boolean execute(TaskRunnable<I> command) {
-        logger.debug("execute(), command=" + command);
+    public boolean execute(T command) {
+        logger.d("execute(), command=" + command);
 
         if (command == null) {
             throw new NullPointerException("command is null");
@@ -136,7 +135,7 @@ public class SimpleWorkQueue<I extends RunnableInfo> {
             if (runnableQueue.size() < maxRunnableQueueSize || maxRunnableQueueSize == TASKS_NO_LIMIT) {
 
                 if (runnableQueue.contains(command)) {
-                    logger.warn("runnableQueue already contains this runnable");
+                    logger.w("runnableQueue already contains this runnable");
                     return true;
                 }
 
@@ -151,14 +150,14 @@ public class SimpleWorkQueue<I extends RunnableInfo> {
                 return true;
 
             } else {
-                logger.error("no capacity remains in runnable queue (" + runnableQueue.size() + "/" + maxRunnableQueueSize + ")");
+                logger.e("no capacity remains in runnable queue (" + runnableQueue.size() + "/" + maxRunnableQueueSize + ")");
                 return false;
             }
         }
     }
 
     public void release() {
-        logger.debug("release");
+        logger.d("release");
 
         for (PoolWorker worker : poolWorkers) {
             worker.interrupt();
@@ -172,33 +171,33 @@ public class SimpleWorkQueue<I extends RunnableInfo> {
 
         @Override
         public void run() {
-            logger.debug("PoolWorker :: run()");
+            logger.d("PoolWorker :: run()");
 
-            TaskRunnable<I> r;
+            T r;
 
             while (!isInterrupted()) {
 
                 synchronized (runnableQueue) {
                     while (runnableQueue.isEmpty()) {
                         try {
-                            // logger.debug("waiting queue...");
+                            // logger.d("waiting queue...");
                             runnableQueue.wait();
                         } catch (InterruptedException e) {
-                            logger.error("an InterruptedException occurred during wait(): " + e.getMessage());
+                            logger.e("an InterruptedException occurred during wait(): " + e.getMessage());
                             Thread.currentThread().interrupt();
                         }
                     }
 
-                    // logger.debug("getting runnable...");
+                    // logger.d("getting runnable...");
                     r = runnableQueue.removeFirst();
                 }
 
                 Exception exception = null;
                 try {
-                    // logger.debug("running runnable: " + r + "...");
+                    // logger.d("running runnable: " + r + "...");
                     r.run();
                 } catch (Exception e) {
-                    logger.error("a RuntimeException occurred during run()", exception = e);
+                    logger.e("a RuntimeException occurred during run()", exception = e);
                 }
 
                 if (syncStorage != null) {
