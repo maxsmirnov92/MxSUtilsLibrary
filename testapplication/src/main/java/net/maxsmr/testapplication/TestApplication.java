@@ -17,20 +17,14 @@ import java.io.File;
 public class TestApplication extends Application {
 
     static {
-        BaseLoggerHolder.initInstance(new ILoggerHolderProvider<BaseLoggerHolder>() {
-            @NonNull
+        BaseLoggerHolder.initInstance(() -> new BaseLoggerHolder(true) {
             @Override
-            public BaseLoggerHolder provideHolder() {
-                return new BaseLoggerHolder(true) {
-                    @Override
-                    protected BaseLogger createLogger(@NonNull Class<?> clazz) {
-                        if (ConfigureLog4J.getInstance().isInitialized()) {
-                            return new Slf4Logger(LoggerFactory.getLogger(clazz));
-                        } else {
-                            return null;
-                        }
-                    }
-                };
+            protected BaseLogger createLogger(@NonNull Class<?> clazz) {
+                if (ConfigureLog4J.getInstance().isInitialized()) {
+                    return new Slf4Logger(LoggerFactory.getLogger(clazz));
+                } else {
+                    return null;
+                }
             }
         });
     }
