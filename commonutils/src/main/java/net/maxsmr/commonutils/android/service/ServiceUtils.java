@@ -33,12 +33,7 @@ public final class ServiceUtils {
         if (manager == null) {
             throw new RuntimeException(ActivityManager.class.getSimpleName() + " is null");
         }
-        return Predicate.Methods.find(manager.getRunningServices(Integer.MAX_VALUE), new Predicate<ActivityManager.RunningServiceInfo>() {
-            @Override
-            public boolean apply(ActivityManager.RunningServiceInfo service) {
-                return serviceClass.getName().equals(service.service.getClassName());
-            }
-        }) != null;
+        return Predicate.Methods.contains(manager.getRunningServices(Integer.MAX_VALUE), service -> serviceClass.getName().equals(service.service.getClassName()));
     }
 
     public static <S extends Service> boolean isServiceForeground(@NonNull Context context, @NonNull final Class<S> serviceClass) {
@@ -46,12 +41,7 @@ public final class ServiceUtils {
         if (manager == null) {
             throw new RuntimeException(ActivityManager.class.getSimpleName() + " is null");
         }
-        return Predicate.Methods.find(manager.getRunningServices(Integer.MAX_VALUE), new Predicate<ActivityManager.RunningServiceInfo>() {
-            @Override
-            public boolean apply(ActivityManager.RunningServiceInfo service) {
-                return serviceClass.getName().equals(service.service.getClassName()) && service.foreground;
-            }
-        }) != null;
+        return Predicate.Methods.contains(manager.getRunningServices(Integer.MAX_VALUE), service -> serviceClass.getName().equals(service.service.getClassName()) && service.foreground);
     }
 
     private static <S extends Service> void startNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass) {

@@ -87,12 +87,7 @@ public abstract class BaseLogger {
         }
 
         public static boolean contains(final Level level, Collection<Level> levels) {
-            return Predicate.Methods.find(levels, new Predicate<Level>() {
-                @Override
-                public boolean apply(Level element) {
-                    return element == level;
-                }
-            }) != null;
+            return Predicate.Methods.contains(levels, element -> element == level);
         }
     }
 

@@ -13,6 +13,10 @@ public interface Predicate<V> {
 
     class Methods {
 
+        public static <V> boolean contains(Collection<V> elements, @NonNull Predicate<V> predicate) {
+            return find(elements, predicate) != null;
+        }
+
         @Nullable
         public static <V> V find(Collection<V> elements, @NonNull Predicate<V> predicate) {
             V result = null;

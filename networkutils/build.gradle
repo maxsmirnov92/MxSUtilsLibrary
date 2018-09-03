@@ -3,15 +3,10 @@ buildscript {
         jcenter()
     }
     dependencies {
-//        classpath 'com.android.tools.build:gradle:2.3.1'
-        classpath 'com.jfrog.bintray.gradle:gradle-bintray-plugin:1.7.3'
-        classpath 'com.github.dcendents:android-maven-gradle-plugin:1.4.1'
+        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:$bintrayGradleVersion"
+        classpath "com.github.dcendents:android-maven-gradle-plugin:$mavenGradleVersion"
     }
 }
-
-//plugins {
-//    id "com.jfrog.bintray" version "1.7.3"
-//}
 
 repositories {
     jcenter()
@@ -19,16 +14,13 @@ repositories {
 
 apply plugin: 'com.android.library'
 
-//apply plugin: 'com.github.dcendents.android-maven'
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
-
 def siteUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary'
 def gitUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary.git'
 
-//def releaseDir = "${buildDir}/release"
 def localReleaseDest = project.hasProperty("LOCAL_REPO") ? "${rootProject.projectDir}/${project.LOCAL_REPO}" : "${rootProject.buildDir}/release/repo"
 
 android {
@@ -46,8 +38,8 @@ android {
     compileSdkVersion sdkVersion
     buildToolsVersion buildToolsVersion_
 
-    sourceCompatibility = 1.7
-    targetCompatibility = 1.7
+    sourceCompatibility = sourceCompatibilityVersion
+    targetCompatibility = sourceCompatibilityVersion
 
     defaultConfig {
         minSdkVersion minSdkVersion_
@@ -67,8 +59,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_7
-        targetCompatibility JavaVersion.VERSION_1_7
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
     lintOptions {
         // Don't abort if Lint finds an error, otherwise the Jenkins build
@@ -84,23 +76,12 @@ configurations {
     javadocDependencies
 }
 
-//task javadoc(type: Javadoc) {
-//    source = android.sourceSets.main.java.srcDirs
-//    classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
-//}
-
-//task javaDocsJar(type: Jar, dependsOn: javaDocs) {
-//    classifier = 'javadoc'
-//    from javaDocs.destinationDir
-//}
-
 task sourcesJar(type: Jar) {
     classifier = 'sources'
     from android.sourceSets.main.java.srcDirs
 }
 
 artifacts {
-//    archives javadocJar
     archives sourcesJar
 }
 
@@ -149,7 +130,6 @@ publishing {
             version = project.networkUtilsVersion
             artifact "${project.buildDir}/outputs/aar/${archivesBaseName}-release.aar"
             artifact sourcesJar
-//            artifact javadocsJar
 
             pom.withXml {
                 def dependenciesNode = asNode().appendNode('dependencies')

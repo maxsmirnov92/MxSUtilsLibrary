@@ -27,10 +27,15 @@ allprojects {
 }
 
 ext {
+    sourceCompatibilityVersion = 1.8
+
     sdkVersion = 27
     minSdkVersion_ = 14
     buildToolsVersion_ = "27.0.3"
     appCompatVersion = "27.1.1"
+
+    bintrayGradleVersion = "1.7.3"
+    mavenGradleVersion = "1.4.1"
 
     commonsNetVersion = "3.3"
     gsonVersion = "2.8.5"

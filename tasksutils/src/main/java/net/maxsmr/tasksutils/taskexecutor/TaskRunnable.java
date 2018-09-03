@@ -289,14 +289,6 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     public interface ITaskResultValidator<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
 
         boolean needToReAddTask(T runnable, Throwable t);
-
-        class Stub<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> implements ITaskResultValidator<I, ProgressInfo, Result, T> {
-
-            @Override
-            public boolean needToReAddTask(T runnable, Throwable t) {
-                return false;
-            }
-        }
     }
 
     public interface ITaskRestorer<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
@@ -331,11 +323,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
                         }
                     }
                 };
-                if (callbacksHandler == null) {
-                    r.run();
-                } else {
-                    callbacksHandler.post(r);
-                }
+                run(r);
             }
         }
 
@@ -351,11 +339,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
                         }
                     }
                 };
-                if (callbacksHandler == null) {
-                    r.run();
-                } else {
-                    callbacksHandler.post(r);
-                }
+                run(r);
             }
         }
 
@@ -371,11 +355,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
                         }
                     }
                 };
-                if (callbacksHandler == null) {
-                    r.run();
-                } else {
-                    callbacksHandler.post(r);
-                }
+                run(r);
             }
         }
 
@@ -391,11 +371,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
                         }
                     }
                 };
-                if (callbacksHandler == null) {
-                    r.run();
-                } else {
-                    callbacksHandler.post(r);
-                }
+                run(r);
             }
         }
 
@@ -411,6 +387,12 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
                         }
                     }
                 };
+                run(r);
+            }
+        }
+
+        private void run(Runnable r) {
+            if (r != null) {
                 if (callbacksHandler == null) {
                     r.run();
                 } else {

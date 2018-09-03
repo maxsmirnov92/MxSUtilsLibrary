@@ -46,7 +46,6 @@ public final class RootShellCommands {
     public static boolean isRootAvailable() {
         CommandResult commandResult = executeCommand("id");
         return commandResult.isSuccessful() && commandResult.getStdOut().toLowerCase().contains("uid=0");
-
     }
 
     /**
@@ -56,9 +55,7 @@ public final class RootShellCommands {
      */
     public static boolean remountSystemRw() {
         String command = "mount -o remount,rw /system";
-        CommandResult commandResult = executeCommand(command);
-
-        return commandResult.isSuccessful();
+        return executeCommand(command).isSuccessful();
     }
 
     /**
@@ -69,9 +66,7 @@ public final class RootShellCommands {
      */
     public static boolean createDirectory(String path) {
         String command = String.format("mkdir -p %s", path);
-        CommandResult commandResult = executeCommand(command);
-
-        return commandResult.isSuccessful();
+        return executeCommand(command).isSuccessful();
     }
 
     /**
@@ -83,10 +78,7 @@ public final class RootShellCommands {
      */
     public static boolean chmod(String file, String mode) {
         String command = String.format("chmod %s %s", mode, file);
-
-        CommandResult commandResult = executeCommand(command);
-
-        return commandResult.isSuccessful();
+        return executeCommand(command).isSuccessful();
     }
 
     /**
@@ -116,10 +108,7 @@ public final class RootShellCommands {
      */
     public static boolean writeToFileAsRoot(String data, File file) {
         String command = String.format("echo '%s' > %s", data, file.getAbsolutePath());
-
-        CommandResult commandResult = executeCommand(command);
-
-        return commandResult.isSuccessful();
+        return executeCommand(command).isSuccessful();
     }
 
     public static boolean reboot() {
@@ -177,7 +166,7 @@ public final class RootShellCommands {
 
         CommandResult commandResult = executeCommand(command);
 
-        logger.i( "uninstall result: " + commandResult);
+        logger.i("uninstall result: " + commandResult);
 
         if (commandResult.isSuccessful()) {
             return commandResult.getStdOut().toLowerCase().contains("success");
