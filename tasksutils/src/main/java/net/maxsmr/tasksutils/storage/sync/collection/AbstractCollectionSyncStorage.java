@@ -34,14 +34,16 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
     protected AbstractCollectionSyncStorage(
             @Nullable String storageDirPath, @Nullable String extension,
             Class<I> clazz,
-            boolean sync, int maxSize, @NonNull IAddRule<I> addRule) {
+            boolean sync, int maxSize, @NonNull IAddRule<I> addRule, boolean startRestore) {
         super(clazz, sync, maxSize, addRule);
         if (sync && !FileHelper.checkDirNoThrow(storageDirPath)) {
             throw new RuntimeException("incorrect queue dir path: " + storageDirPath);
         }
         this.storageDirPath = storageDirPath;
         this.extension = TextUtils.isEmpty(extension) && sync ? FILE_EXT_DAT : extension;
-        startRestoreThread();
+        if (startRestore) {
+            startRestoreThread();
+        }
     }
 
     @Override
@@ -51,6 +53,10 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
         int restoredCount = 0;
 
         if (allowSync) {
+
+            if (Thread.currentThread().isInterrupted()) {
+                return restoredCount;
+            }
 
             if (!FileHelper.checkDirNoThrow(storageDirPath)) {
                 logger.e("incorrect storage dir path: " + storageDirPath);

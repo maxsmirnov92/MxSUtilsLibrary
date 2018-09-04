@@ -42,8 +42,8 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
 
     private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(TestTasksActivity.class);
 
-    private static final int TASKS_COUNT = 10;
-    private static final int CONCURRENT_TASKS_COUNT = 2;
+    private static final int TASKS_COUNT = 20;
+    private static final int CONCURRENT_TASKS_COUNT = 3;
 
     private AbstractCollectionSyncStorage<TestRunnableInfo> storage;
     private TaskRunnableExecutor<TestRunnableInfo, Void, Boolean, TestTaskRunnable> executor;
@@ -57,25 +57,26 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
 
         storage = new ListSyncStorage<>(getFilesDir().getAbsolutePath() + File.separator + "queue", null,
                 TestRunnableInfo.class, true, ListSyncStorage.MAX_SIZE_UNLIMITED,
-                new AbstractSyncStorage.DefaultAddRule<TestRunnableInfo>());
+                new AbstractSyncStorage.DefaultAddRule<>(), false);
         storage.addStorageListener(this);
 
         TaskRunnable.ITaskResultValidator<TestRunnableInfo, Void, Boolean, TestTaskRunnable> validator = new TaskRunnable.ITaskResultValidator<TestRunnableInfo, Void, Boolean, TestTaskRunnable>() {
             @Override
             public boolean needToReAddTask(TestTaskRunnable runnable, Throwable t) {
-                return executor.containsTask(runnable.getId()) && t == null; // на этот момент таска всё ещё числится в "Active"
+                boolean reAdd = executor.containsTask(runnable.getId()) && t == null; // на этот момент таска всё ещё числится в "Active"
+                logger.i("need to re-add runnable " + runnable + ": " + String.valueOf(reAdd).toUpperCase() + ", current queue: " + executor.getAllTasksRunnableInfos());
+                return reAdd;
             }
         };
 
-        TaskRunnable.ITaskRestorer<TestRunnableInfo, Void, Boolean, TestTaskRunnable> restorer = new TaskRunnable.ITaskRestorer<TestRunnableInfo, Void, Boolean, TestTaskRunnable>() {
-            @Override
-            public List<TestTaskRunnable> fromRunnableInfos(Collection<TestRunnableInfo> runnableInfos) {
-                List<TestTaskRunnable> runnables = new ArrayList<>();
-                for (TestRunnableInfo info : runnableInfos) {
-                    runnables.add(new TestTaskRunnable(info));
+        TaskRunnable.ITaskRestorer<TestRunnableInfo, Void, Boolean, TestTaskRunnable> restorer = runnableInfos -> {
+            List<TestTaskRunnable> runnables = new ArrayList<>();
+            for (TestRunnableInfo info : runnableInfos) {
+                if (info != null) {
+                    runnables.add(new TestTaskRunnable(info).registerCallbacks(this));
                 }
-                return runnables;
             }
+            return runnables;
         };
 
         executor = new TaskRunnableExecutor<>(TaskRunnableExecutor.TASKS_NO_LIMIT, CONCURRENT_TASKS_COUNT,
@@ -83,6 +84,8 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
                 validator, storage, new Handler(Looper.getMainLooper()));
         executor.registerCallback(this);
         executor.restoreQueueByRestorer(restorer);
+
+        storage.startRestoreThread();
     }
 
     @Override
@@ -103,7 +106,7 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
         Pair<Integer, TestRunnableInfo> max = storage.findByMinMaxId(false);
         IdHolder idHolder = max == null || max.second == null ? new IdHolder(0) : new IdHolder(max.second.id);
         for (int i = 0; i < TASKS_COUNT; i++) {
-            executor.execute((TestTaskRunnable) new TestTaskRunnable(new TestRunnableInfo(idHolder.getAndIncrement(), "TestRunnable" + idHolder.get(), MathUtils.randInt(0, 5000))).
+            executor.execute(new TestTaskRunnable(new TestRunnableInfo(idHolder.getAndIncrement(), "TestRunnable_" + idHolder.get(), MathUtils.randInt(0, 5000))).
                     registerCallbacks(this));
         }
         assertFiles(storage.getSize());
@@ -130,13 +133,13 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
 
     @Override
     public void onBeforeExecute(@NonNull Thread t, @NonNull final TestTaskRunnable r, @NonNull ExecInfo<TestRunnableInfo, Void, Boolean, TestTaskRunnable> execInfo, final int waitingCount, final int activeCount) {
-        logger.d("onBeforeExecute(), r=" + r + ", execInfo=" + execInfo);
+        logger.d("onBeforeExecute(), r=" + r + ", execInfo=" + execInfo + ", waitingCount=" + waitingCount + ", activeCount=" + activeCount);
         Snackbar.make(contentView, "task with id " + r.getId() + " starting executing (waiting: " + waitingCount + ", active: " + activeCount + ")", Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
     public void onAfterExecute(@NonNull final TestTaskRunnable r, Throwable t, @NonNull final ExecInfo<TestRunnableInfo, Void, Boolean, TestTaskRunnable> execInfo, @NonNull final StatInfo<TestRunnableInfo, Void, Boolean, TestTaskRunnable> statInfo, final int waitingCount, final int activeCount) {
-        logger.d("onAfterExecute(), r=" + r + ", t=" + t + ", execInfo=" + execInfo);
+        logger.d("onAfterExecute(), r=" + r + ", t=" + t + ", execInfo=" + execInfo + ", statInfo=" + statInfo + ", waitingCount=" + waitingCount + ", activeCount=" + activeCount);
         Snackbar.make(contentView, "task with id " + r.getId() + " finished executing in " + execInfo.getTimeExecuting()
                 + " ms (waiting: " + waitingCount + "), active: " + activeCount, Snackbar.LENGTH_SHORT).show();
         Toast.makeText(this, "task with id " + r.getId() + " completed " + statInfo.getCompletedTimesCount() + " times", Toast.LENGTH_SHORT).show();

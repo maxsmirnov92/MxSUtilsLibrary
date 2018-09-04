@@ -45,14 +45,14 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
                 MAX_SIZE_UNLIMITED, new AbstractSyncStorage.IAddRule<LI>() {
             @Override
             public boolean allowAddIfFull() {
-                return false;
+                return true;
             }
 
             @Override
             public void removeAny(AbstractSyncStorage fromStorage) {
                 fromStorage.removeFirst();
             }
-        });
+        }, true);
         this.loadManager = loadManager;
         this.loadManager.registerLoadListener(this);
         restartUploadSynchronizer();

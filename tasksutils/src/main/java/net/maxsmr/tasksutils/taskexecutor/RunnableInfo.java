@@ -1,5 +1,6 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
+import android.os.AsyncTask;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
@@ -14,6 +15,10 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static android.os.AsyncTask.Status.FINISHED;
+import static android.os.AsyncTask.Status.PENDING;
+import static android.os.AsyncTask.Status.RUNNING;
+
 public class RunnableInfo implements Serializable {
 
     private static final long serialVersionUID = 1439677745602974231L;
@@ -23,7 +28,7 @@ public class RunnableInfo implements Serializable {
     public final int id;
     public final String name;
 
-    boolean isRunning = false;
+    AsyncTask.Status status = PENDING;
 
     private boolean isCancelled = false;
 
@@ -40,8 +45,20 @@ public class RunnableInfo implements Serializable {
         this.name = !TextUtils.isEmpty(name)? name : getClass().getSimpleName();
     }
 
+    @NonNull
+    public synchronized AsyncTask.Status getStatus() {
+        if (status == null) {
+            status = PENDING;
+        }
+        return status;
+    }
+
     public synchronized boolean isRunning() {
-        return isRunning;
+        return status == RUNNING;
+    }
+
+    public synchronized boolean isFinished() {
+        return status == FINISHED;
     }
 
     public synchronized boolean isCanceled() {
@@ -74,37 +91,17 @@ public class RunnableInfo implements Serializable {
 
         if (id != that.id) return false;
         if (isCancelled != that.isCancelled) return false;
-        return !(name != null ? !name.equals(that.name) : that.name != null);
-
+        if (name != null ? !name.equals(that.name) : that.name != null) return false;
+        return status == that.status;
     }
 
     @Override
     public int hashCode() {
         int result = id;
         result = 31 * result + (name != null ? name.hashCode() : 0);
+        result = 31 * result + (status != null ? status.hashCode() : 0);
         result = 31 * result + (isCancelled ? 1 : 0);
         return result;
-    }
-
-    @Override
-    public String toString() {
-        return "RunnableInfo{" +
-                "id=" + id +
-                ", name='" + name + '\'' +
-                ", isRunning=" + isRunning +
-                ", isCanceled=" + isCancelled +
-                '}';
-    }
-
-    @NonNull
-    public static <I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> List<I> fromTasks(@Nullable Collection<T> runnables) {
-        List<I> infos = new ArrayList<>();
-        if (runnables != null) {
-            for (T runnable : runnables) {
-                infos.add(runnable.rInfo);
-            }
-        }
-        return infos;
     }
 
     @NonNull
@@ -128,48 +125,56 @@ public class RunnableInfo implements Serializable {
         return InstanceManager.fromInputStream(clazz, inputStream);
     }
 
+//    @NonNull
+//    public static <I extends RunnableInfo> List<I> fromTaskRunnables(@Nullable Collection<? extends TaskRunnable<I, ?, ?>> tasks) {
+//        List<I> result = new ArrayList<>();
+//        if (tasks != null) {
+//            for (TaskRunnable<I, ?, ?> t : tasks) {
+//                if (t != null) {
+//                    result.add(t.rInfo);
+//                }
+//            }
+//        }
+//        return result;
+//    }
+
     @Nullable
-    public static <I extends RunnableInfo> I findRunnableInfoById(final int id, Collection<I> from) {
-        if (id < 0) {
-            throw new IllegalArgumentException("incorrect id: " + id);
-        }
-        return Predicate.Methods.find(from, new Predicate<I>() {
-            @Override
-            public boolean apply(I element) {
-                return element != null && id == element.id;
-            }
+    public static <I extends RunnableInfo> I findRunnableInfoById(final int id, @Nullable Collection<I> from) {
+        return Predicate.Methods.find(from, element -> element != null && id == element.id);
+    }
+
+    @NonNull
+    public static <I extends RunnableInfo> List<I> filter(@Nullable final Collection<I> what, @Nullable final Collection<I> by, final boolean contains) {
+        return Predicate.Methods.filter(what, element -> {
+            I info = element != null? findRunnableInfoById(element.id, by) : null;
+            return contains && info != null || !contains && info == null;
         });
     }
 
     @NonNull
-    public static <I extends RunnableInfo> List<I> filter(final Collection<I> what, final Collection<I> by, final boolean contains) {
-        return Predicate.Methods.filter(what, new Predicate<I>() {
-            @Override
-            public boolean apply(I element) {
-                I info = element != null? findRunnableInfoById(element.id, by) : null;
-                return contains && info != null || !contains && info == null;
-            }
-        });
+    public static <I extends RunnableInfo> List<I> filter(@Nullable final Collection<I> what, final boolean isCancelled) {
+        return Predicate.Methods.filter(what, element -> element != null && element.isCanceled() == isCancelled);
     }
 
-    public static void setRunning(@Nullable Collection<? extends RunnableInfo> infos, boolean isRunning) {
-        if (infos != null) {
-            for (RunnableInfo i : infos) {
+    public static void setRunning(@Nullable Collection<? extends RunnableInfo> what, boolean isRunning) {
+        if (what != null) {
+            for (RunnableInfo i : what) {
                 if (i != null) {
-                    i.isRunning = isRunning;
+                    i.status = isRunning? RUNNING : PENDING;
                 }
             }
         }
     }
 
-    public static void cancel(@Nullable Collection<? extends RunnableInfo> infos) {
-        if (infos != null) {
-            for (RunnableInfo i : infos) {
+    public static void cancel(@Nullable Collection<? extends RunnableInfo> what) {
+        if (what != null) {
+            for (RunnableInfo i : what) {
                 if (i != null) {
                     i.cancel();
                 }
             }
         }
     }
+
 
 }

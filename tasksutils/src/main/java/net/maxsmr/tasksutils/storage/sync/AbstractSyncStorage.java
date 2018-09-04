@@ -33,6 +33,8 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
 
     protected final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(getLoggerClass());
 
+    private final RestoreRunnable restoreRunnable = new RestoreRunnable();
+
     protected boolean allowSync;
 
     protected int maxSize = MAX_SIZE_UNLIMITED;
@@ -64,27 +66,24 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         return (restoreThread != null && restoreThread.isAlive());
     }
 
-    protected void startRestoreThread() {
+    public void startRestoreThread() {
 
         if (isRestoreThreadRunning()) {
             return;
         }
 
         restoreThread = new CustomHandlerThread(getClass().getSimpleName() + ":RestoreThread",
-                new CustomHandlerThread.ILooperPreparedListener() {
-                    @Override
-                    public void onLooperPrepared() {
-                        restoreThread.addTask(new RestoreRunnable());
-                    }
-                });
+                () -> restoreThread.addTask(restoreRunnable));
         restoreThread.start();
     }
 
-    protected void stopRestoreThread() {
+    public void stopRestoreThread() {
 
         if (!isRestoreThreadRunning()) {
             return;
         }
+
+        restoreThread.removeTask(restoreRunnable);
 
         restoreThread.interrupt();
         restoreThread.quit();
@@ -433,7 +432,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         }
         checkRangeAdd(index);
         checkRunnableInfo(info);
-        return !contains(info) && (!isMaxSizeReached() || !checkMax);
+        return !contains(info) && (!checkMax || !isMaxSizeReached());
     }
 
     protected boolean checkSetElement(@NonNull I info, int index) {

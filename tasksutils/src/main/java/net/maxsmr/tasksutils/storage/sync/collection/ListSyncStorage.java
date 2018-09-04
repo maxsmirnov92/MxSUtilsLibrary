@@ -21,8 +21,8 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
      */
     public ListSyncStorage(@Nullable String storageDirPath, @Nullable String extension,
                            Class<I> clazz,
-                           boolean sync, int maxSize, @NonNull IAddRule<I> addRule) {
-        super(storageDirPath, extension, clazz, sync, maxSize, addRule);
+                           boolean sync, int maxSize, @NonNull IAddRule<I> addRule,boolean startRestore) {
+        super(storageDirPath, extension, clazz, sync, maxSize, addRule, startRestore);
         dataList = new ArrayList<>(maxSize);
     }
 

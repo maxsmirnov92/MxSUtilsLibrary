@@ -56,7 +56,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
 
     public final boolean isReleased() {
         synchronized (mExecutor) {
-            return !mExecutor.isRunning();
+            return mExecutor.isShutdown();
         }
     }
 
@@ -129,7 +129,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
     public List<LI> getAllLoadRunnableInfos() {
         checkReleased();
         List<LI> loadInfos = new ArrayList<>();
-        List<R> loadRunnables = getAllLoadRunnables();
+        Set<R> loadRunnables = getAllLoadRunnables();
         for (R r : loadRunnables) {
             loadInfos.add(r.rInfo);
         }
@@ -159,7 +159,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
     }
 
     @NonNull
-    protected List<R> getAllLoadRunnables() {
+    protected Set<R> getAllLoadRunnables() {
         synchronized (mExecutor) {
             checkReleased();
             return mExecutor.getAllTasks();
@@ -255,12 +255,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         @Nullable
         public final LoadListener<I> findLoadListenerById(final int id) {
             synchronized (observers) {
-                return Predicate.Methods.find(getObservers(), new Predicate<LoadListener<I>>() {
-                    @Override
-                    public boolean apply(LoadListener<I> element) {
-                        return element != null && element.getId() == id;
-                    }
-                });
+                return Predicate.Methods.find(getObservers(), element -> element != null && element.getId() == id);
             }
         }
 
@@ -282,12 +277,9 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
 
         public final void notifyStateChanged(@NonNull final I info, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, Throwable t) {
             synchronized (observers) {
-                LoadListener<I> l = Predicate.Methods.find(copyOfObservers(), new Predicate<LoadListener<I>>() {
-                    @Override
-                    public boolean apply(LoadListener<I> listener) {
-                        int id = listener.getId(info);
-                        return id == RunnableInfo.NO_ID || id == info.id;
-                    }
+                LoadListener<I> l = Predicate.Methods.find(copyOfObservers(), listener -> {
+                    int id = listener.getId(info);
+                    return id == RunnableInfo.NO_ID || id == info.id;
                 });
                 if (l != null) {
                     l.onUpdateState(info, loadProcessInfo, t);

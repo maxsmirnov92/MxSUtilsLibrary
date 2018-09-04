@@ -39,8 +39,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
     private int retryCount = 0;
 
-    @NonNull
-    volatile AsyncTask.Status status = PENDING;
+    private Result result;
 
     public TaskRunnable(@NonNull I rInfo) {
         this.rInfo = rInfo;
@@ -61,7 +60,9 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     }
 
     public int getId() {
-        return rInfo.id;
+        synchronized (rInfo) {
+            return rInfo.id;
+        }
     }
 
     public boolean isRunning() {
@@ -77,16 +78,26 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     }
 
     public int getRetryCount() {
-        return retryCount;
+        synchronized (rInfo) {
+            return retryCount;
+        }
+    }
+
+    public Result getResult() {
+        synchronized (rInfo) {
+            return result;
+        }
     }
 
     @NonNull
     public AsyncTask.Status getStatus() {
-        return status;
+        synchronized (rInfo) {
+            return rInfo.status;
+        }
     }
 
     public boolean isFinished() {
-        return status == FINISHED;
+        return rInfo.isFinished();
     }
 
     @Nullable
@@ -105,8 +116,8 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     @Override
     public final void run() {
 
-        if (status != AsyncTask.Status.PENDING) {
-            switch (status) {
+        if (rInfo.status != AsyncTask.Status.PENDING) {
+            switch (rInfo.status) {
                 case RUNNING:
                     throw new IllegalStateException("Cannot execute task:"
                             + " the task is already running.");
@@ -115,15 +126,17 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
                             + " the task has already been executed "
                             + "(a task can be executed only once)");
                 default:
-                    throw new IllegalStateException("Unknown " + AsyncTask.Status.class.getSimpleName() + ": " + status);
+                    throw new IllegalStateException("Unknown " + AsyncTask.Status.class.getSimpleName() + ": " + rInfo.status);
             }
         }
 
+        result = null;
+
         onPreExecute();
 
-        status = RUNNING;
+        rInfo.status = RUNNING;
 
-        Result result = null;
+        result = null;
         try {
             result = doWork();
         } catch (Throwable e) {
@@ -147,14 +160,15 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
                 }
 
                 if (!isCanceled()) {
-                    status = PENDING;
+                    rInfo.status = PENDING;
                     run();
+                    return;
                 } else {
                     logger.w("Can't re-run task due to it's cancelled: " + toString());
                 }
             }
         }
-        status = FINISHED;
+        rInfo.status = FINISHED;
 
         onPostExecute(result);
     }
@@ -219,45 +233,29 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
                 "callbacksHandler=" + callbacksHandler +
                 ", rInfo=" + rInfo +
                 ", retryCount=" + retryCount +
-                ", status=" + status +
                 '}';
     }
 
     @Nullable
-    public static <I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> T findRunnableById(final int id, Collection<T> from) {
-        final I resultInfo = RunnableInfo.findRunnableInfoById(id, toRunnableInfos(from));
-        return resultInfo != null ? Predicate.Methods.find(from, new Predicate<T>() {
-            @Override
-            public boolean apply(T element) {
-                return element != null && element.getId() == id;
-            }
-        }) : null;
+    public static <I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> T findRunnableById(final int id, @Nullable Collection<T> from) {
+        return Predicate.Methods.find(from, element -> element != null && element.getId() == id);
     }
 
-
     @NonNull
-    public static <I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> List<T> filter(final Collection<T> what, final Collection<T> by, final boolean contains) {
-
+    public static <I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> List<T> filter(@Nullable final Collection<T> what, @Nullable final Collection<T> by, final boolean contains) {
         final List<I> resultInfos = RunnableInfo.filter(toRunnableInfos(what), toRunnableInfos(by), contains);
+        return Predicate.Methods.filter(what, task -> RunnableInfo.findRunnableInfoById(task.getId(), resultInfos) != null);
+    }
 
-        return Predicate.Methods.filter(what, new Predicate<T>() {
-            @Override
-            public boolean apply(final T task) {
-                return Predicate.Methods.find(resultInfos, new Predicate<I>() {
-                    @Override
-                    public boolean apply(I info) {
-                        return info != null && info.id == task.getId();
-                    }
-                }) != null;
-            }
-        });
+    public static <I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> List<T> filter(@Nullable Collection<T> what, boolean isCancelled) {
+        return Predicate.Methods.filter(what, element -> element != null && element.isCanceled() == isCancelled);
     }
 
     @NonNull
-    public static <I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> List<I> toRunnableInfos(Collection<T> what) {
+    public static <I extends RunnableInfo> List<I> toRunnableInfos(@Nullable Collection<? extends TaskRunnable<I, ?, ?>> what) {
         List<I> result = new ArrayList<>();
         if (what != null) {
-            for (TaskRunnable<I, ProgressInfo, Result> t : what) {
+            for (TaskRunnable<I, ?, ?> t : what) {
                 if (t != null) {
                     result.add(t.rInfo);
                 }
@@ -266,24 +264,12 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         return result;
     }
 
-    public static void setRunning(@Nullable Collection<? extends TaskRunnable<?, ?, ?>> tasks, boolean isRunning) {
-        if (tasks != null) {
-            for (TaskRunnable<?, ?, ?> t : tasks) {
-                if (t != null) {
-                    t.rInfo.isRunning = isRunning;
-                }
-            }
-        }
+    public static <I extends RunnableInfo> void setRunning(@Nullable Collection<? extends TaskRunnable<I, ?, ?>> what, boolean isRunning) {
+        RunnableInfo.setRunning(toRunnableInfos(what), isRunning);
     }
 
-    public static void cancel(@Nullable Collection<? extends TaskRunnable<?, ?, ?>> tasks) {
-        if (tasks != null) {
-            for (TaskRunnable<?, ? ,?> t : tasks) {
-                if (t != null) {
-                    t.cancel();
-                }
-            }
-        }
+    public static <I extends RunnableInfo> void cancel(@Nullable Collection<? extends TaskRunnable<I, ?, ?>> what) {
+        RunnableInfo.cancel(toRunnableInfos(what));
     }
 
     public interface ITaskResultValidator<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
@@ -293,7 +279,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
     public interface ITaskRestorer<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
 
-        List<T> fromRunnableInfos(Collection<I> runnableInfos);
+        List<T> fromRunnableInfos(@NonNull Collection<I> runnableInfos);
     }
 
     public interface Callbacks<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
@@ -313,13 +299,10 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
         private void notifyPreExecute() {
             synchronized (lock) {
-                Runnable r = new Runnable() {
-                    @Override
-                    public void run() {
-                        synchronized (observers) {
-                            for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
-                                c.onPreExecute(TaskRunnable.this);
-                            }
+                Runnable r = () -> {
+                    synchronized (observers) {
+                        for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
+                            c.onPreExecute(TaskRunnable.this);
                         }
                     }
                 };
@@ -329,13 +312,10 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
         private void notifyProgress(final ProgressInfo progressInfo) {
             synchronized (lock) {
-                final Runnable r = new Runnable() {
-                    @Override
-                    public void run() {
-                        synchronized (observers) {
-                            for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
-                                c.onProgress(TaskRunnable.this, progressInfo);
-                            }
+                final Runnable r = () -> {
+                    synchronized (observers) {
+                        for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
+                            c.onProgress(TaskRunnable.this, progressInfo);
                         }
                     }
                 };
@@ -345,13 +325,10 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
         private void notifyPostExecute(final Result result) {
             synchronized (lock) {
-                final Runnable r = new Runnable() {
-                    @Override
-                    public void run() {
-                        synchronized (observers) {
-                            for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
-                                c.onPostExecute(TaskRunnable.this, result);
-                            }
+                final Runnable r = () -> {
+                    synchronized (observers) {
+                        for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
+                            c.onPostExecute(TaskRunnable.this, result);
                         }
                     }
                 };
@@ -361,13 +338,10 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
         private void notifyFailed(@NonNull final Throwable e, final int runCount, final int maxRunCount) {
             synchronized (lock) {
-                final Runnable r = new Runnable() {
-                    @Override
-                    public void run() {
-                        synchronized (observers) {
-                            for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
-                                c.onFailed(TaskRunnable.this, e, runCount, maxRunCount);
-                            }
+                final Runnable r = () -> {
+                    synchronized (observers) {
+                        for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
+                            c.onFailed(TaskRunnable.this, e, runCount, maxRunCount);
                         }
                     }
                 };
@@ -377,13 +351,10 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
         private void notifyCancelled() {
             synchronized (lock) {
-                final Runnable r = new Runnable() {
-                    @Override
-                    public void run() {
-                        synchronized (observers) {
-                            for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
-                                c.onCancelled(TaskRunnable.this);
-                            }
+                final Runnable r = () -> {
+                    synchronized (observers) {
+                        for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
+                            c.onCancelled(TaskRunnable.this);
                         }
                     }
                 };

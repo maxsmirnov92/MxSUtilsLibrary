@@ -21,8 +21,8 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
      */
     public QueueSyncStorage( @Nullable String storageDirPath, @Nullable String extension,
                            Class<I> clazz,
-                           boolean sync, int maxSize, @NonNull IAddRule<I> addRule) {
-        super(storageDirPath, extension, clazz, sync, maxSize, addRule);
+                           boolean sync, int maxSize, @NonNull IAddRule<I> addRule, boolean startRestore) {
+        super(storageDirPath, extension, clazz, sync, maxSize, addRule, startRestore);
     }
 
 

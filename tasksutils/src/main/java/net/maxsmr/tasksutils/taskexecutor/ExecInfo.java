@@ -106,7 +106,7 @@ public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
             throw new IllegalStateException("specify timeWhenAddedToQueue first");
         }
         if (when < timeWhenAddedToQueue) {
-            throw new IllegalArgumentException("incorrect when: " + when + " < timeWhenAddedToQueue: " + timeWhenAddedToQueue);
+            throw new IllegalArgumentException("incorrect time waiting in queue: " + when + " < timeWhenAddedToQueue: " + timeWhenAddedToQueue);
         }
         timeWaitingInQueue = when - timeWhenAddedToQueue;
         setTimeWhenStarted(when);
@@ -122,7 +122,7 @@ public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
             throw new IllegalStateException("specify timeWhenStarted first");
         }
         if (when < timeWhenStarted) {
-            throw new IllegalArgumentException("incorrect when: " + when + " < timeWhenStarted: " + timeWhenStarted);
+            throw new IllegalArgumentException("incorrect execution time: " + when + " < timeWhenStarted: " + timeWhenStarted);
         }
         timeExecuting = when - timeWhenStarted;
         this.execException = execException;

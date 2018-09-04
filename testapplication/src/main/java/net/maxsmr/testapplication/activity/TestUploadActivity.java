@@ -50,7 +50,7 @@ public class TestUploadActivity extends AppCompatActivity implements AbstractSyn
         super.onCreate(savedInstanceState);
 
         storage = new ListSyncStorage(getFilesDir().getAbsolutePath() + File.separator + "queue", null,
-                LoadRunnableInfo.class, true, AbstractSyncStorage.MAX_SIZE_UNLIMITED, new AbstractSyncStorage.DefaultAddRule<>());
+                LoadRunnableInfo.class, true, AbstractSyncStorage.MAX_SIZE_UNLIMITED, new AbstractSyncStorage.DefaultAddRule<>(), true);
 //        storage.setCallbacksHandler(new Handler(Looper.getMainLooper()));
         storage.addStorageListener(this);
 

@@ -67,18 +67,12 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                               @Nullable Handler callbacksHandler) {
         super(limit, concurrentLoadsCount, storage, validator, callbacksHandler);
 
-        doRestore(new TaskRunnable.ITaskRestorer<LI, Void, Void, TaskRunnable<LI, Void, Void>>() {
-
-            @Override
-            public List<TaskRunnable<LI, Void, Void>> fromRunnableInfos(Collection<LI> runnableInfos) {
-                List<TaskRunnable<LI, Void, Void>> result = new ArrayList<>();
-                if (runnableInfos != null) {
-                    for (LI info : runnableInfos) {
-                        result.add(newRunnable(info));
-                    }
-                }
-                return result;
+        doRestore(runnableInfos -> {
+            List<TaskRunnable<LI, Void, Void>> result = new ArrayList<>();
+            for (LI info : runnableInfos) {
+                result.add(newRunnable(info));
             }
+            return result;
         });
     }
 
@@ -759,7 +753,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                             if (!success) {
 
-                                notifyStateChanged(!isFileReasonFail? LoadListener.STATE.FAILED : LoadListener.STATE.FAILED_FILE_REASON);
+                                notifyStateChanged(!isFileReasonFail ? LoadListener.STATE.FAILED : LoadListener.STATE.FAILED_FILE_REASON);
 
                                 logger.e("load " + rInfo + " failed");
                                 if (rInfo.settings.retryLimit == LoadRunnableInfo.LoadSettings.RETRY_LIMIT_UNLIMITED ||
@@ -789,7 +783,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                         if (rInfo.isCanceled()) {
                             logger.w("load " + rInfo + " canceled");
                             final String message = "load with id " + rInfo.id + " was canceled";
-                            lastException = lastException != null? new RuntimeException(message, lastException) : new RuntimeException(message);
+                            lastException = lastException != null ? new RuntimeException(message, lastException) : new RuntimeException(message);
                             notifyStateChanged(LoadListener.STATE.CANCELLED);
                         }
                     }
