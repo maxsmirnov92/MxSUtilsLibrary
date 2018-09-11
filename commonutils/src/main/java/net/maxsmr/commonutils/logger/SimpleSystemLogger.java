@@ -1,6 +1,5 @@
 package net.maxsmr.commonutils.logger;
 
-
 public class SimpleSystemLogger extends BaseLogger {
 
     @Override
@@ -24,7 +23,7 @@ public class SimpleSystemLogger extends BaseLogger {
     @Override
     public void v(String message, Throwable exception) {
         v(message);
-        v(exception);
+        e(exception);
     }
 
     @Override
@@ -74,7 +73,11 @@ public class SimpleSystemLogger extends BaseLogger {
 
     @Override
     public void e(String message) {
-        v(message);
+        if (isLoggingEnabled()) {
+            if (message != null) {
+                System.err.println(message);
+            }
+        }
     }
 
     @Override
@@ -84,21 +87,22 @@ public class SimpleSystemLogger extends BaseLogger {
 
     @Override
     public void e(String message, Throwable exception) {
-        v(message, exception);
+        e(message);
+        e(exception);
     }
 
     @Override
     public void wtf(String message) {
-        v(message);
+        e(message);
     }
 
     @Override
     public void wtf(Throwable exception) {
-        v(exception);
+        e(exception);
     }
 
     @Override
     public void wtf(String message, Throwable exception) {
-        v(message, exception);
+        e(message, exception);
     }
 }

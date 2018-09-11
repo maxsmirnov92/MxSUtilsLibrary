@@ -12,6 +12,37 @@ import net.maxsmr.commonutils.R;
 
 public class StringUtils {
 
+    private static List<CharacterMap> replaceLatinCyrillicAlphabet = new ArrayList<>();
+
+    static {
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('a', 'а'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('b', 'б'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('c', 'ц'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('d', 'д'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('e', 'е'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('f', 'ф'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('g', 'г'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('h', 'х'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('i', 'и'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('j', 'ж'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('k', 'к'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('l', 'л'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('m', 'м'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('n', 'н'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('o', 'о'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('p', 'п'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('q', 'к'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('r', 'р'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('s', 'с'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('t', 'т'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('u', 'у'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('v', 'в'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('w', 'в'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('x', 'х'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('y', 'у'));
+        replaceLatinCyrillicAlphabet.add(new CharacterMap('z', 'з'));
+    }
+
     public static boolean isEmpty(@Nullable CharSequence s) {
         return TextUtils.isEmpty(s) || "null".equalsIgnoreCase(s.toString());
     }
@@ -19,7 +50,6 @@ public class StringUtils {
     public static boolean isNoData(CharSequence s, @NonNull Context ctx) {
         return isEmpty(s) || ctx.getString(R.string.no_data).equalsIgnoreCase(s.toString());
     }
-
 
     @Nullable
     public static String changeCaseFirstLatter(@Nullable CharSequence s, boolean upper) {
@@ -196,44 +226,39 @@ public class StringUtils {
         return null;
     }
 
-    public enum ReplaceDirection {
-        LEFT_RIGHT, RIGHT_LEFT
-    }
+    @NonNull
+    public static String appendOrReplaceChar(CharSequence source, Character what, String to, boolean ignoreCase, boolean appendOrReplace) {
 
-    private static List<CharacterMap> replaceLatinCyrillicAlphabet = new ArrayList<>();
+        if (TextUtils.isEmpty(source) || TextUtils.isEmpty(to)) {
+            return "";
+        }
 
-    static {
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('a', 'а'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('b', 'б'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('c', 'ц'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('d', 'д'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('e', 'е'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('f', 'ф'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('g', 'г'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('h', 'х'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('i', 'и'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('j', 'ж'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('k', 'к'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('l', 'л'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('m', 'м'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('n', 'н'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('o', 'о'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('p', 'п'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('q', 'к'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('r', 'р'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('s', 'с'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('t', 'т'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('u', 'у'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('v', 'в'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('w', 'в'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('x', 'х'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('y', 'у'));
-        replaceLatinCyrillicAlphabet.add(new CharacterMap('z', 'з'));
+        StringBuilder newStr = new StringBuilder();
+
+        for (int i = 0; i < source.length(); i++) {
+            char c = source.charAt(i);
+            if (CompareUtils.charsEqual(c, what, ignoreCase)) {
+                if (appendOrReplace) {
+                    newStr.append(c);
+                    newStr.append(to);
+                } else {
+                    newStr.append(to);
+                }
+            } else {
+                newStr.append(c);
+            }
+        }
+
+        return newStr.toString();
     }
 
     @Nullable
     private static CharSequence replaceByLatinCyrillicAlphabet(CharSequence sequence, boolean ignoreCase, @NonNull StringUtils.ReplaceDirection direction) {
-        return StringUtils.replaceChars(replaceLatinCyrillicAlphabet, sequence, direction, ignoreCase);
+        return replaceChars(replaceLatinCyrillicAlphabet, sequence, direction, ignoreCase);
+    }
+
+    public enum ReplaceDirection {
+        LEFT_RIGHT, RIGHT_LEFT
     }
 
 }

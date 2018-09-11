@@ -180,4 +180,16 @@ public final class MathUtils {
         }
         return result;
     }
+
+    public static double sum(Collection<? extends Number> numbers) {
+        double result = 0;
+        if (numbers != null) {
+            for (Number n : numbers) {
+                if (n != null) {
+                    result += n.doubleValue();
+                }
+            }
+        }
+        return result;
+    }
 }

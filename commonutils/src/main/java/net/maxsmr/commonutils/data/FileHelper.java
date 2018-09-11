@@ -6,7 +6,7 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.location.Location;
-import android.media.ExifInterface;
+import android.support.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -67,6 +67,10 @@ public final class FileHelper {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(FileHelper.class);
 
+    public final static String[] IMAGES_EXTENSIONS = {"bmp", "jpg", "jpeg", "png"};
+
+    public final static String[] VIDEO_EXTENSIONS = {"3gp", "mp4", "mov", "mpg"};
+
     public final static int DEPTH_UNLIMITED = -1;
 
     private FileHelper() {
@@ -99,7 +103,7 @@ public final class FileHelper {
                 result = new ArraySet<>(Collections.singletonList(context.getExternalFilesDir(type)));
             }
         }
-        return result != null? result : Collections.<File>emptySet();
+        return result != null ? result : Collections.<File>emptySet();
     }
 
     public static Set<File> getFilteredExternalFilesDirs(@NonNull Context context, boolean includeNotRemovable, boolean includePrimaryExternalStorage, boolean onlyRootNames) {
@@ -114,7 +118,7 @@ public final class FileHelper {
                 String path = d.getAbsolutePath();
                 if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP || (includeNotRemovable == !Environment.isExternalStorageRemovable(d))) {
                     File primaryExternalStorage = Environment.getExternalStorageDirectory();
-                    if (includePrimaryExternalStorage || (primaryExternalStorage == null || !path.startsWith(primaryExternalStorage.getAbsolutePath()))){
+                    if (includePrimaryExternalStorage || (primaryExternalStorage == null || !path.startsWith(primaryExternalStorage.getAbsolutePath()))) {
                         if (onlyRootNames) {
                             int index = path.lastIndexOf(File.separator + "Android" + File.separator + "data");
                             if (index > 0) {
@@ -138,7 +142,7 @@ public final class FileHelper {
         }
     }
 
-    public static float getPartitionTotalSpace(String path, @NonNull SizeUnit unit) {
+    public static double getPartitionTotalSpace(String path, @NonNull SizeUnit unit) {
         if (isDirExists(path)) {
             try {
                 return SizeUnit.convert(new File(path).getTotalSpace(), SizeUnit.BYTES, unit);
@@ -149,7 +153,7 @@ public final class FileHelper {
         return 0;
     }
 
-    public static float getPartitionFreeSpace(String path, @NonNull SizeUnit unit) {
+    public static double getPartitionFreeSpace(String path, @NonNull SizeUnit unit) {
         if (isDirExists(path)) {
             try {
                 return SizeUnit.convert(new File(path).getFreeSpace(), SizeUnit.BYTES, unit);
@@ -158,40 +162,6 @@ public final class FileHelper {
             }
         }
         return 0;
-    }
-
-    public static boolean isSizeCorrect(File file) {
-        return (file != null && file.length() > 0);
-    }
-
-    public static boolean isFileCorrect(File file) {
-        return (file != null && file.isFile() && isSizeCorrect(file));
-    }
-
-    public static boolean isFileExists(String fileName, String parentPath) {
-
-        if (TextUtils.isEmpty(fileName) || fileName.contains("/")) {
-            return false;
-        }
-
-        if (TextUtils.isEmpty(parentPath)) {
-            return false;
-        }
-
-        File f = new File(parentPath, fileName);
-        return f.exists() && f.isFile();
-    }
-
-    public static boolean isFileExists(File file) {
-        return file != null && isFileExists(file.getAbsolutePath());
-    }
-
-    public static boolean isFileExists(String filePath) {
-        if (!TextUtils.isEmpty(filePath)) {
-            File f = new File(filePath);
-            return (f.exists() && f.isFile());
-        }
-        return false;
     }
 
     @Nullable
@@ -260,6 +230,39 @@ public final class FileHelper {
         return false;
     }
 
+    public static boolean isSizeCorrect(File file) {
+        return (file != null && file.length() > 0);
+    }
+
+    public static boolean isFileCorrect(File file) {
+        return (file != null && file.isFile() && isSizeCorrect(file));
+    }
+
+    public static boolean isFileExists(String fileName, String parentPath) {
+
+        if (TextUtils.isEmpty(fileName) || fileName.contains("/")) {
+            return false;
+        }
+
+        if (TextUtils.isEmpty(parentPath)) {
+            return false;
+        }
+
+        File f = new File(parentPath, fileName);
+        return f.exists() && f.isFile();
+    }
+
+    public static boolean isFileExists(File file) {
+        return file != null && isFileExists(file.getAbsolutePath());
+    }
+
+    public static boolean isFileExists(String filePath) {
+        if (!TextUtils.isEmpty(filePath)) {
+            File f = new File(filePath);
+            return (f.exists() && f.isFile());
+        }
+        return false;
+    }
 
     public static boolean isDirExists(String dirPath) {
 
@@ -272,28 +275,43 @@ public final class FileHelper {
         return (dir.exists() && dir.isDirectory());
     }
 
-    public static boolean checkFileNoThrow(@Nullable File file) {
-        return file != null && (file.exists() && file.isFile() || createNewFile(file.getName(), file.getParent()) != null);
+    public static boolean isDirExists(File dir) {
+        return dir != null && dir.exists() && dir.isDirectory();
     }
 
-    public static void checkFile(@Nullable File file) {
-        if (!checkFileNoThrow(file)) {
+    public static boolean isDirEmpty(File dir) {
+        if (isDirExists(dir)) {
+            File[] files = dir.listFiles();
+            return files == null || files.length == 0;
+        }
+        return false;
+    }
+
+    public static boolean checkFileNoThrow(File file, boolean createIfNotExists) {
+        return file != null && (file.exists() && file.isFile() || (createIfNotExists && createNewFile(file.getName(), file.getParent()) != null));
+    }
+
+    public static void checkFile(File file, boolean createIfNotExists) {
+        if (!checkFileNoThrow(file, createIfNotExists)) {
             throw new IllegalArgumentException("incorrect file: " + file);
         }
     }
 
-    public static boolean checkFileNoThrow(@Nullable String file) {
-        return !TextUtils.isEmpty(file) && checkFileNoThrow(new File(file));
+    public static boolean checkFileNoThrow(String file, boolean createIfNotExists) {
+        return !TextUtils.isEmpty(file) && checkFileNoThrow(new File(file), createIfNotExists);
     }
 
-    public static void checkFile(@Nullable String file) {
-        if (!checkFileNoThrow(file)) {
+    public static void checkFile(String file, boolean createIfNotExists) {
+        if (!checkFileNoThrow(file, createIfNotExists)) {
             throw new IllegalArgumentException("incorrect file: " + file);
         }
     }
 
-    public static boolean checkDirNoThrow(@Nullable String dirPath) {
+    public static boolean checkDirNoThrow(String dirPath, boolean createIfNotExists) {
         if (!isDirExists(dirPath)) {
+            if (!createIfNotExists) {
+                return false;
+            }
             if (createNewDir(dirPath) == null) {
                 return false;
             }
@@ -301,17 +319,17 @@ public final class FileHelper {
         return true;
     }
 
-    public static void checkDir(@Nullable String dirPath) {
-        if (!checkDirNoThrow(dirPath)) {
+    public static void checkDir(String dirPath, boolean createIfNotExists) {
+        if (!checkDirNoThrow(dirPath, createIfNotExists)) {
             throw new IllegalArgumentException("incorrect directory path: " + dirPath);
         }
     }
 
-    public static File checkPathNoThrow(String parent, String fileName) {
-        if (checkDirNoThrow(parent)) {
+    public static File checkPathNoThrow(String parent, String fileName, boolean createIfNotExists) {
+        if (checkDirNoThrow(parent, createIfNotExists)) {
             if (!TextUtils.isEmpty(fileName)) {
                 File f = new File(parent, fileName);
-                if (checkFileNoThrow(f)) {
+                if (checkFileNoThrow(f, createIfNotExists)) {
                     return f;
                 }
             }
@@ -319,14 +337,17 @@ public final class FileHelper {
         return null;
     }
 
-    public static File checkPath(String parent, String fileName) {
-        File f = checkPathNoThrow(parent, fileName);
+    public static File checkPath(String parent, String fileName, boolean createIfNotExists) {
+        File f = checkPathNoThrow(parent, fileName, createIfNotExists);
         if (f == null) {
             throw new IllegalArgumentException("incorrect path: " + parent + File.separator + fileName);
         }
         return f;
     }
 
+    /**
+     * @return created or existing file
+     */
     @Nullable
     private static File createFile(String fileName, String parentPath, boolean recreate) {
         final File file;
@@ -347,29 +368,16 @@ public final class FileHelper {
         return file;
     }
 
-    @Nullable
-    public static File createNewDir(String dirPath) {
-
-        if (TextUtils.isEmpty(dirPath)) {
-            logger.e("path is empty");
-            return null;
-        }
-
-        File dir = new File(dirPath);
-
-        if (dir.isDirectory() && dir.exists())
-            return dir;
-
-        if (dir.mkdirs())
-            return dir;
-
-        return null;
-    }
-
+    /**
+     * @return null if target file already exists and was not recreated
+     */
     public static File createNewFile(String fileName, String parentPath) {
         return createNewFile(fileName, parentPath, true);
     }
 
+    /**
+     * @return null if target file already exists and was not recreated
+     */
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Nullable
     public static File createNewFile(String fileName, String parentPath, boolean recreate) {
@@ -413,6 +421,77 @@ public final class FileHelper {
                     return null;
                 }
             }
+        }
+
+        return newFile;
+    }
+
+    /**
+     * @return existing or created empty directory
+     */
+    @Nullable
+    public static File createNewDir(String dirPath) {
+
+        if (TextUtils.isEmpty(dirPath)) {
+            logger.e("path is empty");
+            return null;
+        }
+
+        File dir = new File(dirPath);
+
+        if (dir.isDirectory() && dir.exists())
+            return dir;
+
+        if (dir.mkdirs())
+            return dir;
+
+        return null;
+    }
+
+    public static File renameTo(File sourceFile, String destinationDir, String newFileName, boolean deleteIfExists, boolean deleteEmptyDirs) {
+
+        if (!isFileExists(sourceFile)) {
+            logger.e("Source file not exists: " + sourceFile);
+            return null;
+        }
+
+        if (TextUtils.isEmpty(newFileName)) {
+            logger.e("File name for new file is not specified");
+            return null;
+        }
+
+        File newFile = null;
+
+        File newDir = createNewDir(destinationDir);
+        if (newDir != null) {
+            newFile = new File(newDir, newFileName);
+
+            if (isFileExists(newFile)) {
+                logger.i("Target file " + newFile + " already exists");
+                if (deleteIfExists) {
+                    if (!deleteFile(newFile)) {
+                        logger.e("Delete file " + newFile + " failed");
+                        newFile = null;
+                    }
+                } else {
+                    newFile = null;
+                }
+            }
+
+            if (newFile != null) {
+                logger.i("Renaming file " + sourceFile + " to " + newFile + "...");
+                if (sourceFile.renameTo(newFile)) {
+                    logger.i("File " + sourceFile + " renamed successfully to " + newFile);
+                    File sourceParentDir = sourceFile.getParentFile();
+                    if (deleteEmptyDirs) {
+                        deleteEmptyDir(sourceParentDir);
+                    }
+                } else {
+                    logger.e("File " + sourceFile + " rename failed to " + newFile);
+                }
+            }
+        } else {
+            logger.e("Create new dir: " + destinationDir + " failed");
         }
 
         return newFile;
@@ -702,8 +781,18 @@ public final class FileHelper {
     }
 
     @Nullable
+    public static File writeFromStreamToFile(InputStream data, File targetFile, boolean append) {
+        return writeFromStreamToFile(data, targetFile, append, null);
+    }
+
+    @Nullable
     public static File writeFromStreamToFile(InputStream data, String fileName, String parentPath, boolean append) {
         return writeFromStreamToFile(data, fileName, parentPath, append, null);
+    }
+
+    @Nullable
+    public static File writeFromStreamToFile(InputStream data, File targetFile, boolean append, IStreamNotifier notifier) {
+        return writeFromStreamToFile(data, targetFile != null ? targetFile.getName() : null, targetFile != null ? targetFile.getParent() : null, append, notifier);
     }
 
     @Nullable
@@ -872,10 +961,10 @@ public final class FileHelper {
                 final String[] parts = e.getName().split(File.separator);
                 final String entryName = !saveDirHierarchy && parts.length > 0 ? parts[parts.length - 1] : e.getName();
 
-                final File path = new File(destPath, entryName);
+                File path = new File(destPath, entryName);
 
                 if (e.isDirectory()) {
-                    if (!checkDirNoThrow(path.getAbsolutePath())) {
+                    if (createNewDir(path.getAbsolutePath()) == null) {
                         logger.e("can't create directory: " + path);
                         return false;
                     }
@@ -923,8 +1012,6 @@ public final class FileHelper {
         return true;
     }
 
-    public final static String[] IMAGES_EXTENSIONS = {"bmp", "jpg", "jpeg", "png"};
-
     public static boolean isPicture(String ext) {
         for (String pictureExt : IMAGES_EXTENSIONS) {
             if (pictureExt.equalsIgnoreCase(ext)) {
@@ -933,8 +1020,6 @@ public final class FileHelper {
         }
         return false;
     }
-
-    public final static String[] VIDEO_EXTENSIONS = {"3gp", "mp4", "mov", "mpg"};
 
     public static boolean isVideo(String ext) {
         for (String videoExt : VIDEO_EXTENSIONS) {
@@ -1315,12 +1400,12 @@ public final class FileHelper {
         return searchFiles;
     }
 
-    public static boolean deleteDir(File dir) {
-        return dir != null && dir.isDirectory() && (dir.listFiles() == null || dir.listFiles().length == 0) && dir.delete();
+    public static boolean deleteEmptyDir(File dir) {
+        return isDirEmpty(dir) && dir.delete();
     }
 
     public static boolean deleteFile(File file) {
-        return file != null && file.isFile() && file.exists() && file.delete();
+        return isFileExists(file) && file.delete();
     }
 
     public static boolean deleteFile(String fileName, String parentPath) {
@@ -1395,7 +1480,7 @@ public final class FileHelper {
                                 if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
                                     result.addAll(delete(f, deleteEmptyDirs, excludeFiles, comparator, notifier, depth, currentLevel + 1, deletedFiles));
                                 }
-                                if (deleteEmptyDirs) {
+                                if (deleteEmptyDirs && isDirEmpty(f)) {
                                     if (notifier == null || notifier.confirmDeleteFolder(f)) {
                                         if (f.delete()) {
                                             result.add(f);
@@ -1413,17 +1498,13 @@ public final class FileHelper {
                         }
                     }
 
-                    File[] remainFiles = fromFile.listFiles();
-
-                    if (remainFiles == null || remainFiles.length == 0) {
-                        if (deleteEmptyDirs) {
-                            if (notifier == null || notifier.confirmDeleteFolder(fromFile)) {
-                                if (fromFile.delete()) {
-                                    result.add(fromFile);
-                                    deletedFiles.add(fromFile);
-                                } else if (notifier != null) {
-                                    notifier.onDeleteFolderFailed(fromFile);
-                                }
+                    if (deleteEmptyDirs && isDirEmpty(fromFile)) {
+                        if (notifier == null || notifier.confirmDeleteFolder(fromFile)) {
+                            if (fromFile.delete()) {
+                                result.add(fromFile);
+                                deletedFiles.add(fromFile);
+                            } else if (notifier != null) {
+                                notifier.onDeleteFolderFailed(fromFile);
                             }
                         }
                     }
@@ -1734,7 +1815,8 @@ public final class FileHelper {
 
         final File destFile = createNewFile(targetName, destDir, rewrite);
 
-        if (destFile == null) {
+        if (destFile == null || destFile.equals(sourceFile)) {
+            logger.e("Incorrect destination file: " + destDir + " ( source file: " + sourceFile + ")");
             return null;
         }
 
@@ -1753,8 +1835,11 @@ public final class FileHelper {
                 }
             } : null) != null) {
                 if (preserveFileDate) {
-                    destFile.setLastModified(sourceFile.lastModified());
+                    if (!destFile.setLastModified(sourceFile.lastModified())) {
+                        logger.e("Can't set last modified on destination file: " + destFile);
+                    }
                 }
+                return destFile;
             }
         } catch (FileNotFoundException e) {
             logger.e("an Exception occurred", e);
@@ -1767,6 +1852,7 @@ public final class FileHelper {
      * @param fromFile file or directory
      */
     @NonNull
+    @Deprecated
     public static Set<File> copyFilesWithBuffering(File fromFile, File destDir,
                                                    @Nullable Comparator<? super File> comparator,
                                                    @Nullable final ISingleCopyNotifier singleNotifier, @Nullable final IMultipleCopyNotifier multipleCopyNotifier,
@@ -1775,6 +1861,7 @@ public final class FileHelper {
     }
 
     @NonNull
+    @Deprecated
     private static Set<File> copyFilesWithBuffering(File fromFile, File destDir,
                                                     @Nullable Comparator<? super File> comparator,
                                                     @Nullable final ISingleCopyNotifier singleNotifier, @Nullable final IMultipleCopyNotifier multipleCopyNotifier,
@@ -1788,7 +1875,6 @@ public final class FileHelper {
         }
 
         boolean isCorrect = false;
-
 
         if (destDir != null) {
 
@@ -1893,7 +1979,7 @@ public final class FileHelper {
                             destFile = multipleCopyNotifier.onBeforeCopy(fromFile, destDir, currentLevel);
                         }
 
-                        if (destFile == null) {
+                        if (destFile == null || destFile.equals(fromFile)) {
                             destFile = new File(destDir, fromFile.getName());
                         }
 
@@ -1940,6 +2026,127 @@ public final class FileHelper {
         }
         return result;
     }
+
+    public static Set<File> copyFilesWithBuffering2(File fromFile, File destDir,
+                                                    Comparator<? super File> comparator,
+                                                    final ISingleCopyNotifier singleNotifier, final IMultipleCopyNotifier2 multipleCopyNotifier,
+                                                    boolean preserveFileDate, int depth,
+                                                    List<File> exclusionList) {
+
+        Set<File> result = new LinkedHashSet<>();
+
+        if (destDir != null) {
+            destDir = FileHelper.createNewDir(destDir.getAbsolutePath());
+        }
+
+        if (destDir == null) {
+            logger.e("Can't create destination directory");
+            return result;
+        }
+
+        if (destDir.equals(fromFile)) {
+            logger.e("Destination directory " + destDir + " is same as source directory/file " + fromFile);
+            return result;
+        }
+
+        final Set<File> files = getFiles(fromFile, GetMode.FILES, comparator, multipleCopyNotifier != null ? new IGetNotifier() {
+            @Override
+            public boolean onProcessing(File current, Set<File> collected, int currentLevel) {
+                return multipleCopyNotifier.onCalculatingSize(current, collected);
+            }
+
+            @Override
+            public boolean onGetFile(File file) {
+                return true;
+            }
+
+            @Override
+            public boolean onGetFolder(File folder) {
+                return false;
+            }
+        } : null, depth);
+
+        if (comparator != null) {
+            List<File> sorted = new ArrayList<>(files);
+            Collections.sort(sorted, comparator);
+            files.clear();
+            files.addAll(sorted);
+        }
+
+        int filesProcessed = 0;
+        for (File f : files) {
+
+            if (isFileExists(f)) {
+
+                final File currentDestDir;
+                if (!f.equals(fromFile)) {
+                    currentDestDir = new File(destDir, f.getParent().replaceFirst(StringUtils.appendOrReplaceChar(fromFile.getAbsolutePath(), '\\', "\\", false, true), "")); // windows separator case
+                } else {
+                    currentDestDir = destDir;
+                }
+
+                if (multipleCopyNotifier != null) {
+                    if (!multipleCopyNotifier.onProcessing(f, currentDestDir, Collections.unmodifiableSet(result), filesProcessed, files.size())) {
+                        break;
+                    }
+                }
+
+                if (exclusionList == null || !exclusionList.contains(f)) {
+
+                    File destFile = null;
+
+                    boolean confirmCopy = true;
+
+                    if (multipleCopyNotifier != null) {
+                        confirmCopy = multipleCopyNotifier.confirmCopy(f, currentDestDir);
+                    }
+
+                    if (confirmCopy) {
+
+                        if (multipleCopyNotifier != null) {
+                            destFile = multipleCopyNotifier.onBeforeCopy(f, currentDestDir);
+                        }
+
+                        if (destFile == null || destFile.equals(f)) {
+                            destFile = new File(currentDestDir, f.getName());
+                        }
+
+                        boolean rewrite = false;
+
+                        if (multipleCopyNotifier != null && isFileExists(destFile)) {
+                            rewrite = multipleCopyNotifier.onExists(destFile);
+                        }
+
+                        File resultFile = copyFileWithBuffering(f, destFile.getName(), destFile.getParent(), rewrite,
+                                preserveFileDate, singleNotifier);
+
+                        if (resultFile != null) {
+                            if (multipleCopyNotifier != null) {
+                                multipleCopyNotifier.onSucceeded(f, resultFile);
+                            }
+                            result.add(resultFile);
+                        } else {
+                            if (multipleCopyNotifier != null) {
+                                multipleCopyNotifier.onFailed(f, currentDestDir);
+                            }
+                        }
+                    }
+                }
+
+                filesProcessed++;
+            }
+        }
+
+        if (comparator != null) {
+            List<File> sorted = new ArrayList<>(result);
+            Collections.sort(sorted, comparator);
+            result.clear();
+            result.addAll(sorted);
+        }
+
+        return result;
+    }
+
 
     public static boolean resetFile(File f) {
         if (f.isFile() && f.exists()) {
@@ -2000,7 +2207,7 @@ public final class FileHelper {
             try {
                 value = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE);
                 if (value != null) {
-                    longitude =  Location.convert(value);
+                    longitude = Location.convert(value);
                 }
             } catch (NumberFormatException e) {
                 logger.e("a IllegalArgumentException occurred", e);
@@ -2010,7 +2217,7 @@ public final class FileHelper {
             try {
                 value = exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE);
                 if (value != null) {
-                    altitude =  Location.convert(value);
+                    altitude = Location.convert(value);
                 }
             } catch (NumberFormatException e) {
                 logger.e("a IllegalArgumentException occurred", e);
@@ -2057,11 +2264,11 @@ public final class FileHelper {
 
             double latitude = loc.getLatitude();
             exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertLocationDoubleToString(latitude));
-            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, latitude > 0? "N" : "S");
+            exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, latitude > 0 ? "N" : "S");
 
             double longitude = loc.getLongitude();
             exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertLocationDoubleToString(longitude));
-            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, longitude > 0? "E" : "W");
+            exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, longitude > 0 ? "E" : "W");
 
             exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, convertLocationDoubleToString((loc.getAltitude())));
 
@@ -2105,8 +2312,6 @@ public final class FileHelper {
     /**
      * @param id      the constant value of resource subclass field
      * @param resType subclass where the static final field with given id value declared
-     * @throws IllegalArgumentException
-     * @throws IllegalAccessException
      */
     public static boolean checkResourceIdExists(int id, String resName, Class<?> resType) throws NullPointerException, IllegalArgumentException, IllegalAccessException {
 
@@ -2200,14 +2405,43 @@ public final class FileHelper {
 
         boolean confirmCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel);
 
-        /**
-         * @return target file to copy in or null if default
-         */
         File onBeforeCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel);
 
         boolean onExists(@NonNull File destFile, int currentLevel);
 
         void onFailed(@Nullable File currentFile, @NonNull File destFile, int currentLevel);
+    }
+
+    public interface IMultipleCopyNotifier2 {
+
+        /**
+         * @return false if process should be interrupted
+         */
+        boolean onCalculatingSize(File current, Set<File> collected);
+
+        /**
+         * @return false if process should be interrupted
+         */
+        boolean onProcessing(File currentFile, File destDir, Set<File> copied, long filesProcessed, long filesTotal);
+
+        /**
+         * true if copying confirmed by client code, false to cancel
+         */
+        boolean confirmCopy(File currentFile, File destDir);
+
+        /**
+         * @return target file to copy in or null for default
+         */
+        File onBeforeCopy(File currentFile, File destDir);
+
+        /**
+         * @return true if specified destination file is should be replaced (it currently exists)
+         */
+        boolean onExists(File destFile);
+
+        void onSucceeded(File currentFile, File resultFile);
+
+        void onFailed(File currentFile, File destDir);
     }
 
     public static class FileComparator extends AbsOptionableComparator<FileComparator.SortOption, File> {
@@ -2365,19 +2599,27 @@ public final class FileHelper {
         return sb.toString();
     }
 
+    public static String filesWithSizeToString(@NonNull Context context, Map<File, Long> files) {
+        return filesWithSizeToString(context, files.entrySet());
+    }
+
     /**
      * @param files file <-> size in bytes </->
      */
     public static String filesWithSizeToString(@NonNull Context context, Collection<Map.Entry<File, Long>> files) {
         StringBuilder sb = new StringBuilder();
         if (files != null) {
+            boolean isFirst = false;
             for (Map.Entry<File, Long> f : files) {
                 if (f != null && f.getKey() != null) {
+                    if (!isFirst) {
+                        isFirst = true;
+                    } else {
+                        sb.append(System.getProperty("line.separator"));
+                    }
                     sb.append(f.getKey().getAbsolutePath());
-                    sb.append(" : ");
+                    sb.append(" :");
                     sb.append(f.getValue() != null ? sizeToString(context, f.getValue(), SizeUnit.BYTES) : 0);
-                    sb.append("  ");
-                    sb.append(System.getProperty("line.separator"));
                 }
             }
         }
@@ -2393,7 +2635,7 @@ public final class FileHelper {
      * @param sizeUnit           unit for s
      * @param sizeUnitsToExclude list of units to avoid in result string
      */
-    public static String sizeToString(@NonNull Context context, float s, @NonNull SizeUnit sizeUnit, @Nullable Collection<SizeUnit> sizeUnitsToExclude) {
+    public static String sizeToString(@NonNull Context context, double s, @NonNull SizeUnit sizeUnit, @Nullable Collection<SizeUnit> sizeUnitsToExclude) {
         if (s < 0) {
             throw new IllegalArgumentException("incorrect size: " + s);
         }
@@ -2410,31 +2652,31 @@ public final class FileHelper {
             sb.append(" ");
             sb.append(context.getString(R.string.size_suffix_bytes));
         } else if (s >= SizeUnit.C1 && s < SizeUnit.C2 && !sizeUnitsToExclude.contains(SizeUnit.KBYTES)) {
-            float kbytes = SizeUnit.BYTES.toKBytes(s);
+            double kbytes = SizeUnit.BYTES.toKBytes(s);
             sb.append(!sizeUnitsToExclude.contains(SizeUnit.BYTES) ? (long) kbytes : kbytes);
             sb.append(" ");
             sb.append(context.getString(R.string.size_suffix_kbytes));
-            float restBytes = s - (long) SizeUnit.KBYTES.toBytes(kbytes);
+            double restBytes = s - SizeUnit.KBYTES.toBytes(kbytes);
             if (restBytes > 0) {
                 sb.append(", ");
                 sb.append(sizeToString(context, restBytes, SizeUnit.BYTES, sizeUnitsToExclude));
             }
         } else if (s >= SizeUnit.C2 && s < SizeUnit.C3 && !sizeUnitsToExclude.contains(SizeUnit.MBYTES)) {
-            float mbytes = SizeUnit.BYTES.toMBytes(s);
+            double mbytes = SizeUnit.BYTES.toMBytes(s);
             sb.append(!sizeUnitsToExclude.contains(SizeUnit.KBYTES) ? (long) mbytes : mbytes);
             sb.append(" ");
             sb.append(context.getString(R.string.size_suffix_mbytes));
-            float restBytes = s - (long) SizeUnit.MBYTES.toBytes(mbytes);
+            double restBytes = s - SizeUnit.MBYTES.toBytes(mbytes);
             if (restBytes > 0) {
                 sb.append(", ");
                 sb.append(sizeToString(context, restBytes, SizeUnit.BYTES, sizeUnitsToExclude));
             }
         } else if (!sizeUnitsToExclude.contains(SizeUnit.GBYTES)) {
-            float gbytes = SizeUnit.BYTES.toGBytes(s);
+            double gbytes = SizeUnit.BYTES.toGBytes(s);
             sb.append(!sizeUnitsToExclude.contains(SizeUnit.MBYTES) ? (long) gbytes : gbytes);
             sb.append(" ");
             sb.append(context.getString(R.string.size_suffix_gbytes));
-            float restBytes = s - (long) SizeUnit.GBYTES.toBytes(gbytes);
+            double restBytes = s - SizeUnit.GBYTES.toBytes(gbytes);
             if (restBytes > 0) {
                 sb.append(", ");
                 sb.append(sizeToString(context, restBytes, SizeUnit.BYTES, sizeUnitsToExclude));
@@ -2446,352 +2688,340 @@ public final class FileHelper {
         return sb.toString();
     }
 
-    public static double sum(Collection<? extends Number> numbers) {
-        double result = 0;
-        if (numbers != null) {
-            for (Number n : numbers) {
-                if (n != null) {
-                    result += n.doubleValue();
-                }
-            }
-        }
-        return result;
-    }
-
     public enum SizeUnit {
 
         BYTES {
             @Override
-            public long toBytes(float s) {
+            public long toBytes(double s) {
                 return (long) s;
             }
 
             @Override
-            public float toKBytes(float s) {
+            public double toKBytes(double s) {
                 return s / C1;
             }
 
             @Override
-            public float toMBytes(float s) {
+            public double toMBytes(double s) {
                 return s / C2;
             }
 
             @Override
-            public float toGBytes(float s) {
+            public double toGBytes(double s) {
                 return s / C3;
             }
 
             @Override
-            public long toBits(float s) {
+            public long toBits(double s) {
                 return (long) toBitsFromBytes(s);
             }
 
             @Override
-            public float toKBits(float s) {
+            public double toKBits(double s) {
                 return toBitsFromBytes(toKBytes(s));
             }
 
             @Override
-            public float toMBits(float s) {
+            public double toMBits(double s) {
                 return toBitsFromBytes(toMBytes(s));
             }
 
             @Override
-            public float toGBits(float s) {
+            public double toGBits(double s) {
                 return toBitsFromBytes(toGBytes(s));
             }
         },
 
         KBYTES {
             @Override
-            public long toBytes(float s) {
+            public long toBytes(double s) {
                 return (long) (s * C1);
             }
 
             @Override
-            public float toKBytes(float s) {
+            public double toKBytes(double s) {
                 return s;
             }
 
             @Override
-            public float toMBytes(float s) {
+            public double toMBytes(double s) {
                 return s / C1;
             }
 
             @Override
-            public float toGBytes(float s) {
+            public double toGBytes(double s) {
                 return s / C2;
             }
 
             @Override
-            public long toBits(float s) {
+            public long toBits(double s) {
                 return (long) toBitsFromBytes(s);
             }
 
             @Override
-            public float toKBits(float s) {
+            public double toKBits(double s) {
                 return toBitsFromBytes(toKBytes(s));
             }
 
             @Override
-            public float toMBits(float s) {
+            public double toMBits(double s) {
                 return toBitsFromBytes(toMBytes(s));
             }
 
             @Override
-            public float toGBits(float s) {
+            public double toGBits(double s) {
                 return toBitsFromBytes(toGBytes(s));
             }
         },
 
         MBYTES {
             @Override
-            public long toBytes(float s) {
+            public long toBytes(double s) {
                 return (long) (s * C2);
             }
 
             @Override
-            public float toKBytes(float s) {
+            public double toKBytes(double s) {
                 return s * C1;
             }
 
             @Override
-            public float toMBytes(float s) {
+            public double toMBytes(double s) {
                 return s;
             }
 
             @Override
-            public float toGBytes(float s) {
+            public double toGBytes(double s) {
                 return s / C1;
             }
 
             @Override
-            public long toBits(float s) {
+            public long toBits(double s) {
                 return (long) toBitsFromBytes(s);
             }
 
             @Override
-            public float toKBits(float s) {
+            public double toKBits(double s) {
                 return toBitsFromBytes(toKBytes(s));
             }
 
             @Override
-            public float toMBits(float s) {
+            public double toMBits(double s) {
                 return toBitsFromBytes(toMBytes(s));
             }
 
             @Override
-            public float toGBits(float s) {
+            public double toGBits(double s) {
                 return toBitsFromBytes(toGBytes(s));
             }
         },
 
         GBYTES {
             @Override
-            public long toBytes(float s) {
+            public long toBytes(double s) {
                 return (long) (s * C3);
             }
 
             @Override
-            public float toKBytes(float s) {
+            public double toKBytes(double s) {
                 return s * C2;
             }
 
             @Override
-            public float toMBytes(float s) {
+            public double toMBytes(double s) {
                 return s * C1;
             }
 
             @Override
-            public float toGBytes(float s) {
+            public double toGBytes(double s) {
                 return s;
             }
 
             @Override
-            public long toBits(float s) {
+            public long toBits(double s) {
                 return (long) toBitsFromBytes(s);
             }
 
             @Override
-            public float toKBits(float s) {
+            public double toKBits(double s) {
                 return toBitsFromBytes(toKBytes(s));
             }
 
             @Override
-            public float toMBits(float s) {
+            public double toMBits(double s) {
                 return toBitsFromBytes(toMBytes(s));
             }
 
             @Override
-            public float toGBits(float s) {
+            public double toGBits(double s) {
                 return toBitsFromBytes(toGBytes(s));
             }
         },
 
         BITS {
             @Override
-            public long toBytes(float s) {
+            public long toBytes(double s) {
                 return (long) toBytesFromBits(s);
             }
 
             @Override
-            public float toKBytes(float s) {
+            public double toKBytes(double s) {
                 return toBytesFromBits(toKBits(s));
             }
 
             @Override
-            public float toMBytes(float s) {
+            public double toMBytes(double s) {
                 return toBytesFromBits(toMBits(s));
             }
 
             @Override
-            public float toGBytes(float s) {
+            public double toGBytes(double s) {
                 return toBytesFromBits(toGBits(s));
             }
 
             @Override
-            public long toBits(float s) {
+            public long toBits(double s) {
                 return (long) s;
             }
 
             @Override
-            public float toKBits(float s) {
+            public double toKBits(double s) {
                 return s / C1;
             }
 
             @Override
-            public float toMBits(float s) {
+            public double toMBits(double s) {
                 return s / C2;
             }
 
             @Override
-            public float toGBits(float s) {
+            public double toGBits(double s) {
                 return s / C3;
             }
         },
 
         KBITS {
             @Override
-            public long toBytes(float s) {
+            public long toBytes(double s) {
                 return (long) toBytesFromBits(s);
             }
 
             @Override
-            public float toKBytes(float s) {
+            public double toKBytes(double s) {
                 return toBytesFromBits(toKBits(s));
             }
 
             @Override
-            public float toMBytes(float s) {
+            public double toMBytes(double s) {
                 return toBytesFromBits(toMBits(s));
             }
 
             @Override
-            public float toGBytes(float s) {
+            public double toGBytes(double s) {
                 return toBytesFromBits(toGBits(s));
             }
 
             @Override
-            public long toBits(float s) {
+            public long toBits(double s) {
                 return (long) (s * C1);
             }
 
             @Override
-            public float toKBits(float s) {
+            public double toKBits(double s) {
                 return s;
             }
 
             @Override
-            public float toMBits(float s) {
+            public double toMBits(double s) {
                 return s / C2;
             }
 
             @Override
-            public float toGBits(float s) {
+            public double toGBits(double s) {
                 return s / C3;
             }
         },
 
         MBITS {
             @Override
-            public long toBytes(float s) {
+            public long toBytes(double s) {
                 return (long) toBytesFromBits(s);
             }
 
             @Override
-            public float toKBytes(float s) {
+            public double toKBytes(double s) {
                 return toBytesFromBits(toKBits(s));
             }
 
             @Override
-            public float toMBytes(float s) {
+            public double toMBytes(double s) {
                 return toBytesFromBits(toMBits(s));
             }
 
             @Override
-            public float toGBytes(float s) {
+            public double toGBytes(double s) {
                 return toBytesFromBits(toGBits(s));
             }
 
             @Override
-            public long toBits(float s) {
+            public long toBits(double s) {
                 return (long) (s * C2);
             }
 
             @Override
-            public float toKBits(float s) {
+            public double toKBits(double s) {
                 return s * C1;
             }
 
             @Override
-            public float toMBits(float s) {
+            public double toMBits(double s) {
                 return s;
             }
 
             @Override
-            public float toGBits(float s) {
+            public double toGBits(double s) {
                 return s / C1;
             }
         },
 
         GBITS {
             @Override
-            public long toBytes(float s) {
+            public long toBytes(double s) {
                 return (long) toBytesFromBits(s);
             }
 
             @Override
-            public float toKBytes(float s) {
+            public double toKBytes(double s) {
                 return toBytesFromBits(toKBits(s));
             }
 
             @Override
-            public float toMBytes(float s) {
+            public double toMBytes(double s) {
                 return toBytesFromBits(toMBits(s));
             }
 
             @Override
-            public float toGBytes(float s) {
+            public double toGBytes(double s) {
                 return toBytesFromBits(toGBits(s));
             }
 
             @Override
-            public long toBits(float s) {
+            public long toBits(double s) {
                 return (long) (s * C3);
             }
 
             @Override
-            public float toKBits(float s) {
+            public double toKBits(double s) {
                 return s * C2;
             }
 
             @Override
-            public float toMBits(float s) {
+            public double toMBits(double s) {
                 return s * C1;
             }
 
             @Override
-            public float toGBits(float s) {
+            public double toGBits(double s) {
                 return s;
             }
         };
@@ -2801,21 +3031,21 @@ public final class FileHelper {
         public static final long C2 = C1 * 1024L;
         public static final long C3 = C2 * 1024L;
 
-        public abstract long toBytes(float s);
+        public abstract long toBytes(double s);
 
-        public abstract float toKBytes(float s);
+        public abstract double toKBytes(double s);
 
-        public abstract float toMBytes(float s);
+        public abstract double toMBytes(double s);
 
-        public abstract float toGBytes(float s);
+        public abstract double toGBytes(double s);
 
-        public abstract long toBits(float s);
+        public abstract long toBits(double s);
 
-        public abstract float toKBits(float s);
+        public abstract double toKBits(double s);
 
-        public abstract float toMBits(float s);
+        public abstract double toMBits(double s);
 
-        public abstract float toGBits(float s);
+        public abstract double toGBits(double s);
 
         public boolean isBits() {
             return this == BITS || this == KBITS || this == MBITS || this == GBITS;
@@ -2825,16 +3055,16 @@ public final class FileHelper {
             return this == BYTES || this == KBYTES || this == MBYTES || this == GBYTES;
         }
 
-        public static float toBitsFromBytes(float s) {
+        public static double toBitsFromBytes(double s) {
             return s * C0;
         }
 
-        public static float toBytesFromBits(float s) {
+        public static double toBytesFromBits(double s) {
             return s / C0;
         }
 
-        public static float convert(long what, @NonNull SizeUnit from, @NonNull SizeUnit to) {
-            final float result;
+        public static double convert(long what, @NonNull SizeUnit from, @NonNull SizeUnit to) {
+            final double result;
             switch (to) {
                 case BITS:
                     result = from.toBits(what);
