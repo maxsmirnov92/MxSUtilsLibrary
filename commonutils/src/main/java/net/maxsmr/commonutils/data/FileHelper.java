@@ -287,8 +287,8 @@ public final class FileHelper {
         return false;
     }
 
-    public static boolean checkFileNoThrow(File file, boolean createIfNotExists) {
-        return file != null && (file.exists() && file.isFile() || (createIfNotExists && createNewFile(file.getName(), file.getParent()) != null));
+    public static void checkFile(File file) {
+        checkFile(file, true);
     }
 
     public static void checkFile(File file, boolean createIfNotExists) {
@@ -297,14 +297,44 @@ public final class FileHelper {
         }
     }
 
-    public static boolean checkFileNoThrow(String file, boolean createIfNotExists) {
-        return !TextUtils.isEmpty(file) && checkFileNoThrow(new File(file), createIfNotExists);
+    public static void checkFile(String file) {
+        checkFile(file, true);
     }
 
     public static void checkFile(String file, boolean createIfNotExists) {
         if (!checkFileNoThrow(file, createIfNotExists)) {
             throw new IllegalArgumentException("incorrect file: " + file);
         }
+    }
+
+    public static boolean checkFileNoThrow(File file) {
+        return checkFileNoThrow(file, true);
+    }
+
+    public static boolean checkFileNoThrow(File file, boolean createIfNotExists) {
+        return file != null && (file.exists() && file.isFile() || (createIfNotExists && createNewFile(file.getName(), file.getParent()) != null));
+    }
+
+    public static boolean checkFileNoThrow(String file) {
+        return checkFileNoThrow(file, true);
+    }
+
+    public static boolean checkFileNoThrow(String file, boolean createIfNotExists) {
+        return !TextUtils.isEmpty(file) && checkFileNoThrow(new File(file), createIfNotExists);
+    }
+
+    public static void checkDir(String dirPath) {
+        checkDir(dirPath, true);
+    }
+
+    public static void checkDir(String dirPath, boolean createIfNotExists) {
+        if (!checkDirNoThrow(dirPath, createIfNotExists)) {
+            throw new IllegalArgumentException("incorrect directory path: " + dirPath);
+        }
+    }
+
+    public static boolean checkDirNoThrow(String dirPath) {
+        return checkDirNoThrow(dirPath, true);
     }
 
     public static boolean checkDirNoThrow(String dirPath, boolean createIfNotExists) {
@@ -319,10 +349,20 @@ public final class FileHelper {
         return true;
     }
 
-    public static void checkDir(String dirPath, boolean createIfNotExists) {
-        if (!checkDirNoThrow(dirPath, createIfNotExists)) {
-            throw new IllegalArgumentException("incorrect directory path: " + dirPath);
+    public static File checkPath(String parent, String fileName) {
+        return checkPath(parent, fileName, true);
+    }
+
+    public static File checkPath(String parent, String fileName, boolean createIfNotExists) {
+        File f = checkPathNoThrow(parent, fileName, createIfNotExists);
+        if (f == null) {
+            throw new IllegalArgumentException("incorrect path: " + parent + File.separator + fileName);
         }
+        return f;
+    }
+
+    public static File checkPathNoThrow(String parent, String fileName) {
+        return checkPathNoThrow(parent, fileName, true);
     }
 
     public static File checkPathNoThrow(String parent, String fileName, boolean createIfNotExists) {
@@ -335,14 +375,6 @@ public final class FileHelper {
             }
         }
         return null;
-    }
-
-    public static File checkPath(String parent, String fileName, boolean createIfNotExists) {
-        File f = checkPathNoThrow(parent, fileName, createIfNotExists);
-        if (f == null) {
-            throw new IllegalArgumentException("incorrect path: " + parent + File.separator + fileName);
-        }
-        return f;
     }
 
     /**
@@ -1115,11 +1147,15 @@ public final class FileHelper {
 
         if (fromFile != null && fromFile.exists()) {
 
+            boolean shouldBreak = false;
+
             if (notifier != null) {
                 if (!notifier.onProcessing(fromFile, Collections.unmodifiableSet(collected), currentLevel)) {
-                    return result;
+                    shouldBreak = true;
                 }
             }
+
+            if (!shouldBreak) {
 
 //            if (mode == GetMode.FOLDERS || mode == GetMode.ALL) {
 //                if (notifier == null || notifier.onGet(fromFile)) {
@@ -1127,39 +1163,40 @@ public final class FileHelper {
 //                }
 //            }
 
-            boolean isCorrect = true;
+                boolean isCorrect = true;
 
-            if (fromFile.isDirectory()) {
+                if (fromFile.isDirectory()) {
 
-                File[] files = fromFile.listFiles();
+                    File[] files = fromFile.listFiles();
 
-                if (files != null) {
+                    if (files != null) {
 
-                    for (File f : files) {
+                        for (File f : files) {
 
-                        if (f.isDirectory()) {
+                            if (f.isDirectory()) {
 
-                            if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
-                                result.addAll(getFiles(f, mode, comparator, notifier, depth, currentLevel + 1, collected));
+                                if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
+                                    result.addAll(getFiles(f, mode, comparator, notifier, depth, currentLevel + 1, collected));
+                                }
+
+                            } else if (f.isFile()) {
+                                result.addAll(getFiles(f, mode, comparator, notifier, depth, currentLevel, collected));
+                            } else {
+                                logger.e("incorrect file or folder: " + f);
                             }
-
-                        } else if (f.isFile()) {
-                            result.addAll(getFiles(f, mode, comparator, notifier, depth, currentLevel, collected));
-                        } else {
-                            logger.e("incorrect file or folder: " + f);
                         }
                     }
+                } else if (!fromFile.isFile()) {
+                    logger.e("incorrect file or folder: " + fromFile);
+                    isCorrect = false;
                 }
-            } else if (!fromFile.isFile()) {
-                logger.e("incorrect file or folder: " + fromFile);
-                isCorrect = false;
-            }
 
-            if (isCorrect) {
-                if (fromFile.isFile() ? mode == GetMode.FILES : mode == GetMode.FOLDERS || mode == GetMode.ALL) {
-                    if (notifier == null || (fromFile.isFile() ? notifier.onGetFile(fromFile) : notifier.onGetFolder(fromFile))) {
-                        result.add(fromFile);
-                        collected.add(fromFile);
+                if (isCorrect) {
+                    if (fromFile.isFile() ? mode == GetMode.FILES : mode == GetMode.FOLDERS || mode == GetMode.ALL) {
+                        if (notifier == null || (fromFile.isFile() ? notifier.onGetFile(fromFile) : notifier.onGetFolder(fromFile))) {
+                            result.add(fromFile);
+                            collected.add(fromFile);
+                        }
                     }
                 }
             }
@@ -1456,72 +1493,77 @@ public final class FileHelper {
 
         if (fromFile != null && fromFile.exists()) {
 
+            boolean shouldBreak = false;
+
             if (notifier != null) {
                 if (!notifier.onProcessing(fromFile, Collections.unmodifiableSet(deletedFiles), currentLevel)) {
-                    return result;
+                    shouldBreak = true;
                 }
             }
 
-            if (fromFile.isDirectory()) {
-                File[] files = fromFile.listFiles();
+            if (!shouldBreak) {
 
-                if (files != null) {
+                if (fromFile.isDirectory()) {
+                    File[] files = fromFile.listFiles();
 
-                    if (comparator != null) {
-                        List<File> sorted = new ArrayList<>(Arrays.asList(files));
-                        Collections.sort(sorted, comparator);
-                        files = sorted.toArray(new File[sorted.size()]);
-                    }
+                    if (files != null) {
 
-                    for (File f : files) {
+                        if (comparator != null) {
+                            List<File> sorted = new ArrayList<>(Arrays.asList(files));
+                            Collections.sort(sorted, comparator);
+                            files = sorted.toArray(new File[sorted.size()]);
+                        }
 
-                        if (excludeFiles == null || !excludeFiles.contains(f)) {
-                            if (f.isDirectory()) {
-                                if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
-                                    result.addAll(delete(f, deleteEmptyDirs, excludeFiles, comparator, notifier, depth, currentLevel + 1, deletedFiles));
-                                }
-                                if (deleteEmptyDirs && isDirEmpty(f)) {
-                                    if (notifier == null || notifier.confirmDeleteFolder(f)) {
-                                        if (f.delete()) {
-                                            result.add(f);
-                                            deletedFiles.add(f);
-                                        } else if (notifier != null) {
-                                            notifier.onDeleteFolderFailed(f);
+                        for (File f : files) {
+
+                            if (excludeFiles == null || !excludeFiles.contains(f)) {
+                                if (f.isDirectory()) {
+                                    if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
+                                        result.addAll(delete(f, deleteEmptyDirs, excludeFiles, comparator, notifier, depth, currentLevel + 1, deletedFiles));
+                                    }
+                                    if (deleteEmptyDirs && isDirEmpty(f)) {
+                                        if (notifier == null || notifier.confirmDeleteFolder(f)) {
+                                            if (f.delete()) {
+                                                result.add(f);
+                                                deletedFiles.add(f);
+                                            } else if (notifier != null) {
+                                                notifier.onDeleteFolderFailed(f);
+                                            }
                                         }
                                     }
+                                } else if (f.isFile()) {
+                                    result.addAll(delete(f, deleteEmptyDirs, excludeFiles, comparator, notifier, depth, currentLevel, deletedFiles));
+                                } else {
+                                    logger.e("incorrect file or folder: " + f);
                                 }
-                            } else if (f.isFile()) {
-                                result.addAll(delete(f, deleteEmptyDirs, excludeFiles, comparator, notifier, depth, currentLevel, deletedFiles));
-                            } else {
-                                logger.e("incorrect file or folder: " + f);
+                            }
+                        }
+
+                        if (deleteEmptyDirs && isDirEmpty(fromFile)) {
+                            if (notifier == null || notifier.confirmDeleteFolder(fromFile)) {
+                                if (fromFile.delete()) {
+                                    result.add(fromFile);
+                                    deletedFiles.add(fromFile);
+                                } else if (notifier != null) {
+                                    notifier.onDeleteFolderFailed(fromFile);
+                                }
                             }
                         }
                     }
+                } else if (fromFile.isFile()) {
 
-                    if (deleteEmptyDirs && isDirEmpty(fromFile)) {
-                        if (notifier == null || notifier.confirmDeleteFolder(fromFile)) {
-                            if (fromFile.delete()) {
-                                result.add(fromFile);
-                                deletedFiles.add(fromFile);
-                            } else if (notifier != null) {
-                                notifier.onDeleteFolderFailed(fromFile);
-                            }
+                    if (notifier == null || notifier.confirmDeleteFile(fromFile)) {
+                        if (fromFile.delete()) {
+                            result.add(fromFile);
+                            deletedFiles.add(fromFile);
+                        } else if (notifier != null) {
+                            notifier.onDeleteFileFailed(fromFile);
                         }
                     }
-                }
-            } else if (fromFile.isFile()) {
 
-                if (notifier == null || notifier.confirmDeleteFile(fromFile)) {
-                    if (fromFile.delete()) {
-                        result.add(fromFile);
-                        deletedFiles.add(fromFile);
-                    } else if (notifier != null) {
-                        notifier.onDeleteFileFailed(fromFile);
-                    }
+                } else {
+                    logger.e("incorrect file or folder: " + fromFile);
                 }
-
-            } else {
-                logger.e("incorrect file or folder: " + fromFile);
             }
         }
 
@@ -2051,17 +2093,17 @@ public final class FileHelper {
 
         final Set<File> files = getFiles(fromFile, GetMode.FILES, comparator, multipleCopyNotifier != null ? new IGetNotifier() {
             @Override
-            public boolean onProcessing(File current, Set<File> collected, int currentLevel) {
+            public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
                 return multipleCopyNotifier.onCalculatingSize(current, collected);
             }
 
             @Override
-            public boolean onGetFile(File file) {
+            public boolean onGetFile(@NonNull File file) {
                 return true;
             }
 
             @Override
-            public boolean onGetFolder(File folder) {
+            public boolean onGetFolder(@NonNull File folder) {
                 return false;
             }
         } : null, depth);
@@ -2076,65 +2118,66 @@ public final class FileHelper {
         int filesProcessed = 0;
         for (File f : files) {
 
-            if (isFileExists(f)) {
+            if (!isFileExists(f)) {
+                continue;
+            }
 
-                final File currentDestDir;
-                if (!f.equals(fromFile)) {
-                    currentDestDir = new File(destDir, f.getParent().replaceFirst(StringUtils.appendOrReplaceChar(fromFile.getAbsolutePath(), '\\', "\\", false, true), "")); // windows separator case
-                } else {
-                    currentDestDir = destDir;
+            final File currentDestDir;
+            if (!f.equals(fromFile)) {
+                currentDestDir = new File(destDir, f.getParent().replaceFirst(StringUtils.appendOrReplaceChar(fromFile.getAbsolutePath(), '\\', "\\", false, true), "")); // windows separator case
+            } else {
+                currentDestDir = destDir;
+            }
+
+            if (multipleCopyNotifier != null) {
+                if (!multipleCopyNotifier.onProcessing(f, currentDestDir, Collections.unmodifiableSet(result), filesProcessed, files.size())) {
+                    break;
                 }
+            }
+
+            if (exclusionList == null || !exclusionList.contains(f)) {
+
+                File destFile = null;
+
+                boolean confirmCopy = true;
 
                 if (multipleCopyNotifier != null) {
-                    if (!multipleCopyNotifier.onProcessing(f, currentDestDir, Collections.unmodifiableSet(result), filesProcessed, files.size())) {
-                        break;
-                    }
+                    confirmCopy = multipleCopyNotifier.confirmCopy(f, currentDestDir);
                 }
 
-                if (exclusionList == null || !exclusionList.contains(f)) {
-
-                    File destFile = null;
-
-                    boolean confirmCopy = true;
+                if (confirmCopy) {
 
                     if (multipleCopyNotifier != null) {
-                        confirmCopy = multipleCopyNotifier.confirmCopy(f, currentDestDir);
+                        destFile = multipleCopyNotifier.onBeforeCopy(f, currentDestDir);
                     }
 
-                    if (confirmCopy) {
+                    if (destFile == null || destFile.equals(f)) {
+                        destFile = new File(currentDestDir, f.getName());
+                    }
 
+                    boolean rewrite = false;
+
+                    if (multipleCopyNotifier != null && isFileExists(destFile)) {
+                        rewrite = multipleCopyNotifier.onExists(destFile);
+                    }
+
+                    File resultFile = copyFileWithBuffering(f, destFile.getName(), destFile.getParent(), rewrite,
+                            preserveFileDate, singleNotifier);
+
+                    if (resultFile != null) {
                         if (multipleCopyNotifier != null) {
-                            destFile = multipleCopyNotifier.onBeforeCopy(f, currentDestDir);
+                            multipleCopyNotifier.onSucceeded(f, resultFile);
                         }
-
-                        if (destFile == null || destFile.equals(f)) {
-                            destFile = new File(currentDestDir, f.getName());
-                        }
-
-                        boolean rewrite = false;
-
-                        if (multipleCopyNotifier != null && isFileExists(destFile)) {
-                            rewrite = multipleCopyNotifier.onExists(destFile);
-                        }
-
-                        File resultFile = copyFileWithBuffering(f, destFile.getName(), destFile.getParent(), rewrite,
-                                preserveFileDate, singleNotifier);
-
-                        if (resultFile != null) {
-                            if (multipleCopyNotifier != null) {
-                                multipleCopyNotifier.onSucceeded(f, resultFile);
-                            }
-                            result.add(resultFile);
-                        } else {
-                            if (multipleCopyNotifier != null) {
-                                multipleCopyNotifier.onFailed(f, currentDestDir);
-                            }
+                        result.add(resultFile);
+                    } else {
+                        if (multipleCopyNotifier != null) {
+                            multipleCopyNotifier.onFailed(f, currentDestDir);
                         }
                     }
                 }
-
-                filesProcessed++;
             }
+
+            filesProcessed++;
         }
 
         if (comparator != null) {
