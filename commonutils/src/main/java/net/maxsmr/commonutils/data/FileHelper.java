@@ -1570,17 +1570,9 @@ public final class FileHelper {
         return result;
     }
 
-    /**
-     * This function will return size in form of bytes
-     * реккурсивно подсчитывает размер папки в байтах
-     *
-     * @param f     файл или папка
-     * @param depth глубина вложенности, 0 - текущий уровень
-     */
     public static long getSize(File f, int depth) {
         return getSize(f, depth, 0);
     }
-
 
     private static long getSize(File f, int depth, int currentLevel) {
         long size = 0;
@@ -2626,22 +2618,19 @@ public final class FileHelper {
         void onNonSuccessExitCode(int exitCode, File forFile);
     }
 
-    public static String filesToString(@NonNull Context context, Collection<File> files) {
-        StringBuilder sb = new StringBuilder();
+    @NonNull
+    public static String filesToString(@NonNull Context context, Collection<File> files, int depth) {
         if (files != null) {
+            Map<File, Long> map = new LinkedHashMap<>();
             for (File f : files) {
-                if (f != null) {
-                    sb.append(f.getAbsolutePath());
-                    sb.append(" : ");
-                    sb.append(sizeToString(context, getSize(f, DEPTH_UNLIMITED), SizeUnit.BYTES));
-                    sb.append(" ");
-                    sb.append(System.getProperty("line.separator"));
-                }
+                map.put(f, getSize(f, depth));
             }
+            return filesWithSizeToString(context, map);
         }
-        return sb.toString();
+        return "";
     }
 
+    @NonNull
     public static String filesWithSizeToString(@NonNull Context context, Map<File, Long> files) {
         return filesWithSizeToString(context, files.entrySet());
     }
@@ -2649,6 +2638,7 @@ public final class FileHelper {
     /**
      * @param files file <-> size in bytes </->
      */
+    @NonNull
     public static String filesWithSizeToString(@NonNull Context context, Collection<Map.Entry<File, Long>> files) {
         StringBuilder sb = new StringBuilder();
         if (files != null) {
@@ -2661,7 +2651,7 @@ public final class FileHelper {
                         sb.append(System.getProperty("line.separator"));
                     }
                     sb.append(f.getKey().getAbsolutePath());
-                    sb.append(" :");
+                    sb.append(" : ");
                     sb.append(f.getValue() != null ? sizeToString(context, f.getValue(), SizeUnit.BYTES) : 0);
                 }
             }
