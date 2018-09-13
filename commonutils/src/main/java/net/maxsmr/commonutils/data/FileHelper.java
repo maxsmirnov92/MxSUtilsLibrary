@@ -2114,10 +2114,17 @@ public final class FileHelper {
                 continue;
             }
 
-            final File currentDestDir;
+            File currentDestDir = null;
             if (!f.equals(fromFile)) {
-                currentDestDir = new File(destDir, f.getParent().replaceFirst(StringUtils.appendOrReplaceChar(fromFile.getAbsolutePath(), '\\', "\\", false, true), "")); // windows separator case
-            } else {
+                String part = f.getParent();
+                if (part.startsWith(fromFile.getAbsolutePath())) {
+                    part = part.substring(fromFile.getAbsolutePath().length(), part.length());
+                }
+                if (!TextUtils.isEmpty(part)) {
+                    currentDestDir = new File(destDir, part);
+                }
+            }
+            if (currentDestDir == null) {
                 currentDestDir = destDir;
             }
 
@@ -2651,15 +2658,16 @@ public final class FileHelper {
                         sb.append(System.getProperty("line.separator"));
                     }
                     sb.append(f.getKey().getAbsolutePath());
-                    sb.append(" : ");
-                    sb.append(f.getValue() != null ? sizeToString(context, f.getValue(), SizeUnit.BYTES) : 0);
+                    sb.append(": ");
+                    final Long size = f.getValue();
+                    sb.append(size != null ? sizeToString(context, size, SizeUnit.BYTES) : 0);
                 }
             }
         }
         return sb.toString();
     }
 
-    public static String sizeToString(@NonNull Context context, float s, @NonNull SizeUnit sizeUnit) {
+    public static String sizeToString(@NonNull Context context, double s, @NonNull SizeUnit sizeUnit) {
         return sizeToString(context, s, sizeUnit, null);
     }
 
@@ -2681,10 +2689,10 @@ public final class FileHelper {
         s = sizeUnit.toBytes(s);
         StringBuilder sb = new StringBuilder();
         if (s < SizeUnit.C1 && !sizeUnitsToExclude.contains(SizeUnit.BYTES)) {
-            sb.append((int) s);
+            sb.append((long) s);
             sb.append(" ");
             sb.append(context.getString(R.string.size_suffix_bytes));
-        } else if (s >= SizeUnit.C1 && s < SizeUnit.C2 && !sizeUnitsToExclude.contains(SizeUnit.KBYTES)) {
+        } else if ((sizeUnitsToExclude.contains(SizeUnit.BYTES) || s >= SizeUnit.C1 && s < SizeUnit.C2) && !sizeUnitsToExclude.contains(SizeUnit.KBYTES)) {
             double kbytes = SizeUnit.BYTES.toKBytes(s);
             sb.append(!sizeUnitsToExclude.contains(SizeUnit.BYTES) ? (long) kbytes : kbytes);
             sb.append(" ");
@@ -2694,7 +2702,7 @@ public final class FileHelper {
                 sb.append(", ");
                 sb.append(sizeToString(context, restBytes, SizeUnit.BYTES, sizeUnitsToExclude));
             }
-        } else if (s >= SizeUnit.C2 && s < SizeUnit.C3 && !sizeUnitsToExclude.contains(SizeUnit.MBYTES)) {
+        } else if ((sizeUnitsToExclude.contains(SizeUnit.KBYTES) || s >= SizeUnit.C2 && s < SizeUnit.C3) && !sizeUnitsToExclude.contains(SizeUnit.MBYTES)) {
             double mbytes = SizeUnit.BYTES.toMBytes(s);
             sb.append(!sizeUnitsToExclude.contains(SizeUnit.KBYTES) ? (long) mbytes : mbytes);
             sb.append(" ");
@@ -2704,7 +2712,7 @@ public final class FileHelper {
                 sb.append(", ");
                 sb.append(sizeToString(context, restBytes, SizeUnit.BYTES, sizeUnitsToExclude));
             }
-        } else if (!sizeUnitsToExclude.contains(SizeUnit.GBYTES)) {
+        } else if ((sizeUnitsToExclude.contains(SizeUnit.MBYTES) || s >= SizeUnit.C3) && !sizeUnitsToExclude.contains(SizeUnit.GBYTES)) {
             double gbytes = SizeUnit.BYTES.toGBytes(s);
             sb.append(!sizeUnitsToExclude.contains(SizeUnit.MBYTES) ? (long) gbytes : gbytes);
             sb.append(" ");

@@ -268,8 +268,36 @@ public final class CompareUtils {
             }
             return result;
         }
+    }
 
+    public enum Condition {
 
+        LESS, LESS_OR_EQUAL, EQUAL, MORE, MORE_OR_EQUAL;
+
+        public boolean apply(Character one, Character another, boolean ignoreCase) {
+            return fromResult(compareChars(one, another, true, ignoreCase), this);
+        }
+
+        public boolean apply(Number one, Number another) {
+            return fromResult(compareDouble(one != null ? one.doubleValue() : null, another != null ? another.doubleValue() : null, true), this);
+        }
+
+        public static boolean fromResult(int result, Condition c) {
+            switch (c) {
+                case LESS:
+                    return result < 0;
+                case LESS_OR_EQUAL:
+                    return result <= 0;
+                case EQUAL:
+                    return result == 0;
+                case MORE:
+                    return result > 0;
+                case MORE_OR_EQUAL:
+                    return result >= 0;
+                default:
+                    throw new IllegalArgumentException("Unknown " + Condition.class.getSimpleName() + ": " + c);
+            }
+        }
     }
 
 }

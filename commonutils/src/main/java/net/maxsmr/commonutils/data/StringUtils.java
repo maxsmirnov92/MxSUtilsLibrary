@@ -193,6 +193,37 @@ public class StringUtils {
         return newAlphabet;
     }
 
+    public static String trim(CharSequence cs) {
+        return trim(cs, true, true);
+    }
+
+    public static String trim(CharSequence cs, boolean fromStart, boolean fromEnd) {
+        return trim(cs, CompareUtils.Condition.LESS_OR_EQUAL, ' ', fromStart, fromEnd);
+    }
+
+    public static String trim(CharSequence cs, CompareUtils.Condition condition, char byChar, boolean fromStart, boolean fromEnd) {
+
+        if (cs == null) {
+            return "";
+        }
+
+        String str = cs.toString();
+
+        int len = str.length();
+        int st = 0;
+
+        if (fromStart) {
+            while ((st < len) && (condition.apply(str.charAt(st), byChar, false))) {
+                st++;
+            }
+        }
+        if (fromEnd) {
+            while ((st < len) && (condition.apply(str.charAt(len - 1), byChar, false))) {
+                len--;
+            }
+        }
+        return ((st > 0) || (len < str.length())) ? str.substring(st, len) : str;
+    }
 
     @Nullable
     private static Character findCharByLeft(@NonNull List<CharacterMap> alphabet, Character c, boolean ignoreCase) {
