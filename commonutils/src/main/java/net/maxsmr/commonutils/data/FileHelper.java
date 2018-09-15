@@ -6,7 +6,6 @@ import android.content.Context;
 import android.content.res.Resources;
 import android.database.Cursor;
 import android.location.Location;
-import android.support.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -15,10 +14,11 @@ import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
+import android.support.media.ExifInterface;
 import android.support.v4.util.ArraySet;
+import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
-import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.sort.AbsOptionableComparator;
 import net.maxsmr.commonutils.data.sort.ISortOption;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
@@ -28,9 +28,7 @@ import net.maxsmr.commonutils.shell.CommandResult;
 import net.maxsmr.commonutils.shell.ShellUtils;
 
 import java.io.BufferedOutputStream;
-import java.io.BufferedReader;
 import java.io.BufferedWriter;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -38,10 +36,8 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.io.UnsupportedEncodingException;
 import java.lang.reflect.Field;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
@@ -61,6 +57,11 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import static net.maxsmr.commonutils.data.StreamUtils.readBytesFromInputStream;
+import static net.maxsmr.commonutils.data.StreamUtils.readStringFromInputStream;
+import static net.maxsmr.commonutils.data.StreamUtils.readStringsFromInputStream;
+import static net.maxsmr.commonutils.data.StreamUtils.revectorStream;
+import static net.maxsmr.commonutils.data.Units.sizeToString;
 import static net.maxsmr.commonutils.shell.ShellUtils.execProcess;
 
 public final class FileHelper {
@@ -142,10 +143,10 @@ public final class FileHelper {
         }
     }
 
-    public static double getPartitionTotalSpace(String path, @NonNull SizeUnit unit) {
+    public static double getPartitionTotalSpace(String path, @NonNull Units.SizeUnit unit) {
         if (isDirExists(path)) {
             try {
-                return SizeUnit.convert(new File(path).getTotalSpace(), SizeUnit.BYTES, unit);
+                return Units.SizeUnit.convert(new File(path).getTotalSpace(), Units.SizeUnit.BYTES, unit);
             } catch (SecurityException e) {
                 logger.e("a SecurityException occurred during convert(): " + e.getMessage(), e);
             }
@@ -153,10 +154,10 @@ public final class FileHelper {
         return 0;
     }
 
-    public static double getPartitionFreeSpace(String path, @NonNull SizeUnit unit) {
+    public static double getPartitionFreeSpace(String path, @NonNull Units.SizeUnit unit) {
         if (isDirExists(path)) {
             try {
-                return SizeUnit.convert(new File(path).getFreeSpace(), SizeUnit.BYTES, unit);
+                return Units.SizeUnit.convert(new File(path).getFreeSpace(), Units.SizeUnit.BYTES, unit);
             } catch (SecurityException e) {
                 logger.e("a SecurityException occurred during convert(): " + e.getMessage(), e);
             }
@@ -555,93 +556,6 @@ public final class FileHelper {
         return other != 0 && 100 * other / (ascii + other) > 95;
     }
 
-    public static boolean revectorStream(InputStream in, OutputStream out) {
-        return revectorStream(in, out, null);
-    }
-
-    public static boolean revectorStream(InputStream in, OutputStream out, @Nullable IStreamNotifier notifier) {
-
-        if (in == null || out == null)
-            return false;
-
-        boolean result = true;
-
-        try {
-            byte[] buff = new byte[256];
-
-            int bytesWriteCount = 0;
-            int totalBytesCount = 0;
-            try {
-                totalBytesCount = in.available();
-            } catch (IOException e) {
-                logger.e("an IOException occurred", e);
-            }
-
-            int len;
-            long lastNotifyTime = 0;
-            while ((len = in.read(buff)) > 0) {
-                if (notifier != null) {
-                    long interval = notifier.notifyInterval();
-                    if (interval <= 0 || lastNotifyTime == 0 || (System.currentTimeMillis() - lastNotifyTime) >= interval) {
-                        if (!notifier.onProcessing(in, out, bytesWriteCount,
-                                totalBytesCount > 0 && bytesWriteCount <= totalBytesCount ? totalBytesCount - bytesWriteCount : 0)) {
-                            result = false;
-                            break;
-                        }
-                        lastNotifyTime = System.currentTimeMillis();
-                    }
-
-                }
-                out.write(buff, 0, len);
-                bytesWriteCount += len;
-            }
-
-        } catch (IOException e) {
-            logger.e("an IOException occurred", e);
-            result = false;
-
-        } finally {
-            try {
-                in.close();
-                out.close();
-            } catch (IOException e) {
-                logger.e("an IOException occurred during close()", e);
-            }
-        }
-
-        return result;
-    }
-
-    @Nullable
-    public static byte[] readBytesFromInputStream(InputStream inputStream) {
-
-        if (inputStream != null) {
-
-            try {
-
-                byte[] data = new byte[inputStream.available()];
-                int readByteCount;
-                do {
-                    readByteCount = inputStream.read(data, 0, data.length);
-                } while (readByteCount > 0);
-
-                return data;
-
-            } catch (IOException e) {
-                logger.e("an Exception occurred", e);
-
-            } finally {
-                try {
-                    inputStream.close();
-                } catch (IOException e) {
-                    logger.e("an IOException occurred during close()", e);
-                }
-            }
-        }
-
-        return null;
-    }
-
     @Nullable
     public static byte[] readBytesFromFile(File file) {
 
@@ -656,7 +570,7 @@ public final class FileHelper {
         }
 
         try {
-            return readBytesFromInputStream(new FileInputStream(file));
+            return readBytesFromInputStream(new FileInputStream(file), true);
         } catch (FileNotFoundException e) {
             logger.e("a FileNotFoundException occurred", e);
             return null;
@@ -679,7 +593,7 @@ public final class FileHelper {
         }
 
         try {
-            return readStringsFromInputStream(new FileInputStream(file));
+            return readStringsFromInputStream(new FileInputStream(file), true);
         } catch (FileNotFoundException e) {
             logger.e("an IOException occurred", e);
             return lines;
@@ -695,7 +609,7 @@ public final class FileHelper {
     @NonNull
     public static Collection<String> readStringsFromAsset(@NonNull Context context, String assetName) {
         try {
-            return readStringsFromInputStream(context.getAssets().open(assetName));
+            return readStringsFromInputStream(context.getAssets().open(assetName), true);
         } catch (IOException e) {
             logger.e("an IOException occurred during open()", e);
             return Collections.emptyList();
@@ -705,7 +619,7 @@ public final class FileHelper {
     @Nullable
     public static String readStringFromAsset(@NonNull Context context, String assetName) {
         try {
-            return readStringFromInputStream(context.getAssets().open(assetName));
+            return readStringFromInputStream(context.getAssets().open(assetName), true);
         } catch (IOException e) {
             logger.e("an IOException occurred during open()", e);
             return null;
@@ -715,7 +629,7 @@ public final class FileHelper {
     @NonNull
     public static Collection<String> readStringsFromRes(@NonNull Context context, @RawRes int resId) {
         try {
-            return readStringsFromInputStream(context.getResources().openRawResource(resId));
+            return readStringsFromInputStream(context.getResources().openRawResource(resId), true);
         } catch (Resources.NotFoundException e) {
             logger.e("an IOException occurred during openRawResource()", e);
             return Collections.emptyList();
@@ -725,56 +639,13 @@ public final class FileHelper {
     @Nullable
     public static String readStringFromRes(@NonNull Context context, @RawRes int resId) {
         try {
-            return readStringFromInputStream(context.getResources().openRawResource(resId));
+            return readStringFromInputStream(context.getResources().openRawResource(resId), true);
         } catch (Resources.NotFoundException e) {
             logger.e("an IOException occurred during openRawResource()", e);
             return null;
         }
     }
 
-    @NonNull
-    public static List<String> readStringsFromInputStream(@Nullable InputStream is) {
-        if (is != null) {
-            BufferedReader in = null;
-            try {
-                List<String> out = new ArrayList<>();
-                in = new BufferedReader(new InputStreamReader(is, "UTF-8"));
-                String line;
-                while ((line = in.readLine()) != null) {
-                    out.add(line);
-                }
-                return out;
-            } catch (IOException e) {
-                logger.e("an IOException occurred", e);
-            } finally {
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (IOException e) {
-                        logger.e("an IOException occurred during close()", e);
-                    }
-                }
-            }
-        }
-        return Collections.emptyList();
-    }
-
-    @Nullable
-    public static String readStringFromInputStream(@Nullable InputStream is) {
-        Collection<String> strings = readStringsFromInputStream(is);
-        return !strings.isEmpty() ? TextUtils.join(System.getProperty("line.separator"), strings) : null;
-    }
-
-    public static String convertInputStreamToString(InputStream inputStream) {
-        ByteArrayOutputStream result = new ByteArrayOutputStream();
-        revectorStream(inputStream, result);
-        try {
-            return result.toString("UTF-8");
-        } catch (UnsupportedEncodingException e) {
-            logger.e("an Exception occurred", e);
-            return null;
-        }
-    }
 
     public static boolean writeBytesToFile(@NonNull File file, byte[] data, boolean append) {
         if (data == null || data.length == 0) {
@@ -823,12 +694,12 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static File writeFromStreamToFile(InputStream data, File targetFile, boolean append, IStreamNotifier notifier) {
+    public static File writeFromStreamToFile(InputStream data, File targetFile, boolean append, StreamUtils.IStreamNotifier notifier) {
         return writeFromStreamToFile(data, targetFile != null ? targetFile.getName() : null, targetFile != null ? targetFile.getParent() : null, append, notifier);
     }
 
     @Nullable
-    public static File writeFromStreamToFile(InputStream data, String fileName, String parentPath, boolean append, IStreamNotifier notifier) {
+    public static File writeFromStreamToFile(InputStream data, String fileName, String parentPath, boolean append, StreamUtils.IStreamNotifier notifier) {
         logger.d("writeFromStreamToFile(), data=" + data + ", fileName=" + fileName + ", parentPath=" + parentPath + ", append=" + append);
 
         final File file = createFile(fileName, parentPath, !append);
@@ -1591,14 +1462,6 @@ public final class FileHelper {
         return size;
     }
 
-    public static String getSizeWithValue(Context context, File file, int depth) {
-        return getSizeWithValue(context, file, depth, null);
-    }
-
-    public static String getSizeWithValue(Context context, File file, int depth, @Nullable Collection<SizeUnit> sizeUnitsToExclude) {
-        return sizeToString(context, getSize(file, depth), SizeUnit.BYTES, sizeUnitsToExclude);
-    }
-
     /**
      * Get a file path from a Uri. This will get the the path for Storage Access
      * Framework Documents, as well as the _data field for the MediaStore and
@@ -1857,7 +1720,7 @@ public final class FileHelper {
         final long totalBytesCount = sourceFile.length();
 
         try {
-            if (writeFromStreamToFile(new FileInputStream(sourceFile), destFile.getName(), destFile.getParent(), !rewrite, notifier != null ? new IStreamNotifier() {
+            if (writeFromStreamToFile(new FileInputStream(sourceFile), destFile.getName(), destFile.getParent(), !rewrite, notifier != null ? new StreamUtils.IStreamNotifier() {
                 @Override
                 public long notifyInterval() {
                     return notifier.notifyInterval();
@@ -2425,13 +2288,6 @@ public final class FileHelper {
         void onDeleteFolderFailed(File folder);
     }
 
-    public interface IStreamNotifier {
-
-        long notifyInterval();
-
-        boolean onProcessing(@NonNull InputStream inputStream, @NonNull OutputStream outputStream, long bytesWrite, long bytesLeft);
-    }
-
     public interface ISingleCopyNotifier {
 
         long notifyInterval();
@@ -2593,7 +2449,7 @@ public final class FileHelper {
                                         logger.e("an NumberFormatException occurred during parseLong(): " + e.getMessage(), e);
                                     }
                                 }
-                                collectedMap.put(current, SizeUnit.KBYTES.toBytes(size));
+                                collectedMap.put(current, Units.SizeUnit.KBYTES.toBytes(size));
                             }
                         }
 
@@ -2625,27 +2481,39 @@ public final class FileHelper {
         void onNonSuccessExitCode(int exitCode, File forFile);
     }
 
-    @NonNull
     public static String filesToString(@NonNull Context context, Collection<File> files, int depth) {
         if (files != null) {
             Map<File, Long> map = new LinkedHashMap<>();
             for (File f : files) {
-                map.put(f, getSize(f, depth));
+                if (f != null) {
+                    map.put(f, getSize(f, depth));
+                }
             }
             return filesWithSizeToString(context, map);
         }
         return "";
     }
 
-    @NonNull
+    public static String filePairsToString(@NonNull Context context, Collection<Pair<File, File>> files, int depth) {
+        if (files != null) {
+            Map<Pair<File, File>, Long> map = new LinkedHashMap<>();
+            for (Pair<File, File> p : files) {
+                if (p != null && p.first != null) {
+                    map.put(p, getSize(p.first, depth));
+                }
+            }
+            return filePairsWithSizeToString(context, map);
+        }
+        return "";
+    }
+
     public static String filesWithSizeToString(@NonNull Context context, Map<File, Long> files) {
         return filesWithSizeToString(context, files.entrySet());
     }
 
     /**
-     * @param files file <-> size in bytes </->
+     * @param files file < - > size in bytes
      */
-    @NonNull
     public static String filesWithSizeToString(@NonNull Context context, Collection<Map.Entry<File, Long>> files) {
         StringBuilder sb = new StringBuilder();
         if (files != null) {
@@ -2660,483 +2528,47 @@ public final class FileHelper {
                     sb.append(f.getKey().getAbsolutePath());
                     sb.append(": ");
                     final Long size = f.getValue();
-                    sb.append(size != null ? sizeToString(context, size, SizeUnit.BYTES) : 0);
+                    sb.append(size != null ? sizeToString(context, size, Units.SizeUnit.BYTES) : 0);
                 }
             }
         }
         return sb.toString();
     }
 
-    public static String sizeToString(@NonNull Context context, double s, @NonNull SizeUnit sizeUnit) {
-        return sizeToString(context, s, sizeUnit, null);
+    public static String filePairsWithSizeToString(@NonNull Context context, Map<Pair<File, File>, Long> files) {
+        return filePairsWithSizeToString(context, files.entrySet());
     }
 
     /**
-     * @param s                  size
-     * @param sizeUnit           unit for s
-     * @param sizeUnitsToExclude list of units to avoid in result string
+     * @param files pair < source file - destination file > <-> size in bytes
      */
-    public static String sizeToString(@NonNull Context context, double s, @NonNull SizeUnit sizeUnit, @Nullable Collection<SizeUnit> sizeUnitsToExclude) {
-        if (s < 0) {
-            throw new IllegalArgumentException("incorrect size: " + s);
-        }
-        if (!sizeUnit.isBytes()) {
-            throw new IllegalArgumentException("sizeUnit must be bytes only");
-        }
-        if (sizeUnitsToExclude == null) {
-            sizeUnitsToExclude = Collections.emptySet();
-        }
-        s = sizeUnit.toBytes(s);
+    public static String filePairsWithSizeToString(@NonNull Context context, Collection<Map.Entry<Pair<File, File>, Long>> files) {
         StringBuilder sb = new StringBuilder();
-        if (s < SizeUnit.C1 && !sizeUnitsToExclude.contains(SizeUnit.BYTES)) {
-            sb.append((long) s);
-            sb.append(" ");
-            sb.append(context.getString(R.string.size_suffix_bytes));
-        } else if ((sizeUnitsToExclude.contains(SizeUnit.BYTES) || s >= SizeUnit.C1 && s < SizeUnit.C2) && !sizeUnitsToExclude.contains(SizeUnit.KBYTES)) {
-            double kbytes = SizeUnit.BYTES.toKBytes(s);
-            sb.append(!sizeUnitsToExclude.contains(SizeUnit.BYTES) ? (long) kbytes : kbytes);
-            sb.append(" ");
-            sb.append(context.getString(R.string.size_suffix_kbytes));
-            double restBytes = s - SizeUnit.KBYTES.toBytes(kbytes);
-            if (restBytes > 0) {
-                sb.append(", ");
-                sb.append(sizeToString(context, restBytes, SizeUnit.BYTES, sizeUnitsToExclude));
+        if (files != null) {
+            boolean isFirst = false;
+            for (Map.Entry<Pair<File, File>, Long> f : files) {
+                if (f != null && f.getKey() != null) {
+                    final File sourceFile = f.getKey().first;
+                    final File destinationFile = f.getKey().second;
+                    if (sourceFile != null) {
+                        if (!isFirst) {
+                            isFirst = true;
+                        } else {
+                            sb.append(System.getProperty("line.separator"));
+                        }
+                        sb.append(sourceFile.getAbsolutePath());
+                        if (destinationFile != null) {
+                            sb.append(" -> ");
+                            sb.append(destinationFile.getAbsolutePath());
+                        }
+                        sb.append(": ");
+                        final Long size = f.getValue();
+                        sb.append(size != null ? sizeToString(context, size, Units.SizeUnit.BYTES) : 0);
+                    }
+                }
             }
-        } else if ((sizeUnitsToExclude.contains(SizeUnit.KBYTES) || s >= SizeUnit.C2 && s < SizeUnit.C3) && !sizeUnitsToExclude.contains(SizeUnit.MBYTES)) {
-            double mbytes = SizeUnit.BYTES.toMBytes(s);
-            sb.append(!sizeUnitsToExclude.contains(SizeUnit.KBYTES) ? (long) mbytes : mbytes);
-            sb.append(" ");
-            sb.append(context.getString(R.string.size_suffix_mbytes));
-            double restBytes = s - SizeUnit.MBYTES.toBytes(mbytes);
-            if (restBytes > 0) {
-                sb.append(", ");
-                sb.append(sizeToString(context, restBytes, SizeUnit.BYTES, sizeUnitsToExclude));
-            }
-        } else if ((sizeUnitsToExclude.contains(SizeUnit.MBYTES) || s >= SizeUnit.C3) && !sizeUnitsToExclude.contains(SizeUnit.GBYTES)) {
-            double gbytes = SizeUnit.BYTES.toGBytes(s);
-            sb.append(!sizeUnitsToExclude.contains(SizeUnit.MBYTES) ? (long) gbytes : gbytes);
-            sb.append(" ");
-            sb.append(context.getString(R.string.size_suffix_gbytes));
-            double restBytes = s - SizeUnit.GBYTES.toBytes(gbytes);
-            if (restBytes > 0) {
-                sb.append(", ");
-                sb.append(sizeToString(context, restBytes, SizeUnit.BYTES, sizeUnitsToExclude));
-            }
-        }
-        if (sb.length() == 0) {
-            sb.append(context.getString(R.string.size_unknown));
         }
         return sb.toString();
-    }
-
-    public enum SizeUnit {
-
-        BYTES {
-            @Override
-            public long toBytes(double s) {
-                return (long) s;
-            }
-
-            @Override
-            public double toKBytes(double s) {
-                return s / C1;
-            }
-
-            @Override
-            public double toMBytes(double s) {
-                return s / C2;
-            }
-
-            @Override
-            public double toGBytes(double s) {
-                return s / C3;
-            }
-
-            @Override
-            public long toBits(double s) {
-                return (long) toBitsFromBytes(s);
-            }
-
-            @Override
-            public double toKBits(double s) {
-                return toBitsFromBytes(toKBytes(s));
-            }
-
-            @Override
-            public double toMBits(double s) {
-                return toBitsFromBytes(toMBytes(s));
-            }
-
-            @Override
-            public double toGBits(double s) {
-                return toBitsFromBytes(toGBytes(s));
-            }
-        },
-
-        KBYTES {
-            @Override
-            public long toBytes(double s) {
-                return (long) (s * C1);
-            }
-
-            @Override
-            public double toKBytes(double s) {
-                return s;
-            }
-
-            @Override
-            public double toMBytes(double s) {
-                return s / C1;
-            }
-
-            @Override
-            public double toGBytes(double s) {
-                return s / C2;
-            }
-
-            @Override
-            public long toBits(double s) {
-                return (long) toBitsFromBytes(s);
-            }
-
-            @Override
-            public double toKBits(double s) {
-                return toBitsFromBytes(toKBytes(s));
-            }
-
-            @Override
-            public double toMBits(double s) {
-                return toBitsFromBytes(toMBytes(s));
-            }
-
-            @Override
-            public double toGBits(double s) {
-                return toBitsFromBytes(toGBytes(s));
-            }
-        },
-
-        MBYTES {
-            @Override
-            public long toBytes(double s) {
-                return (long) (s * C2);
-            }
-
-            @Override
-            public double toKBytes(double s) {
-                return s * C1;
-            }
-
-            @Override
-            public double toMBytes(double s) {
-                return s;
-            }
-
-            @Override
-            public double toGBytes(double s) {
-                return s / C1;
-            }
-
-            @Override
-            public long toBits(double s) {
-                return (long) toBitsFromBytes(s);
-            }
-
-            @Override
-            public double toKBits(double s) {
-                return toBitsFromBytes(toKBytes(s));
-            }
-
-            @Override
-            public double toMBits(double s) {
-                return toBitsFromBytes(toMBytes(s));
-            }
-
-            @Override
-            public double toGBits(double s) {
-                return toBitsFromBytes(toGBytes(s));
-            }
-        },
-
-        GBYTES {
-            @Override
-            public long toBytes(double s) {
-                return (long) (s * C3);
-            }
-
-            @Override
-            public double toKBytes(double s) {
-                return s * C2;
-            }
-
-            @Override
-            public double toMBytes(double s) {
-                return s * C1;
-            }
-
-            @Override
-            public double toGBytes(double s) {
-                return s;
-            }
-
-            @Override
-            public long toBits(double s) {
-                return (long) toBitsFromBytes(s);
-            }
-
-            @Override
-            public double toKBits(double s) {
-                return toBitsFromBytes(toKBytes(s));
-            }
-
-            @Override
-            public double toMBits(double s) {
-                return toBitsFromBytes(toMBytes(s));
-            }
-
-            @Override
-            public double toGBits(double s) {
-                return toBitsFromBytes(toGBytes(s));
-            }
-        },
-
-        BITS {
-            @Override
-            public long toBytes(double s) {
-                return (long) toBytesFromBits(s);
-            }
-
-            @Override
-            public double toKBytes(double s) {
-                return toBytesFromBits(toKBits(s));
-            }
-
-            @Override
-            public double toMBytes(double s) {
-                return toBytesFromBits(toMBits(s));
-            }
-
-            @Override
-            public double toGBytes(double s) {
-                return toBytesFromBits(toGBits(s));
-            }
-
-            @Override
-            public long toBits(double s) {
-                return (long) s;
-            }
-
-            @Override
-            public double toKBits(double s) {
-                return s / C1;
-            }
-
-            @Override
-            public double toMBits(double s) {
-                return s / C2;
-            }
-
-            @Override
-            public double toGBits(double s) {
-                return s / C3;
-            }
-        },
-
-        KBITS {
-            @Override
-            public long toBytes(double s) {
-                return (long) toBytesFromBits(s);
-            }
-
-            @Override
-            public double toKBytes(double s) {
-                return toBytesFromBits(toKBits(s));
-            }
-
-            @Override
-            public double toMBytes(double s) {
-                return toBytesFromBits(toMBits(s));
-            }
-
-            @Override
-            public double toGBytes(double s) {
-                return toBytesFromBits(toGBits(s));
-            }
-
-            @Override
-            public long toBits(double s) {
-                return (long) (s * C1);
-            }
-
-            @Override
-            public double toKBits(double s) {
-                return s;
-            }
-
-            @Override
-            public double toMBits(double s) {
-                return s / C2;
-            }
-
-            @Override
-            public double toGBits(double s) {
-                return s / C3;
-            }
-        },
-
-        MBITS {
-            @Override
-            public long toBytes(double s) {
-                return (long) toBytesFromBits(s);
-            }
-
-            @Override
-            public double toKBytes(double s) {
-                return toBytesFromBits(toKBits(s));
-            }
-
-            @Override
-            public double toMBytes(double s) {
-                return toBytesFromBits(toMBits(s));
-            }
-
-            @Override
-            public double toGBytes(double s) {
-                return toBytesFromBits(toGBits(s));
-            }
-
-            @Override
-            public long toBits(double s) {
-                return (long) (s * C2);
-            }
-
-            @Override
-            public double toKBits(double s) {
-                return s * C1;
-            }
-
-            @Override
-            public double toMBits(double s) {
-                return s;
-            }
-
-            @Override
-            public double toGBits(double s) {
-                return s / C1;
-            }
-        },
-
-        GBITS {
-            @Override
-            public long toBytes(double s) {
-                return (long) toBytesFromBits(s);
-            }
-
-            @Override
-            public double toKBytes(double s) {
-                return toBytesFromBits(toKBits(s));
-            }
-
-            @Override
-            public double toMBytes(double s) {
-                return toBytesFromBits(toMBits(s));
-            }
-
-            @Override
-            public double toGBytes(double s) {
-                return toBytesFromBits(toGBits(s));
-            }
-
-            @Override
-            public long toBits(double s) {
-                return (long) (s * C3);
-            }
-
-            @Override
-            public double toKBits(double s) {
-                return s * C2;
-            }
-
-            @Override
-            public double toMBits(double s) {
-                return s * C1;
-            }
-
-            @Override
-            public double toGBits(double s) {
-                return s;
-            }
-        };
-
-        public static final long C0 = 8;
-        public static final long C1 = 1024L;
-        public static final long C2 = C1 * 1024L;
-        public static final long C3 = C2 * 1024L;
-
-        public abstract long toBytes(double s);
-
-        public abstract double toKBytes(double s);
-
-        public abstract double toMBytes(double s);
-
-        public abstract double toGBytes(double s);
-
-        public abstract long toBits(double s);
-
-        public abstract double toKBits(double s);
-
-        public abstract double toMBits(double s);
-
-        public abstract double toGBits(double s);
-
-        public boolean isBits() {
-            return this == BITS || this == KBITS || this == MBITS || this == GBITS;
-        }
-
-        public boolean isBytes() {
-            return this == BYTES || this == KBYTES || this == MBYTES || this == GBYTES;
-        }
-
-        public static double toBitsFromBytes(double s) {
-            return s * C0;
-        }
-
-        public static double toBytesFromBits(double s) {
-            return s / C0;
-        }
-
-        public static double convert(long what, @NonNull SizeUnit from, @NonNull SizeUnit to) {
-            final double result;
-            switch (to) {
-                case BITS:
-                    result = from.toBits(what);
-                    break;
-                case BYTES:
-                    result = from.toBytes(what);
-                    break;
-                case KBITS:
-                    result = from.toKBits(what);
-                    break;
-                case KBYTES:
-                    result = from.toKBytes(what);
-                    break;
-                case MBITS:
-                    result = from.toMBits(what);
-                    break;
-                case MBYTES:
-                    result = from.toMBytes(what);
-                    break;
-                case GBITS:
-                    result = from.toGBits(what);
-                    break;
-                case GBYTES:
-                    result = from.toGBytes(what);
-                    break;
-                default:
-                    result = 0f;
-                    break;
-            }
-            return result;
-        }
     }
 
 

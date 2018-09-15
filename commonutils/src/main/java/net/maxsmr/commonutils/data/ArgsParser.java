@@ -2,31 +2,115 @@ package net.maxsmr.commonutils.data;
 
 import android.support.v4.util.Pair;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedHashSet;
+import java.util.List;
+import java.util.Set;
 
-public class ArgsParser {
+public final class ArgsParser {
 
-    public static Pair<Integer, String> findArg(String[] argsNames, String[] args, int index) {
-        return findArg(argsNames, args, index, false);
+    private final Set<Integer> handledArgsIndexes = new LinkedHashSet<>();
+
+    private final Set<String> argsNames;
+
+    private final List<String> args = new ArrayList<>();
+
+    public ArgsParser(String... argsNames) {
+        this.argsNames = argsNames != null ? new LinkedHashSet<>(Arrays.asList(argsNames)) : Collections.emptySet();
     }
 
-    public static Pair<Integer, String> findArg(String[] argsNames, String[] args, int index, boolean ignoreCase) {
-        if (argsNames == null || argsNames.length == 0) {
-            throw new IllegalArgumentException("Incorrect args names: " + Arrays.toString(argsNames));
+    public void setArgs(String... args) {
+        setArgs(args != null ? Arrays.asList(args) : null);
+    }
+
+    public void setArgs(List<String> args) {
+        this.args.clear();
+        if (args != null) {
+            this.args.addAll(args);
         }
-        if (index < 0 || index >= argsNames.length) {
+        handledArgsIndexes.clear();
+    }
+
+    public String findArg(int index, boolean ignoreCase) {
+        Pair<Integer, String> arg = findArgWithIndex(index, ignoreCase);
+        return arg != null ? arg.second : null;
+    }
+
+    public String getPairArg(Pair<Integer, String> pair) {
+        Pair<Integer, String> arg = getPairArgWithIndex(pair);
+        return arg != null ? arg.second : null;
+    }
+
+    public Pair<Integer, String> findArgWithIndex(int index, boolean ignoreCase) {
+        Pair<Integer, String> arg = findArgWithIndex(argsNames, args, index, ignoreCase);
+        if (arg != null && arg.first != null) {
+            handledArgsIndexes.add(arg.first);
+        }
+        return arg;
+    }
+
+    public Pair<Integer, String> getPairArgWithIndex(Pair<Integer, String> pair) {
+        Pair<Integer, String> arg = getPairArgWithIndex(args, pair);
+        if (arg != null) {
+            handledArgsIndexes.add(arg.first);
+        }
+        return arg;
+    }
+
+    public Set<Integer> getUnhandledArgsIndexes() {
+        Set<Integer> result = new LinkedHashSet<>();
+        for (int i = 0; i < args.size(); i++) {
+            int finalIndex = i;
+            if (!Predicate.Methods.contains(handledArgsIndexes, element -> element != null && element == finalIndex)) {
+                result.add(finalIndex);
+            }
+        }
+        return result;
+    }
+
+    public static Pair<Integer, String> findArgWithIndex(Collection<String> argsNames, String[] args, int index) {
+        return findArgWithIndex(argsNames, args != null? Arrays.asList(args) : null, index);
+    }
+
+    public static Pair<Integer, String> findArgWithIndex(Collection<String> argsNames, String[] args, int index, boolean ignoreCase) {
+        return findArgWithIndex(argsNames, args != null? Arrays.asList(args) : null, index, ignoreCase);
+    }
+
+    public static Pair<Integer, String> findArgWithIndex(Collection<String> argsNames, Collection<String> args, int index) {
+        return findArgWithIndex(argsNames, args, index, false);
+    }
+
+    public static Pair<Integer, String> findArgWithIndex(Collection<String> argsNames, Collection<String> args, int index, boolean ignoreCase) {
+        if (argsNames == null || argsNames.isEmpty()) {
+            throw new IllegalArgumentException("Incorrect args names: " + argsNames);
+        }
+        if (index < 0 || index >= argsNames.size()) {
             throw new IllegalArgumentException("Incorrect arg name index: " + index);
         }
-        return args != null?
-                Predicate.Methods.findWithIndex(Arrays.asList(args), element -> element != null && (ignoreCase? element.equalsIgnoreCase(argsNames[index]) : element.equals(argsNames[index])))
+        Set<String> argsNamesSet = argsNames instanceof Set ? (Set<String>) argsNames : new LinkedHashSet<>(argsNames);
+        List<String> argsNamesList = new ArrayList<>(argsNamesSet);
+        return args != null ?
+                Predicate.Methods.findWithIndex(args, element -> element != null && (ignoreCase ? element.equalsIgnoreCase(argsNamesList.get(index)) : element.equals(argsNamesList.get(index))))
                 : null;
     }
 
-    public static String getPairArg(String args[], Pair<Integer, String> pair) {
-        return args != null && pair != null && pair.first != null? getPairArg(args, pair.first) : null;
+    public static Pair<Integer, String> getPairArgWithIndex(String[] args, Pair<Integer, String> pair) {
+        return getPairArgWithIndex(args != null? Arrays.asList(args) : null, pair);
     }
 
-    public static String getPairArg(String args[], int index) {
-        return args != null && index < args.length - 1? args[index + 1] : null;
+    public static Pair<Integer, String> getPairArgWithIndex(String[] args, int index) {
+        return getPairArgWithIndex(args != null? Arrays.asList(args) : null, index);
+    }
+
+    public static Pair<Integer, String> getPairArgWithIndex(Collection<String> args, Pair<Integer, String> pair) {
+        return args != null && pair != null && pair.first != null ? getPairArgWithIndex(args, pair.first) : null;
+    }
+
+    public static Pair<Integer, String> getPairArgWithIndex(Collection<String> args, int index) {
+        List<String> argsList = args instanceof List? (List<String>) args : new ArrayList<>(args);
+        return index < argsList.size() - 1 ? new Pair<>(index + 1, argsList.get(index + 1)) : null;
     }
 }

@@ -258,11 +258,5 @@ public class FileHelperTest extends LoggerTest {
         System.out.println("result=" + result);
     }
 
-    @Test
-    public void sizeTest() {
-        String result = FileHelper.getSizeWithValue(context, context.getFilesDir().getParentFile(), FileHelper.DEPTH_UNLIMITED);
-        System.out.println("result=" + result);
-    }
-
 
 }
