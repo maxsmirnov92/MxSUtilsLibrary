@@ -10,13 +10,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public final class ArgsParser {
+public class ArgsParser {
 
-    private final Set<Integer> handledArgsIndexes = new LinkedHashSet<>();
+    protected final Set<Integer> handledArgsIndexes = new LinkedHashSet<>();
 
-    private final Set<String> argsNames;
+    protected final Set<String> argsNames;
 
-    private final List<String> args = new ArrayList<>();
+    protected final List<String> args = new ArrayList<>();
 
     public ArgsParser(String... argsNames) {
         this.argsNames = argsNames != null ? new LinkedHashSet<>(Arrays.asList(argsNames)) : Collections.emptySet();
@@ -111,6 +111,6 @@ public final class ArgsParser {
 
     public static Pair<Integer, String> getPairArgWithIndex(Collection<String> args, int index) {
         List<String> argsList = args instanceof List? (List<String>) args : new ArrayList<>(args);
-        return index < argsList.size() - 1 ? new Pair<>(index + 1, argsList.get(index + 1)) : null;
+        return !argsList.isEmpty() && index < argsList.size() - 1 ? new Pair<>(index + 1, argsList.get(index + 1)) : null;
     }
 }

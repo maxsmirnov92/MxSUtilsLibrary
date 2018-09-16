@@ -157,11 +157,13 @@ public class StringUtils {
 
     public static class CharacterMap {
 
+        @Nullable
         public final Character leftCh;
 
+        @Nullable
         public final Character rightCh;
 
-        public CharacterMap(Character leftCh, Character rightCh) {
+        public CharacterMap(@Nullable Character leftCh, @Nullable Character rightCh) {
             this.leftCh = leftCh;
             this.rightCh = rightCh;
         }
@@ -173,8 +175,6 @@ public class StringUtils {
         for (CharacterMap map : alphabet) {
             if (map != null) {
                 newAlphabet.add(new CharacterMap(map.leftCh != null ? Character.toLowerCase(map.leftCh) : null, map.rightCh != null ? Character.toLowerCase(map.rightCh) : null));
-            } else {
-                newAlphabet.add(null);
             }
         }
         return newAlphabet;
@@ -186,21 +186,22 @@ public class StringUtils {
         for (CharacterMap map : alphabet) {
             if (map != null) {
                 newAlphabet.add(new CharacterMap(map.leftCh != null ? Character.toUpperCase(map.leftCh) : null, map.rightCh != null ? Character.toUpperCase(map.rightCh) : null));
-            } else {
-                newAlphabet.add(null);
             }
         }
         return newAlphabet;
     }
 
+    @NonNull
     public static String trim(CharSequence cs) {
         return trim(cs, true, true);
     }
 
+    @NonNull
     public static String trim(CharSequence cs, boolean fromStart, boolean fromEnd) {
         return trim(cs, CompareUtils.Condition.LESS_OR_EQUAL, ' ', fromStart, fromEnd);
     }
 
+    @NonNull
     public static String trim(CharSequence cs, CompareUtils.Condition condition, char byChar, boolean fromStart, boolean fromEnd) {
 
         if (cs == null) {

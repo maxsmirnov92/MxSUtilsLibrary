@@ -143,7 +143,7 @@ public final class StreamUtils {
     @Nullable
     public static String readStringFromInputStream(InputStream is, int count, boolean closeInput) {
         Collection<String> strings = readStringsFromInputStream(is, count, closeInput);
-        return !strings.isEmpty() ? TextUtils.join(System.getProperty("line.separator"), strings.toArray(new String[strings.size()])) : null;
+        return !strings.isEmpty() ? TextUtils.join(System.getProperty("line.separator"), strings) : null;
     }
 
     @NonNull
