@@ -2,6 +2,7 @@ package net.maxsmr.commonutils.shell;
 
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
+import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
@@ -70,7 +71,7 @@ public class ShellWrapper {
             for (CommandInfo v : commandsMap.values()) {
                 if (v != null) {
                     v.result = null;
-                    v.startedThreads = null;
+                    v.startedThreads = new LinkedHashMap<>();
                 }
             }
             commandsMap.clear();
@@ -170,14 +171,18 @@ public class ShellWrapper {
 
             @Override
             public void onThreadStarted(@NonNull ShellUtils.CmdThreadInfo info, @NonNull Thread thread) {
-                commandInfo.getStartedThreads();
-                commandInfo.startedThreads.put(info, thread);
+                synchronized (commandInfo) {
+                    commandInfo.getStartedThreads();
+                    commandInfo.startedThreads.put(info, thread);
+                }
             }
 
             @Override
             public void onThreadFinished(@NonNull ShellUtils.CmdThreadInfo info, @NonNull Thread thread) {
-                commandInfo.getStartedThreads();
-                commandInfo.startedThreads.remove(info);
+                synchronized (commandInfo) {
+                    commandInfo.getStartedThreads();
+                    commandInfo.startedThreads.remove(info);
+                }
             }
         });
 
@@ -192,7 +197,7 @@ public class ShellWrapper {
     }
 
     public static String getShellPath(String path) {
-        if (EMULATED_STORAGE_SOURCE != null && EMULATED_STORAGE_TARGET != null
+        if (!TextUtils.isEmpty(path) && EMULATED_STORAGE_SOURCE != null && EMULATED_STORAGE_TARGET != null
                 && path.startsWith(EMULATED_STORAGE_TARGET)) {
             path = EMULATED_STORAGE_SOURCE + path.substring(EMULATED_STORAGE_TARGET.length());
         }
@@ -203,7 +208,7 @@ public class ShellWrapper {
         String result = System.getenv(variable);
         if (result != null) {
             result = FileHelper.getCanonicalPath(new File(result));
-            if (!result.endsWith("/")) {
+            if (!TextUtils.isEmpty(result) && !result.endsWith("/")) {
                 result += "/";
             }
         }
@@ -215,7 +220,8 @@ public class ShellWrapper {
         @NonNull
         private final List<String> commandsToRun;
 
-        private Map<ShellUtils.CmdThreadInfo, Thread> startedThreads;
+        @NonNull
+        private Map<ShellUtils.CmdThreadInfo, Thread> startedThreads = new LinkedHashMap<>();
 
         @Nullable
         private CommandResult result;
@@ -225,8 +231,8 @@ public class ShellWrapper {
         }
 
         public CommandInfo(@NonNull CommandInfo info) {
-            this.commandsToRun = info.commandsToRun;
-            this.startedThreads = info.startedThreads;
+            this.commandsToRun = new ArrayList<>(info.commandsToRun);
+            this.startedThreads = new LinkedHashMap<>(info.startedThreads);
             this.result = info.result;
         }
 
@@ -239,10 +245,8 @@ public class ShellWrapper {
             return Predicate.Methods.contains(getStartedThreads().values(), e -> e != null && e.isAlive());
         }
 
+        @NonNull
         public Map<ShellUtils.CmdThreadInfo, Thread> getStartedThreads() {
-            if (startedThreads == null) {
-                startedThreads = new LinkedHashMap<>();
-            }
             return new LinkedHashMap<>(startedThreads);
         }
 

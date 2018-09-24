@@ -481,7 +481,7 @@ public final class FileHelper {
         return null;
     }
 
-    public static File renameTo(File sourceFile, String destinationDir, String newFileName, boolean deleteIfExists, boolean deleteEmptyDirs) {
+    public static File renameFile(File sourceFile, String destinationDir, String newFileName, boolean deleteIfExists, boolean deleteEmptyDirs) {
 
         if (!isFileExists(sourceFile)) {
             logger.e("Source file not exists: " + sourceFile);
@@ -499,30 +499,37 @@ public final class FileHelper {
         if (newDir != null) {
             newFile = new File(newDir, newFileName);
 
-            if (isFileExists(newFile)) {
-                logger.i("Target file " + newFile + " already exists");
-                if (deleteIfExists) {
-                    if (!deleteFile(newFile)) {
-                        logger.e("Delete file " + newFile + " failed");
+            if (!CompareUtils.objectsEqual(newFile, sourceFile)) {
+
+                if (isFileExists(newFile)) {
+                    logger.d("Target file " + newFile + " already exists");
+                    if (deleteIfExists) {
+                        if (!deleteFile(newFile)) {
+                            logger.e("Delete file " + newFile + " failed");
+                            newFile = null;
+                        }
+                    } else {
+                        logger.w("Not deleting existing file " + newFile);
                         newFile = null;
                     }
-                } else {
-                    newFile = null;
                 }
+
+                if (newFile != null) {
+                    logger.d("Renaming file " + sourceFile + " to " + newFile + "...");
+                    if (sourceFile.renameTo(newFile)) {
+                        logger.d("File " + sourceFile + " renamed successfully to " + newFile);
+                        File sourceParentDir = sourceFile.getParentFile();
+                        if (deleteEmptyDirs) {
+                            deleteEmptyDir(sourceParentDir);
+                        }
+                    } else {
+                        logger.e("File " + sourceFile + " rename failed to " + newFile);
+                    }
+                }
+            } else {
+                logger.e("New file " + newFile + " is same as source file");
             }
 
-            if (newFile != null && !newFile.equals(sourceFile)) {
-                logger.i("Renaming file " + sourceFile + " to " + newFile + "...");
-                if (sourceFile.renameTo(newFile)) {
-                    logger.i("File " + sourceFile + " renamed successfully to " + newFile);
-                    File sourceParentDir = sourceFile.getParentFile();
-                    if (deleteEmptyDirs) {
-                        deleteEmptyDir(sourceParentDir);
-                    }
-                } else {
-                    logger.e("File " + sourceFile + " rename failed to " + newFile);
-                }
-            }
         } else {
             logger.e("Create new dir: " + destinationDir + " failed");
         }
@@ -1711,7 +1718,7 @@ public final class FileHelper {
 
         String targetName = TextUtils.isEmpty(destName) ? sourceFile.getName() : destName;
 
-        File destFile = destDir != null && !TextUtils.isEmpty(targetName)? new File(destDir, targetName) : null;
+        File destFile = destDir != null && !TextUtils.isEmpty(targetName) ? new File(destDir, targetName) : null;
 
         if (destFile == null || destFile.equals(sourceFile)) {
             logger.e("Incorrect destination file: " + destDir + " (source file: " + sourceFile + ")");
