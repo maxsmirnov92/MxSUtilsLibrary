@@ -79,27 +79,35 @@ public final class DeviceUtils {
         return wakeLock != null && wakeLock.isHeld();
     }
 
-    @SuppressWarnings("deprecation")
-    public static boolean acquireWakeLockDefault(@NonNull Context context, @NonNull String name, long timeoutMillis) {
+    @Nullable
+    public static PowerManager.WakeLock acquireWakeLockDefault(@NonNull Context context, @NonNull String name, long timeoutMillis) {
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         if (pm == null) {
             throw new RuntimeException(PowerManager.class.getSimpleName() + " is null");
         }
-        return acquireWakeLock(context, pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager.ACQUIRE_CAUSES_WAKEUP | PowerManager.ON_AFTER_RELEASE, name), timeoutMillis);
+        PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager
+                .ACQUIRE_CAUSES_WAKEUP | PowerManager
+                .ON_AFTER_RELEASE, name);
+        return acquireWakeLock(context, wakeLock, timeoutMillis)? wakeLock : null;
     }
 
+    @SuppressLint("WakelockTimeout")
     public static boolean acquireWakeLock(@NonNull Context context, @Nullable PowerManager.WakeLock wakeLock, long timeoutMillis) {
-        if (!isWakeLockHeld(wakeLock)) {
+        if (wakeLock != null && !isWakeLockHeld(wakeLock)) {
             // Even if we have the permission, some devices throw an exception in the try block nonetheless,
             // I'm looking at you, Samsung SM-T805
 
             try {
-                wakeLock.acquire(timeoutMillis);
+                if (timeoutMillis > 0) {
+                    wakeLock.acquire(timeoutMillis);
+                } else {
+                    wakeLock.acquire();
+                }
                 return true;
             } catch (Exception e) {
                 // saw an NPE on rooted Galaxy Nexus Android 4.1.1
                 // android.os.IPowerManager$Stub$Proxy.acquireWakeLock(IPowerManager.java:288)
-                logger.e("an Exception occurred during acquire()", e);
+                logger.e("an Exception occurred during acquire(): " + e.getMessage(), e);
             }
         }
         return false;
@@ -112,7 +120,7 @@ public final class DeviceUtils {
             }
         } catch (Exception e) {
             // just to make sure if the PowerManager crashes while acquiring a wake lock
-            logger.e("an Exception occurred during release()", e);
+            logger.e("an Exception occurred during release(): " + e.getMessage(), e);
         }
     }
 
