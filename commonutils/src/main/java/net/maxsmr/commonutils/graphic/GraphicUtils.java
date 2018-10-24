@@ -174,7 +174,7 @@ public final class GraphicUtils {
     public static Bitmap makePreviewFromVideoFile(File videoFile, int gridSize, boolean writeDuration) {
         logger.d("makePreviewFromVideoFile, videoFile=" + videoFile + ", gridSize=" + gridSize);
 
-        if (!(FileHelper.isFileCorrect(videoFile) && FileHelper.isVideo(FileHelper.getFileExtension(videoFile.getName())))) {
+        if (canDecodeVideo(videoFile)) {
             logger.e("incorrect video file");
             return null;
         }
@@ -484,7 +484,7 @@ public final class GraphicUtils {
     @Nullable
     public static Bitmap createBitmapFromFile(File file, int scale, @Nullable Bitmap.Config config) {
 
-        if (!FileHelper.isFileCorrect(file) || !FileHelper.isPicture(FileHelper.getFileExtension(file.getName()))) {
+        if (!canDecodeImage(file)) {
             logger.e("incorrect file: " + file);
             return null;
         }
@@ -568,7 +568,8 @@ public final class GraphicUtils {
     @Nullable
     public static Bitmap createBitmapFromResource(Context context, @DrawableRes int resId, int scale, @Nullable Bitmap.Config config) {
 
-        if (resId <= 0) {
+        if (resId == 0) {
+            logger.e("resId is not specified");
             return null;
         }
 
@@ -629,7 +630,7 @@ public final class GraphicUtils {
     }
 
     public static boolean canDecodeImage(File file) {
-        if (!FileHelper.isFileCorrect(file) || !FileHelper.isPicture(FileHelper.getFileExtension(file.getName()))) {
+        if (!FileHelper.isFileCorrect(file)) {
             return false;
         }
         BitmapFactory.Options options = new BitmapFactory.Options();
@@ -639,10 +640,7 @@ public final class GraphicUtils {
     }
 
     public static boolean canDecodeVideo(File file) {
-        if (!FileHelper.isFileCorrect(file) || !FileHelper.isVideo(FileHelper.getFileExtension(file.getName()))) {
-            return false;
-        }
-        return MetadataRetriever.extractMediaDuration(file) > 0;
+        return FileHelper.isFileCorrect(file) && MetadataRetriever.extractMediaDuration(file) > 0;
     }
 
     /**
