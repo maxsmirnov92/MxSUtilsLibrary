@@ -4,12 +4,18 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class IdHolder {
 
+    public static final int NO_ID = -1;
+
     private final AtomicInteger lastId ;
 
     private final int initialValue;
 
     public IdHolder(int initialValue) {
        lastId = new AtomicInteger(this.initialValue = initialValue);
+    }
+
+    public IdHolder(@NonNull IdHolder idHolder) {
+        this(idHolder.initialValue);
     }
 
     public int get() {

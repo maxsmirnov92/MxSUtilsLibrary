@@ -7,9 +7,11 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
+import android.net.Uri;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
+import android.webkit.MimeTypeMap;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -32,11 +34,14 @@ public final class AppUtils {
         throw new AssertionError("no instances");
     }
 
+    public static boolean isPackageInstalled(@NonNull Context context, String packageName) {
+        return getApplicationInfo(context, packageName) != null;
+    }
+
     @Nullable
     public static ApplicationInfo getApplicationInfo(@NonNull Context context, String packageName) {
         return getApplicationInfo(context, packageName, 0);
     }
-
 
     @Nullable
     public static ApplicationInfo getApplicationInfo(@NonNull Context context, String packageName, int flags) {
@@ -60,7 +65,6 @@ public final class AppUtils {
             try {
                 return packageManager.getPackageInfo(packageName, flags);
             } catch (PackageManager.NameNotFoundException e) {
-                logger.e("a NameNotFoundException occurred during getPackageInfo(): " + e.getMessage(), e);
             }
         }
         return null;
@@ -75,18 +79,9 @@ public final class AppUtils {
     public static PackageInfo getArchivePackageInfo(@NonNull Context context, File apkFile, int flags) {
         if (FileHelper.isFileCorrect(apkFile)) {
             PackageManager packageManager = context.getPackageManager();
-            return packageManager.getPackageArchiveInfo(apkFile.getAbsolutePath(), 0);
+            return packageManager.getPackageArchiveInfo(apkFile.getAbsolutePath(), flags);
         }
         return null;
-    }
-
-    /**
-     * @return {@linkplain Intent} only if given apk file is installed
-     */
-    @Nullable
-    public static Intent getArchiveLaunchIntentForPackage(@NonNull Context context, File apkFile) {
-        PackageInfo packageInfo = getArchivePackageInfo(context, apkFile);
-        return packageInfo != null ? getLaunchIntentForPackage(context, packageInfo.packageName) : null;
     }
 
     @Nullable
@@ -100,6 +95,35 @@ public final class AppUtils {
             }
         }
         return null;
+    }
+
+    /**
+     * @return {@linkplain Intent} only if given apk file is installed
+     * */
+    @Nullable
+    public static Intent getArchiveLaunchIntentForPackage(@NonNull Context context, File apkFile) {
+        PackageInfo packageInfo = getArchivePackageInfo(context, apkFile);
+        return packageInfo != null? getLaunchIntentForPackage(context, packageInfo.packageName) : null;
+    }
+
+    @Nullable
+    public static Intent getSelfLaunchIntentForPackage(@NonNull Context context) {
+        return getLaunchIntentForPackage(context, context.getPackageName());
+    }
+
+    @Nullable
+    public static Intent getViewFileIntent(@NonNull Context context, @Nullable File file) {
+        Intent result = null;
+        if (file != null) {
+            result = new Intent(Intent.ACTION_VIEW);
+            String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(FileHelper.getFileExtension(file));
+            result.setDataAndType(Uri.fromFile(file), mimeType);
+            result.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            if (!canHandleActivityIntent(context, result)) {
+                result = null;
+            }
+        }
+        return result;
     }
 
     public static boolean canHandleActivityIntent(@NonNull Context context, @Nullable Intent intent) {

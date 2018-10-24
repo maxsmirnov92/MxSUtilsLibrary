@@ -789,8 +789,30 @@ public final class GuiUtils {
         return getScreenType(con) == DeviceType.TABLET;
     }
 
+
     public static boolean isEnterKeyPressed(KeyEvent event, int actionId) {
         return event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_NULL;
+    }
+
+    public static void showAboveLockscreen(@NonNull Window window, boolean wakeScreen) {
+        toggleAboveLockscreen(window, wakeScreen,true);
+    }
+
+    public static void hideAboveLockscreen(@NonNull Window window, boolean wakeScreen) {
+        toggleAboveLockscreen(window, wakeScreen, false);
+    }
+
+    private static void toggleAboveLockscreen(@NonNull Window window, boolean wakeScreen, boolean toggle) {
+        int flags = WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
+                WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED;
+        if (wakeScreen) {
+            flags |= WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+        }
+        if (toggle) {
+            window.addFlags(flags);
+        } else {
+            window.clearFlags(flags);
+        }
     }
 
     public enum DeviceType {

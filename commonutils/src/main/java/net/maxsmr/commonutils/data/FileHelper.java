@@ -68,10 +68,6 @@ public final class FileHelper {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(FileHelper.class);
 
-    public final static String[] IMAGES_EXTENSIONS = {"bmp", "jpg", "jpeg", "png"};
-
-    public final static String[] VIDEO_EXTENSIONS = {"3gp", "mp4", "mov", "mpg"};
-
     public final static int DEPTH_UNLIMITED = -1;
 
     private FileHelper() {
@@ -231,12 +227,8 @@ public final class FileHelper {
         return false;
     }
 
-    public static boolean isSizeCorrect(File file) {
-        return (file != null && file.length() > 0);
-    }
-
     public static boolean isFileCorrect(File file) {
-        return (file != null && file.isFile() && isSizeCorrect(file));
+        return isFileExists(file) && file.length() > 0;
     }
 
     public static boolean isFileExists(String fileName, String parentPath) {
@@ -265,19 +257,32 @@ public final class FileHelper {
         return false;
     }
 
-    public static boolean isDirExists(String dirPath) {
-
-        if (dirPath == null || dirPath.length() == 0) {
-            return false;
-        }
-
-        File dir = new File(dirPath);
-
-        return (dir.exists() && dir.isDirectory());
+    public static boolean isFileReadAccessible(@Nullable File file) {
+        return isFileExists(file) && file.canRead();
     }
 
-    public static boolean isDirExists(File dir) {
-        return dir != null && dir.exists() && dir.isDirectory();
+    public static boolean isFileWriteAccessible(@Nullable File file) {
+        return isFileExists(file) && file.canWrite();
+    }
+
+    public static boolean isDirExists(@Nullable File dir) {
+        return dir != null && isDirExists(dir.getAbsolutePath());
+    }
+
+    public static boolean isDirExists(@Nullable String dirPath) {
+        if (dirPath == null) {
+            return false;
+        }
+        File dir = new File(dirPath);
+        return dir.exists() && dir.isDirectory();
+    }
+
+    public static boolean isDirReadAccessible(@Nullable File dir) {
+        return isDirExists(dir) && dir.canRead();
+    }
+
+    public static boolean isDirWriteAccessible(@Nullable File dir) {
+        return isDirExists(dir) && dir.canWrite();
     }
 
     public static boolean isDirEmpty(File dir) {
@@ -408,9 +413,6 @@ public final class FileHelper {
         return createNewFile(fileName, parentPath, true);
     }
 
-    /**
-     * @return null if target file already exists and was not recreated
-     */
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Nullable
     public static File createNewFile(String fileName, String parentPath, boolean recreate) {
@@ -431,26 +433,27 @@ public final class FileHelper {
         try {
             created = parentDir.mkdirs();
         } catch (SecurityException e) {
-            logger.e("an Exception occurred", e);
+            logger.e("an Exception occurred during mkdirs(): " + e.getMessage());
         }
 
-        if (created || parentDir.exists() && parentDir.isDirectory()) {
+        if (created || isDirExists(parentDir)) {
 
             newFile = new File(parentDir, fileName);
 
-            if (newFile.exists() && newFile.isFile()) {
-                if (!recreate || !newFile.delete()) {
+            if (isFileExists(newFile)) {
+                if (recreate && !newFile.delete()) {
+                    logger.e("Cannot delete file: " + newFile);
                     newFile = null;
                 }
             }
 
-            if (newFile != null) {
+            if (recreate && newFile != null) {
                 try {
                     if (!newFile.createNewFile()) {
                         newFile = null;
                     }
                 } catch (IOException e) {
-                    logger.e("an Exception occurred", e);
+                    logger.e("an Exception occurred during createNewFile(): " + e.getMessage());
                     return null;
                 }
             }
@@ -524,6 +527,7 @@ public final class FileHelper {
                         }
                     } else {
                         logger.e("File " + sourceFile + " rename failed to " + newFile);
+                        newFile = null;
                     }
                 }
             } else {
@@ -922,26 +926,16 @@ public final class FileHelper {
         return true;
     }
 
-    public static boolean isPicture(String ext) {
-        for (String pictureExt : IMAGES_EXTENSIONS) {
-            if (pictureExt.equalsIgnoreCase(ext)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
-    public static boolean isVideo(String ext) {
-        for (String videoExt : VIDEO_EXTENSIONS) {
-            if (videoExt.equalsIgnoreCase(ext)) {
-                return true;
-            }
-        }
-        return false;
+    @NonNull
+    public static String getFileExtension(@Nullable File file) {
+        return getFileExtension(file != null? file.getName() : null);
     }
 
     @NonNull
-    public static String getFileExtension(String name) {
+    public static String getFileExtension(@Nullable String name) {
+        if (name == null) {
+            name = "";
+        }
         int index = name.lastIndexOf('.');
         return (index > 0 && index < name.length() - 1) ? name.substring(index + 1) : "";
     }

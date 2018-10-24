@@ -27,11 +27,6 @@ public abstract class BaseTagLoggerHolder extends BaseLoggerHolder {
 
     protected abstract BaseTagLogger createLogger(@NonNull Class<?> clazz);
 
-    @Override
-    public BaseTagLogger getLogger(Class<?> clazz) {
-        return (BaseTagLogger) super.getLogger(clazz);
-    }
-
     protected String getTag(Class clazz) {
         String tag = TAGS.get(clazz);
 

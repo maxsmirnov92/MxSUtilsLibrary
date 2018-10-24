@@ -53,8 +53,9 @@ public abstract class BaseLoggerHolder {
 
     /**
      * @param clazz object class to get/create logger for
-     */
-    public BaseLogger getLogger(Class<?> clazz) {
+     * */
+    @SuppressWarnings("unchecked")
+    public <L extends BaseLogger> L getLogger(Class<?> clazz) {
         if (clazz == null) {
             throw new IllegalArgumentException("clazz is null");
         }
@@ -74,7 +75,7 @@ public abstract class BaseLoggerHolder {
                     loggersMap.put(clazz, logger);
                 }
             }
-            return logger;
+            return (L) logger;
         }
     }
 
