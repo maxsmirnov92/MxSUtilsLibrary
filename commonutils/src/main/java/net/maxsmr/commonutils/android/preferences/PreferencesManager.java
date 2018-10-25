@@ -3,8 +3,8 @@ package net.maxsmr.commonutils.android.preferences;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.CompareUtils;
@@ -16,7 +16,7 @@ public class PreferencesManager {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(PreferencesManager.class);
 
-    @NonNull
+    @NotNull
     protected final Context context;
 
     protected final SharedPreferences preferences;
@@ -25,11 +25,11 @@ public class PreferencesManager {
     private final ChangeObservable changeObservable = new ChangeObservable();
 
 
-    public PreferencesManager(@NonNull Context ctx, @Nullable String preferencesName) {
+    public PreferencesManager(@NotNull Context ctx, @Nullable String preferencesName) {
         this(ctx, preferencesName, Context.MODE_PRIVATE);
     }
 
-    public PreferencesManager(@NonNull Context ctx, @Nullable String preferencesName, int mode) {
+    public PreferencesManager(@NotNull Context ctx, @Nullable String preferencesName, int mode) {
         if (!(mode == Context.MODE_PRIVATE || mode == Context.MODE_WORLD_READABLE || mode == Context.MODE_WORLD_WRITEABLE || mode == Context.MODE_APPEND)) {
             throw new IllegalArgumentException("incorrect mode value: " + mode);
         }
@@ -46,16 +46,16 @@ public class PreferencesManager {
         changeObservable.unregisterObserver(listener);
     }
 
-    public synchronized boolean hasKey(@NonNull String key) {
+    public synchronized boolean hasKey(@NotNull String key) {
         return preferences.contains(key);
     }
 
-    public synchronized <V> V getValue(@NonNull String key, @NonNull Class<V> clazz) {
+    public synchronized <V> V getValue(@NotNull String key, @NotNull Class<V> clazz) {
         return getValue(key, clazz, null);
     }
 
     @SuppressWarnings("unchecked")
-    public synchronized <V> V getValue(@NonNull String key, @NonNull Class<V> clazz, @Nullable V defaultValue) {
+    public synchronized <V> V getValue(@NotNull String key, @NotNull Class<V> clazz, @Nullable V defaultValue) {
         try {
             if (clazz.isAssignableFrom(String.class)) {
                 return (V) preferences.getString(key, (String) defaultValue);
@@ -80,7 +80,7 @@ public class PreferencesManager {
     /**
      * @return true if successfully committed
      */
-    public synchronized <V> boolean setValue(@NonNull String key, @Nullable V value) {
+    public synchronized <V> boolean setValue(@NotNull String key, @Nullable V value) {
         final V oldValue = value != null ? getValue(key, (Class<V>) value.getClass(), null) : null;
 
         final SharedPreferences.Editor editor = preferences.edit();
@@ -120,7 +120,7 @@ public class PreferencesManager {
     /**
      * @return true if successfully committed
      */
-    public synchronized boolean clearValue(@NonNull String key) {
+    public synchronized boolean clearValue(@NotNull String key) {
         boolean b = preferences.edit().remove(key).commit();
         if (b) {
             changeObservable.dispatchRemoved(preferencesName, key);

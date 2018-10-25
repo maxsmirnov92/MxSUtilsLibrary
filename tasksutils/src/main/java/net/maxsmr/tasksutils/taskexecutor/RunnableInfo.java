@@ -1,12 +1,13 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
 import android.os.AsyncTask;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.data.model.InstanceManager;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,7 +46,7 @@ public class RunnableInfo implements Serializable {
         this.name = !TextUtils.isEmpty(name)? name : getClass().getSimpleName();
     }
 
-    @NonNull
+    @NotNull
     public synchronized AsyncTask.Status getStatus() {
         if (status == null) {
             status = PENDING;
@@ -78,8 +79,8 @@ public class RunnableInfo implements Serializable {
         return InstanceManager.asByteArray(this);
     }
 
-    public void toOutputStream(@NonNull OutputStream outputStream) {
-        InstanceManager.toOutputStream(this, outputStream); // TODO return boolean
+    public boolean toOutputStream(@NotNull OutputStream outputStream) {
+        return InstanceManager.toOutputStream(this, outputStream);
     }
 
     @Override
@@ -104,7 +105,7 @@ public class RunnableInfo implements Serializable {
         return result;
     }
 
-    @NonNull
+    @NotNull
     public static <I extends RunnableInfo> List<Integer> idsFromInfos(@Nullable Collection<I> infos) {
         List<Integer> ids = new ArrayList<>();
         if (infos != null) {
@@ -125,7 +126,7 @@ public class RunnableInfo implements Serializable {
         return InstanceManager.fromInputStream(clazz, inputStream);
     }
 
-//    @NonNull
+//    @NotNull
 //    public static <I extends RunnableInfo> List<I> fromTaskRunnables(@Nullable Collection<? extends TaskRunnable<I, ?, ?>> tasks) {
 //        List<I> result = new ArrayList<>();
 //        if (tasks != null) {
@@ -143,7 +144,7 @@ public class RunnableInfo implements Serializable {
         return Predicate.Methods.find(from, element -> element != null && id == element.id);
     }
 
-    @NonNull
+    @NotNull
     public static <I extends RunnableInfo> List<I> filter(@Nullable final Collection<I> what, @Nullable final Collection<I> by, final boolean contains) {
         return Predicate.Methods.filter(what, element -> {
             I info = element != null? findRunnableInfoById(element.id, by) : null;
@@ -151,7 +152,7 @@ public class RunnableInfo implements Serializable {
         });
     }
 
-    @NonNull
+    @NotNull
     public static <I extends RunnableInfo> List<I> filter(@Nullable final Collection<I> what, final boolean isCancelled) {
         return Predicate.Methods.filter(what, element -> element != null && element.isCanceled() == isCancelled);
     }

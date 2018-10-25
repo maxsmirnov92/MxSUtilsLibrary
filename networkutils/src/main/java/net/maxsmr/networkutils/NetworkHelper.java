@@ -6,7 +6,7 @@ import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
@@ -58,7 +58,7 @@ public final class NetworkHelper {
         throw new AssertionError("no instances.");
     }
 
-    public static boolean isOnline(@NonNull Context context) {
+    public static boolean isOnline(@NotNull Context context) {
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (connectivityManager == null) {
             throw new RuntimeException(ConnectivityManager.class.getSimpleName() + " is null");
@@ -67,8 +67,8 @@ public final class NetworkHelper {
         return activeNetInfo != null && activeNetInfo.isConnected() && activeNetInfo.isAvailable();
     }
 
-    @NonNull
-    public static NetworkInfo.State getCurrentNetworkState(@NonNull Context context) {
+    @NotNull
+    public static NetworkInfo.State getCurrentNetworkState(@NotNull Context context) {
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         if (connectivityManager == null) {
             throw new RuntimeException(ConnectivityManager.class.getSimpleName() + " is null");
@@ -88,7 +88,7 @@ public final class NetworkHelper {
         return NetworkInfo.State.DISCONNECTED;
     }
 
-    public static int getActiveNetworkType(@NonNull Context context) {
+    public static int getActiveNetworkType(@NotNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
@@ -99,7 +99,7 @@ public final class NetworkHelper {
         return NETWORK_TYPE_NONE;
     }
 
-    public static int getActiveNetworkSubtype(@NonNull Context context) {
+    public static int getActiveNetworkSubtype(@NotNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
@@ -110,7 +110,7 @@ public final class NetworkHelper {
         return NETWORK_TYPE_NONE;
     }
 
-    public static String getActiveNetworkTypeHR(@NonNull Context context) {
+    public static String getActiveNetworkTypeHR(@NotNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
@@ -123,7 +123,7 @@ public final class NetworkHelper {
         }
     }
 
-    public static String getActiveNetworkSubtypeHR(@NonNull Context context) {
+    public static String getActiveNetworkSubtypeHR(@NotNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
@@ -340,7 +340,7 @@ public final class NetworkHelper {
         return (type == ConnectivityManager.TYPE_WIFI);
     }
 
-    public static boolean isWifiEnabled(@NonNull Context context) {
+    public static boolean isWifiEnabled(@NotNull Context context) {
         final WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wifiManager == null) {
             throw new RuntimeException(WifiManager.class.getSimpleName() + " is null");
@@ -349,7 +349,7 @@ public final class NetworkHelper {
     }
 
     @SuppressWarnings("ResourceType")
-    public static boolean enableWifiConnection(@NonNull Context context, boolean enable) {
+    public static boolean enableWifiConnection(@NotNull Context context, boolean enable) {
         final WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wifiManager == null) {
             throw new RuntimeException(WifiManager.class.getSimpleName() + " is null");
@@ -357,7 +357,7 @@ public final class NetworkHelper {
         return ContextCompat.checkSelfPermission(context, android.Manifest.permission.CHANGE_WIFI_STATE) == PackageManager.PERMISSION_GRANTED && wifiManager.setWifiEnabled(enable);
     }
 
-    public static boolean enableMobileDataConnection(@NonNull Context context, boolean enable) {
+    public static boolean enableMobileDataConnection(@NotNull Context context, boolean enable) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
 

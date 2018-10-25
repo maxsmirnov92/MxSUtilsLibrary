@@ -1,12 +1,13 @@
 package net.maxsmr.tasksutils.storage.sync.collection;
 
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -34,7 +35,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
     protected AbstractCollectionSyncStorage(
             @Nullable String storageDirPath, @Nullable String extension,
             Class<I> clazz,
-            boolean sync, int maxSize, @NonNull IAddRule<I> addRule, boolean startRestore) {
+            boolean sync, int maxSize, @NotNull IAddRule<I> addRule, boolean startRestore) {
         super(clazz, sync, maxSize, addRule);
         if (sync && !FileHelper.checkDirNoThrow(storageDirPath)) {
             throw new RuntimeException("incorrect queue dir path: " + storageDirPath);
@@ -154,8 +155,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
             FileOutputStream fos = null;
             try {
-                info.toOutputStream(fos = new FileOutputStream((new File(storageDirPath, infoFileName)), false));
-                return true;
+                return info.toOutputStream(fos = new FileOutputStream((new File(storageDirPath, infoFileName)), false));
             } catch (FileNotFoundException e) {
                 logger.e("a FileNotFoundException occurred: " + e.getMessage(), e);
             } finally {
@@ -193,7 +193,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
     protected boolean deleteAllSerializedRunnableInfos() {
         FileHelper.delete(Collections.singletonList(new File(storageDirPath)), false, null, null, new FileHelper.IDeleteNotifier() {
             @Override
-            public boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted, int currentLevel) {
+            public boolean onProcessing(@NotNull File current, @NotNull Set<File> deleted, int currentLevel) {
                 return true;
             }
 
@@ -220,8 +220,8 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
         return true;
     }
 
-    @NonNull
-    protected String getFileNameByInfo(@NonNull RunnableInfo info) {
+    @NotNull
+    protected String getFileNameByInfo(@NotNull RunnableInfo info) {
         return info.name + "_" + info.id + "." + extension;
     }
 
@@ -258,7 +258,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
     }
 
 //    @Override
-//    protected boolean checkRunnableInfo(@NonNull I info) {
+//    protected boolean checkRunnableInfo(@NotNull I info) {
 //        return FileHelper.isFileCorrect(info.getFile());
 //    }
 //

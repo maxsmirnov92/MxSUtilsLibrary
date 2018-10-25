@@ -3,7 +3,7 @@ package net.maxsmr.networkutils.loadutil.requests;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.CallSuper;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;
@@ -18,13 +18,13 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
 
     protected final int id;
 
-    @NonNull
+    @NotNull
     protected final NetworkLoadManager<B, LoadRunnableInfo<B>> manager;
 
     @Nullable
     private C callback;
 
-    public AbstractRequest(int id, @NonNull NetworkLoadManager<B, LoadRunnableInfo<B>> manager) {
+    public AbstractRequest(int id, @NotNull NetworkLoadManager<B, LoadRunnableInfo<B>> manager) {
         this.id = id;
         this.manager = manager;
     }
@@ -33,7 +33,7 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
         return id;
     }
 
-    @NonNull
+    @NotNull
     public NetworkLoadManager<B, LoadRunnableInfo<B>> getManager() {
         return manager;
     }
@@ -74,18 +74,18 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
         return null;
     }
 
-    @NonNull
+    @NotNull
     protected List<Integer> getAcceptableResponseCodes() {
         return defaultAcceptableResponseCodes();
     }
 
-    @NonNull
+    @NotNull
     protected abstract String getUrl();
 
-    @NonNull
+    @NotNull
     protected abstract LoadRunnableInfo.LoadSettings getLoadSettings();
 
-    @NonNull
+    @NotNull
     protected abstract LoadRunnableInfo.ContentType getContentType();
 
     @Nullable
@@ -132,7 +132,7 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
 
     public static class Callback<B extends LoadRunnableInfo.Body> implements LoadListener<LoadRunnableInfo<B>> {
 
-        @NonNull
+        @NotNull
         protected final Handler uiHandler = new Handler(Looper.getMainLooper());
 
         protected final int loadId;
@@ -170,11 +170,11 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
         }
 
         @Override
-        public int getId(@NonNull LoadRunnableInfo info) {
+        public int getId(@NotNull LoadRunnableInfo info) {
             return getId();
         }
 
-        @NonNull
+        @NotNull
         public STATE getLastState() {
             STATE lastState = lastLoadProcessInfo != null? lastLoadProcessInfo.getState() : STATE.UNKNOWN;
             if (lastState == STATE.UNKNOWN) {
@@ -221,13 +221,13 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
         }
 
         @Override
-        public long getProcessingNotifyInterval(@NonNull LoadRunnableInfo<B> info) {
+        public long getProcessingNotifyInterval(@NotNull LoadRunnableInfo<B> info) {
             return DEFAULT_PROCESSING_NOTIFY_INTERVAL;
         }
 
         @Override
         @CallSuper
-        public void onUpdateState(@NonNull final LoadRunnableInfo<B> loadInfo, @NonNull final NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
+        public void onUpdateState(@NotNull final LoadRunnableInfo<B> loadInfo, @NotNull final NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
 
             this.lastLoadRunnableInfo = loadInfo;
             this.lastLoadProcessInfo = loadProcessInfo;
@@ -342,7 +342,7 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
 
         @Override
         @CallSuper
-        public void onResponse(@NonNull LoadRunnableInfo<B> loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NonNull NetworkLoadManager.Response response) {
+        public void onResponse(@NotNull LoadRunnableInfo<B> loadInfo, @NotNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NotNull NetworkLoadManager.Response response) {
             lastResponse = response;
         }
 
@@ -360,7 +360,7 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
 
         }
 
-        protected void onProcessing(@NonNull NetworkLoadManager.LoadProcessInfo currentLoadProcessInfo) {
+        protected void onProcessing(@NotNull NetworkLoadManager.LoadProcessInfo currentLoadProcessInfo) {
 
         }
 
@@ -369,17 +369,17 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
         }
 
         @CallSuper
-        protected void onSuccess(@NonNull NetworkLoadManager.Response response, @NonNull NetworkLoadManager.LoadProcessInfo info) {
+        protected void onSuccess(@NotNull NetworkLoadManager.Response response, @NotNull NetworkLoadManager.LoadProcessInfo info) {
             onFinished();
         }
 
         @CallSuper
-        protected void onFailed(@Nullable NetworkLoadManager.Response response, @NonNull NetworkLoadManager.LoadProcessInfo info) {
+        protected void onFailed(@Nullable NetworkLoadManager.Response response, @NotNull NetworkLoadManager.LoadProcessInfo info) {
             onFinished();
         }
 
         @CallSuper
-        protected void onFailedAttempt(@Nullable NetworkLoadManager.Response response, @NonNull NetworkLoadManager.LoadProcessInfo info, int attemptsMade, int attemptsLeft) {
+        protected void onFailedAttempt(@Nullable NetworkLoadManager.Response response, @NotNull NetworkLoadManager.LoadProcessInfo info, int attemptsMade, int attemptsLeft) {
 
         }
 

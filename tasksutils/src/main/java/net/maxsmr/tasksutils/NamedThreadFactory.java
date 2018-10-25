@@ -1,6 +1,6 @@
 package net.maxsmr.tasksutils;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.text.TextUtils;
 
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
@@ -22,7 +22,7 @@ public class NamedThreadFactory implements ThreadFactory {
     }
 
     @Override
-    public Thread newThread(@NonNull Runnable r) {
+    public Thread newThread(@NotNull Runnable r) {
         return new Thread(r, r instanceof TaskRunnable? threadName + " :: " + ((TaskRunnable) r).rInfo.id : threadName + " :: " + threadId.getAndIncrement());
     }
 

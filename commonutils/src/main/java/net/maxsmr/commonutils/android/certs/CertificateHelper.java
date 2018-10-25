@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.android.certs;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.support.annotation.RawRes;
 import android.text.TextUtils;
 import android.util.Pair;
@@ -37,7 +37,7 @@ public final class CertificateHelper {
         throw new AssertionError("no instances.");
     }
 
-    public static Certificate generateCertificate(@NonNull Context context, @RawRes int certResId) throws RuntimeException {
+    public static Certificate generateCertificate(@NotNull Context context, @RawRes int certResId) throws RuntimeException {
         return generateCertificate(context.getResources().openRawResource(certResId));
     }
 
@@ -50,7 +50,7 @@ public final class CertificateHelper {
     }
 
     @Nullable
-    private static Certificate generateCertificate(@NonNull InputStream in) throws RuntimeException {
+    private static Certificate generateCertificate(@NotNull InputStream in) throws RuntimeException {
         try {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");
             Certificate certificate;
@@ -68,7 +68,7 @@ public final class CertificateHelper {
      * @param certificates first - alias, second - generated certificate
      * @return factory initialized specified keystore with initialized certificate entries
      */
-    public static TrustManagerFactory getTrustManagerFactory(@Nullable String keyStoreType, @NonNull Set<Pair<String, Certificate>> certificates) throws RuntimeException {
+    public static TrustManagerFactory getTrustManagerFactory(@Nullable String keyStoreType, @NotNull Set<Pair<String, Certificate>> certificates) throws RuntimeException {
         return getTrustManagerFactory(keyStoreType, null, null, certificates);
     }
 
@@ -79,7 +79,7 @@ public final class CertificateHelper {
      * @param certificates               first - alias, second - generated certificate
      * @return factory initialized specified keystore with initialized certificate entries
      */
-    public static TrustManagerFactory getTrustManagerFactory(@Nullable String keyStoreType, @Nullable InputStream keyStoreInitStream, @Nullable String keyStoreInitStreamPassword, @NonNull Set<Pair<String, Certificate>> certificates) throws RuntimeException {
+    public static TrustManagerFactory getTrustManagerFactory(@Nullable String keyStoreType, @Nullable InputStream keyStoreInitStream, @Nullable String keyStoreInitStreamPassword, @NotNull Set<Pair<String, Certificate>> certificates) throws RuntimeException {
         try {
 
             keyStoreType = TextUtils.isEmpty(keyStoreType) ? KeyStore.getDefaultType() : keyStoreType;
@@ -107,12 +107,12 @@ public final class CertificateHelper {
         }
     }
 
-    @NonNull
+    @NotNull
     public static Set<Pair<String, Certificate>> retrieveKeyStoreCertificates(String keystoreType) throws RuntimeException {
         return retrieveKeyStoreCertificates(keystoreType, null, null);
     }
 
-    @NonNull
+    @NotNull
     public static Set<Pair<String, Certificate>> retrieveKeyStoreCertificates(String keystoreType, @Nullable InputStream keyStoreInitStream, @Nullable String keyStoreInitStreamPassword) throws RuntimeException {
 
         if (TextUtils.isEmpty(keystoreType)) {

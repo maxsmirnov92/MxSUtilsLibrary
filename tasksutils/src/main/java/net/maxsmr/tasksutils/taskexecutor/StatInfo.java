@@ -1,6 +1,6 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -8,17 +8,17 @@ import java.util.List;
 
 public class StatInfo<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
 
-    @NonNull
+    @NotNull
     private final List<ExecInfo<I, ProgressInfo, Result, T>> execInfos = new ArrayList<>();
 
-    @NonNull
+    @NotNull
     private final T taskRunnable;
 
-    public StatInfo(@NonNull T taskRunnable) {
+    public StatInfo(@NotNull T taskRunnable) {
         this.taskRunnable = taskRunnable;
     }
 
-    @NonNull
+    @NotNull
     public T getTaskRunnable() {
         return taskRunnable;
     }
@@ -31,7 +31,7 @@ public class StatInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
         return Collections.unmodifiableList(execInfos);
     }
 
-    void addExecInfo(@NonNull ExecInfo<I, ProgressInfo, Result, T> execInfo) {
+    void addExecInfo(@NotNull ExecInfo<I, ProgressInfo, Result, T> execInfo) {
         execInfos.add(execInfo);
     }
 

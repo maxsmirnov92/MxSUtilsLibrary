@@ -1,6 +1,6 @@
 package net.maxsmr.networkutils.loadutil.managers.base;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -31,15 +31,15 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
 
     private boolean isReleased = false;
 
-    @NonNull
+    @NotNull
     protected final NetworkLoadManager<B, LI> loadManager;
 
-    @NonNull
+    @NotNull
     protected final QueueSyncStorage<LI> uploadStorage;
 
     private final ScheduledThreadPoolExecutorManager uploadListSynchronizer = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, getClass().getSimpleName() + "Synchronizer");
 
-    public BaseStorageNetworkLoadManager(@NonNull NetworkLoadManager<B, LI> loadManager, @NonNull Class<LI> clazzInstance, String path) {
+    public BaseStorageNetworkLoadManager(@NotNull NetworkLoadManager<B, LI> loadManager, @NotNull Class<LI> clazzInstance, String path) {
         logger.d("BaseStorageNetworkLoadManager(), loadManager=" + loadManager + ", clazzInstance=" + clazzInstance + ", path=" + path);
         this.uploadStorage = new QueueSyncStorage<>(path, "dat", clazzInstance, true,
                 MAX_SIZE_UNLIMITED, new AbstractSyncStorage.IAddRule<LI>() {
@@ -127,7 +127,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
         return uploadStorage.isRestoreCompleted();
     }
 
-    @NonNull
+    @NotNull
     public final List<LI> getStorageList() {
         if (!isStorageRestoreCompleted()) {
             throw new IllegalStateException("storage restore is not completed");
@@ -163,12 +163,12 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
     }
 
     @Override
-    public long getProcessingNotifyInterval(@NonNull LoadRunnableInfo loadInfo) {
+    public long getProcessingNotifyInterval(@NotNull LoadRunnableInfo loadInfo) {
         return LoadListener.DEFAULT_PROCESSING_NOTIFY_INTERVAL;
     }
 
     @Override
-    public void onUpdateState(@NonNull LI loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
+    public void onUpdateState(@NotNull LI loadInfo, @NotNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
         STATE state = loadProcessInfo.getState();
         switch (state) {
             case CANCELLED:
@@ -185,7 +185,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
     }
 
     @Override
-    public void onResponse(@NonNull LI loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NonNull NetworkLoadManager.Response response) {
+    public void onResponse(@NotNull LI loadInfo, @NotNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NotNull NetworkLoadManager.Response response) {
         logger.d("onResponse(), loadInfo=" + loadInfo + ", loadProcessInfo=" + loadProcessInfo + ", response=" + response);
     }
 
@@ -228,7 +228,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
         }
     }
 
-    protected boolean handleStorageSynchronize(@NonNull List<LI> infos) {
+    protected boolean handleStorageSynchronize(@NotNull List<LI> infos) {
         return false;
     }
 

@@ -1,6 +1,6 @@
 package net.maxsmr.tasksutils.storage.sync.collection;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
@@ -21,7 +21,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
      */
     public QueueSyncStorage( @Nullable String storageDirPath, @Nullable String extension,
                            Class<I> clazz,
-                           boolean sync, int maxSize, @NonNull IAddRule<I> addRule, boolean startRestore) {
+                           boolean sync, int maxSize, @NotNull IAddRule<I> addRule, boolean startRestore) {
         super(storageDirPath, extension, clazz, sync, maxSize, addRule, startRestore);
     }
 
@@ -34,7 +34,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
     }
 
     @Override
-    @NonNull
+    @NotNull
     public synchronized Iterator<I> iterator() {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
@@ -44,7 +44,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
 
     /** copy of queue */
     @Override
-    @NonNull
+    @NotNull
     public synchronized List<I> getAll() {
 
         if (isDisposed()) {
@@ -125,7 +125,7 @@ public class QueueSyncStorage<I extends RunnableInfo> extends AbstractCollection
     }
 
     @Override
-    protected boolean setInternal(@NonNull I info, int index) {
+    protected boolean setInternal(@NotNull I info, int index) {
         throw new UnsupportedOperationException("setting element at specified position is not supported");
     }
 

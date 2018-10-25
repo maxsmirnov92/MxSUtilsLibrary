@@ -2,8 +2,8 @@ package net.maxsmr.commonutils.android.processmanager;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 
 import net.maxsmr.commonutils.android.AppUtils;
@@ -26,11 +26,11 @@ public class LollipopProcessManager extends AbstractProcessManager {
 
     private static final Pattern PACKAGE_PATTERN = Pattern.compile("^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+[0-9a-z_]$");
 
-    public LollipopProcessManager(@NonNull Context context) {
+    public LollipopProcessManager(@NotNull Context context) {
         super(context);
     }
 
-    @NonNull
+    @NotNull
     @Override
     public List<ProcessInfo> getProcesses(boolean includeSystemPackages) {
         CommandResult commandResult = ShellUtils.execProcess(Arrays.asList("toolbox", "ps", "-P"), null, null, null);
@@ -44,7 +44,7 @@ public class LollipopProcessManager extends AbstractProcessManager {
         return parsePsOutput(commandResult.getStdOutLines(), includeSystemPackages);
     }
 
-    private List<ProcessInfo> parsePsOutput(@NonNull List<String> output, boolean includeSystemPackages) {
+    private List<ProcessInfo> parsePsOutput(@NotNull List<String> output, boolean includeSystemPackages) {
         List<ProcessInfo> processes = new ArrayList<>();
 
         if (output.size() < 2) {
@@ -76,7 +76,7 @@ public class LollipopProcessManager extends AbstractProcessManager {
     }
 
     @Nullable
-    private ProcessInfo parseProcessInfoLine(@NonNull String outputLine) {
+    private ProcessInfo parseProcessInfoLine(@NotNull String outputLine) {
         String[] fields = outputLine.split("\\s+");
 
         if (fields.length != 10) {

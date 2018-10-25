@@ -1,7 +1,7 @@
 package net.maxsmr.networkutils.monitor;
 
 import android.net.TrafficStats;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Observable;
@@ -30,7 +30,7 @@ public final class NetworkStatsMonitor {
         manager.addRunnableTask(new NetworkStatsUpdateRunnable());
     }
 
-    public void addNetworkStatsListener(@NonNull NetworkStatsListener listener) {
+    public void addNetworkStatsListener(@NotNull NetworkStatsListener listener) {
         networkStatsListeners.registerObserver(listener);
     }
 
@@ -118,7 +118,7 @@ public final class NetworkStatsMonitor {
 
     private static class NetworkStatsObservable extends Observable<NetworkStatsListener> {
 
-        private void notifyUpdate(@NonNull NetworkTrafficStats stats) {
+        private void notifyUpdate(@NotNull NetworkTrafficStats stats) {
             synchronized (observers) {
                 for (NetworkStatsListener l : observers) {
                     l.onUpdateNetworkTrafficStats(stats);

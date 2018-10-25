@@ -2,7 +2,7 @@ package net.maxsmr.commonutils.android.notification;
 
 import android.content.Intent;
 import android.support.annotation.DrawableRes;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
 

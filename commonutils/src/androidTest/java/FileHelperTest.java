@@ -1,12 +1,12 @@
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.test.InstrumentationRegistry;
 import android.support.test.runner.AndroidJUnit4;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -39,7 +39,7 @@ public class FileHelperTest extends LoggerTest {
         destinationDir = new File(context.getFilesDir(), DEST_NAME);
         FileHelper.delete(destinationDir, true, null, null, new FileHelper.IDeleteNotifier() {
             @Override
-            public boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted, int currentLevel) {
+            public boolean onProcessing(@NotNull File current, @NotNull Set<File> deleted, int currentLevel) {
                 return true;
             }
 
@@ -83,18 +83,18 @@ public class FileHelperTest extends LoggerTest {
     public void testGet() {
         Set<File> result = FileHelper.getFiles(sourceDir, FileHelper.GetMode.ALL, null, new FileHelper.IGetNotifier() {
             @Override
-            public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
+            public boolean onProcessing(@NotNull File current, @NotNull Set<File> collected, int currentLevel) {
                 System.out.println("current=" + current + ", currentLevel=" + currentLevel);
                 return true;
             }
 
             @Override
-            public boolean onGetFile(@NonNull File file) {
+            public boolean onGetFile(@NotNull File file) {
                 return true;
             }
 
             @Override
-            public boolean onGetFolder(@NonNull File folder) {
+            public boolean onGetFolder(@NotNull File folder) {
                 return true;
             }
         }, FileHelper.DEPTH_UNLIMITED);
@@ -109,18 +109,18 @@ public class FileHelperTest extends LoggerTest {
                 new FileHelper.IGetNotifier() {
 
                     @Override
-                    public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
+                    public boolean onProcessing(@NotNull File current, @NotNull Set<File> collected, int currentLevel) {
                         System.out.println("current=" + current + ", currentLevel=" + currentLevel);
                         return true;
                     }
 
                     @Override
-                    public boolean onGetFile(@NonNull File file) {
+                    public boolean onGetFile(@NotNull File file) {
                         return true;
                     }
 
                     @Override
-                    public boolean onGetFolder(@NonNull File folder) {
+                    public boolean onGetFolder(@NotNull File folder) {
                         return true;
                     }
                 }, 1);
@@ -135,18 +135,18 @@ public class FileHelperTest extends LoggerTest {
                 new FileHelper.IGetNotifier() {
 
                     @Override
-                    public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
+                    public boolean onProcessing(@NotNull File current, @NotNull Set<File> collected, int currentLevel) {
                         System.out.println("current=" + current + ", currentLevel=" + currentLevel);
                         return true;
                     }
 
                     @Override
-                    public boolean onGetFile(@NonNull File file) {
+                    public boolean onGetFile(@NotNull File file) {
                         return false;
                     }
 
                     @Override
-                    public boolean onGetFolder(@NonNull File folder) {
+                    public boolean onGetFolder(@NotNull File folder) {
                         return false;
                     }
                 }, FileHelper.DEPTH_UNLIMITED);
@@ -161,18 +161,18 @@ public class FileHelperTest extends LoggerTest {
                 new FileHelper.IGetNotifier() {
 
                     @Override
-                    public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
+                    public boolean onProcessing(@NotNull File current, @NotNull Set<File> collected, int currentLevel) {
                         System.out.println("current=" + current + ", currentLevel=" + currentLevel);
                         return true;
                     }
 
                     @Override
-                    public boolean onGetFile(@NonNull File file) {
+                    public boolean onGetFile(@NotNull File file) {
                         return true;
                     }
 
                     @Override
-                    public boolean onGetFolder(@NonNull File folder) {
+                    public boolean onGetFolder(@NotNull File folder) {
                         return true;
                     }
                 });
@@ -189,38 +189,38 @@ public class FileHelperTest extends LoggerTest {
                     }
 
                     @Override
-                    public boolean onProcessing(@NonNull File sourceFile, @NonNull File destFile, long bytesCopied, long bytesTotal) {
+                    public boolean onProcessing(@NotNull File sourceFile, @NotNull File destFile, long bytesCopied, long bytesTotal) {
                         return true;
                     }
                 },
                 new FileHelper.IMultipleCopyNotifier() {
                     @Override
-                    public boolean onCalculatingSize(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
+                    public boolean onCalculatingSize(@NotNull File current, @NotNull Set<File> collected, int currentLevel) {
                         return true;
                     }
 
                     @Override
-                    public boolean onProcessing(@NonNull File currentFile, @NonNull File destDir, @NonNull Set<File> copied, long filesTotal, int currentLevel) {
+                    public boolean onProcessing(@NotNull File currentFile, @NotNull File destDir, @NotNull Set<File> copied, long filesTotal, int currentLevel) {
                         return true;
                     }
 
                     @Override
-                    public boolean confirmCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel) {
+                    public boolean confirmCopy(@NotNull File currentFile, @NotNull File destDir, int currentLevel) {
                         return true;
                     }
 
                     @Override
-                    public File onBeforeCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel) {
+                    public File onBeforeCopy(@NotNull File currentFile, @NotNull File destDir, int currentLevel) {
                         return null;
                     }
 
                     @Override
-                    public boolean onExists(@NonNull File destFile, int currentLevel) {
+                    public boolean onExists(@NotNull File destFile, int currentLevel) {
                         return true;
                     }
 
                     @Override
-                    public void onFailed(@Nullable File currentFile, @NonNull File destFile, int currentLevel) {
+                    public void onFailed(@Nullable File currentFile, @NotNull File destFile, int currentLevel) {
 
                     }
 
@@ -231,7 +231,7 @@ public class FileHelperTest extends LoggerTest {
     public void deleteTest() {
         Set<File> result = FileHelper.delete(context.getFilesDir(), true, null, null, new FileHelper.IDeleteNotifier() {
             @Override
-            public boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted, int currentLevel) {
+            public boolean onProcessing(@NotNull File current, @NotNull Set<File> deleted, int currentLevel) {
                 return true;
             }
 

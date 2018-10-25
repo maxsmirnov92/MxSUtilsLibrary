@@ -1,12 +1,12 @@
 package net.maxsmr.commonutils.data;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
-
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.ByteArrayOutputStream;
@@ -146,12 +146,12 @@ public final class StreamUtils {
         return !strings.isEmpty() ? TextUtils.join(System.getProperty("line.separator"), strings) : null;
     }
 
-    @NonNull
+    @NotNull
     public static List<String> readStringsFromInputStream(InputStream is, boolean closeInput) {
         return readStringsFromInputStream(is, 0, closeInput);
     }
 
-    @NonNull
+    @NotNull
     public static List<String> readStringsFromInputStream(InputStream is, int count, boolean closeInput) {
         if (is != null) {
             BufferedReader in = null;

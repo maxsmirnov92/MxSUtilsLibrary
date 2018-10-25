@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.logger;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import net.maxsmr.commonutils.data.Predicate;
 
@@ -82,7 +82,7 @@ public abstract class BaseLogger {
             return isInRange(WTF);
         }
 
-        private boolean isInRange(@NonNull Level level) {
+        private boolean isInRange(@NotNull Level level) {
             return ordinal() <= level.ordinal();
         }
 

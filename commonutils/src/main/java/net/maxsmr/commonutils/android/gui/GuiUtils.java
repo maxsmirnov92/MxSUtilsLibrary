@@ -16,8 +16,8 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.ColorInt;
 import android.support.annotation.IdRes;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
@@ -88,7 +88,7 @@ public final class GuiUtils {
         }
     }
 
-    public int getDimensionFromAttr(@NonNull Context context, int attr) {
+    public int getDimensionFromAttr(@NotNull Context context, int attr) {
         final TypedArray styledAttributes = context.getTheme().obtainStyledAttributes(
                 new int[]{attr});
         try {
@@ -98,14 +98,14 @@ public final class GuiUtils {
         }
     }
 
-    @NonNull
-    public static Pair<Integer, Integer> getImageViewDrawableSize(@NonNull ImageView imageView) {
+    @NotNull
+    public static Pair<Integer, Integer> getImageViewDrawableSize(@NotNull ImageView imageView) {
         Drawable d = imageView.getDrawable();
         return d != null ? new Pair<>(d.getIntrinsicWidth(), d.getIntrinsicHeight()) : new Pair<>(0, 0);
     }
 
-    @NonNull
-    public static Pair<Integer, Integer> getRescaledImageViewSize(@NonNull ImageView imageView) {
+    @NotNull
+    public static Pair<Integer, Integer> getRescaledImageViewSize(@NotNull ImageView imageView) {
         int ih, iw, iH, iW;
         ih = imageView.getMeasuredHeight(); //height of imageView
         iw = imageView.getMeasuredWidth(); //width of imageView
@@ -155,7 +155,7 @@ public final class GuiUtils {
     }
 
 
-    public static boolean setNavigationBarColor(@NonNull Window window, @ColorInt int color) {
+    public static boolean setNavigationBarColor(@NotNull Window window, @ColorInt int color) {
         boolean result = false;
         try {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
@@ -196,7 +196,7 @@ public final class GuiUtils {
         }
     }
 
-    public static void applyItemColorTint(@NonNull Context context, MenuItem item, int color) {
+    public static void applyItemColorTint(@NotNull Context context, MenuItem item, int color) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
             if (item != null) {
                 Drawable icon = item.getIcon();
@@ -236,7 +236,7 @@ public final class GuiUtils {
      *
      * @param locale объект локали
      */
-    public static void forceLocaleInApp(@NonNull Context context, Locale locale) {
+    public static void forceLocaleInApp(@NotNull Context context, Locale locale) {
         Locale.setDefault(locale);
 
         Resources resources;
@@ -255,7 +255,7 @@ public final class GuiUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static void setBottomSheetHideable(@NonNull BottomSheetDialog dialog, boolean toggle) {
+    public static void setBottomSheetHideable(@NotNull BottomSheetDialog dialog, boolean toggle) {
         Class<BottomSheetDialog> clazz = (Class<BottomSheetDialog>) dialog.getClass();
         Field behaviourField = null;
         try {
@@ -314,7 +314,7 @@ public final class GuiUtils {
         ((InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE)).toggleSoftInput(2, 0);
     }
 
-    public static void setHomeButtonEnabled(@NonNull AppCompatActivity activity, boolean toggle) {
+    public static void setHomeButtonEnabled(@NotNull AppCompatActivity activity, boolean toggle) {
         if (activity.getSupportActionBar() != null) {
             activity.getSupportActionBar().setDisplayShowHomeEnabled(toggle);
             activity.getSupportActionBar().setDisplayHomeAsUpEnabled(toggle);
@@ -436,7 +436,7 @@ public final class GuiUtils {
         return 0;
     }
 
-    public static int getStatusBarHeight(@NonNull Context context) {
+    public static int getStatusBarHeight(@NotNull Context context) {
         int resourceId = context.getResources().getIdentifier("status_bar_height", "dimen", "android");
         if (resourceId > 0) {
             return context.getResources().getDimensionPixelSize(resourceId);
@@ -444,7 +444,7 @@ public final class GuiUtils {
         return 0;
     }
 
-    public static int getKeyboardHeight(@NonNull View rootView, @NonNull View targetView) {
+    public static int getKeyboardHeight(@NotNull View rootView, @NotNull View targetView) {
         Rect rect = new Rect();
         targetView.getWindowVisibleDisplayFrame(rect);
         int usableViewHeight = rootView.getHeight() - (rect.top != 0 ? getStatusBarHeight(rootView.getContext()) : 0) - getViewInset(rootView);
@@ -452,14 +452,14 @@ public final class GuiUtils {
 
     }
 
-    public static void setEditTextHintByError(@NonNull TextInputLayout on, @Nullable String hint) {
+    public static void setEditTextHintByError(@NotNull TextInputLayout on, @Nullable String hint) {
         EditText et = on.getEditText();
         if (et != null) {
             et.setHint(TextUtils.isEmpty(on.getError()) ? null : hint);
         }
     }
 
-    public static void setError(@Nullable String errorMsg, @NonNull TextInputLayout on) {
+    public static void setError(@Nullable String errorMsg, @NotNull TextInputLayout on) {
         on.setErrorEnabled(true);
         on.setError(errorMsg);
 //        editText.getBackground().setColorFilter(act.getResources().getColor(R.color.textColorSecondary), PorterDuff.Mode.SRC_ATOP);
@@ -480,14 +480,14 @@ public final class GuiUtils {
         }
     }
 
-    public static void clearError(boolean force, @NonNull TextInputLayout on) {
+    public static void clearError(boolean force, @NotNull TextInputLayout on) {
         if (force || !TextUtils.isEmpty(on.getError())) {
             on.setError(null);
             on.refreshDrawableState();
         }
     }
 
-    public static void clearError(boolean force, @NonNull TextInputLayout on, EditText editText, @ColorInt int color) {
+    public static void clearError(boolean force, @NotNull TextInputLayout on, EditText editText, @ColorInt int color) {
         if (force || !TextUtils.isEmpty(on.getError())) {
             on.setError(null);
             editText.getBackground().setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
@@ -495,13 +495,13 @@ public final class GuiUtils {
         }
     }
 
-    @NonNull
-    public static Point getFixedViewSizeByDisplay(@NonNull Context context, @NonNull Point targetSize) {
+    @NotNull
+    public static Point getFixedViewSizeByDisplay(@NotNull Context context, @NotNull Point targetSize) {
         return getFixedViewSizeByDisplay(context, (float) targetSize.x / targetSize.y);
     }
 
-    @NonNull
-    public static Point getFixedViewSizeByDisplay(@NonNull Context context, float targetScale) {
+    @NotNull
+    public static Point getFixedViewSizeByDisplay(@NotNull Context context, float targetScale) {
         Display display = ((WindowManager) (context.getSystemService(Context.WINDOW_SERVICE))).getDefaultDisplay();
         DisplayMetrics metrics = new DisplayMetrics();
         display.getMetrics(metrics);
@@ -509,27 +509,27 @@ public final class GuiUtils {
         return getFixedViewSize(targetScale, screenSize);
     }
 
-    @NonNull
-    public static Point getFixedViewSize(@NonNull Point targetSize, @NonNull View view) {
+    @NotNull
+    public static Point getFixedViewSize(@NotNull Point targetSize, @NotNull View view) {
         return getFixedViewSize(targetSize, new Point(view.getMeasuredWidth(), view.getMeasuredHeight()));
     }
 
-    @NonNull
-    public static Point getFixedViewSize(@NonNull Point targetSize, @Nullable Point measuredViewSize) {
+    @NotNull
+    public static Point getFixedViewSize(@NotNull Point targetSize, @Nullable Point measuredViewSize) {
         return getFixedViewSize(targetSize, measuredViewSize, null);
     }
 
-    @NonNull
-    public static Point getFixedViewSize(@NonNull Point targetSize, @Nullable Point measuredViewSize, @Nullable Point maxViewSize) {
+    @NotNull
+    public static Point getFixedViewSize(@NotNull Point targetSize, @Nullable Point measuredViewSize, @Nullable Point maxViewSize) {
         return getFixedViewSize((float) targetSize.x / targetSize.y, measuredViewSize, maxViewSize);
     }
 
-    @NonNull
+    @NotNull
     public static Point getFixedViewSize(float targetScale, @Nullable Point measuredViewSize) {
         return getFixedViewSize(targetScale, measuredViewSize, null);
     }
 
-    @NonNull
+    @NotNull
     public static Point getFixedViewSize(float targetScale, @Nullable Point measuredViewSize, @Nullable Point maxViewSize) {
         if (targetScale < 0) {
             throw new IllegalArgumentException("targetScale < 0");
@@ -575,22 +575,22 @@ public final class GuiUtils {
         return newViewSize;
     }
 
-    @NonNull
+    @NotNull
     public static Point fixViewSize(Point targetSize, @Nullable View view) {
         return fixViewSize(targetSize, view, null);
     }
 
-    @NonNull
+    @NotNull
     public static Point fixViewSize(float targetScale, @Nullable View view) {
         return fixViewSize(targetScale, view, null);
     }
 
-    @NonNull
+    @NotNull
     public static Point fixViewSize(Point targetSize, @Nullable View view, @Nullable Point maxViewSize) {
         return fixViewSize(targetSize != null ? (float) targetSize.x / targetSize.y : 0, view, maxViewSize);
     }
 
-    @NonNull
+    @NotNull
     public static Point fixViewSize(float targetScale, @Nullable View view, @Nullable Point maxViewSize) {
         Point fixedSize = new Point();
         if (view != null) {
@@ -604,8 +604,8 @@ public final class GuiUtils {
         return fixedSize;
     }
 
-    @NonNull
-    public static Point getAutoScaledSize(@NonNull View view, @Nullable Point maxViewSize, int fixedSize) {
+    @NotNull
+    public static Point getAutoScaledSize(@NotNull View view, @Nullable Point maxViewSize, int fixedSize) {
         int width = view.getMeasuredWidth();
         int height = view.getMeasuredHeight();
         width = width <= 0 ? (maxViewSize != null ? maxViewSize.x : 0) : width;
@@ -613,18 +613,18 @@ public final class GuiUtils {
         return getAutoScaledSize(new Point(width, height), fixedSize);
     }
 
-    @NonNull
-    public static Point getAutoScaledSize(@NonNull Point size, int fixedSize) {
+    @NotNull
+    public static Point getAutoScaledSize(@NotNull Point size, int fixedSize) {
         return getAutoScaledSize((float) size.x / size.y, fixedSize);
     }
 
-    @NonNull
+    @NotNull
     public static Point getAutoScaledSize(float scale, int fixedSize) {
         return getScaledSize(scale, fixedSize, scale > 1.0f);
     }
 
-    @NonNull
-    public static Point getScaledSize(@NonNull View view, @Nullable Point maxViewSize, int fixedSize, boolean isWidth) {
+    @NotNull
+    public static Point getScaledSize(@NotNull View view, @Nullable Point maxViewSize, int fixedSize, boolean isWidth) {
         int width = view.getMeasuredWidth();
         int height = view.getMeasuredHeight();
         width = width <= 0 ? (maxViewSize != null ? maxViewSize.x : 0) : width;
@@ -632,15 +632,15 @@ public final class GuiUtils {
         return getScaledSize(new Point(width, height), fixedSize, isWidth);
     }
 
-    @NonNull
-    public static Point getScaledSize(@NonNull Point size, int fixedSize, boolean isWidth) {
+    @NotNull
+    public static Point getScaledSize(@NotNull Point size, int fixedSize, boolean isWidth) {
         if (size.x <= 0 || size.y <= 0) {
             throw new IllegalArgumentException("incorrect size: " + size.x + "x" + size.y);
         }
         return getScaledSize((float) size.x / size.y, fixedSize, isWidth);
     }
 
-    @NonNull
+    @NotNull
     public static Point getScaledSize(float scale, int fixedSize, boolean isWidth) {
         if (scale <= 0) {
             throw new IllegalArgumentException("incorrect scale: " + scale);
@@ -660,7 +660,7 @@ public final class GuiUtils {
         return result;
     }
 
-    @NonNull
+    @NotNull
     public static android.support.v4.util.Pair<Integer, Integer> calcAspectRatioFor(int width, int height) {
         double aspectRatio = (double) width / (double) height;
         int dividend = width > height ? width : height;
@@ -689,7 +689,7 @@ public final class GuiUtils {
     }
 
 
-    public static void setViewSize(@NonNull View view, @NonNull Point size) {
+    public static void setViewSize(@NotNull View view, @NotNull Point size) {
         if (size.x < -1 || size.y < -1) {
             throw new IllegalArgumentException("incorrect view size: " + size.x + "x" + size.y);
         }
@@ -716,7 +716,7 @@ public final class GuiUtils {
         }
     }
 
-    public static int getCurrentDisplayOrientation(@NonNull Context context) {
+    public static int getCurrentDisplayOrientation(@NotNull Context context) {
         int degrees = 0;
         final int rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
         switch (rotation) {
@@ -751,7 +751,7 @@ public final class GuiUtils {
         return result;
     }
 
-    public static boolean copyToClipboard(@NonNull Context context, String label, String text) {
+    public static boolean copyToClipboard(@NotNull Context context, String label, String text) {
         ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
         if (clipboard != null) {
             ClipData clip = ClipData.newPlainText(label, text);
@@ -761,7 +761,7 @@ public final class GuiUtils {
         return false;
     }
 
-    @NonNull
+    @NotNull
     public static DeviceType getScreenType(Context con) {
         final DeviceType deviceType;
         WindowManager wm = (WindowManager) con.getSystemService(Context.WINDOW_SERVICE);
@@ -794,15 +794,15 @@ public final class GuiUtils {
         return event != null && event.getKeyCode() == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_NULL;
     }
 
-    public static void showAboveLockscreen(@NonNull Window window, boolean wakeScreen) {
+    public static void showAboveLockscreen(@NotNull Window window, boolean wakeScreen) {
         toggleAboveLockscreen(window, wakeScreen,true);
     }
 
-    public static void hideAboveLockscreen(@NonNull Window window, boolean wakeScreen) {
+    public static void hideAboveLockscreen(@NotNull Window window, boolean wakeScreen) {
         toggleAboveLockscreen(window, wakeScreen, false);
     }
 
-    private static void toggleAboveLockscreen(@NonNull Window window, boolean wakeScreen, boolean toggle) {
+    private static void toggleAboveLockscreen(@NotNull Window window, boolean wakeScreen, boolean toggle) {
         int flags = WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD |
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED;
         if (wakeScreen) {
@@ -886,12 +886,12 @@ public final class GuiUtils {
 
     public static class EditTextKeyLimiter implements View.OnKeyListener {
 
-        @NonNull
+        @NotNull
         final EditText et;
 
         final int linesLimit;
 
-        public EditTextKeyLimiter(@NonNull EditText et, int linesLimit) {
+        public EditTextKeyLimiter(@NotNull EditText et, int linesLimit) {
 
             if (linesLimit <= 0) {
                 throw new IllegalArgumentException("incorrect linesLimit: " + linesLimit);

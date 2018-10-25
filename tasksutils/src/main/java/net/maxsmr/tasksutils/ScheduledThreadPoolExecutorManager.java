@@ -2,7 +2,7 @@ package net.maxsmr.tasksutils;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -27,7 +27,7 @@ public class ScheduledThreadPoolExecutorManager {
 
     private final List<ScheduledFuture<?>> currentScheduledFutures = new ArrayList<>();
 
-    @NonNull
+    @NotNull
     private final ScheduleMode scheduleMode;
 
     private final String poolName;
@@ -43,11 +43,11 @@ public class ScheduledThreadPoolExecutorManager {
 
     private int workersCount = 1;
 
-    public ScheduledThreadPoolExecutorManager(@NonNull ScheduleMode scheduleMode, String poolName) {
+    public ScheduledThreadPoolExecutorManager(@NotNull ScheduleMode scheduleMode, String poolName) {
         this(scheduleMode, poolName, new ExceptionHandler.DefaultExceptionHandler());
     }
 
-    public ScheduledThreadPoolExecutorManager(@NonNull ScheduleMode scheduleMode, String poolName, @Nullable ExceptionHandler exceptionHandler) {
+    public ScheduledThreadPoolExecutorManager(@NotNull ScheduleMode scheduleMode, String poolName, @Nullable ExceptionHandler exceptionHandler) {
         this.scheduleMode = scheduleMode;
         this.poolName = poolName;
         this.setExceptionHandler(exceptionHandler);
@@ -73,7 +73,7 @@ public class ScheduledThreadPoolExecutorManager {
         }
     }
 
-    public void addRunnableTask(@NonNull Runnable runnable) throws NullPointerException {
+    public void addRunnableTask(@NotNull Runnable runnable) throws NullPointerException {
 
         synchronized (lock) {
 
@@ -226,10 +226,10 @@ public class ScheduledThreadPoolExecutorManager {
 
     final class WrappedRunnable implements Runnable {
 
-        @NonNull
+        @NotNull
         final Runnable command;
 
-        WrappedRunnable(@NonNull Runnable command) {
+        WrappedRunnable(@NotNull Runnable command) {
             this.command = command;
         }
 

@@ -3,7 +3,7 @@ package net.maxsmr.commonutils.android.notification;
 import android.app.PendingIntent;
 import android.content.Intent;
 import android.support.annotation.DrawableRes;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 /**
  * Created by maxsmirnov on 10.09.15.
@@ -15,7 +15,7 @@ public class NotificationActionInfo {
         NONE, ACTIVITY, SERVICE, BROADCAST;
     }
 
-    @NonNull
+    @NotNull
     public final NotificationAction action;
 
     public final int requestCode;
@@ -25,12 +25,12 @@ public class NotificationActionInfo {
 
     public final String title;
 
-    @NonNull
+    @NotNull
     public final Intent actionIntent;
 
     public final int pIntentFlag;
 
-    public NotificationActionInfo(NotificationAction action, int requestCode, @DrawableRes int iconResId, String title, @NonNull Intent actionIntent, int pIntentFlag) {
+    public NotificationActionInfo(NotificationAction action, int requestCode, @DrawableRes int iconResId, String title, @NotNull Intent actionIntent, int pIntentFlag) {
         this.action = action == null ? NotificationAction.NONE : action;
         this.requestCode = requestCode;
         this.iconResId = iconResId;

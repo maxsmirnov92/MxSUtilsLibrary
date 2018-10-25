@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.android.hardware;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
@@ -23,16 +23,16 @@ public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestur
 
     private boolean isScaling = false;
 
-    public SimpleGestureListener(@NonNull Context ctx, float thresholdValue) {
+    public SimpleGestureListener(@NotNull Context ctx, float thresholdValue) {
         scaleGestureDetector = new ScaleGestureDetector(ctx, this);
         setThresholdValue(thresholdValue);
     }
 
-    public void addScaleFactorChangeListener(@NonNull ScaleFactorChangeListener listener) {
+    public void addScaleFactorChangeListener(@NotNull ScaleFactorChangeListener listener) {
         listeners.registerObserver(listener);
     }
 
-    public void removeScaleFactorChangeListener(@NonNull ScaleFactorChangeListener listener) {
+    public void removeScaleFactorChangeListener(@NotNull ScaleFactorChangeListener listener) {
         listeners.unregisterObserver(listener);
     }
 
@@ -60,7 +60,7 @@ public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestur
     /**
      * @return {previous : current} pair
      */
-    @NonNull
+    @NotNull
     public Pair<Double, Double> getScaleFactors() {
         return new Pair<>(previousScaleFactor, currentScaleFactor);
     }

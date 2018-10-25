@@ -6,7 +6,7 @@ import android.app.usage.NetworkStatsManager;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.os.Build;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import net.maxsmr.commonutils.android.AppUtils;
 import net.maxsmr.commonutils.android.hardware.DeviceUtils;
@@ -22,16 +22,16 @@ public final class NetworkStatsHelper {
 
     private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(NetworkStatsHelper.class);
 
-    @NonNull
+    @NotNull
     private NetworkStatsManager networkStatsManager;
 
     private final int packageUid;
 
-    public NetworkStatsHelper(@NonNull Context context) {
+    public NetworkStatsHelper(@NotNull Context context) {
         this(context, AppUtils.getApplicationUid(context, context.getPackageName()));
     }
 
-    public NetworkStatsHelper(@NonNull Context context, int packageUid) {
+    public NetworkStatsHelper(@NotNull Context context, int packageUid) {
         networkStatsManager = (NetworkStatsManager) context.getSystemService(Context.NETWORK_STATS_SERVICE);
         if (networkStatsManager == null) {
             throw new IllegalArgumentException(NetworkStatsManager.class.getSimpleName() + " is null");
@@ -192,7 +192,7 @@ public final class NetworkStatsHelper {
         return txBytes;
     }
 
-    public long getAllRxBytes(@NonNull Context context) {
+    public long getAllRxBytes(@NotNull Context context) {
         long rxWifiBytes = getAllRxBytesWifi();
         long rxMobileBytes = getAllRxBytesMobile(context);
         rxWifiBytes = rxWifiBytes > 0 ? rxWifiBytes : 0;
@@ -200,7 +200,7 @@ public final class NetworkStatsHelper {
         return rxWifiBytes + rxMobileBytes;
     }
 
-    public long getAllTxBytes(@NonNull Context context) {
+    public long getAllTxBytes(@NotNull Context context) {
         long txWifiBytes = getAllTxBytesWifi();
         long txMobileBytes = getAllTxBytesMobile(context);
         txWifiBytes = txWifiBytes > 0 ? txWifiBytes : 0;
@@ -208,7 +208,7 @@ public final class NetworkStatsHelper {
         return txWifiBytes + txMobileBytes;
     }
 
-    public long getPackageRxBytes(@NonNull Context context) {
+    public long getPackageRxBytes(@NotNull Context context) {
         long rxWifiBytes = getPackageRxBytesWifi();
         long rxMobileBytes = getPackageRxBytesMobile(context);
         rxWifiBytes = rxWifiBytes > 0 ? rxWifiBytes : 0;
@@ -216,7 +216,7 @@ public final class NetworkStatsHelper {
         return rxWifiBytes + rxMobileBytes;
     }
 
-    public long getPackageTxBytes(@NonNull Context context) {
+    public long getPackageTxBytes(@NotNull Context context) {
         long txWifiBytes = getPackageTxBytesWifi();
         long txMobileBytes = getPackageTxBytesMobile(context);
         txWifiBytes = txWifiBytes > 0 ? txWifiBytes : 0;
@@ -228,7 +228,7 @@ public final class NetworkStatsHelper {
         return Build.VERSION.SDK_INT >= Build.VERSION_CODES.M;
     }
 
-    private static String getSubscriberId(@NonNull Context context, int networkType) {
+    private static String getSubscriberId(@NotNull Context context, int networkType) {
         if (ConnectivityManager.TYPE_MOBILE == networkType) {
             return DeviceUtils.getIMSI(context);
         }

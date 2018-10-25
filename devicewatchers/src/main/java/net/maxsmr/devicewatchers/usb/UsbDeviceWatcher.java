@@ -1,6 +1,6 @@
 package net.maxsmr.devicewatchers.usb;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
@@ -56,11 +56,11 @@ public class UsbDeviceWatcher {
     private UsbDeviceWatcher() {
     }
 
-    public void addWatchListener(@NonNull DeviceWatchListener l) {
+    public void addWatchListener(@NotNull DeviceWatchListener l) {
         watchListeners.registerObserver(l);
     }
 
-    public void removeWatchListener(@NonNull DeviceWatchListener l) {
+    public void removeWatchListener(@NotNull DeviceWatchListener l) {
         watchListeners.unregisterObserver(l);
     }
 
@@ -95,11 +95,11 @@ public class UsbDeviceWatcher {
     }
 
 
-    public void addDevicesFlagsListener(@NonNull DevicesFlagsListener l) {
+    public void addDevicesFlagsListener(@NotNull DevicesFlagsListener l) {
         flagsListeners.registerObserver(l);
     }
 
-    public void removeDevicesFlagsListener(@NonNull DevicesFlagsListener l) {
+    public void removeDevicesFlagsListener(@NotNull DevicesFlagsListener l) {
         flagsListeners.unregisterObserver(l);
     }
 
@@ -248,8 +248,8 @@ public class UsbDeviceWatcher {
             }
         }
 
-        @NonNull
-        private List<DeviceInfo> parseOutput(@NonNull List<String> output) {
+        @NotNull
+        private List<DeviceInfo> parseOutput(@NotNull List<String> output) {
 
             final List<DeviceInfo> infos = new ArrayList<>();
 
@@ -372,8 +372,8 @@ public class UsbDeviceWatcher {
             }
         }
 
-        @NonNull
-        private List<Integer> parseEventFlags(@NonNull List<String> output) {
+        @NotNull
+        private List<Integer> parseEventFlags(@NotNull List<String> output) {
             List<Integer> evFlagsList = new ArrayList<>();
             if (!output.isEmpty()) {
                 for (String str : output) {
@@ -394,8 +394,8 @@ public class UsbDeviceWatcher {
             return evFlagsList;
         }
 
-        @NonNull
-        private List<Integer> scanFlags(@NonNull List<Integer> evFlagsList, int evFlags, boolean match) {
+        @NotNull
+        private List<Integer> scanFlags(@NotNull List<Integer> evFlagsList, int evFlags, boolean match) {
             List<Integer> found = new ArrayList<>();
             for (Integer f : evFlagsList) {
                 if (f != null && (match ? ((f & evFlags) == evFlags) : evFlags == f)) {
@@ -414,7 +414,7 @@ public class UsbDeviceWatcher {
 
         void onDevicesListChanged(List<DeviceInfo> currentList, List<DeviceInfo> previousList);
 
-        void onDevicesListReadFailed(int exitCode, @NonNull List<String> errorStream);
+        void onDevicesListReadFailed(int exitCode, @NotNull List<String> errorStream);
     }
 
     public interface DevicesFlagsListener {
@@ -423,7 +423,7 @@ public class UsbDeviceWatcher {
 
         void onDevicesFlagsNotFound(int mask);
 
-        void onDevicesFlagsReadFailed(int exitCode, @NonNull List<String> errorStream);
+        void onDevicesFlagsReadFailed(int exitCode, @NotNull List<String> errorStream);
     }
 
     private static class DeviceWatchObservable extends Observable<DeviceWatchListener> {
@@ -447,7 +447,7 @@ public class UsbDeviceWatcher {
             }
         }
 
-        void notifyReadFailed(@NonNull CommandResult result) {
+        void notifyReadFailed(@NotNull CommandResult result) {
             synchronized (observers) {
                 for (DeviceWatchListener l : observers) {
                     l.onDevicesListReadFailed(result.getExitCode(), result.getStdErrLines());
@@ -458,7 +458,7 @@ public class UsbDeviceWatcher {
 
     private static class DevicesFlagsObservable extends Observable<DevicesFlagsListener> {
 
-        void notifyFlagsChanged(@NonNull List<Integer> found, int evFlagsMask) {
+        void notifyFlagsChanged(@NotNull List<Integer> found, int evFlagsMask) {
             synchronized (observers) {
                 for (DevicesFlagsListener l : observers) {
                     if (!found.isEmpty()) {
@@ -470,7 +470,7 @@ public class UsbDeviceWatcher {
             }
         }
 
-        void notifyReadFailed(@NonNull CommandResult result) {
+        void notifyReadFailed(@NotNull CommandResult result) {
             synchronized (observers) {
                 for (DevicesFlagsListener l : observers) {
                     l.onDevicesFlagsReadFailed(result.getExitCode(), result.getStdErrLines());

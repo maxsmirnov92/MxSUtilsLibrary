@@ -1,6 +1,6 @@
 package net.maxsmr.tasksutils;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import java.util.concurrent.Callable;
@@ -30,7 +30,7 @@ public class ExecutorCaller {
 
     private static final int DEFAULT_EXECUTOR_CALL_TIMEOUT = 5;
 
-    public <T> T getCallResult(int timeoutSec, @NonNull Callable<T> c, @Nullable Runnable callFinally) {
+    public <T> T getCallResult(int timeoutSec, @NotNull Callable<T> c, @Nullable Runnable callFinally) {
 
         if (timeoutSec <= 0) {
             throw new IllegalArgumentException("incorrect timeoutSec: " + timeoutSec);
@@ -48,7 +48,7 @@ public class ExecutorCaller {
         }
     }
 
-    public <T> T getCallResult(@NonNull Callable<T> c, @Nullable Runnable callFinally) {
+    public <T> T getCallResult(@NotNull Callable<T> c, @Nullable Runnable callFinally) {
         return getCallResult(DEFAULT_EXECUTOR_CALL_TIMEOUT, c, callFinally);
     }
 

@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.logger.holder;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 public interface ILoggerHolderProvider<H extends BaseLoggerHolder> {
 
-    @NonNull H provideHolder();
+    @NotNull H provideHolder();
 }

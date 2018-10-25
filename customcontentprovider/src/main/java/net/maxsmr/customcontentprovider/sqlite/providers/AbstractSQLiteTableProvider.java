@@ -7,7 +7,7 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.BaseColumns;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
@@ -24,13 +24,13 @@ public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteConten
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(AbstractSQLiteTableProvider.class);
 
-    @NonNull
+    @NotNull
     private final String tableName;
 
-    @NonNull
+    @NotNull
     private final Class<P> contentProviderClass;
 
-    public AbstractSQLiteTableProvider(@NonNull String tableName, @NonNull Class<P> contentProviderClass) {
+    public AbstractSQLiteTableProvider(@NotNull String tableName, @NotNull Class<P> contentProviderClass) {
 
         if (tableName.isEmpty())
             throw new IllegalArgumentException("tableName is empty");
@@ -39,13 +39,13 @@ public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteConten
         this.contentProviderClass = contentProviderClass;
     }
 
-    @NonNull
+    @NotNull
     public final String getTableName() {
         return tableName;
     }
 
-    @NonNull
-    public final Uri getBaseUri(@NonNull Context context) {
+    @NotNull
+    public final Uri getBaseUri(@NotNull Context context) {
         Uri baseUri = ProviderUtils.getContentProviderTableUri(context, context.getPackageName(), contentProviderClass, getTableName());
         if (baseUri == null) {
             throw new RuntimeException("can't make base URI");
@@ -53,8 +53,8 @@ public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteConten
         return baseUri;
     }
 
-    @NonNull
-    public static <P extends AbstractSQLiteContentProvider> Uri getBaseUri(@NonNull Context context, @NonNull Class<P> contentProviderClass, @NonNull String tableName) {
+    @NotNull
+    public static <P extends AbstractSQLiteContentProvider> Uri getBaseUri(@NotNull Context context, @NotNull Class<P> contentProviderClass, @NotNull String tableName) {
         Uri baseUri = ProviderUtils.getContentProviderTableUri(context, context.getPackageName(), contentProviderClass, tableName);
         if (baseUri == null) {
             throw new RuntimeException("can't make base URI");

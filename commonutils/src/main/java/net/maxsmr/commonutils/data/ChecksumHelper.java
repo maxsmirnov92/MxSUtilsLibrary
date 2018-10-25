@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.data;
 
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.logger.BaseLogger;

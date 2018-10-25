@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.logger.holder;
 
-import android.support.annotation.NonNull;
-
 import net.maxsmr.commonutils.logger.BaseLogger;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -21,7 +21,7 @@ public abstract class BaseLoggerHolder {
         }
     }
 
-    public static void initInstance(@NonNull ILoggerHolderProvider<?> provider) {
+    public static void initInstance(@NotNull ILoggerHolderProvider<?> provider) {
         synchronized (BaseLoggerHolder.class) {
             if (sInstance == null) {
                 sInstance = provider.provideHolder();
@@ -79,6 +79,6 @@ public abstract class BaseLoggerHolder {
         }
     }
 
-    protected abstract BaseLogger createLogger(@NonNull Class<?> clazz);
+    protected abstract BaseLogger createLogger(@NotNull Class<?> clazz);
 
 }

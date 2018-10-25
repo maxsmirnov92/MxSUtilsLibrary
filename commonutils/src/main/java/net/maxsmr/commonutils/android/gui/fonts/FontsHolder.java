@@ -2,7 +2,7 @@ package net.maxsmr.commonutils.android.gui.fonts;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.View;

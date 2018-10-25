@@ -8,8 +8,8 @@ import android.content.Intent;
 import android.content.res.Resources;
 import android.net.Uri;
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.content.ContextCompat;
 
@@ -45,10 +45,10 @@ public class NotificationController {
         return instance;
     }
 
-    @NonNull
+    @NotNull
     private Context context;
 
-    public NotificationController(@NonNull Context ctx) {
+    public NotificationController(@NotNull Context ctx) {
         context = ctx;
     }
 
@@ -58,7 +58,7 @@ public class NotificationController {
         return notis.containsKey(id);
     }
 
-    private void addToNotiList(int id, @NonNull NotificationCompat.Builder builder) {
+    private void addToNotiList(int id, @NotNull NotificationCompat.Builder builder) {
 
         if (id < 0)
             throw new IllegalArgumentException("incorrect id: " + id);
@@ -104,7 +104,7 @@ public class NotificationController {
         return notis.get(id) != null? notis.get(id).build() : null;
     }
 
-    @NonNull
+    @NotNull
     public synchronized Notification createAndAddNotification(NotificationInfo info) {
 
         if (info == null)

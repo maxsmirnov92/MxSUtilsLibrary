@@ -1,12 +1,12 @@
 package net.maxsmr.commonutils.logger;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 public abstract class BaseTagLogger extends BaseLogger {
 
-    @NonNull
+    @NotNull
     protected final String tag;
 
     protected BaseTagLogger(@Nullable String tag) {

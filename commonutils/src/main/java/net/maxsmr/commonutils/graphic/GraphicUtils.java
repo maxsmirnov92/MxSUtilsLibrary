@@ -36,8 +36,8 @@ import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.renderscript.Type;
 import android.support.annotation.ColorInt;
 import android.support.annotation.DrawableRes;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.support.annotation.XmlRes;
 import android.support.v7.graphics.Palette;
 import android.text.TextUtils;
@@ -457,12 +457,12 @@ public final class GraphicUtils {
     }
 
     @Nullable
-    public static Bitmap createBitmapFromUri(@NonNull Context context, Uri uri, int scale) {
+    public static Bitmap createBitmapFromUri(@NotNull Context context, Uri uri, int scale) {
         return createBitmapFromUri(context, uri, scale, null);
     }
 
     @Nullable
-    public static Bitmap createBitmapFromUri(@NonNull Context context, Uri uri, int scale, @Nullable Bitmap.Config config) {
+    public static Bitmap createBitmapFromUri(@NotNull Context context, Uri uri, int scale, @Nullable Bitmap.Config config) {
 
         if (!(uri != null && (uri.getScheme() == null || uri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_FILE)))) {
             logger.e("incorrect resource uri: " + uri);
@@ -854,7 +854,7 @@ public final class GraphicUtils {
     }
 
     @Nullable
-    public static Bitmap cutBitmap(Bitmap sourceBitmap, @NonNull Rect range) {
+    public static Bitmap cutBitmap(Bitmap sourceBitmap, @NotNull Rect range) {
 
         if (!isBitmapCorrect(sourceBitmap)) {
             logger.e("incorrect bitmap: " + sourceBitmap);
@@ -991,7 +991,7 @@ public final class GraphicUtils {
     }
 
     @Nullable
-    public static Bitmap createBitmapFromDrawable(Drawable drawable, int width, int height, @NonNull Bitmap.Config config) {
+    public static Bitmap createBitmapFromDrawable(Drawable drawable, int width, int height, @NotNull Bitmap.Config config) {
 
         if (drawable == null) {
             return null;
@@ -1028,7 +1028,7 @@ public final class GraphicUtils {
     }
 
     @Nullable
-    public static Bitmap curveImage(Bitmap bitmap, @NonNull Point corners) {
+    public static Bitmap curveImage(Bitmap bitmap, @NotNull Point corners) {
 
         if (!GraphicUtils.isBitmapCorrect(bitmap)) {
             return null;
@@ -1143,7 +1143,7 @@ public final class GraphicUtils {
     }
 
     @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
-    public static Bitmap renderScriptNVToRGBA(@NonNull Context context, int width, int height, byte[] nv, @Nullable Bitmap.Config bitmapConfig) {
+    public static Bitmap renderScriptNVToRGBA(@NotNull Context context, int width, int height, byte[] nv, @Nullable Bitmap.Config bitmapConfig) {
 
         if (width <= 0 || height <= 0) {
             logger.e("incorrect size: " + width + "x" + height);
@@ -1244,7 +1244,7 @@ public final class GraphicUtils {
     }
 
     @Nullable
-    public static ColorStateList createColorStateListFromRes(@NonNull Context context, @XmlRes int res) {
+    public static ColorStateList createColorStateListFromRes(@NotNull Context context, @XmlRes int res) {
         XmlResourceParser parser = context.getResources().getXml(res);
         try {
             return ColorStateList.createFromXml(context.getResources(), parser);
@@ -1266,7 +1266,7 @@ public final class GraphicUtils {
 
     @SuppressWarnings("PrimitiveArrayArgumentToVariableArgMethod")
     @Nullable
-    public static Drawable getDrawableForState(@NonNull StateListDrawable stateListDrawable, int... state) {
+    public static Drawable getDrawableForState(@NotNull StateListDrawable stateListDrawable, int... state) {
         try {
             Method getStateDrawableIndex = StateListDrawable.class.getMethod("getStateDrawableIndex", int[].class);
             Method getStateDrawable = StateListDrawable.class.getMethod("getStateDrawable", int.class);
@@ -1323,10 +1323,10 @@ public final class GraphicUtils {
     }
 
     public interface OnPaletteColorsGeneratedListener {
-        void onPaletteColorsGenerated(@NonNull PaletteColors colors);
+        void onPaletteColorsGenerated(@NotNull PaletteColors colors);
     }
 
-    @NonNull
+    @NotNull
     private static PaletteColors makePaletteColors(Palette palette, @ColorInt final int defaultColor, final Swatch sw) {
         final PaletteColors colors = new PaletteColors();
         if (palette != null && sw != null) {
@@ -1391,7 +1391,7 @@ public final class GraphicUtils {
     /**
      * Resize bitmap to fit x and y leaving no blank space
      */
-    public static Bitmap resizeBitmapFitXY(@NonNull Bitmap bitmap, int width, int height) {
+    public static Bitmap resizeBitmapFitXY(@NotNull Bitmap bitmap, int width, int height) {
         Bitmap background = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888);
         float originalWidth = bitmap.getWidth(), originalHeight = bitmap.getHeight();
         Canvas canvas = new Canvas(background);

@@ -3,7 +3,7 @@ package net.maxsmr.tasksutils.taskexecutor;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.support.annotation.CallSuper;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Observable;
@@ -28,33 +28,33 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
     private final Object lock = new Object();
 
-    @NonNull
+    @NotNull
     protected final TaskObservable observable = new TaskObservable();
 
     @Nullable
     private Handler callbacksHandler = null;
 
-    @NonNull
+    @NotNull
     public final I rInfo;
 
     private int retryCount = 0;
 
     private Result result;
 
-    public TaskRunnable(@NonNull I rInfo) {
+    public TaskRunnable(@NotNull I rInfo) {
         this.rInfo = rInfo;
     }
 
     @SuppressWarnings("unchecked")
-    @NonNull
-    public <T extends TaskRunnable<I, ProgressInfo, Result>> T registerCallbacks(@NonNull Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> callbacks) {
+    @NotNull
+    public <T extends TaskRunnable<I, ProgressInfo, Result>> T registerCallbacks(@NotNull Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> callbacks) {
         observable.registerObserver(callbacks);
         return (T) this;
     }
 
     @SuppressWarnings("unchecked")
-    @NonNull
-    public <T extends TaskRunnable<I, ProgressInfo, Result>> T unregisterCallbacks(@NonNull Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> callbacks) {
+    @NotNull
+    public <T extends TaskRunnable<I, ProgressInfo, Result>> T unregisterCallbacks(@NotNull Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> callbacks) {
         observable.unregisterObserver(callbacks);
         return (T) this;
     }
@@ -89,7 +89,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         }
     }
 
-    @NonNull
+    @NotNull
     public AsyncTask.Status getStatus() {
         synchronized (rInfo) {
             return rInfo.status;
@@ -183,7 +183,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     protected abstract Result doWork() throws Throwable;
 
     @CallSuper
-    protected void onProgress(@NonNull ProgressInfo info) {
+    protected void onProgress(@NotNull ProgressInfo info) {
         observable.notifyProgress(info);
     }
 
@@ -200,7 +200,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         observable.notifyCancelled();
     }
 
-    protected final void publishProgress(@NonNull ProgressInfo info) {
+    protected final void publishProgress(@NotNull ProgressInfo info) {
         onProgress(info);
     }
 
@@ -213,13 +213,13 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     }
 
     // override it and remove limit
-    protected boolean shouldReRunOnThrowable(@NonNull Throwable e) {
+    protected boolean shouldReRunOnThrowable(@NotNull Throwable e) {
         final int retryLimit = getRetryLimit();
         return retryLimit > 0 || retryLimit == RETRY_NO_LIMIT;
     }
 
     @CallSuper
-    protected void onTaskFailed(@NonNull Throwable e, boolean reRun) {
+    protected void onTaskFailed(@NotNull Throwable e, boolean reRun) {
         logger.e("Task " + this + "  failed with exception: " + e.getMessage(), e);
         observable.notifyFailed(e, retryCount, getRetryLimit());
         if (!reRun) {
@@ -241,7 +241,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         return Predicate.Methods.find(from, element -> element != null && element.getId() == id);
     }
 
-    @NonNull
+    @NotNull
     public static <I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> List<T> filter(@Nullable final Collection<T> what, @Nullable final Collection<T> by, final boolean contains) {
         final List<I> resultInfos = RunnableInfo.filter(toRunnableInfos(what), toRunnableInfos(by), contains);
         return Predicate.Methods.filter(what, task -> RunnableInfo.findRunnableInfoById(task.getId(), resultInfos) != null);
@@ -251,7 +251,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         return Predicate.Methods.filter(what, element -> element != null && element.isCanceled() == isCancelled);
     }
 
-    @NonNull
+    @NotNull
     public static <I extends RunnableInfo> List<I> toRunnableInfos(@Nullable Collection<? extends TaskRunnable<I, ?, ?>> what) {
         List<I> result = new ArrayList<>();
         if (what != null) {
@@ -279,20 +279,20 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
     public interface ITaskRestorer<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
 
-        List<T> fromRunnableInfos(@NonNull Collection<I> runnableInfos);
+        List<T> fromRunnableInfos(@NotNull Collection<I> runnableInfos);
     }
 
     public interface Callbacks<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
 
-        void onPreExecute(@NonNull T task);
+        void onPreExecute(@NotNull T task);
 
-        void onProgress(@NonNull T task, @Nullable ProgressInfo progressInfo);
+        void onProgress(@NotNull T task, @Nullable ProgressInfo progressInfo);
 
-        void onPostExecute(@NonNull T task, @Nullable Result result);
+        void onPostExecute(@NotNull T task, @Nullable Result result);
 
-        void onFailed(@NonNull T task, @NonNull Throwable e, int runCount, int maxRunCount);
+        void onFailed(@NotNull T task, @NotNull Throwable e, int runCount, int maxRunCount);
 
-        void onCancelled(@NonNull T task);
+        void onCancelled(@NotNull T task);
     }
 
     private class TaskObservable extends Observable<Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>>> {
@@ -336,7 +336,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
             }
         }
 
-        private void notifyFailed(@NonNull final Throwable e, final int runCount, final int maxRunCount) {
+        private void notifyFailed(@NotNull final Throwable e, final int runCount, final int maxRunCount) {
             synchronized (lock) {
                 final Runnable r = () -> {
                     synchronized (observers) {
@@ -375,10 +375,10 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
     public static final class WrappedTaskRunnable<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> implements Runnable {
 
-        @NonNull
+        @NotNull
         final T command;
 
-        public WrappedTaskRunnable(@NonNull T command) {
+        public WrappedTaskRunnable(@NotNull T command) {
             this.command = command;
         }
 

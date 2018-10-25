@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.android.gui.adapters;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.support.annotation.StringRes;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
@@ -26,13 +26,13 @@ public class CustomFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
 
     public static class FragmentPair {
 
-        @NonNull
+        @NotNull
         public final Fragment fragment;
 
         @Nullable
         public final String title;
 
-        public FragmentPair(@NonNull Fragment fragment, @Nullable String title) {
+        public FragmentPair(@NotNull Fragment fragment, @Nullable String title) {
             this.fragment = fragment;
             this.title = title;
         }
@@ -46,7 +46,7 @@ public class CustomFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
         }
     }
 
-    @NonNull
+    @NotNull
     protected final Context context;
 
     private final List<FragmentPair> fragments = new ArrayList<>();
@@ -56,7 +56,7 @@ public class CustomFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
 
     private boolean needToNotify = true;
 
-    public CustomFragmentStatePagerAdapter(@NonNull Context ctx, @NonNull FragmentManager fm) {
+    public CustomFragmentStatePagerAdapter(@NotNull Context ctx, @NotNull FragmentManager fm) {
         super(fm);
         context = ctx;
     }
@@ -101,13 +101,13 @@ public class CustomFragmentStatePagerAdapter extends FragmentStatePagerAdapter {
         return POSITION_NONE;
     }
 
-    @NonNull
+    @NotNull
     public FragmentPair getFragmentInfo(int at) {
         rangeCheck(at);
         return fragments.get(at);
     }
 
-    @NonNull
+    @NotNull
     public Fragment getFragmentInstance(int at) {
         return getFragmentInfo(at).fragment;
     }

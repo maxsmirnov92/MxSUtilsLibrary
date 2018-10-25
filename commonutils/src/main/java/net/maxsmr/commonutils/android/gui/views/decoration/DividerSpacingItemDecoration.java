@@ -7,8 +7,8 @@ import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.DrawableRes;
 import android.support.annotation.IntDef;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -33,7 +33,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
     public static final int VERTICAL_LIST = LinearLayoutManager.VERTICAL;
 
-    @NonNull
+    @NotNull
     protected DecorationSettings settings = new DecorationSettings();
 
     @Orientation
@@ -77,12 +77,12 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
         isReverse = reverse;
     }
 
-    @NonNull
+    @NotNull
     public DecorationSettings getSettings() {
         return settings;
     }
 
-    public void setSettings(@NonNull DecorationSettings settings) {
+    public void setSettings(@NotNull DecorationSettings settings) {
         this.settings = settings;
     }
 
@@ -239,20 +239,20 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
     public static class DecorationSettings {
 
-        @NonNull
+        @NotNull
         private final Mode mode;
 
-        @NonNull
+        @NotNull
         private final Set<Integer> dividerPositions = new LinkedHashSet<>();
 
         private final Set<Integer> spacingPositions = new LinkedHashSet<>();
 
-        @NonNull
+        @NotNull
         public Mode getMode() {
             return mode;
         }
 
-        @NonNull
+        @NotNull
         public Set<Integer> getDividerPositions() {
             return Collections.unmodifiableSet(dividerPositions);
         }
@@ -265,11 +265,11 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
             this(Mode.ALL_EXCEPT_LAST);
         }
 
-        public DecorationSettings(@NonNull Mode mode) {
+        public DecorationSettings(@NotNull Mode mode) {
             this(mode, null, null);
         }
 
-        public DecorationSettings(@NonNull Mode mode, @Nullable Collection<Integer> dividerPositions, @Nullable Collection<Integer> spacingPositions) {
+        public DecorationSettings(@NotNull Mode mode, @Nullable Collection<Integer> dividerPositions, @Nullable Collection<Integer> spacingPositions) {
             this.mode = mode;
             if (dividerPositions != null) {
                 this.dividerPositions.addAll(dividerPositions);

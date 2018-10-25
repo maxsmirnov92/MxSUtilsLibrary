@@ -2,7 +2,7 @@ package net.maxsmr.networkutils.watcher;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.android.hardware.DeviceUtils;
@@ -93,19 +93,19 @@ public class NetworkWatcher {
         this.context = context;
     }
 
-    public void addHostPingListener(@NonNull HostPingListener listener) throws NullPointerException {
+    public void addHostPingListener(@NotNull HostPingListener listener) throws NullPointerException {
         hostPingListeners.registerObserver(listener);
     }
 
-    public void removeHostPingListener(@NonNull HostPingListener listener) {
+    public void removeHostPingListener(@NotNull HostPingListener listener) {
         hostPingListeners.unregisterObserver(listener);
     }
 
-    public void addOnPhoneRebootListener(@NonNull PhoneRebootListener listener) {
+    public void addOnPhoneRebootListener(@NotNull PhoneRebootListener listener) {
         rebootListeners.registerObserver(listener);
     }
 
-    public void removeOnPhoneRebootListener(@NonNull PhoneRebootListener listener) {
+    public void removeOnPhoneRebootListener(@NotNull PhoneRebootListener listener) {
         rebootListeners.unregisterObserver(listener);
     }
 
@@ -266,7 +266,7 @@ public class NetworkWatcher {
 
     public interface HostPingListener {
 
-        void onHostPingStateChanged(@NonNull PingState state);
+        void onHostPingStateChanged(@NotNull PingState state);
 
         void onHostPingTimeChanged(double pingTime);
     }
@@ -301,10 +301,10 @@ public class NetworkWatcher {
 
         private int toggleAirplaneModeAttempts = 0;
 
-        @NonNull
+        @NotNull
         private PingState lastHostPingState = PingState.NONE;
 
-        @NonNull
+        @NotNull
         public PingState getLastHostPingState() {
             return lastHostPingState;
         }
@@ -713,7 +713,7 @@ public class NetworkWatcher {
             }
         }
 
-        private void notifyHostPingStateChanged(@NonNull PingState state) {
+        private void notifyHostPingStateChanged(@NotNull PingState state) {
             synchronized (observers) {
                 for (HostPingListener l : observers) {
                     l.onHostPingStateChanged(state);

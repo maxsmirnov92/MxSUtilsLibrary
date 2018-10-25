@@ -3,7 +3,7 @@ package net.maxsmr.tasksutils.storage.sync;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.CallSuper;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 
@@ -28,7 +28,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
 
     protected final StorageObservable storageObservable = new StorageObservable();
 
-    @NonNull
+    @NotNull
     protected final Class<I> runnableInfoClass;
 
     protected final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(getLoggerClass());
@@ -50,7 +50,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
 
     private CustomHandlerThread restoreThread;
 
-    public AbstractSyncStorage(@NonNull Class<I> runnableInfoClass,
+    public AbstractSyncStorage(@NotNull Class<I> runnableInfoClass,
                                boolean allowSync, int maxSize, @Nullable IAddRule<I> addRule) {
         this.runnableInfoClass = runnableInfoClass;
         setAllowSync(allowSync);
@@ -92,16 +92,16 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
 
     protected abstract int restoreStorage();
 
-    @NonNull
+    @NotNull
     public Class<I> getRunnableInfoClass() {
         return runnableInfoClass;
     }
 
-    public void addStorageListener(@NonNull IStorageListener listener) {
+    public void addStorageListener(@NotNull IStorageListener listener) {
         storageObservable.registerObserver(listener);
     }
 
-    public void removeStorageListener(@NonNull IStorageListener listener) {
+    public void removeStorageListener(@NotNull IStorageListener listener) {
         storageObservable.unregisterObserver(listener);
     }
 
@@ -210,13 +210,13 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         return info != null && contains(info.id);
     }
 
-    @NonNull
+    @NotNull
     public abstract Iterator<I> iterator();
 
     /**
      * @return array list containing elements of storage
      */
-    @NonNull
+    @NotNull
     public abstract List<I> getAll();
 
     @Nullable
@@ -281,7 +281,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         return false;
     }
 
-    protected final boolean addInternal(@NonNull I info) {
+    protected final boolean addInternal(@NotNull I info) {
         final int size = getSize();
         return addInternal(info, size > 0 ? size - 1 : 0);
     }
@@ -317,7 +317,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
     }
 
     // no check needed
-    protected abstract boolean setInternal(@NonNull I info, int index);
+    protected abstract boolean setInternal(@NotNull I info, int index);
 
     @Nullable
     public final Pair<Integer, I> remove(@Nullable I info) {
@@ -426,7 +426,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         }
     }
 
-    protected boolean checkAddElement(@NonNull I info, int index, boolean checkMax) {
+    protected boolean checkAddElement(@NotNull I info, int index, boolean checkMax) {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }
@@ -435,7 +435,7 @@ public abstract class AbstractSyncStorage<I extends RunnableInfo> {
         return !contains(info) && (!checkMax || !isMaxSizeReached());
     }
 
-    protected boolean checkSetElement(@NonNull I info, int index) {
+    protected boolean checkSetElement(@NotNull I info, int index) {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
         }

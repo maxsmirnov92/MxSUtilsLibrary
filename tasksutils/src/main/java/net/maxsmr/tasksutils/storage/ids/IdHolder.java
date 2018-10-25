@@ -1,5 +1,7 @@
 package net.maxsmr.tasksutils.storage.ids;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class IdHolder {
@@ -10,12 +12,12 @@ public class IdHolder {
 
     private final int initialValue;
 
-    public IdHolder(int initialValue) {
-       lastId = new AtomicInteger(this.initialValue = initialValue);
+    public IdHolder(@NotNull IdHolder idHolder) {
+        this(idHolder.initialValue);
     }
 
-    public IdHolder(@NonNull IdHolder idHolder) {
-        this(idHolder.initialValue);
+    public IdHolder(int initialValue) {
+       lastId = new AtomicInteger(this.initialValue = initialValue);
     }
 
     public int get() {

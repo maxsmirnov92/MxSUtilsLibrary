@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.logger.holder;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.text.TextUtils;
 import net.maxsmr.commonutils.logger.BaseTagLogger;
 
@@ -25,7 +25,7 @@ public abstract class BaseTagLoggerHolder extends BaseLoggerHolder {
         this.logTag = logTag;
     }
 
-    protected abstract BaseTagLogger createLogger(@NonNull Class<?> clazz);
+    protected abstract BaseTagLogger createLogger(@NotNull Class<?> clazz);
 
     protected String getTag(Class clazz) {
         String tag = TAGS.get(clazz);

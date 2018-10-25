@@ -1,11 +1,11 @@
 import android.support.annotation.CallSuper;
-import android.support.annotation.NonNull;
 
-import net.maxsmr.commonutils.logger.LogcatLogger;
 import net.maxsmr.commonutils.logger.BaseLogger;
+import net.maxsmr.commonutils.logger.LogcatLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.logger.holder.ILoggerHolderProvider;
 
+import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -26,7 +26,7 @@ public class LoggerTest {
     @CallSuper
     public void prepare() {
         Holder.initInstance(new ILoggerHolderProvider<Holder>() {
-            @NonNull
+            @NotNull
             @Override
             public Holder provideHolder() {
                 return new Holder();
@@ -49,7 +49,7 @@ public class LoggerTest {
         }
 
         @Override
-        protected BaseLogger createLogger(@NonNull Class<?> clazz) {
+        protected BaseLogger createLogger(@NotNull Class<?> clazz) {
             return new LogcatLogger(clazz.getSimpleName());
         }
     }

@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.android.processmanager;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 public class ProcessInfo {
     
@@ -36,7 +36,7 @@ public class ProcessInfo {
         this.isSystemApp = isSystemApp;
     }
 
-    @NonNull
+    @NotNull
     @Override
     public String toString() {
         return "ProcessInfo{" +

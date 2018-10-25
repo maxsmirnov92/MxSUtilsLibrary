@@ -8,7 +8,7 @@ import android.content.pm.ProviderInfo;
 import android.database.Cursor;
 import android.net.Uri;
 import android.provider.BaseColumns;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
@@ -35,11 +35,11 @@ public final class ProviderUtils {
         return uri != null && !TextUtils.isEmpty(uri.getScheme()) && uri.getScheme().equalsIgnoreCase(AbstractSQLiteContentProvider.SCHEME_CONTENT_PROVIDER);
     }
 
-    public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NonNull Context context, @Nullable String packageName, @NonNull Class<P> providerClass) {
+    public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NotNull Context context, @Nullable String packageName, @NotNull Class<P> providerClass) {
         return getProviderInfo(context, packageName,  providerClass,0);
     }
 
-    public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NonNull Context context, @Nullable String packageName, @NonNull Class<P> providerClass, int flags) {
+    public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NotNull Context context, @Nullable String packageName, @NotNull Class<P> providerClass, int flags) {
         if (!TextUtils.isEmpty(packageName)) {
             try {
                 return context.getPackageManager().getProviderInfo(new ComponentName(packageName, providerClass.getName()), flags);
@@ -53,14 +53,14 @@ public final class ProviderUtils {
     /**
      * @return authorities associated with this ContentProvider (defined in AndroidManifest.xml)
      */
-    @NonNull
-    public static <P extends ContentProvider> Set<String> getAuthorities(@NonNull Context context, String packageName, @NonNull Class<P> providerClass) {
+    @NotNull
+    public static <P extends ContentProvider> Set<String> getAuthorities(@NotNull Context context, String packageName, @NotNull Class<P> providerClass) {
         final ProviderInfo pi = getProviderInfo(context, packageName, providerClass, PackageManager.GET_META_DATA);
         return pi != null? new LinkedHashSet<>(Arrays.asList(TextUtils.split(pi.authority, ";"))) : Collections.<String>emptySet();
     }
 
     @Nullable
-    public static <P extends ContentProvider> Uri getContentProviderUri(@NonNull Context context, @Nullable String packageName, @NonNull Class<P> providerClass) {
+    public static <P extends ContentProvider> Uri getContentProviderUri(@NotNull Context context, @Nullable String packageName, @NotNull Class<P> providerClass) {
         ProviderInfo providerInfo = getProviderInfo(context, packageName, providerClass, PackageManager.GET_META_DATA);
         if (providerInfo != null) {
             Uri.Builder uriBuilder = new Uri.Builder();
@@ -72,7 +72,7 @@ public final class ProviderUtils {
     }
 
     @Nullable
-    public static <P extends ContentProvider> Uri getContentProviderTableUri(@NonNull Context context, @Nullable String packageName, @NonNull Class<P> providerClass, @NonNull String tableName) {
+    public static <P extends ContentProvider> Uri getContentProviderTableUri(@NotNull Context context, @Nullable String packageName, @NotNull Class<P> providerClass, @NotNull String tableName) {
         Uri contentProviderUri = getContentProviderUri(context, packageName, providerClass);
         if (contentProviderUri != null) {
             Uri.Builder uriBuilder = contentProviderUri.buildUpon();
@@ -90,7 +90,7 @@ public final class ProviderUtils {
         return null;
     }
 
-    @NonNull
+    @NotNull
     public static List<String> getAllExistingColumns(Uri uri, Context ctx) {
         if (isCorrectUri(uri)) {
             Cursor c = ctx.getContentResolver().query(uri, null, null, null, BaseColumns._ID
@@ -107,7 +107,7 @@ public final class ProviderUtils {
     }
 
     @SuppressWarnings("unchecked")
-    public static <V> V getDataFromCursor(@Nullable Cursor c, @Nullable String columnName, @NonNull Class<V> dataClass) {
+    public static <V> V getDataFromCursor(@Nullable Cursor c, @Nullable String columnName, @NotNull Class<V> dataClass) {
         if (c != null && !c.isClosed() && c.getCount() > 0) {
             if (!TextUtils.isEmpty(columnName)) {
                 columnName = columnName.toLowerCase(Locale.getDefault());

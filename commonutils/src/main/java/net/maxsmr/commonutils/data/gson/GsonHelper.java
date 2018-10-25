@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.data.gson;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
@@ -27,7 +27,7 @@ public class GsonHelper {
      * @param type T Serializable or Parcelable
      */
     @Nullable
-    public static <T> T fromJsonObjectString(@NonNull Gson gson, @Nullable String jsonString, @NonNull Class<T> type) {
+    public static <T> T fromJsonObjectString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Class<T> type) {
         logger.d("fromJsonObjectString(), jsonString=" + jsonString + ", type=" + type);
         try {
             return gson.fromJson(jsonString, type);
@@ -40,8 +40,8 @@ public class GsonHelper {
     /**
      * @param type T Serializable or Parcelable
      */
-    @NonNull
-    public static <T> List<T> fromJsonArrayString(@NonNull Gson gson, @Nullable String jsonString, @NonNull Class<T[]> type) {
+    @NotNull
+    public static <T> List<T> fromJsonArrayString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Class<T[]> type) {
         logger.d("fromJsonArrayString(), jsonString=" + jsonString + ", type=" + type);
         try {
             return new ArrayList<>(Arrays.asList(gson.fromJson(jsonString, type)));
@@ -51,8 +51,8 @@ public class GsonHelper {
         }
     }
 
-    @NonNull
-    public static <T> String toJsonString(@NonNull Gson gson, T... what) {
+    @NotNull
+    public static <T> String toJsonString(@NotNull Gson gson, T... what) {
         logger.d("toJsonString(), what=" + Arrays.toString(what));
 
         try {
@@ -64,13 +64,13 @@ public class GsonHelper {
     }
 
     @SuppressWarnings("unchecked")
-    @NonNull
+    @NotNull
     public static <P extends Number> P getPrimitiveNumber(Object object, Class<P> clazz) {
         return object != null && clazz.isAssignableFrom(object.getClass()) ? (P) object : (P) Integer.valueOf(0);
     }
 
     @SuppressWarnings("unchecked")
-    @NonNull
+    @NotNull
     public static <P extends Number> P getPrimitiveNumber(JsonElement element, Class<P> clazz) {
         JsonPrimitive obj = element instanceof JsonPrimitive ? (JsonPrimitive) element : null;
         return obj != null && obj.isNumber() && clazz.isAssignableFrom(obj.getAsNumber().getClass()) ? (P) obj.getAsNumber() : (P) Integer.valueOf(0);

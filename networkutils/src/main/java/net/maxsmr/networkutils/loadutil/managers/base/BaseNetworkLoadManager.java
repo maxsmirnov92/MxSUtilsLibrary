@@ -3,7 +3,7 @@ package net.maxsmr.networkutils.loadutil.managers.base;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Observable;
@@ -68,16 +68,16 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         }
     }
 
-    protected void doRestore(@NonNull final TaskRunnable.ITaskRestorer<LI, Void, Void, R> restorer) {
+    protected void doRestore(@NotNull final TaskRunnable.ITaskRestorer<LI, Void, Void, R> restorer) {
         mExecutor.restoreQueueByRestorer(restorer);
     }
 
-    public final void registerLoadListener(@NonNull LoadListener<LI> listener) {
+    public final void registerLoadListener(@NotNull LoadListener<LI> listener) {
         checkReleased();
         mLoadObservable.registerObserver(listener);
     }
 
-    public final void unregisterLoadListener(@NonNull LoadListener<LI> listener) {
+    public final void unregisterLoadListener(@NotNull LoadListener<LI> listener) {
         mLoadObservable.unregisterObserver(listener);
     }
 
@@ -86,7 +86,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         return mLoadObservable.findLoadListenerById(id);
     }
 
-    @NonNull
+    @NotNull
     public final Set<LoadListener<LI>> getLoadListeners() {
         return mLoadObservable.copyOfObservers();
     }
@@ -95,7 +95,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         mLoadObservable.unregisterAll();
     }
 
-    public final void enqueueLoad(@NonNull LI rInfo) {
+    public final void enqueueLoad(@NotNull LI rInfo) {
         logger.d("enqueueLoad(), rInfo=" + rInfo);
         synchronized (mExecutor) {
             if (rInfo.id < 0) {
@@ -108,24 +108,24 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         }
     }
 
-    protected abstract R newRunnable(@NonNull LI rInfo);
+    protected abstract R newRunnable(@NotNull LI rInfo);
 
     @Override
-    public void onAddedToQueue(@NonNull R r, int waitingCount, int activeCount) {
+    public void onAddedToQueue(@NotNull R r, int waitingCount, int activeCount) {
         mLoadObservable.notifyLoadAddedToQueue(r.rInfo, waitingCount, activeCount);
     }
 
     @Override
-    public void onBeforeExecute(@NonNull Thread t, @NonNull R r, @NonNull ExecInfo<LI, Void, Void, R> execInfo, int waitingCount, int activeCount) {
+    public void onBeforeExecute(@NotNull Thread t, @NotNull R r, @NotNull ExecInfo<LI, Void, Void, R> execInfo, int waitingCount, int activeCount) {
 
     }
 
     @Override
-    public void onAfterExecute(@NonNull R r, Throwable t, @NonNull ExecInfo<LI, Void, Void, R> execInfo, @NonNull StatInfo<LI, Void, Void, R> statInfo, int waitingCount, int activeCount) {
+    public void onAfterExecute(@NotNull R r, Throwable t, @NotNull ExecInfo<LI, Void, Void, R> execInfo, @NotNull StatInfo<LI, Void, Void, R> statInfo, int waitingCount, int activeCount) {
         mLoadObservable.notifyLoadRemovedFromQueue(r.rInfo, mExecutor.getWaitingTasksCount(), mExecutor.getActiveTasksCount());
     }
 
-    @NonNull
+    @NotNull
     public List<LI> getAllLoadRunnableInfos() {
         checkReleased();
         List<LI> loadInfos = new ArrayList<>();
@@ -136,7 +136,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         return Collections.unmodifiableList(loadInfos);
     }
 
-    @NonNull
+    @NotNull
     public List<LI> getWaitingLoadRunnableInfos() {
         checkReleased();
         List<LI> loadInfos = new ArrayList<>();
@@ -147,7 +147,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         return Collections.unmodifiableList(loadInfos);
     }
 
-    @NonNull
+    @NotNull
     public List<LI> getActiveLoadRunnableInfos() {
         checkReleased();
         List<LI> loadInfos = new ArrayList<>();
@@ -158,7 +158,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         return Collections.unmodifiableList(loadInfos);
     }
 
-    @NonNull
+    @NotNull
     protected Set<R> getAllLoadRunnables() {
         synchronized (mExecutor) {
             checkReleased();
@@ -166,7 +166,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         }
     }
 
-    @NonNull
+    @NotNull
     protected List<R> getWaitingLoadRunnables() {
         synchronized (mExecutor) {
             checkReleased();
@@ -174,7 +174,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
         }
     }
 
-    @NonNull
+    @NotNull
     protected List<R> getActiveLoadRunnables() {
         synchronized (mExecutor) {
             checkReleased();
@@ -242,7 +242,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
 
     protected abstract Class<?> getLoggerClass();
 
-    public static boolean isResponseOk(@NonNull HttpURLConnection conn) throws IOException {
+    public static boolean isResponseOk(@NotNull HttpURLConnection conn) throws IOException {
         return isResponseOk(conn.getResponseCode());
     }
 
@@ -259,7 +259,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
             }
         }
 
-        public final void notifyLoadAddedToQueue(@NonNull I info, int waitingLoads, int activeLoads) {
+        public final void notifyLoadAddedToQueue(@NotNull I info, int waitingLoads, int activeLoads) {
             synchronized (observers) {
                 for (LoadListener<I> l : copyOfObservers()) {
                     l.onLoadAddedToQueue(info.id, waitingLoads, activeLoads);
@@ -267,7 +267,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
             }
         }
 
-        public final void notifyLoadRemovedFromQueue(@NonNull I info, int waitingLoads, int activeLoads) {
+        public final void notifyLoadRemovedFromQueue(@NotNull I info, int waitingLoads, int activeLoads) {
             synchronized (observers) {
                 for (LoadListener<I> l : copyOfObservers()) {
                     l.onLoadRemovedFromQueue(info.id, waitingLoads, activeLoads);
@@ -275,7 +275,7 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
             }
         }
 
-        public final void notifyStateChanged(@NonNull final I info, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, Throwable t) {
+        public final void notifyStateChanged(@NotNull final I info, @NotNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, Throwable t) {
             synchronized (observers) {
                 LoadListener<I> l = Predicate.Methods.find(copyOfObservers(), listener -> {
                     int id = listener.getId(info);

@@ -12,10 +12,10 @@ import java.lang.reflect.Type;
 
 public class PropertyBasedAdapter<T> implements JsonSerializer<T>, JsonDeserializer<T> {
 
-//    @NonNull
+//    @NotNull
 //    private final Class<T> mClass;
 //
-//    public PropertyBasedAdapter(@NonNull Class<T> clazz) {
+//    public PropertyBasedAdapter(@NotNull Class<T> clazz) {
 //        mClass = clazz;
 //    }
 

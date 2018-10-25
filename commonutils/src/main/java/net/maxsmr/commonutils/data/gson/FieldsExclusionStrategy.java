@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.data.gson;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.text.TextUtils;
 
 import com.google.gson.ExclusionStrategy;
@@ -17,7 +17,7 @@ public class FieldsExclusionStrategy implements ExclusionStrategy {
 
     private final Set<Class<?>> classesToCheck ;
 
-    @NonNull
+    @NotNull
     private final Set<String> fieldNamesToCheck;
 
     public FieldsExclusionStrategy(Collection<Class<?>> classesToCheck, Collection<String> fieldNamesToCheck) {

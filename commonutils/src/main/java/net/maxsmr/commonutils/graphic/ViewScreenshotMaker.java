@@ -1,14 +1,15 @@
 package net.maxsmr.commonutils.graphic;
 
 import android.graphics.Bitmap;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.view.View;
 import android.view.Window;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -21,7 +22,7 @@ public final class ViewScreenshotMaker {
     }
 
     @Nullable
-    public static File makeScreenshot(String folderName, String fileName, @NonNull Bitmap.CompressFormat format, @NonNull Window window) {
+    public static File makeScreenshot(String folderName, String fileName, @NotNull Bitmap.CompressFormat format, @NotNull Window window) {
 
         final File destFile = FileHelper.createNewFile(fileName, folderName);
 

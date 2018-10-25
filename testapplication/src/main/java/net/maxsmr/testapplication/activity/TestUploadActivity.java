@@ -3,7 +3,7 @@ package net.maxsmr.testapplication.activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Environment;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
@@ -107,37 +107,37 @@ public class TestUploadActivity extends AppCompatActivity implements AbstractSyn
 
                 AbstractRequest<LoadRunnableInfo.FileBody, AbstractRequest.Callback> request = new AbstractRequest<LoadRunnableInfo.FileBody, AbstractRequest.Callback>(id, loadManager) {
 
-                    @NonNull
+                    @NotNull
                     @Override
                     protected String getName() {
                         return name;
                     }
 
-                    @NonNull
+                    @NotNull
                     @Override
                     protected String getUrl() {
                         return UPLOAD_URL;
                     }
 
-                    @NonNull
+                    @NotNull
                     @Override
                     protected LoadRunnableInfo.LoadSettings getLoadSettings() {
                         return loadSettings;
                     }
 
-                    @NonNull
+                    @NotNull
                     @Override
                     protected LoadRunnableInfo.ContentType getContentType() {
                         return LoadRunnableInfo.ContentType.MULTIPART_FORM_DATA;
                     }
 
-                    @NonNull
+                    @NotNull
                     @Override
                     protected LoadRunnableInfo.FileBody getBody() {
                         return body;
                     }
 
-                    @NonNull
+                    @NotNull
                     @Override
                     protected List<Integer> getAcceptableResponseCodes() {
                         return Collections.emptyList();
@@ -196,22 +196,22 @@ public class TestUploadActivity extends AppCompatActivity implements AbstractSyn
     }
 
     @Override
-    public int getId(@NonNull LoadRunnableInfo<LoadRunnableInfo.FileBody> loadInfo) {
+    public int getId(@NotNull LoadRunnableInfo<LoadRunnableInfo.FileBody> loadInfo) {
         return getId();
     }
 
     @Override
-    public long getProcessingNotifyInterval(@NonNull LoadRunnableInfo<LoadRunnableInfo.FileBody> loadInfo) {
+    public long getProcessingNotifyInterval(@NotNull LoadRunnableInfo<LoadRunnableInfo.FileBody> loadInfo) {
         return LoadListener.DEFAULT_PROCESSING_NOTIFY_INTERVAL;
     }
 
     @Override
-    public void onUpdateState(@NonNull LoadRunnableInfo<LoadRunnableInfo.FileBody> loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
+    public void onUpdateState(@NotNull LoadRunnableInfo<LoadRunnableInfo.FileBody> loadInfo, @NotNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t) {
 
     }
 
     @Override
-    public void onResponse(@NonNull final LoadRunnableInfo<LoadRunnableInfo.FileBody> loadInfo, @NonNull final NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NonNull NetworkLoadManager.Response response) {
+    public void onResponse(@NotNull final LoadRunnableInfo<LoadRunnableInfo.FileBody> loadInfo, @NotNull final NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NotNull NetworkLoadManager.Response response) {
         runOnUiThread(new Runnable() {
             @Override
             public void run() {

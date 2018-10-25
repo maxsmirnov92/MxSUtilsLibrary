@@ -1,6 +1,6 @@
 package net.maxsmr.tasksutils.storage.sync.collection;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
@@ -13,7 +13,7 @@ import java.util.List;
 
 public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionSyncStorage<I> {
 
-    @NonNull
+    @NotNull
     private final List<I> dataList;
 
     /**
@@ -21,7 +21,7 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
      */
     public ListSyncStorage(@Nullable String storageDirPath, @Nullable String extension,
                            Class<I> clazz,
-                           boolean sync, int maxSize, @NonNull IAddRule<I> addRule,boolean startRestore) {
+                           boolean sync, int maxSize, @NotNull IAddRule<I> addRule,boolean startRestore) {
         super(storageDirPath, extension, clazz, sync, maxSize, addRule, startRestore);
         dataList = new ArrayList<>(maxSize);
     }
@@ -34,7 +34,7 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
         return dataList.size();
     }
 
-    @NonNull
+    @NotNull
     @Override
     public synchronized Iterator<I> iterator() {
         if (isDisposed()) {
@@ -44,7 +44,7 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
     }
 
     @Override
-    @NonNull
+    @NotNull
     public synchronized List<I> getAll() {
         if (isDisposed()) {
             throw new IllegalStateException("release() was called");
@@ -114,7 +114,7 @@ public class ListSyncStorage<I extends RunnableInfo> extends AbstractCollectionS
     }
 
     @Override
-    protected boolean setInternal(@NonNull I info, int pos) {
+    protected boolean setInternal(@NotNull I info, int pos) {
         dataList.set(pos, info);
         return true;
     }

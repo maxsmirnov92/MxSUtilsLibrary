@@ -4,17 +4,17 @@ package net.maxsmr.tasksutils.handler;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 public abstract class HandlerRunnable<T> implements Runnable {
 
-    @NonNull
+    @NotNull
     protected final Handler handler;
 
-    @NonNull
+    @NotNull
     private volatile AsyncTask.Status status = AsyncTask.Status.PENDING;
 
-    @NonNull
+    @NotNull
     public final AsyncTask.Status getStatus() {
         return status;
     }
@@ -23,7 +23,7 @@ public abstract class HandlerRunnable<T> implements Runnable {
         this(new Handler(Looper.getMainLooper()));
     }
 
-    public HandlerRunnable(@NonNull Handler handler) {
+    public HandlerRunnable(@NotNull Handler handler) {
         this.handler = handler;
     }
 

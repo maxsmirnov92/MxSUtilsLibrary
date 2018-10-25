@@ -3,7 +3,6 @@ package net.maxsmr.testapplication.activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.design.widget.Snackbar;
 import android.support.v4.util.Pair;
@@ -28,15 +27,17 @@ import net.maxsmr.testapplication.R;
 import net.maxsmr.testapplication.taskutils.TestRunnableInfo;
 import net.maxsmr.testapplication.taskutils.TestTaskRunnable;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static junit.framework.Assert.assertEquals;
+import static org.junit.Assert.assertEquals;
+
 
 public class TestTasksActivity extends AppCompatActivity implements AbstractSyncStorage.IStorageListener, TaskRunnableExecutor.Callbacks<TestRunnableInfo, Void, Boolean, TestTaskRunnable>, TaskRunnable.Callbacks<TestRunnableInfo, Void, Boolean, TaskRunnable<TestRunnableInfo, Void, Boolean>> {
 
@@ -126,19 +127,19 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
     }
 
     @Override
-    public void onAddedToQueue(@NonNull final TestTaskRunnable r, final int waitingCount, final int activeCount) {
+    public void onAddedToQueue(@NotNull final TestTaskRunnable r, final int waitingCount, final int activeCount) {
         logger.d("onAddedToQueue(), r=" + r + ", waitingCount=" + waitingCount + ", activeCount=" + activeCount);
         Snackbar.make(contentView, "task with id " + r.getId() + " was added to queue (waiting: " + waitingCount + ", active: " + activeCount + ")", Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onBeforeExecute(@NonNull Thread t, @NonNull final TestTaskRunnable r, @NonNull ExecInfo<TestRunnableInfo, Void, Boolean, TestTaskRunnable> execInfo, final int waitingCount, final int activeCount) {
+    public void onBeforeExecute(@NotNull Thread t, @NotNull final TestTaskRunnable r, @NotNull ExecInfo<TestRunnableInfo, Void, Boolean, TestTaskRunnable> execInfo, final int waitingCount, final int activeCount) {
         logger.d("onBeforeExecute(), r=" + r + ", execInfo=" + execInfo + ", waitingCount=" + waitingCount + ", activeCount=" + activeCount);
         Snackbar.make(contentView, "task with id " + r.getId() + " starting executing (waiting: " + waitingCount + ", active: " + activeCount + ")", Snackbar.LENGTH_SHORT).show();
     }
 
     @Override
-    public void onAfterExecute(@NonNull final TestTaskRunnable r, Throwable t, @NonNull final ExecInfo<TestRunnableInfo, Void, Boolean, TestTaskRunnable> execInfo, @NonNull final StatInfo<TestRunnableInfo, Void, Boolean, TestTaskRunnable> statInfo, final int waitingCount, final int activeCount) {
+    public void onAfterExecute(@NotNull final TestTaskRunnable r, Throwable t, @NotNull final ExecInfo<TestRunnableInfo, Void, Boolean, TestTaskRunnable> execInfo, @NotNull final StatInfo<TestRunnableInfo, Void, Boolean, TestTaskRunnable> statInfo, final int waitingCount, final int activeCount) {
         logger.d("onAfterExecute(), r=" + r + ", t=" + t + ", execInfo=" + execInfo + ", statInfo=" + statInfo + ", waitingCount=" + waitingCount + ", activeCount=" + activeCount);
         Snackbar.make(contentView, "task with id " + r.getId() + " finished executing in " + execInfo.getTimeExecuting()
                 + " ms (waiting: " + waitingCount + "), active: " + activeCount, Snackbar.LENGTH_SHORT).show();
@@ -147,27 +148,27 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
 
 
     @Override
-    public void onPreExecute(@NonNull TaskRunnable<TestRunnableInfo, Void, Boolean> task) {
+    public void onPreExecute(@NotNull TaskRunnable<TestRunnableInfo, Void, Boolean> task) {
 
     }
 
     @Override
-    public void onProgress(@NonNull TaskRunnable<TestRunnableInfo, Void, Boolean> task, @Nullable Void aVoid) {
+    public void onProgress(@NotNull TaskRunnable<TestRunnableInfo, Void, Boolean> task, @Nullable Void aVoid) {
 
     }
 
     @Override
-    public void onPostExecute(@NonNull TaskRunnable<TestRunnableInfo, Void, Boolean> task, @Nullable Boolean aBoolean) {
+    public void onPostExecute(@NotNull TaskRunnable<TestRunnableInfo, Void, Boolean> task, @Nullable Boolean aBoolean) {
 
     }
 
     @Override
-    public void onFailed(@NonNull TaskRunnable<TestRunnableInfo, Void, Boolean> task, @NonNull Throwable e, int runCount, int maxRunCount) {
+    public void onFailed(@NotNull TaskRunnable<TestRunnableInfo, Void, Boolean> task, @NotNull Throwable e, int runCount, int maxRunCount) {
 
     }
 
     @Override
-    public void onCancelled(@NonNull TaskRunnable<TestRunnableInfo, Void, Boolean> task) {
+    public void onCancelled(@NotNull TaskRunnable<TestRunnableInfo, Void, Boolean> task) {
 
     }
 }

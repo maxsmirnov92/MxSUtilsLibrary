@@ -10,7 +10,6 @@ import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.BaseColumns;
-import android.support.annotation.NonNull;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
@@ -22,6 +21,8 @@ import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation.SQLiteOperation;
 import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher;
 import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher.URI_MATCH;
 import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher.UriMatcherPair;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -146,7 +147,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
     }
 
     @Override
-    public final String getType(@NonNull Uri uri) {
+    public final String getType(@NotNull Uri uri) {
 
         if (uriMatcher == null)
             throw new RuntimeException("uriMatcher is null");
@@ -184,7 +185,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
     }
 
     @Override
-    public final Cursor query(@NonNull Uri uri, String[] columns, String where, String[] whereArgs, String orderBy) {
+    public final Cursor query(@NotNull Uri uri, String[] columns, String where, String[] whereArgs, String orderBy) {
         logger.d("query(), uri=" + uri + ", columns=" + Arrays.toString(columns) + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs) + ", orderBy=" + orderBy);
 
         if (getContext() == null) {
@@ -233,7 +234,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
     }
 
     @Override
-    public final Uri insert(@NonNull Uri uri, ContentValues values) {
+    public final Uri insert(@NotNull Uri uri, ContentValues values) {
         logger.d("insert(), uri=" + uri + ", values=" + values);
 
         if (getContext() == null) {
@@ -271,7 +272,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
     }
 
     @Override
-    public final int delete(@NonNull Uri uri, String where, String[] whereArgs) {
+    public final int delete(@NotNull Uri uri, String where, String[] whereArgs) {
         logger.d("delete(), uri=" + uri + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs));
 
         if (getContext() == null) {
@@ -321,7 +322,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
     }
 
     @Override
-    public final int update(@NonNull Uri uri, ContentValues values, String where, String[] whereArgs) {
+    public final int update(@NotNull Uri uri, ContentValues values, String where, String[] whereArgs) {
         logger.d("update(), uri=" + uri + ", values=" + values + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs));
 
         if (getContext() == null) {

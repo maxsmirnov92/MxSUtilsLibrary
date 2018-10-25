@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.shell;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import java.util.ArrayList;
@@ -17,10 +17,10 @@ public class CommandResult {
 
     private Integer exitCode = null; // null == not completed
 
-    @NonNull
+    @NotNull
     private List<String> stdOutLines;
 
-    @NonNull
+    @NotNull
     private List<String> stdErrLines;
 
     public CommandResult() {
@@ -39,7 +39,7 @@ public class CommandResult {
         this.stdErrLines = stdErrLines != null ? new ArrayList<>(stdErrLines) : new ArrayList<String>();
     }
 
-    public CommandResult(@NonNull CommandResult from) {
+    public CommandResult(@NotNull CommandResult from) {
         this(from.targetExitCode, from.exitCode, from.stdOutLines, from.stdErrLines);
     }
 
@@ -51,7 +51,7 @@ public class CommandResult {
         return exitCode;
     }
 
-    @NonNull
+    @NotNull
     CommandResult setExitCode(Integer exitCode) {
         this.exitCode = exitCode;
         return this;
@@ -65,12 +65,12 @@ public class CommandResult {
         return isCompleted() && exitCode == targetExitCode /*&& stdErrLines.isEmpty()*/;
     }
 
-    @NonNull
+    @NotNull
     public String getStdOut() {
         return TextUtils.join(System.getProperty("line.separator"), stdOutLines);
     }
 
-    @NonNull
+    @NotNull
     public List<String> getStdOutLines() {
         return new ArrayList<>(stdOutLines);
     }
@@ -82,13 +82,13 @@ public class CommandResult {
         }
     }
 
-    @NonNull
+    @NotNull
     public String getStdErr() {
         return TextUtils.join(System.getProperty("line.separator"), stdOutLines);
     }
 
 
-    @NonNull
+    @NotNull
     public List<String> getStdErrLines() {
         return new ArrayList<>(stdErrLines);
     }

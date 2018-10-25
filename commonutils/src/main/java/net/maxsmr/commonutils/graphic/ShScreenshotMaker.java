@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.graphic;
 
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -95,12 +95,12 @@ public final class ShScreenshotMaker {
         }
 
         @Override
-        public void onThreadStarted(@NonNull ShellUtils.CmdThreadInfo info, @NonNull Thread thread) {
+        public void onThreadStarted(@NotNull ShellUtils.CmdThreadInfo info, @NotNull Thread thread) {
             threads.remove(thread);
         }
 
         @Override
-        public void onThreadFinished(@NonNull ShellUtils.CmdThreadInfo info, @NonNull Thread thread) {
+        public void onThreadFinished(@NotNull ShellUtils.CmdThreadInfo info, @NotNull Thread thread) {
             threads.add(thread);
         }
     }

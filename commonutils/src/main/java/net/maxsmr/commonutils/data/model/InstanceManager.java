@@ -1,11 +1,11 @@
 package net.maxsmr.commonutils.data.model;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
-
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -37,7 +37,7 @@ public abstract class InstanceManager<T> {
     protected abstract String serializeAsString(T inst);
 
     @Nullable
-    protected abstract T deserializeFromByteArray(@NonNull byte[] data);
+    protected abstract T deserializeFromByteArray(@NotNull byte[] data);
 
     @Nullable
     protected abstract T deserializeFromString(String data);
@@ -71,7 +71,7 @@ public abstract class InstanceManager<T> {
         return null;
     }
 
-    public static <T extends Serializable> void toOutputStream(@Nullable T object, @NonNull OutputStream outputStream) {
+    public static <T extends Serializable> boolean toOutputStream(@Nullable T object, @NotNull OutputStream outputStream) {
         if (object != null) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutput objectOutput = null;
@@ -79,6 +79,7 @@ public abstract class InstanceManager<T> {
                 objectOutput = new ObjectOutputStream(bos);
                 objectOutput.writeObject(object);
                 bos.writeTo(outputStream);
+                return true;
             } catch (IOException e) {
                 logger.e(e);
             } finally {
@@ -92,10 +93,11 @@ public abstract class InstanceManager<T> {
                 }
             }
         }
+        return false;
     }
 
     @Nullable
-    public static <T extends Serializable> T fromByteArray(@NonNull Class<T> clazz, @Nullable byte[] data) {
+    public static <T extends Serializable> T fromByteArray(@NotNull Class<T> clazz, @Nullable byte[] data) {
         if (data != null && data.length > 0) {
             ByteArrayInputStream bis = new ByteArrayInputStream(data);
             ObjectInput in = null;
@@ -127,7 +129,7 @@ public abstract class InstanceManager<T> {
 
     @SuppressWarnings("unchecked")
     @Nullable
-    public static <T extends Serializable> T fromInputStream(@NonNull Class<T> clazz, InputStream inputStream) {
+    public static <T extends Serializable> T fromInputStream(@NotNull Class<T> clazz, InputStream inputStream) {
         if (inputStream != null) {
             ObjectInput objectInput = null;
             try {
@@ -151,11 +153,11 @@ public abstract class InstanceManager<T> {
         return null;
     }
 
-    public void saveAsByteArray(@NonNull T inst) {
+    public void saveAsByteArray(@NotNull T inst) {
         FileHelper.writeBytesToFile(file, serializeAsByteArray(inst), false);
     }
 
-    public void saveAsString(@NonNull T inst) {
+    public void saveAsString(@NotNull T inst) {
         FileHelper.writeStringToFile(file, serializeAsString(inst), false);
     }
 

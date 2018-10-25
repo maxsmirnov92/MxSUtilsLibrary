@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.data;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.support.v4.util.Pair;
 
 import java.util.ArrayList;
@@ -16,11 +16,11 @@ public interface Predicate<V> {
 
     class Methods {
 
-        public static <V> boolean contains(@Nullable Collection<V> elements, @NonNull Predicate<V> predicate) {
+        public static <V> boolean contains(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             return findWithIndex(elements, predicate) != null;
         }
 
-        public static <V> Pair<Integer, V> findWithIndex(@Nullable Collection<V> elements, @NonNull Predicate<V> predicate) {
+        public static <V> Pair<Integer, V> findWithIndex(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             int targetIndex = -1;
             V result = null;
             if (elements != null) {
@@ -37,13 +37,13 @@ public interface Predicate<V> {
             return targetIndex >= 0 ? new Pair<>(targetIndex, result) : null;
         }
 
-        public static <V> V find(@Nullable Collection<V> elements, @NonNull Predicate<V> predicate) {
+        public static <V> V find(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             Pair<Integer, V> result = findWithIndex(elements, predicate);
             return result != null ? result.second : null;
         }
 
-        @NonNull
-        public static <V> Map<Integer, V> filterWithIndex(@Nullable Collection<V> elements, @NonNull Predicate<V> predicate) {
+        @NotNull
+        public static <V> Map<Integer, V> filterWithIndex(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             Map<Integer, V> result = new LinkedHashMap<>();
             if (elements != null) {
                 int index = 0;
@@ -57,13 +57,13 @@ public interface Predicate<V> {
             return result;
         }
 
-        @NonNull
-        public static <V> List<V> filter(@Nullable Collection<V> elements, @NonNull Predicate<V> predicate) {
+        @NotNull
+        public static <V> List<V> filter(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             Map<Integer, V> map = filterWithIndex(elements, predicate);
             return entriesToValues(map.entrySet());
         }
 
-        @NonNull
+        @NotNull
         public static <K, V> List<K> entriesToKeys(@Nullable Collection<Map.Entry<K, V>> entries) {
             List<K> result = new ArrayList<>();
             if (entries != null) {
@@ -76,7 +76,7 @@ public interface Predicate<V> {
             return result;
         }
 
-        @NonNull
+        @NotNull
         public static <K, V> List<V> entriesToValues(@Nullable Collection<Map.Entry<K, V>> entries) {
             List<V> result = new ArrayList<>();
             if (entries != null) {

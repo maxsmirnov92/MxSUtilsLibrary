@@ -1,7 +1,7 @@
 package net.maxsmr.testapplication;
 
 import android.app.Application;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -19,7 +19,7 @@ public class TestApplication extends Application {
     static {
         BaseLoggerHolder.initInstance(() -> new BaseLoggerHolder(true) {
             @Override
-            protected BaseLogger createLogger(@NonNull Class<?> clazz) {
+            protected BaseLogger createLogger(@NotNull Class<?> clazz) {
                 if (ConfigureLog4J.getInstance().isInitialized()) {
                     return new Slf4Logger(LoggerFactory.getLogger(clazz));
                 } else {

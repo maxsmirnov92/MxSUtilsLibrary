@@ -1,9 +1,9 @@
 package net.maxsmr.commonutils.data.model;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 public interface IBuilder<O> {
 
-    @NonNull
+    @NotNull
     O build();
 }

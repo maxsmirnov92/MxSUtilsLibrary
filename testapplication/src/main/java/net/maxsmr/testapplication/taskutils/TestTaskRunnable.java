@@ -1,6 +1,6 @@
 package net.maxsmr.testapplication.taskutils;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -11,7 +11,7 @@ public class TestTaskRunnable extends TaskRunnable<TestRunnableInfo, Void, Boole
 
     private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(TestTaskRunnable.class);
 
-    public TestTaskRunnable(@NonNull TestRunnableInfo rInfo) {
+    public TestTaskRunnable(@NotNull TestRunnableInfo rInfo) {
         super(rInfo);
     }
 

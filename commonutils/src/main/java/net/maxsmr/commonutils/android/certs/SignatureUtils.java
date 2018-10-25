@@ -4,8 +4,8 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -31,12 +31,12 @@ public final class SignatureUtils {
     }
 
     @Nullable
-    public static PackageSignatureInfo getSelfPackageSignatureInfo(@NonNull Context context) {
+    public static PackageSignatureInfo getSelfPackageSignatureInfo(@NotNull Context context) {
         return getInstalledPackageSignatureInfo(context, context.getPackageName());
     }
 
     @Nullable
-    public static PackageSignatureInfo getInstalledPackageSignatureInfo(@NonNull Context context, String packageName) {
+    public static PackageSignatureInfo getInstalledPackageSignatureInfo(@NotNull Context context, String packageName) {
         try {
             return getPackageSignatureInfo(context.getPackageManager().getPackageInfo(packageName, PackageManager.GET_SIGNATURES));
         } catch (PackageManager.NameNotFoundException e) {
@@ -45,7 +45,7 @@ public final class SignatureUtils {
     }
 
     @Nullable
-    public static PackageSignatureInfo getArchivePackageSignatureInfo(@NonNull Context context, File file) {
+    public static PackageSignatureInfo getArchivePackageSignatureInfo(@NotNull Context context, File file) {
 
         if (file == null || !file.exists() || !file.isFile()) {
             return null;
@@ -89,23 +89,23 @@ public final class SignatureUtils {
 
     public static class PackageSignatureInfo {
 
-        @NonNull
+        @NotNull
         private final String packageName;
 
-        @NonNull
+        @NotNull
         private final List<SignatureInfo> signatureInfos;
 
-        public PackageSignatureInfo(@NonNull String packageName, @NonNull List<SignatureInfo> signatureInfos) {
+        public PackageSignatureInfo(@NotNull String packageName, @NotNull List<SignatureInfo> signatureInfos) {
             this.packageName = packageName;
             this.signatureInfos = Collections.unmodifiableList(signatureInfos);
         }
 
-        @NonNull
+        @NotNull
         public String getPackageName() {
             return packageName;
         }
 
-        @NonNull
+        @NotNull
         public List<SignatureInfo> getSignatureInfos() {
             return signatureInfos;
         }

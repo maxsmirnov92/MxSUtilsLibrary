@@ -47,7 +47,9 @@ dependencies {
 //    implementation project(':networkutils')
     implementation "net.maxsmr:networkutils:$networkUtilsVersion"
 
-    implementation "com.android.support:appcompat-v7:$appCompatVersion"
+    implementation "com.android.support:appcompat-v7:$supportLibraryVersion"
+
+    implementation "junit:junit:$jUnitVersion"
     testImplementation "junit:junit:$jUnitVersion"
     androidTestImplementation "com.android.support.test:runner:$testRunnerVersion"
     androidTestImplementation "com.android.support.test.espresso:espresso-core:$espressoVersion"

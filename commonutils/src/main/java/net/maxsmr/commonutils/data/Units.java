@@ -1,10 +1,11 @@
 package net.maxsmr.commonutils.data;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.R;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;
@@ -12,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 public class Units {
 
-    public static String timeToString(@NonNull Context context, long t, @NonNull TimeUnit sizeUnit) {
+    public static String timeToString(@NotNull Context context, long t, @NotNull TimeUnit sizeUnit) {
         return timeToString(context, t, sizeUnit, null);
     }
 
@@ -21,7 +22,7 @@ public class Units {
      * @param timeUnit           unit for time
      * @param timeUnitsToExclude list of units to avoid in result string
      */
-    public static String timeToString(@NonNull Context context, long t, @NonNull TimeUnit timeUnit, @Nullable Collection<TimeUnit> timeUnitsToExclude) {
+    public static String timeToString(@NotNull Context context, long t, @NotNull TimeUnit timeUnit, @Nullable Collection<TimeUnit> timeUnitsToExclude) {
         if (t < 0) {
             throw new IllegalArgumentException("incorrect time: " + t);
         }
@@ -69,7 +70,7 @@ public class Units {
         return sb.toString();
     }
 
-    public static String sizeToString(@NonNull Context context, double s, @NonNull SizeUnit sizeUnit) {
+    public static String sizeToString(@NotNull Context context, double s, @NotNull SizeUnit sizeUnit) {
         return sizeToString(context, s, sizeUnit, null);
     }
 
@@ -78,7 +79,7 @@ public class Units {
      * @param sizeUnit           unit for s
      * @param sizeUnitsToExclude list of units to avoid in result string
      */
-    public static String sizeToString(@NonNull Context context, double s, @NonNull SizeUnit sizeUnit, @Nullable Collection<SizeUnit> sizeUnitsToExclude) {
+    public static String sizeToString(@NotNull Context context, double s, @NotNull SizeUnit sizeUnit, @Nullable Collection<SizeUnit> sizeUnitsToExclude) {
         if (s < 0) {
             throw new IllegalArgumentException("incorrect size: " + s);
         }
@@ -503,7 +504,7 @@ public class Units {
             return s / C0;
         }
 
-        public static double convert(long what, @NonNull SizeUnit from, @NonNull SizeUnit to) {
+        public static double convert(long what, @NotNull SizeUnit from, @NotNull SizeUnit to) {
             final double result;
             switch (to) {
                 case BITS:

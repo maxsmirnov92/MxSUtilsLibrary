@@ -1,9 +1,11 @@
 package net.maxsmr.devicewatchers.storage;
 
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.Units;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Comparator;
@@ -40,7 +42,7 @@ public class StorageWatchSettings {
 
     }
 
-    @NonNull
+    @NotNull
     public final ThresholdWhat what;
 
     /**
@@ -52,13 +54,13 @@ public class StorageWatchSettings {
 
     public final double value;
 
-    @NonNull
+    @NotNull
     public final String targetPath;
 
     @Nullable
     public final Map<String, FileHelper.GetMode> deleteOptionMap;
 
-    @NonNull
+    @NotNull
     public final Comparator<? super File> comparator;
 
     /**
@@ -67,7 +69,7 @@ public class StorageWatchSettings {
      * @param targetPath path to watch and clean if necessary
      * @param deleteOptionMap map with absolute paths and delete modes for them
      */
-    public StorageWatchSettings(@NonNull ThresholdWhat what, double value, @NonNull String targetPath, @Nullable Map<String, FileHelper.GetMode> deleteOptionMap, @NonNull Comparator<? super File> comparator) {
+    public StorageWatchSettings(@NotNull ThresholdWhat what, double value, @NotNull String targetPath, @Nullable Map<String, FileHelper.GetMode> deleteOptionMap, @NotNull Comparator<? super File> comparator) {
 
         FileHelper.checkDir(targetPath);
         this.targetPath = targetPath;
@@ -89,7 +91,7 @@ public class StorageWatchSettings {
 
             case SIZE:
 
-                float totalKb = FileHelper.getPartitionTotalSpace(targetPath, FileHelper.SizeUnit.KBYTES);
+                double totalKb = FileHelper.getPartitionTotalSpace(targetPath, Units.SizeUnit.KBYTES);
 
                 if ((value < DEFAULT_PARTITION_MIN_SIZE_KB || value >= totalKb) && value != SIZE_AUTO) {
                     throw new IllegalArgumentException("incorrect value: " + value);
@@ -121,17 +123,17 @@ public class StorageWatchSettings {
 
     static class DeleteOptionPair {
 
-        @NonNull
+        @NotNull
         public final FileHelper.GetMode mode;
 
-        @NonNull
+        @NotNull
         public final String path;
 
         /**
          *
          * @param path relative path above specified target path
          */
-        public DeleteOptionPair(@NonNull FileHelper.GetMode mode, @NonNull String path) {
+        public DeleteOptionPair(@NotNull FileHelper.GetMode mode, @NotNull String path) {
             this.mode = mode;
             this.path = path;
         }

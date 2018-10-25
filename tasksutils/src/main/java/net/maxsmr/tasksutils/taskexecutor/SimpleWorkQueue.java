@@ -1,6 +1,6 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -20,7 +20,7 @@ public class SimpleWorkQueue<I extends RunnableInfo, ProgressInfo, Result, T ext
 
     private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(SimpleWorkQueue.class);
 
-    @NonNull
+    @NotNull
     private final LinkedList<T> runnableQueue = new LinkedList<>();
 
     private final List<PoolWorker> poolWorkers;

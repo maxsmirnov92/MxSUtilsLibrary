@@ -8,7 +8,7 @@ import android.graphics.Point;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -19,8 +19,8 @@ public final class MediaStoreInfoRetriever {
         throw new AssertionError("no instances.");
     }
 
-    @NonNull
-    public static List<MediaFileInfo> queryMedia(@NonNull Context context, boolean isExternal) {
+    @NotNull
+    public static List<MediaFileInfo> queryMedia(@NotNull Context context, boolean isExternal) {
         List<MediaFileInfo> infos = new ArrayList<>();
         ContentResolver contentResolver = context.getContentResolver();
         Cursor cursor = contentResolver.query(isExternal ? MediaStore.Audio.Media.EXTERNAL_CONTENT_URI : MediaStore.Audio.Media.INTERNAL_CONTENT_URI, null, null, null, null);

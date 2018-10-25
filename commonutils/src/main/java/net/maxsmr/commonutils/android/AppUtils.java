@@ -8,8 +8,6 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
@@ -20,6 +18,9 @@ import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
 import net.maxsmr.commonutils.shell.RootShellCommands;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -36,17 +37,17 @@ public final class AppUtils {
         throw new AssertionError("no instances");
     }
 
-    public static boolean isPackageInstalled(@NonNull Context context, String packageName) {
+    public static boolean isPackageInstalled(@NotNull Context context, String packageName) {
         return getApplicationInfo(context, packageName) != null;
     }
 
     @Nullable
-    public static ApplicationInfo getApplicationInfo(@NonNull Context context, String packageName) {
+    public static ApplicationInfo getApplicationInfo(@NotNull Context context, String packageName) {
         return getApplicationInfo(context, packageName, 0);
     }
 
     @Nullable
-    public static ApplicationInfo getApplicationInfo(@NonNull Context context, String packageName, int flags) {
+    public static ApplicationInfo getApplicationInfo(@NotNull Context context, String packageName, int flags) {
         PackageManager packageManager = context.getPackageManager();
         try {
             return packageManager.getApplicationInfo(packageName, flags);
@@ -56,12 +57,12 @@ public final class AppUtils {
     }
 
     @Nullable
-    public static PackageInfo getPackageInfo(@NonNull Context context, String packageName) {
+    public static PackageInfo getPackageInfo(@NotNull Context context, String packageName) {
         return getPackageInfo(context, packageName, 0);
     }
 
     @Nullable
-    public static PackageInfo getPackageInfo(@NonNull Context context, String packageName, int flags) {
+    public static PackageInfo getPackageInfo(@NotNull Context context, String packageName, int flags) {
         PackageManager packageManager = context.getPackageManager();
         if (!TextUtils.isEmpty(packageName)) {
             try {
@@ -73,12 +74,12 @@ public final class AppUtils {
     }
 
     @Nullable
-    public static PackageInfo getArchivePackageInfo(@NonNull Context context, File apkFile) {
+    public static PackageInfo getArchivePackageInfo(@NotNull Context context, File apkFile) {
         return getArchivePackageInfo(context, apkFile, 0);
     }
 
     @Nullable
-    public static PackageInfo getArchivePackageInfo(@NonNull Context context, File apkFile, int flags) {
+    public static PackageInfo getArchivePackageInfo(@NotNull Context context, File apkFile, int flags) {
         if (FileHelper.isFileCorrect(apkFile)) {
             PackageManager packageManager = context.getPackageManager();
             return packageManager.getPackageArchiveInfo(apkFile.getAbsolutePath(), flags);
@@ -87,7 +88,7 @@ public final class AppUtils {
     }
 
     @Nullable
-    public static Intent getLaunchIntentForPackage(@NonNull Context context, String packageName) {
+    public static Intent getLaunchIntentForPackage(@NotNull Context context, String packageName) {
         PackageManager packageManager = context.getPackageManager();
         if (!TextUtils.isEmpty(packageName)) {
             try {
@@ -103,18 +104,18 @@ public final class AppUtils {
      * @return {@linkplain Intent} only if given apk file is installed
      * */
     @Nullable
-    public static Intent getArchiveLaunchIntentForPackage(@NonNull Context context, File apkFile) {
+    public static Intent getArchiveLaunchIntentForPackage(@NotNull Context context, File apkFile) {
         PackageInfo packageInfo = getArchivePackageInfo(context, apkFile);
         return packageInfo != null? getLaunchIntentForPackage(context, packageInfo.packageName) : null;
     }
 
     @Nullable
-    public static Intent getSelfLaunchIntentForPackage(@NonNull Context context) {
+    public static Intent getSelfLaunchIntentForPackage(@NotNull Context context) {
         return getLaunchIntentForPackage(context, context.getPackageName());
     }
 
     @Nullable
-    public static Intent getViewFileIntent(@NonNull Context context, @Nullable File file) {
+    public static Intent getViewFileIntent(@NotNull Context context, @Nullable File file) {
         Intent result = null;
         if (file != null) {
             result = new Intent(Intent.ACTION_VIEW);
@@ -128,12 +129,12 @@ public final class AppUtils {
         return result;
     }
 
-    public static boolean canHandleActivityIntent(@NonNull Context context, @Nullable Intent intent) {
+    public static boolean canHandleActivityIntent(@NotNull Context context, @Nullable Intent intent) {
         List<ResolveInfo> resolveInfos = intent != null ? context.getPackageManager().queryIntentActivities(intent, 0) : null;
         return resolveInfos != null && !resolveInfos.isEmpty();
     }
 
-    public static int getPackageActivitiesCount(@NonNull PackageInfo packageInfo) {
+    public static int getPackageActivitiesCount(@NotNull PackageInfo packageInfo) {
         if (packageInfo.activities == null || packageInfo.activities.length == 0) {
             return 0;
         }
@@ -147,7 +148,7 @@ public final class AppUtils {
      * @param context Context to use
      * @return Build version or 0 if app is not installed
      */
-    public static int getApkVersionCode(@NonNull Context context, File apkFile) {
+    public static int getApkVersionCode(@NotNull Context context, File apkFile) {
         PackageInfo packageInfo = getArchivePackageInfo(context, apkFile);
         if (packageInfo != null) {
             return packageInfo.versionCode;
@@ -161,7 +162,7 @@ public final class AppUtils {
      * @param context Context to use
      * @return Build version or 0 if app is not installed
      */
-    public static int getAppVersionCode(@NonNull Context context, String packageName) {
+    public static int getAppVersionCode(@NotNull Context context, String packageName) {
         PackageInfo packageInfo = getPackageInfo(context, packageName);
 
         if (packageInfo != null) {
@@ -173,7 +174,7 @@ public final class AppUtils {
     /**
      * Check if app requires update
      */
-    public static boolean requiresUpdate(@NonNull Context context, String packageName, int build) {
+    public static boolean requiresUpdate(@NotNull Context context, String packageName, int build) {
         int currentVersionCode = getAppVersionCode(context, packageName);
         logger.i("Package: " + packageName + ", current: " + currentVersionCode + ", new: " + build);
         return currentVersionCode > 0 && build > 0 && currentVersionCode != build || (currentVersionCode <= 0 || build <= 0);
@@ -186,7 +187,7 @@ public final class AppUtils {
      * @return null if not found
      */
     @Nullable
-    public static String getAppTitle(@NonNull Context context, String packageName) {
+    public static String getAppTitle(@NotNull Context context, String packageName) {
         PackageManager packageManager = context.getPackageManager();
         ApplicationInfo info = getApplicationInfo(context, packageName);
         return info != null ? info.loadLabel(packageManager).toString() : null;
@@ -195,7 +196,7 @@ public final class AppUtils {
     /**
      * @return uid for specified name or -1 if not found
      */
-    public static int getApplicationUid(@NonNull Context context, String packageName) {
+    public static int getApplicationUid(@NotNull Context context, String packageName) {
         ApplicationInfo info = getApplicationInfo(context, packageName);
         return info != null ? info.uid : -1;
     }
@@ -236,7 +237,7 @@ public final class AppUtils {
         return getInstalledPackagesFromShell().contains(packageName);
     }
 
-    public static boolean isAppInBackground(@NonNull Context context, String packageName) {
+    public static boolean isAppInBackground(@NotNull Context context, String packageName) {
         ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         if (am == null) {
             throw new RuntimeException(ActivityManager.class.getSimpleName() + " is null");
@@ -257,7 +258,7 @@ public final class AppUtils {
     }
 
     public static boolean isAppInBackground(String packageName,
-                                            @NonNull AbstractProcessManager manager, boolean includeSystemPackages) {
+                                            @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
         boolean isInBackground = true;
         if (!TextUtils.isEmpty(packageName)) {
             for (ProcessInfo info : manager.getProcesses(includeSystemPackages)) {
@@ -274,7 +275,7 @@ public final class AppUtils {
      * @return -1 if not found
      */
     public static int getPidByName(@Nullable String packageName,
-                                   @NonNull AbstractProcessManager manager, boolean includeSystemPackages) {
+                                   @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
 
         int pid = -1;
 
@@ -294,7 +295,7 @@ public final class AppUtils {
      * @return false if at least one kill was failed
      */
     public static boolean killApps(@Nullable List<String> apps,
-                                   @NonNull AbstractProcessManager manager, boolean includeSystemPackages) {
+                                   @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
         boolean result = true;
         if (apps != null && !apps.isEmpty()) {
             for (ProcessInfo process : manager.getProcesses(includeSystemPackages)) {

@@ -4,8 +4,8 @@ import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.support.annotation.MainThread;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.view.KeyEvent;
 import android.widget.ProgressBar;
 import android.widget.TextView;
@@ -19,7 +19,7 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(DialogProgressable.class);
     
-    @NonNull
+    @NotNull
     private final Context context;
 
     private ProgressDialog progressDialog;
@@ -43,28 +43,28 @@ public class DialogProgressable implements Progressable, DialogInterface.OnKeyLi
     private DialogInterface.OnDismissListener dismissListener;
 
 
-    public DialogProgressable(@NonNull Context context) {
+    public DialogProgressable(@NotNull Context context) {
         this(context, null, null, false);
     }
 
-//    public DialogProgressable(@NonNull Context context, boolean indeterminate, int max, boolean cancelable) {
+//    public DialogProgressable(@NotNull Context context, boolean indeterminate, int max, boolean cancelable) {
 //        this(context, null, context.getString(R.string.loading), indeterminate, max, cancelable);
 //    }
 
-    public DialogProgressable(@NonNull Context context, @Nullable String title, @Nullable String message, boolean cancelable) {
+    public DialogProgressable(@NotNull Context context, @Nullable String title, @Nullable String message, boolean cancelable) {
         this(context, title, message, true, 0, cancelable, 0);
     }
 
 
-    public DialogProgressable(@NonNull Context context, @Nullable String title, @Nullable String message, boolean cancelable, int theme) {
+    public DialogProgressable(@NotNull Context context, @Nullable String title, @Nullable String message, boolean cancelable, int theme) {
         this(context, title, message, true, 0, cancelable, theme);
     }
 
-    public DialogProgressable(@NonNull Context context, @Nullable String title, @Nullable String message, boolean indeterminate, int max, boolean cancelable) {
+    public DialogProgressable(@NotNull Context context, @Nullable String title, @Nullable String message, boolean indeterminate, int max, boolean cancelable) {
         this(context, title, message, indeterminate, max, cancelable, 0);
     }
 
-    public DialogProgressable(@NonNull Context context, @Nullable String title, @Nullable String message, boolean indeterminate, int max, boolean cancelable, int theme) {
+    public DialogProgressable(@NotNull Context context, @Nullable String title, @Nullable String message, boolean indeterminate, int max, boolean cancelable, int theme) {
         this.context = context;
         setTitle(title);
         setMessage(message);

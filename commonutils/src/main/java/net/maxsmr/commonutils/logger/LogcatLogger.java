@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.logger;
 
 
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import android.util.Log;
 
 public class LogcatLogger extends BaseTagLogger {

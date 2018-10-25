@@ -3,7 +3,7 @@ package net.maxsmr.networkutils.monitor;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.net.TrafficStats;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import static net.maxsmr.networkutils.monitor.NetworkStatsHelper.isNetworkStatsManagerSupported;
 
@@ -21,7 +21,7 @@ public final class TrafficStatsDelegate {
 
     @SuppressLint("InlinedApi")
     @SuppressWarnings("ConstantConditions")
-    public static long getUidRxBytes(int uid, @NonNull Context context) {
+    public static long getUidRxBytes(int uid, @NotNull Context context) {
         if (shouldUseTrafficStats(uid)) {
             return TrafficStats.getUidRxBytes(uid);
         } else {
@@ -31,7 +31,7 @@ public final class TrafficStatsDelegate {
 
     @SuppressLint("InlinedApi")
     @SuppressWarnings("ConstantConditions")
-    public static long getUidTxBytes(int uid, @NonNull Context context) {
+    public static long getUidTxBytes(int uid, @NotNull Context context) {
         if (shouldUseTrafficStats(uid)) {
             return TrafficStats.getUidTxBytes(uid);
         } else {

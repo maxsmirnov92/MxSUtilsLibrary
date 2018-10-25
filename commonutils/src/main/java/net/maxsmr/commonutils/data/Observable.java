@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.data;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -8,15 +8,15 @@ import java.util.Set;
 
 public abstract class Observable<T> {
 
-    @NonNull
+    @NotNull
     protected final Set<T> observers = new LinkedHashSet<>();
 
-    @NonNull
+    @NotNull
     public Set<T> getObservers() {
         return Collections.unmodifiableSet(observers);
     }
 
-    @NonNull
+    @NotNull
     public Set<T> copyOfObservers() {
         synchronized (observers) {
             return new LinkedHashSet<>(observers);

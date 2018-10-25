@@ -1,16 +1,18 @@
 package net.maxsmr.devicewatchers.storage;
 
 
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.data.Units;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.Collection;
@@ -32,7 +34,7 @@ public final class StorageStateWatcher {
 
     private final ScheduledThreadPoolExecutorManager executor = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, StorageStateWatcher.class.getSimpleName());
 
-    @NonNull
+    @NotNull
     private final StorageWatchSettings settings;
 
     @Nullable
@@ -42,7 +44,7 @@ public final class StorageStateWatcher {
 
     private boolean isEnabled = true;
 
-    public StorageStateWatcher(@NonNull StorageWatchSettings settings, @Nullable IDeleteConfirm confirmer) {
+    public StorageStateWatcher(@NotNull StorageWatchSettings settings, @Nullable IDeleteConfirm confirmer) {
         logger.d("StorageStateWatcher(), settings=" + settings + ", confirmer=" + confirmer);
         this.settings = settings;
         this.confirmer = confirmer;
@@ -53,19 +55,19 @@ public final class StorageStateWatcher {
         clearWatchListeners();
     }
 
-    @NonNull
+    @NotNull
     public StorageWatchSettings getSettings() {
         return settings;
     }
 
 
-    public void addWatchListener(@NonNull WatchListener l) {
+    public void addWatchListener(@NotNull WatchListener l) {
         synchronized (watchListeners) {
             watchListeners.add(l);
         }
     }
 
-    public void removeWatchListener(@NonNull WatchListener l) {
+    public void removeWatchListener(@NotNull WatchListener l) {
         synchronized (watchListeners) {
             watchListeners.remove(l);
         }
@@ -120,7 +122,7 @@ public final class StorageStateWatcher {
 
     private class StorageStateWatcherRunnable implements Runnable {
 
-        @NonNull
+        @NotNull
         private final Map<StorageWatchSettings.DeleteOptionPair, Set<File>> mapping = new HashMap<>();
 
         @Override
@@ -131,8 +133,8 @@ public final class StorageStateWatcher {
         private void doStateWatch(boolean notify) {
             logger.d("doStateWatch(), notify=" + notify);
 
-            final long totalKb = (long) FileHelper.getPartitionTotalSpace(settings.targetPath, FileHelper.SizeUnit.KBYTES);
-            final long freeKb = (long) FileHelper.getPartitionFreeSpace(settings.targetPath, FileHelper.SizeUnit.KBYTES);
+            final long totalKb = (long) FileHelper.getPartitionTotalSpace(settings.targetPath, Units.SizeUnit.KBYTES);
+            final long freeKb = (long) FileHelper.getPartitionFreeSpace(settings.targetPath, Units.SizeUnit.KBYTES);
             final long usedKb = totalKb - freeKb;
 
             logger.i("=== storage total space: " + totalKb + " kB, free: " + freeKb + " kB, used: " + usedKb + " kB ===");
@@ -221,17 +223,17 @@ public final class StorageStateWatcher {
                             if (FileHelper.isDirExists(deletePath)) {
                                 final Set<File> filesSet = FileHelper.getFiles(Collections.singleton(new File(deletePath)), entry.getValue(), settings.comparator, new FileHelper.IGetNotifier() {
                                     @Override
-                                    public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
+                                    public boolean onProcessing(@NotNull File current, @NotNull Set<File> collected, int currentLevel) {
                                         return isEnabled;
                                     }
 
                                     @Override
-                                    public boolean onGetFile(@NonNull File file) {
+                                    public boolean onGetFile(@NotNull File file) {
                                         return true;
                                     }
 
                                     @Override
-                                    public boolean onGetFolder(@NonNull File folder) {
+                                    public boolean onGetFolder(@NotNull File folder) {
                                         return true;
                                     }
                                 }, FileHelper.DEPTH_UNLIMITED);
@@ -288,7 +290,7 @@ public final class StorageStateWatcher {
                                         if (allowDelete) {
                                             deletedCount += FileHelper.delete(file, true, null, null, new FileHelper.IDeleteNotifier() {
                                                 @Override
-                                                public boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted, int currentLevel) {
+                                                public boolean onProcessing(@NotNull File current, @NotNull Set<File> deleted, int currentLevel) {
                                                     return isEnabled;
                                                 }
 
@@ -346,9 +348,9 @@ public final class StorageStateWatcher {
 
     public interface IDeleteConfirm {
 
-        boolean allowDeleteFile(@NonNull File file);
+        boolean allowDeleteFile(@NotNull File file);
 
-        boolean allowDeleteFolder(@NonNull File folder);
+        boolean allowDeleteFolder(@NotNull File folder);
     }
 
     public interface WatchListener {

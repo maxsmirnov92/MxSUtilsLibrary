@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.data;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -104,8 +104,8 @@ public final class MathUtils {
     }
 
     @SuppressWarnings("unchecked")
-    @NonNull
-    public static <N extends Number> N valueOf(String str, @NonNull Class<N> numberClass) {
+    @NotNull
+    public static <N extends Number> N valueOf(String str, @NotNull Class<N> numberClass) {
         if (numberClass.isAssignableFrom(Byte.class)) {
             try {
                 return (N) Byte.valueOf(str);

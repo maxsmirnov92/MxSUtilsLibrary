@@ -2,7 +2,6 @@ package net.maxsmr.networkutils.loadutil.managers;
 
 import android.net.Uri;
 import android.os.Handler;
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
@@ -14,6 +13,8 @@ import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -33,7 +34,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -84,7 +84,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         }
     }
 
-    @NonNull
+    @NotNull
     public LoadListener.STATE getLastStateForId(int loadId) {
         LoadProcessInfo processInfo = getCurrentLoadProcessInfoForId(loadId);
         return processInfo != null ? processInfo.state : LoadListener.STATE.UNKNOWN;
@@ -105,7 +105,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
     }
 
     @Override
-    protected LoadRunnable newRunnable(@NonNull LI rInfo) {
+    protected LoadRunnable newRunnable(@NotNull LI rInfo) {
         return new LoadRunnable(rInfo);
     }
 
@@ -116,7 +116,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
     private final class LoadRunnable extends TaskRunnable<LI, Void, Void> {
 
-        @NonNull
+        @NotNull
         LoadProcessInfo currentLoadInfo = new LoadProcessInfo();
 
         @Nullable
@@ -131,12 +131,12 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         @Nullable
         Set<File> lastUploadFiles;
 
-        @NonNull
+        @NotNull
         public LoadProcessInfo getCurrentLoadInfo() {
             return currentLoadInfo;
         }
 
-        @NonNull
+        @NotNull
         public LoadListener.STATE getLastState() {
             return currentLoadInfo.getState();
         }
@@ -168,12 +168,12 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             return true;
         }
 
-        private void notifyStateChanged(@NonNull LoadListener.STATE state) {
+        private void notifyStateChanged(@NotNull LoadListener.STATE state) {
             currentLoadInfo.state = state;
             mLoadObservable.notifyStateChanged(rInfo, currentLoadInfo, lastException);
         }
 
-        private void notifyStateProcessing(@NonNull LoadListener.STATE state, @NonNull LoadListener<LI> l) {
+        private void notifyStateProcessing(@NotNull LoadListener.STATE state, @NotNull LoadListener<LI> l) {
             if (!state.isRunning()) {
                 throw new IllegalArgumentException("incorrect state: " + state + ", must be running");
             }
@@ -953,7 +953,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
          * @param name  - name of the header field
          * @param value - value of the header field
          */
-        static void addHeaderField(@NonNull DataOutputStream requestStream, @NonNull String name, @NonNull String value, boolean log) throws IOException {
+        static void addHeaderField(@NotNull DataOutputStream requestStream, @NotNull String name, @NotNull String value, boolean log) throws IOException {
             logger.d("addHeaderField(), name=" + name + ", value=" + value + ", log=" + log);
 
             if (log)
@@ -969,7 +969,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
          * @param name  field name
          * @param value field value
          */
-        static void addFormFieldMultipart(@NonNull DataOutputStream requestStream, @NonNull String name, @NonNull String value, String charset, String boundary, boolean log) throws IOException {
+        static void addFormFieldMultipart(@NotNull DataOutputStream requestStream, @NotNull String name, @NotNull String value, String charset, String boundary, boolean log) throws IOException {
             logger.d("addFormField(), name=" + name + ", value=" + value + ", log=" + log);
 
             if (log)
@@ -992,7 +992,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
          * @param uploadFiles a File to be uploaded
          * @throws RuntimeException, IOException
          */
-        static void addFileParts(@NonNull DataOutputStream requestStream, @NonNull Map<File, String> uploadFiles, boolean ignoreIncorrect, @Nullable IWriteNotifier notifier, String boundary, boolean log) throws RuntimeException, IOException {
+        static void addFileParts(@NotNull DataOutputStream requestStream, @NotNull Map<File, String> uploadFiles, boolean ignoreIncorrect, @Nullable IWriteNotifier notifier, String boundary, boolean log) throws RuntimeException, IOException {
             logger.d("addFileParts(), uploadFiles=" + uploadFiles + ", ignoreIncorrect=" + ignoreIncorrect + ", boundary=" + boundary + ", log=" + log);
 
             int bodySize = 0;
@@ -1059,7 +1059,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         /**
          * @param fieldName name attribute in <input type="file" name="..." />
          */
-        static void addFileParts(@NonNull DataOutputStream requestStream, String fieldName, Set<File> uploadFiles, boolean ignoreIncorrect, @Nullable IWriteNotifier notifier, String boundary, boolean log) throws RuntimeException, IOException {
+        static void addFileParts(@NotNull DataOutputStream requestStream, String fieldName, Set<File> uploadFiles, boolean ignoreIncorrect, @Nullable IWriteNotifier notifier, String boundary, boolean log) throws RuntimeException, IOException {
             Map<File, String> map = new LinkedHashMap<>();
             for (File file : uploadFiles) {
                 map.put(file, fieldName);
@@ -1070,11 +1070,11 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         /**
          * @param fieldName optional; if empty - name[] will be inserted
          */
-        static void addFilePartsArray(@NonNull DataOutputStream requestStream, @Nullable String fieldName, Set<File> uploadFiles, boolean ignoreIncorrect, @Nullable IWriteNotifier notifier, String boundary, boolean log) throws RuntimeException, IOException {
+        static void addFilePartsArray(@NotNull DataOutputStream requestStream, @Nullable String fieldName, Set<File> uploadFiles, boolean ignoreIncorrect, @Nullable IWriteNotifier notifier, String boundary, boolean log) throws RuntimeException, IOException {
             addFileParts(requestStream, TextUtils.isEmpty(fieldName) ? "name[]" : fieldName + "[]", uploadFiles, ignoreIncorrect, notifier, boundary, log);
         }
 
-        static void addCloseLineMultipart(@NonNull DataOutputStream requestStream, String boundary, boolean log) throws IOException {
+        static void addCloseLineMultipart(@NotNull DataOutputStream requestStream, String boundary, boolean log) throws IOException {
             logger.d("addCloseLineMultipart()");
 
             if (log)
@@ -1091,7 +1091,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
          * @param name  field name
          * @param value field value
          */
-        static void addFormFieldUrlEncoded(@NonNull DataOutputStream requestStream, @NonNull String name, @NonNull String value, boolean log) throws IOException {
+        static void addFormFieldUrlEncoded(@NotNull DataOutputStream requestStream, @NotNull String name, @NotNull String value, boolean log) throws IOException {
             logger.d("addFormFieldUrlEncoded(), name=" + name + ", value=" + value + ", log=" + log);
 
             if (log)
@@ -1102,7 +1102,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             requestStream.writeBytes(LINE_FEED);
         }
 
-        static void addBody(@NonNull DataOutputStream requestStream, @NonNull LoadRunnableInfo.StringBody body, boolean log) throws RuntimeException, IOException {
+        static void addBody(@NotNull DataOutputStream requestStream, @NotNull LoadRunnableInfo.StringBody body, boolean log) throws RuntimeException, IOException {
             logger.d("addBody(), body=" + body + ", log=" + log);
 
             if (body.isEmpty()) {
@@ -1122,8 +1122,8 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             logger.d("body added");
         }
 
-        @NonNull
-        static byte[] readResponseAsByteArray(@NonNull HttpURLConnection connection, boolean inputOrError, @Nullable IReadBytesNotifier readNotifier) throws IOException {
+        @NotNull
+        static byte[] readResponseAsByteArray(@NotNull HttpURLConnection connection, boolean inputOrError, @Nullable IReadBytesNotifier readNotifier) throws IOException {
 
             BufferedInputStream bis = new BufferedInputStream(
                     inputOrError ? connection.getInputStream() : connection.getErrorStream());
@@ -1149,13 +1149,13 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             return bos.toByteArray();
         }
 
-        @NonNull
-        static String readResponseAsStringBuffered(@NonNull HttpURLConnection connection, boolean inputOrError, String charset, @Nullable IReadBytesNotifier readNotifier) throws IOException {
+        @NotNull
+        static String readResponseAsStringBuffered(@NotNull HttpURLConnection connection, boolean inputOrError, String charset, @Nullable IReadBytesNotifier readNotifier) throws IOException {
             return new String(readResponseAsByteArray(connection, inputOrError, readNotifier), Charset.forName(charset));
         }
 
-        @NonNull
-        static String readResponseAsStringByteToByte(@NonNull HttpURLConnection connection, boolean inputOrError, @Nullable IReadBytesNotifier readNotifier) throws IOException {
+        @NotNull
+        static String readResponseAsStringByteToByte(@NotNull HttpURLConnection connection, boolean inputOrError, @Nullable IReadBytesNotifier readNotifier) throws IOException {
 
             BufferedInputStream bis = new BufferedInputStream(
                     inputOrError ? connection.getInputStream() : connection.getErrorStream());
@@ -1179,8 +1179,8 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             return bos.toString();
         }
 
-        @NonNull
-        static List<String> readResponseAsStrings(@NonNull HttpURLConnection connection, boolean inputOrError, @Nullable IReadLineNotifier readNotifier) throws IOException {
+        @NotNull
+        static List<String> readResponseAsStrings(@NotNull HttpURLConnection connection, boolean inputOrError, @Nullable IReadLineNotifier readNotifier) throws IOException {
             final List<String> response = new ArrayList<>();
             BufferedReader reader = new BufferedReader(new InputStreamReader(
                     inputOrError ? connection.getInputStream() : connection.getErrorStream()));
@@ -1199,7 +1199,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             return response;
         }
 
-        static void readResponseToOutputStream(@NonNull InputStream inStream, @NonNull OutputStream outStream, @Nullable IReadBytesNotifier readNotifier) throws IOException {
+        static void readResponseToOutputStream(@NotNull InputStream inStream, @NotNull OutputStream outStream, @Nullable IReadBytesNotifier readNotifier) throws IOException {
             byte data[] = new byte[BUF_SIZE];
             int count;
 
@@ -1243,7 +1243,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
     public static class LoadProcessInfo {
 
-        @NonNull
+        @NotNull
         LoadListener.STATE state = LoadListener.STATE.UNKNOWN;
 
         int retriesCount = -1;
@@ -1269,7 +1269,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
          */
         float uploadSpeed;
 
-        @NonNull
+        @NotNull
         public LoadListener.STATE getState() {
             return state;
         }
@@ -1384,14 +1384,14 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
         public static final int RESPONSE_CODE_UNKNOWN = -1;
 
-        @NonNull
+        @NotNull
         Status status = Status.DECLINED;
 
         int code = RESPONSE_CODE_UNKNOWN;
 
         String message;
 
-        @NonNull
+        @NotNull
         Set<LoadRunnableInfo.NameValuePair> headers = new LinkedHashSet<>();
 
         /**
@@ -1410,7 +1410,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
         long date;
 
-        @NonNull
+        @NotNull
         public Status getStatus() {
             return status;
         }
@@ -1423,7 +1423,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
             return message;
         }
 
-        @NonNull
+        @NotNull
         public Set<LoadRunnableInfo.NameValuePair> getHeaders() {
             return Collections.unmodifiableSet(headers);
         }

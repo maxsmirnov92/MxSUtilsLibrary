@@ -1,6 +1,6 @@
 package net.maxsmr.networkutils.loadutil.managers;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
@@ -38,7 +38,7 @@ public interface LoadListener<I extends LoadRunnableInfo> {
             return this == FAILED_FILE_REASON || this == FAILED || this == FAILED_RETRIES_EXCEEDED;
         }
 
-        @NonNull
+        @NotNull
         public static STATE fromValue(int value) {
             for (STATE state : values()) {
                 if (state.value == value)
@@ -57,11 +57,11 @@ public interface LoadListener<I extends LoadRunnableInfo> {
     int getId();
 
     /** @return id for notify. if {@link RunnableInfo#NO_ID} - notify for all */
-    int getId(@NonNull I loadInfo);
+    int getId(@NotNull I loadInfo);
 
-    long getProcessingNotifyInterval(@NonNull I loadInfo);
+    long getProcessingNotifyInterval(@NotNull I loadInfo);
 
-    void onUpdateState(@NonNull I loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t);
+    void onUpdateState(@NotNull I loadInfo, @NotNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @Nullable Throwable t);
 
-    void onResponse(@NonNull I loadInfo, @NonNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NonNull NetworkLoadManager.Response response);
+    void onResponse(@NotNull I loadInfo, @NotNull NetworkLoadManager.LoadProcessInfo loadProcessInfo, @NotNull NetworkLoadManager.Response response);
 }

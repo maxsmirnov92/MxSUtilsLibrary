@@ -1,12 +1,12 @@
 package net.maxsmr.commonutils.android.gui.views.recycler;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 
 public class RecyclerScrollableController2 extends RecyclerView.OnScrollListener {
 
-    @NonNull
+    @NotNull
     protected final RecyclerView recyclerView;
 
     protected RecyclerScrollableController.OnLastItemVisibleListener listener;
@@ -17,7 +17,7 @@ public class RecyclerScrollableController2 extends RecyclerView.OnScrollListener
 
     private boolean forceLoading = false;
 
-    public RecyclerScrollableController2(RecyclerScrollableController.OnLastItemVisibleListener listener, @NonNull RecyclerView recyclerView) {
+    public RecyclerScrollableController2(RecyclerScrollableController.OnLastItemVisibleListener listener, @NotNull RecyclerView recyclerView) {
         this.recyclerView = recyclerView;
         setListener(listener);
     }
@@ -59,7 +59,7 @@ public class RecyclerScrollableController2 extends RecyclerView.OnScrollListener
         doCheck(recyclerView);
     }
 
-    private synchronized void doCheck(@NonNull RecyclerView recyclerView) {
+    private synchronized void doCheck(@NotNull RecyclerView recyclerView) {
 
         if (this.recyclerView != recyclerView) {
             throw new RuntimeException(RecyclerView.class.getSimpleName() + " not match");

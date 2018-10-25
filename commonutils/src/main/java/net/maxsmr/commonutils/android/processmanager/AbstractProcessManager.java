@@ -4,7 +4,7 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -16,16 +16,16 @@ public abstract class AbstractProcessManager {
 
     protected final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(getLoggerClass());
 
-    @NonNull
+    @NotNull
     protected final Context context;
 
-    @NonNull
+    @NotNull
     protected final PackageManager packageManager;
 
     private final List<String> installedPackages = new ArrayList<>();
     private final List<String> systemPackages = new ArrayList<>();
 
-    AbstractProcessManager(@NonNull Context context) {
+    AbstractProcessManager(@NotNull Context context) {
         this.context = context;
         this.packageManager = context.getPackageManager();
         refreshPackages();
@@ -53,21 +53,21 @@ public abstract class AbstractProcessManager {
      * Checks if package is installed
      * Useful for parsing ps output — there are processes that look like valid packages, but not installed
      */
-    protected boolean isPackageInstalled(@NonNull String packageName) {
+    protected boolean isPackageInstalled(@NotNull String packageName) {
         return installedPackages.contains(packageName);
     }
 
     /**
      * Checks if package is marked as system
      */
-    protected boolean isSystemPackage(@NonNull String packageName) {
+    protected boolean isSystemPackage(@NotNull String packageName) {
         return systemPackages.contains(packageName);
     }
 
-    @NonNull
+    @NotNull
     public abstract List<ProcessInfo> getProcesses(boolean includeSystemPackages);
 
-    @NonNull
+    @NotNull
     private Class<?> getLoggerClass() {
         return getClass();
     }

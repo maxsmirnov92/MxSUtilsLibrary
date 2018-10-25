@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.shell;
 
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.maxsmr.commonutils.android.AppUtils;
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
@@ -25,7 +25,7 @@ public final class RootShellCommands {
     /**
      * Execute SU command
      */
-    @NonNull
+    @NotNull
     public static CommandResult executeCommand(String command) {
 
         try {
@@ -196,7 +196,7 @@ public final class RootShellCommands {
     }
 
     public static boolean killProcessByName(@Nullable String processName,
-                                            @NonNull AbstractProcessManager manager, boolean includeSystemPackages) {
+                                            @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
         final int pid = AppUtils.getPidByName(processName, manager, includeSystemPackages);
         if (pid >= 0) {
             return RootShellCommands.killProcessByPid(pid);

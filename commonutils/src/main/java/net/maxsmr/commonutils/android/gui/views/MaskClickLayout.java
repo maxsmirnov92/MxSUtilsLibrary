@@ -10,8 +10,8 @@ import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
 import android.support.annotation.ColorInt;
 import android.support.annotation.DrawableRes;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
 import android.util.Pair;
@@ -36,10 +36,10 @@ import java.util.List;
 
 public class MaskClickLayout extends FrameLayout {
 
-    @NonNull
+    @NotNull
     private final ItemHitObservable itemHitCallbacks = new ItemHitObservable();
 
-    @NonNull
+    @NotNull
     private final LayoutChangeObservable layoutChangeListeners = new LayoutChangeObservable();
 
     private ImageView backgroundImageView;
@@ -47,10 +47,10 @@ public class MaskClickLayout extends FrameLayout {
     private ImageView masksImageView;
     private ClickMask clickMask;
 
-    @NonNull
+    @NotNull
     private ChoiceMode choiceMode = ChoiceMode.MULTIPLE;
 
-    @NonNull
+    @NotNull
     private final LinkedHashSet<Item> selectedItems = new LinkedHashSet<>();
 
     public MaskClickLayout(Context context) {
@@ -80,24 +80,24 @@ public class MaskClickLayout extends FrameLayout {
         addView(layersImageView = new ImageView(getContext()));
     }
 
-    public void addItemHitCallback(@NonNull ItemHitCallback c) {
+    public void addItemHitCallback(@NotNull ItemHitCallback c) {
         itemHitCallbacks.registerObserver(c);
     }
 
-    public void removeItemHitCallback(@NonNull ItemHitCallback c) {
+    public void removeItemHitCallback(@NotNull ItemHitCallback c) {
         itemHitCallbacks.unregisterObserver(c);
     }
 
-    public void addSelectionChangeListener(@NonNull LayoutChangeListener l) {
+    public void addSelectionChangeListener(@NotNull LayoutChangeListener l) {
         layoutChangeListeners.registerObserver(l);
     }
 
-    public void removeSelectionChangeListener(@NonNull LayoutChangeListener l) {
+    public void removeSelectionChangeListener(@NotNull LayoutChangeListener l) {
         layoutChangeListeners.unregisterObserver(l);
     }
 
-    @NonNull
-    public static List<String> getTags(@NonNull Collection<Item> items) {
+    @NotNull
+    public static List<String> getTags(@NotNull Collection<Item> items) {
         List<String> tags = new ArrayList<>();
         for (Item item : items) {
             if (item != null) {
@@ -107,12 +107,12 @@ public class MaskClickLayout extends FrameLayout {
         return tags;
     }
 
-    @NonNull
+    @NotNull
     public ChoiceMode getChoiceMode() {
         return choiceMode;
     }
 
-    public void setChoiceMode(@NonNull ChoiceMode mode) {
+    public void setChoiceMode(@NotNull ChoiceMode mode) {
         if (this.choiceMode != mode) {
             this.choiceMode = mode;
             if (isLoaded()) {
@@ -127,12 +127,12 @@ public class MaskClickLayout extends FrameLayout {
         return selectedItems.size();
     }
 
-    @NonNull
+    @NotNull
     public LinkedHashSet<Item> getSelectedItems() {
         return new LinkedHashSet<>(selectedItems);
     }
 
-    @NonNull
+    @NotNull
     public LinkedHashSet<String> getSelectedItemsTags() {
         return new LinkedHashSet<>(getTags(getSelectedItems()));
     }
@@ -146,7 +146,7 @@ public class MaskClickLayout extends FrameLayout {
         return selectedItems.contains(item);
     }
 
-    public boolean setItemSelected(@NonNull Item item, boolean isSelected) {
+    public boolean setItemSelected(@NotNull Item item, boolean isSelected) {
 
         if (!isLoaded()) {
             throw new IllegalStateException("clickMask was not loaded");
@@ -209,7 +209,7 @@ public class MaskClickLayout extends FrameLayout {
         return success;
     }
 
-    public boolean toggleItemSelected(@NonNull Item item) {
+    public boolean toggleItemSelected(@NotNull Item item) {
         return setItemSelected(item, !isItemSelected(item));
     }
 
@@ -241,7 +241,7 @@ public class MaskClickLayout extends FrameLayout {
         return null;
     }
 
-    @NonNull
+    @NotNull
     public List<Item> findItemsByTags(@Nullable Collection<String> tags) {
         List<Item> items = new ArrayList<>();
         if (tags != null) {
@@ -325,7 +325,7 @@ public class MaskClickLayout extends FrameLayout {
         }
     }
 
-    @NonNull
+    @NotNull
     public LinkedHashSet<Item> getItems() {
 
         if (!isLoaded()) {
@@ -335,7 +335,7 @@ public class MaskClickLayout extends FrameLayout {
         return clickMask.getItems();
     }
 
-    @NonNull
+    @NotNull
     public LinkedHashSet<String> getItemsTags() {
         return new LinkedHashSet<>(getTags(getItems()));
     }
@@ -386,7 +386,7 @@ public class MaskClickLayout extends FrameLayout {
         masksImageView.setImageDrawable(masksDrawable);
     }
 
-    private static void correctImageViewSize(@NonNull ImageView v) {
+    private static void correctImageViewSize(@NotNull ImageView v) {
         Pair<Integer, Integer> viewSize = GuiUtils.getRescaledImageViewSize(v);
         v.setMaxWidth(viewSize.first);
         v.setMaxHeight(viewSize.second);
@@ -423,32 +423,32 @@ public class MaskClickLayout extends FrameLayout {
         return layers instanceof LayerDrawable ? (LayerDrawable) masksImageView.getDrawable() : null;
     }
 
-    @NonNull
+    @NotNull
     public Pair<Integer, Integer> getBackgroundImageSize() {
         return GuiUtils.getImageViewDrawableSize(backgroundImageView);
     }
 
-    @NonNull
+    @NotNull
     public Pair<Integer, Integer> getLayersImageSize() {
         return GuiUtils.getImageViewDrawableSize(layersImageView);
     }
 
-    @NonNull
+    @NotNull
     public Pair<Integer, Integer> getMasksImageSize() {
         return GuiUtils.getImageViewDrawableSize(masksImageView);
     }
 
-    @NonNull
+    @NotNull
     public Pair<Integer, Integer> getBackgroundRescaledSize() {
         return GuiUtils.getRescaledImageViewSize(backgroundImageView);
     }
 
-    @NonNull
+    @NotNull
     public Pair<Integer, Integer> getLayersRescaledSize() {
         return GuiUtils.getRescaledImageViewSize(layersImageView);
     }
 
-    @NonNull
+    @NotNull
     public Pair<Integer, Integer> getMasksRescaledSize() {
         return GuiUtils.getRescaledImageViewSize(masksImageView);
     }
@@ -538,8 +538,8 @@ public class MaskClickLayout extends FrameLayout {
         }
     }
 
-    @NonNull
-    private Point correctCoordsBySize(@NonNull Point p, @NonNull Pair<Integer, Integer> size, @NonNull Pair<Integer, Integer> targetSize) {
+    @NotNull
+    private Point correctCoordsBySize(@NotNull Point p, @NotNull Pair<Integer, Integer> size, @NotNull Pair<Integer, Integer> targetSize) {
         float scalerX = (float) p.x / (float) size.first;
         float scalerY = (float) p.y / (float) size.second;
         return new Point(Math.round((float) targetSize.first * scalerX), Math.round((float) targetSize.second * scalerY));
@@ -660,18 +660,18 @@ public class MaskClickLayout extends FrameLayout {
         @Nullable
         private String tag;
 
-        @NonNull
+        @NotNull
         private Pair<Integer, Bitmap> layerPair;
 
-        @NonNull
+        @NotNull
         private Pair<Integer, Bitmap> maskedPair;
 
-        @NonNull
+        @NotNull
         public Pair<Integer, Bitmap> getLayerPair() {
             return new Pair<>(layerPair.first, layerPair.second);
         }
 
-        @NonNull
+        @NotNull
         public Pair<Integer, Bitmap> getMaskedPair() {
             return new Pair<>(maskedPair.first, maskedPair.second);
         }
@@ -679,10 +679,10 @@ public class MaskClickLayout extends FrameLayout {
         @ColorInt
         public final int maskClickColor;
 
-        @NonNull
+        @NotNull
         public final TransformOptions options;
 
-        public Item(@NonNull Context context, @Nullable String tag, @DrawableRes int layerResId, @DrawableRes int maskResId, @ColorInt int maskClickColor, @NonNull TransformOptions options) throws RuntimeException {
+        public Item(@NotNull Context context, @Nullable String tag, @DrawableRes int layerResId, @DrawableRes int maskResId, @ColorInt int maskClickColor, @NotNull TransformOptions options) throws RuntimeException {
 
             this.tag = tag;
 
@@ -766,18 +766,18 @@ public class MaskClickLayout extends FrameLayout {
 
         public final boolean findFirstMatch;
 
-        @NonNull
+        @NotNull
         public final TransformOptions options;
 
-        @NonNull
+        @NotNull
         private final LinkedHashSet<Item> items = new LinkedHashSet<>();
 
-        @NonNull
+        @NotNull
         public LinkedHashSet<Item> getItems() {
             return new LinkedHashSet<>(items);
         }
 
-        public ClickMask(@DrawableRes int backgroundResId, boolean findFirstMatch, @NonNull TransformOptions options, Item... items) {
+        public ClickMask(@DrawableRes int backgroundResId, boolean findFirstMatch, @NotNull TransformOptions options, Item... items) {
             this.backgroundResId = backgroundResId;
             this.findFirstMatch = findFirstMatch;
             this.options = options;
@@ -826,9 +826,9 @@ public class MaskClickLayout extends FrameLayout {
 
     public interface LayoutChangeListener {
 
-        void onChoiceModeChanged(@NonNull ChoiceMode mode);
+        void onChoiceModeChanged(@NotNull ChoiceMode mode);
 
-        void onSelectedChanged(@NonNull Item item, boolean isSelected);
+        void onSelectedChanged(@NotNull Item item, boolean isSelected);
     }
 
     public interface ItemHitCallback {
@@ -836,17 +836,17 @@ public class MaskClickLayout extends FrameLayout {
         /**
          * @return true if event consumed
          */
-        boolean onItemPreHit(@NonNull Point clickPoint, @NonNull Item item);
+        boolean onItemPreHit(@NotNull Point clickPoint, @NotNull Item item);
 
         /**
          * @return true if event consumed
          */
-        boolean onItemsHit(@NonNull Point clickPoint, @NonNull List<Item> items);
+        boolean onItemsHit(@NotNull Point clickPoint, @NotNull List<Item> items);
     }
 
     private static class ItemHitObservable extends Observable<ItemHitCallback> {
 
-        private boolean dispatchItemPreHit(@NonNull Point clickPoint, @NonNull Item item) {
+        private boolean dispatchItemPreHit(@NotNull Point clickPoint, @NotNull Item item) {
             boolean b = true;
             synchronized (observers) {
                 for (ItemHitCallback c : observers) {
@@ -858,7 +858,7 @@ public class MaskClickLayout extends FrameLayout {
             return b;
         }
 
-        private boolean dispatchItemsHit(@NonNull Point clickPoint, @NonNull List<Item> items) {
+        private boolean dispatchItemsHit(@NotNull Point clickPoint, @NotNull List<Item> items) {
             boolean b = true;
             synchronized (observers) {
                 for (ItemHitCallback c : observers) {
@@ -873,7 +873,7 @@ public class MaskClickLayout extends FrameLayout {
 
     private static class LayoutChangeObservable extends Observable<LayoutChangeListener> {
 
-        private void dispatchChoiceModeChanged(@NonNull ChoiceMode choiceMode) {
+        private void dispatchChoiceModeChanged(@NotNull ChoiceMode choiceMode) {
             synchronized (observers) {
                 for (LayoutChangeListener l : observers) {
                     l.onChoiceModeChanged(choiceMode);
@@ -881,7 +881,7 @@ public class MaskClickLayout extends FrameLayout {
             }
         }
 
-        private void dispatchSelectionChanged(@NonNull Item item, boolean isSelected) {
+        private void dispatchSelectionChanged(@NotNull Item item, boolean isSelected) {
             synchronized (observers) {
                 for (LayoutChangeListener l : observers) {
                     l.onSelectedChanged(item, isSelected);

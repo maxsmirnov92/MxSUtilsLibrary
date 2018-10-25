@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.android.certs;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.util.Pair;
 
 import java.security.KeyManagementException;
@@ -23,7 +23,7 @@ public final class SocketFactoryInitializer {
         throw new AssertionError("no instances.");
     }
 
-    public static void init(@NonNull Context context, @NonNull Set<Pair<String, Integer>> certificateResIds) throws RuntimeException {
+    public static void init(@NotNull Context context, @NotNull Set<Pair<String, Integer>> certificateResIds) throws RuntimeException {
         Set<Pair<String, Certificate>> certificatePairs = new LinkedHashSet<>();
         certificatePairs.addAll(CertificateHelper.retrieveKeyStoreCertificates(CertificateHelper.KeyStores.KEYSTORE_ANDROID));
         for (Pair<String, Integer> certificateResIdPair : certificateResIds) {
@@ -32,7 +32,7 @@ public final class SocketFactoryInitializer {
         initSocketFactory(certificatePairs, null, "SSL");
     }
 
-    private static void initSocketFactory(@NonNull Set<Pair<String, Certificate>> certificatePairs, @Nullable String keystoreType, String protocol) throws RuntimeException {
+    private static void initSocketFactory(@NotNull Set<Pair<String, Certificate>> certificatePairs, @Nullable String keystoreType, String protocol) throws RuntimeException {
         TrustManagerFactory tmf = CertificateHelper.getTrustManagerFactory(keystoreType, certificatePairs);
         HttpsURLConnection.setDefaultSSLSocketFactory(generateSocketFactory(protocol, tmf.getTrustManagers()));
     }

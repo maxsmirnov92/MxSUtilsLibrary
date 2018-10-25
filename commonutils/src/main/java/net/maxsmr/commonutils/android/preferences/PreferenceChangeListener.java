@@ -1,13 +1,13 @@
 package net.maxsmr.commonutils.android.preferences;
 
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public interface PreferenceChangeListener {
-    <T> void onPreferenceChanged(String preferenceName, @NonNull String key, @Nullable T oldValue, @Nullable T newValue);
+    <T> void onPreferenceChanged(String preferenceName, @NotNull String key, @Nullable T oldValue, @Nullable T newValue);
 
-    void onPreferenceRemoved(String preferenceName, @NonNull String key);
+    void onPreferenceRemoved(String preferenceName, @NotNull String key);
 
     void onAllPreferencesRemoved(String preferenceName);
 }

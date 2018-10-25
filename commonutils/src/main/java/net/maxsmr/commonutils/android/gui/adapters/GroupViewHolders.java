@@ -3,8 +3,8 @@ package net.maxsmr.commonutils.android.gui.adapters;
 
 import android.content.Context;
 import android.support.annotation.LayoutRes;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -39,10 +39,10 @@ public class GroupViewHolders {
 
         protected View itemView;
 
-        @NonNull
+        @NotNull
         protected ViewGroup parent;
 
-        public BaseGroupViewHolder(int itemLayoutId, @Nullable View itemView, @NonNull ViewGroup parent) {
+        public BaseGroupViewHolder(int itemLayoutId, @Nullable View itemView, @NotNull ViewGroup parent) {
             this.itemLayoutId = itemLayoutId;
             this.itemView = itemView;
             this.parent = parent;
@@ -59,7 +59,7 @@ public class GroupViewHolders {
             return itemView;
         }
 
-        protected abstract void onBindView(@NonNull View itemView);
+        protected abstract void onBindView(@NotNull View itemView);
 
         protected boolean isItemEmpty(@Nullable I item) {
             return item == null;
@@ -75,7 +75,7 @@ public class GroupViewHolders {
             }
         }
 
-        public void displayData(@NonNull I item, int groupPosition) {
+        public void displayData(@NotNull I item, int groupPosition) {
             itemView.setVisibility(View.VISIBLE);
         }
 
@@ -86,7 +86,7 @@ public class GroupViewHolders {
 
     public abstract static class BaseChildViewHolder<I> {
 
-        @NonNull
+        @NotNull
         protected final Context context;
 
         @LayoutRes
@@ -94,10 +94,10 @@ public class GroupViewHolders {
 
         protected View itemView;
 
-        @NonNull
+        @NotNull
         protected ViewGroup parent;
 
-        public BaseChildViewHolder(@NonNull Context context, int itemLayoutId, @Nullable View itemView, @NonNull ViewGroup parent) {
+        public BaseChildViewHolder(@NotNull Context context, int itemLayoutId, @Nullable View itemView, @NotNull ViewGroup parent) {
             this.context = context;
             this.itemLayoutId = itemLayoutId;
             this.itemView = itemView;
@@ -115,7 +115,7 @@ public class GroupViewHolders {
             return itemView;
         }
 
-        protected abstract void onBindView(@NonNull View itemView);
+        protected abstract void onBindView(@NotNull View itemView);
 
         public final void fill(@Nullable I item, int groupPosition, int childPosition) {
             createItemView();
@@ -127,7 +127,7 @@ public class GroupViewHolders {
             }
         }
 
-        public void displayData(@NonNull I item, int groupPosition, int childPosition) {
+        public void displayData(@NotNull I item, int groupPosition, int childPosition) {
             itemView.setVisibility(View.VISIBLE);
         }
 

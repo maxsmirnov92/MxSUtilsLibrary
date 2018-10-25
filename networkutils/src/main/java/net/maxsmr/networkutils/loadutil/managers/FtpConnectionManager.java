@@ -1,12 +1,12 @@
 package net.maxsmr.networkutils.loadutil.managers;
 
-import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.StreamUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.NetworkHelper;
@@ -16,6 +16,7 @@ import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 import org.apache.commons.net.io.CopyStreamListener;
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -425,7 +426,7 @@ public class FtpConnectionManager {
     @SuppressWarnings("ConstantConditions")
     @Nullable
     public synchronized File downloadFtpFile(String localWorkingDir, String workingDir, String fileName, FileType fileType,
-                                             boolean deleteOnSuccess, boolean withRestart, final FileHelper.IStreamNotifier notifier) {
+                                             boolean deleteOnSuccess, boolean withRestart, final StreamUtils.IStreamNotifier notifier) {
         logger.d("downloadFtpFileWithRestart(), localWorkingDir=" + localWorkingDir + ", workingDir=" + workingDir + ", fileName=" + fileName
                 + ", fileType=" + fileType + ", deleteOnSuccess=" + deleteOnSuccess);
 
@@ -471,14 +472,14 @@ public class FtpConnectionManager {
 
                     ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
 
-                    if (FileHelper.revectorStream(inStream.first, dataStream, notifier != null? new FileHelper.IStreamNotifier() {
+                    if (StreamUtils.revectorStream(inStream.first, dataStream, notifier != null? new StreamUtils.IStreamNotifier() {
                         @Override
                         public long notifyInterval() {
                             return notifier.notifyInterval();
                         }
 
                         @Override
-                        public boolean onProcessing(@NonNull InputStream inputStream, @NonNull OutputStream outputStream, long bytesWrite, long bytesLeft) {
+                        public boolean onProcessing(@NotNull InputStream inputStream, @NotNull OutputStream outputStream, long bytesWrite, long bytesLeft) {
                             return notifier.onProcessing(inputStream, outputStream, bytesWrite, inStream.second != null && inStream.second > bytesWrite? inStream.second - bytesWrite : bytesLeft);
                         }
                     } : null)) {
@@ -543,7 +544,7 @@ public class FtpConnectionManager {
         return null;
     }
 
-    public synchronized boolean uploadLocalFile(String workingDir, String fileName, File localFile, FileType fileType, boolean deleteOnSuccess, @NonNull WriteMode writeMode, final FileHelper.IStreamNotifier notifier) {
+    public synchronized boolean uploadLocalFile(String workingDir, String fileName, File localFile, FileType fileType, boolean deleteOnSuccess, @NotNull WriteMode writeMode, final StreamUtils.IStreamNotifier notifier) {
         logger.d("uploadLocalFile(), workingDir=" + workingDir + ", fileName=" + fileName + ", localFile=" + localFile + ", fileType=" + fileType + ", deleteOnSuccess=" + deleteOnSuccess + ", notifier=" + notifier);
 
         if (workingDir == null || workingDir.length() == 0 || fileName == null || fileName.length() == 0) {
@@ -640,7 +641,7 @@ public class FtpConnectionManager {
 
                 final long localFileSize = localFile.length();
 
-                if (FileHelper.revectorStream(localStream, outputStream, notifier != null? new FileHelper.IStreamNotifier() {
+                if (StreamUtils.revectorStream(localStream, outputStream, notifier != null? new StreamUtils.IStreamNotifier() {
 
                     @Override
                     public long notifyInterval() {
@@ -648,7 +649,7 @@ public class FtpConnectionManager {
                     }
 
                     @Override
-                    public boolean onProcessing(@NonNull InputStream inputStream, @NonNull OutputStream outputStream, long bytesWrite, long bytesLeft) {
+                    public boolean onProcessing(@NotNull InputStream inputStream, @NotNull OutputStream outputStream, long bytesWrite, long bytesLeft) {
                         return notifier.onProcessing(inputStream, outputStream, bytesWrite, localFileSize > bytesWrite? localFileSize - bytesWrite : bytesLeft);
                     }
                 } : null)) {

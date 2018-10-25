@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.android.gui.progressable;
 
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 import android.view.View;
 
 public class ImageProgressable implements Progressable {

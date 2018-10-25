@@ -16,8 +16,8 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.telephony.TelephonyManager;
 import android.view.WindowManager;
 
@@ -49,7 +49,7 @@ public final class DeviceUtils {
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
-    public static HashMap<String, UsbDevice> getDevicesList(@NonNull Context context) {
+    public static HashMap<String, UsbDevice> getDevicesList(@NotNull Context context) {
         UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         if (usbManager == null) {
             throw new RuntimeException(UsbManager.class.getSimpleName() + " is null");
@@ -58,7 +58,7 @@ public final class DeviceUtils {
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
-    public static UsbAccessory[] getAccessoryList(@NonNull Context context) {
+    public static UsbAccessory[] getAccessoryList(@NotNull Context context) {
         UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         if (usbManager == null) {
             throw new RuntimeException(UsbManager.class.getSimpleName() + " is null");
@@ -66,7 +66,7 @@ public final class DeviceUtils {
         return usbManager.getAccessoryList();
     }
 
-    public static int getBatteryPercentage(@NonNull Context context) {
+    public static int getBatteryPercentage(@NotNull Context context) {
         IntentFilter iFilter = new IntentFilter(Intent.ACTION_BATTERY_CHANGED);
         return getBatteryPercentageFromIntent(context.registerReceiver(null, iFilter));
     }
@@ -83,7 +83,7 @@ public final class DeviceUtils {
     }
 
     @Nullable
-    public static PowerManager.WakeLock acquireWakeLockDefault(@NonNull Context context, @NonNull String name, long timeoutMillis) {
+    public static PowerManager.WakeLock acquireWakeLockDefault(@NotNull Context context, @NotNull String name, long timeoutMillis) {
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         if (pm == null) {
             throw new RuntimeException(PowerManager.class.getSimpleName() + " is null");
@@ -95,7 +95,7 @@ public final class DeviceUtils {
     }
 
     @SuppressLint("WakelockTimeout")
-    public static boolean acquireWakeLock(@NonNull Context context, @Nullable PowerManager.WakeLock wakeLock, long timeoutMillis) {
+    public static boolean acquireWakeLock(@NotNull Context context, @Nullable PowerManager.WakeLock wakeLock, long timeoutMillis) {
         if (wakeLock != null && !isWakeLockHeld(wakeLock)) {
             // Even if we have the permission, some devices throw an exception in the try block nonetheless,
             // I'm looking at you, Samsung SM-T805
@@ -127,14 +127,14 @@ public final class DeviceUtils {
         }
     }
 
-    public static void showKeyguard(@NonNull Activity activity) {
+    public static void showKeyguard(@NotNull Activity activity) {
         activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD); // doesn't require permission
     }
 
     /**
      * dismiss keyguard flag not working in all cases
      */
-    public static void dismissKeyguard(@NonNull Activity activity) {
+    public static void dismissKeyguard(@NotNull Activity activity) {
         activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD); // doesn't require permission
         // KeyguardManager km = (KeyguardManager) getSystemService(Context.KEYGUARD_SERVICE);
         // final KeyguardManager.KeyguardLock kl = km.newKeyguardLock("MyKeyguardLock");
@@ -149,7 +149,7 @@ public final class DeviceUtils {
      */
     @SuppressLint({"HardwareIds", "MissingPermission"})
     @Nullable
-    public static String getIMEI(@NonNull Context context) {
+    public static String getIMEI(@NotNull Context context) {
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         if (telephonyManager == null) {
             throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null, cannot get IMEI");
@@ -165,7 +165,7 @@ public final class DeviceUtils {
      */
     @SuppressLint({"HardwareIds", "MissingPermission"})
     @Nullable
-    public static String getIMSI(@NonNull Context context) {
+    public static String getIMSI(@NotNull Context context) {
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         if (telephonyManager == null) {
             throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null, cannot get IMSI");
@@ -173,7 +173,7 @@ public final class DeviceUtils {
         return telephonyManager.getSubscriberId();
     }
 
-    public static boolean isScreenOn(@NonNull Context context) {
+    public static boolean isScreenOn(@NotNull Context context) {
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         if (pm == null) {
             throw new RuntimeException(PowerManager.class.getSimpleName() + " is null");
@@ -217,7 +217,7 @@ public final class DeviceUtils {
         context.sendBroadcast(intent);
     }
 
-    public static boolean isSimCardInserted(@NonNull Context context) {
+    public static boolean isSimCardInserted(@NotNull Context context) {
         final TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         if (telephonyManager == null) {
             throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null");
@@ -225,7 +225,7 @@ public final class DeviceUtils {
         return telephonyManager.getSimState() != TelephonyManager.SIM_STATE_ABSENT;
     }
 
-    public static void turnOnScreen(@NonNull Activity activity) {
+    public static void turnOnScreen(@NotNull Activity activity) {
         activity.getWindow().addFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                 | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
                 | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
@@ -233,7 +233,7 @@ public final class DeviceUtils {
                 | WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
     }
 
-    public static void turnOffScreen(@NonNull Activity activity) {
+    public static void turnOffScreen(@NotNull Activity activity) {
         activity.getWindow().clearFlags(WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
                 | WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD
                 | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
@@ -241,7 +241,7 @@ public final class DeviceUtils {
                 | WindowManager.LayoutParams.FLAG_ALLOW_LOCK_WHILE_SCREEN_ON);
     }
 
-    public static int getScreenOffTimeout(@NonNull Context context) {
+    public static int getScreenOffTimeout(@NotNull Context context) {
         int value = 0;
         try {
             value = android.provider.Settings.System.getInt(context.getContentResolver(), android.provider.Settings.System.SCREEN_OFF_TIMEOUT);
@@ -251,7 +251,7 @@ public final class DeviceUtils {
         return value;
     }
 
-    public static boolean setScreenOffTimeout(@NonNull Context context, int newTimeout) {
+    public static boolean setScreenOffTimeout(@NotNull Context context, int newTimeout) {
         if (newTimeout < 0) {
             throw new IllegalArgumentException("Incorrect timeout: " + newTimeout);
         }
@@ -260,7 +260,7 @@ public final class DeviceUtils {
                 android.provider.Settings.System.putInt(context.getContentResolver(), android.provider.Settings.System.SCREEN_OFF_TIMEOUT, newTimeout);
     }
 
-    public static LanguageCode getCurrentLanguageCode(@NonNull Context context) {
+    public static LanguageCode getCurrentLanguageCode(@NotNull Context context) {
         final Locale current = context.getResources().getConfiguration().locale;
 
         if (current.getLanguage().equalsIgnoreCase(LanguageCode.RU.getCode())) {
@@ -308,7 +308,7 @@ public final class DeviceUtils {
             }
 
             @Override
-            public void shellOut(@NonNull StreamType from, String shellLine) {
+            public void shellOut(@NotNull StreamType from, String shellLine) {
                 logger.d("shellOut(), from=" + from + ", shellLine=" + shellLine);
             }
 
@@ -332,7 +332,7 @@ public final class DeviceUtils {
         ShellUtils.execProcess(Arrays.asList("su", "-c", "date", "-s", formatTime), null, sc, null);
     }
 
-    public static boolean setAlarm(@NonNull Context context, @NonNull PendingIntent pIntent, long triggerTime, @NonNull AlarmType alarmType) {
+    public static boolean setAlarm(@NotNull Context context, @NotNull PendingIntent pIntent, long triggerTime, @NotNull AlarmType alarmType) {
         logger.d("setAlarm(), pIntent=" + pIntent + ", triggerTime=" + triggerTime + ", alarmType=" + alarmType);
         boolean result = false;
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);

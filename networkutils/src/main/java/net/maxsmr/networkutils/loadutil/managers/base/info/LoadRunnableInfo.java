@@ -1,6 +1,6 @@
 package net.maxsmr.networkutils.loadutil.managers.base.info;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
@@ -43,26 +43,26 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         downloadDirectory = b.downloadDirectory;
     }
 
-    @NonNull
+    @NotNull
     public final String url;
 
-    @NonNull
+    @NotNull
     public final LoadSettings settings;
 
-    @NonNull
+    @NotNull
     public final RequestMethod requestMethod;
 
-    @NonNull
+    @NotNull
     public final ContentType contentType;
 
-    @NonNull
+    @NotNull
     private final List<Integer> acceptableResponseCodes = new ArrayList<>();
 
-    @NonNull
+    @NotNull
     private final List<NameValuePair> headers = new ArrayList<>();
 
     /** supports only when multipart or x-www-form-urlencoded */
-    @NonNull
+    @NotNull
     private final List<NameValuePair> formFields = new ArrayList<>();
 
     @Nullable
@@ -83,7 +83,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         paused = false;
     }
 
-    @NonNull
+    @NotNull
     public String getUrlString() {
         return url.toString();
     }
@@ -100,7 +100,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         return !headers.isEmpty();
     }
 
-    @NonNull
+    @NotNull
     public final List<NameValuePair> getHeaders() {
         return Collections.unmodifiableList(headers);
     }
@@ -109,7 +109,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         return !formFields.isEmpty();
     }
 
-    @NonNull
+    @NotNull
     public final List<NameValuePair> getFormFields() {
         return Collections.unmodifiableList(formFields);
     }
@@ -157,25 +157,25 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
 
         private final String url;
 
-        @NonNull
+        @NotNull
         private final LoadSettings settings;
 
         @Nullable
         private String name;
 
-        @NonNull
+        @NotNull
         private RequestMethod requestMethod = RequestMethod.POST;
 
-        @NonNull
+        @NotNull
         private ContentType contentType = ContentType.NOT_SPECIFIED;
 
-        @NonNull
+        @NotNull
         private List<Integer> acceptableResponseCodes = new ArrayList<>();
 
-        @NonNull
+        @NotNull
         private List<NameValuePair> headers = new ArrayList<>();
 
-        @NonNull
+        @NotNull
         private List<NameValuePair> formFields = new ArrayList<>();
 
         @Nullable
@@ -187,7 +187,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         @Nullable
         private File downloadDirectory;
 
-        public Builder(int id, String url, @NonNull LoadSettings settings) {
+        public Builder(int id, String url, @NotNull LoadSettings settings) {
             if (id < 0) {
                 throw new IllegalArgumentException("incorrect id: " + id);
             }
@@ -207,11 +207,11 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
             }
         }
 
-        public void requestMethod(@NonNull RequestMethod requestMethod) {
+        public void requestMethod(@NotNull RequestMethod requestMethod) {
             this.requestMethod = requestMethod;
         }
 
-        public void contentType(@NonNull ContentType contentType) {
+        public void contentType(@NotNull ContentType contentType) {
             this.contentType = contentType;
         }
 
@@ -253,7 +253,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         }
 
         @SuppressWarnings("unchecked")
-        @NonNull
+        @NotNull
         public I build() throws ClassCastException {
             return (I) new LoadRunnableInfo(this);
         }
@@ -261,13 +261,13 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
 
     public static class NameValuePair implements Serializable {
 
-        @NonNull
+        @NotNull
         public final String name;
 
         @Nullable
         public final String value;
 
-        public NameValuePair(@NonNull String name, @Nullable String value) {
+        public NameValuePair(@NotNull String name, @Nullable String value) {
 
             if (TextUtils.isEmpty(name)) {
                 throw new IllegalArgumentException("name can't be empty");
@@ -306,11 +306,11 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
 
     public static abstract class Body implements Serializable {
 
-        @NonNull
+        @NotNull
         public final String name;
 
         /** @param name request optional body parameter name */
-        public Body(@NonNull String name) {
+        public Body(@NotNull String name) {
             this.name = name;
         }
 
@@ -323,7 +323,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
 
     public static class EmptyBody extends Body {
 
-        public EmptyBody(@NonNull String name) {
+        public EmptyBody(@NotNull String name) {
             super(name);
         }
 
@@ -338,7 +338,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         @Nullable
         protected byte[] value;
 
-        public ByteArrayBody(@NonNull String name, @Nullable byte[] value) {
+        public ByteArrayBody(@NotNull String name, @Nullable byte[] value) {
             super(name);
             this.value = value;
         }
@@ -347,12 +347,12 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
             return getBytes().length;
         }
 
-        @NonNull
+        @NotNull
         public final byte[] getBytes() {
             return value != null? value : new byte[0];
         }
 
-        @NonNull
+        @NotNull
         public final InputStream openInputStream() {
             return new ByteArrayInputStream(getBytes());
         }
@@ -363,11 +363,11 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         @Nullable
         protected String value;
 
-        public StringBody(@NonNull String name, @Nullable String value) {
+        public StringBody(@NotNull String name, @Nullable String value) {
             this(name, value, DEFAULT_CHARSET.name());
         }
 
-        public StringBody(@NonNull String name, @Nullable String value, @Nullable String charset) {
+        public StringBody(@NotNull String name, @Nullable String value, @Nullable String charset) {
             super(name, value != null? value.getBytes(TextUtils.isEmpty(charset)? DEFAULT_CHARSET : Charset.forName(charset)) : null);
             this.value = value;
         }
@@ -390,11 +390,11 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         @Nullable
         protected transient JsonElement jsonElement;
 
-        public JsonBody(@NonNull String name, @Nullable JsonElement jsonElement) {
+        public JsonBody(@NotNull String name, @Nullable JsonElement jsonElement) {
             this(name, jsonElement, DEFAULT_CHARSET.name());
         }
 
-        public JsonBody(@NonNull String name, @Nullable JsonElement jsonElement, @Nullable String charset) {
+        public JsonBody(@NotNull String name, @Nullable JsonElement jsonElement, @Nullable String charset) {
             super(name, jsonElement != null? jsonElement.toString() : null, charset);
             this.jsonElement = jsonElement;
         }
@@ -439,7 +439,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
 
     public static class FilesBody extends Body {
 
-        @NonNull
+        @NotNull
         private final Set<File> sourceFiles = new LinkedHashSet<>();
 
         public final boolean asArray;
@@ -449,7 +449,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         /**
          * @param name request optional body parameter name
          */
-        public FilesBody(@NonNull String name, @NonNull Collection<File> files, boolean asArray, boolean ignoreIncorrect) {
+        public FilesBody(@NotNull String name, @NotNull Collection<File> files, boolean asArray, boolean ignoreIncorrect) {
             super(name);
             this.sourceFiles.addAll(files);
             this.asArray = asArray;
@@ -487,7 +487,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
             return size;
         }
 
-        @NonNull
+        @NotNull
         public List<File> getSourceFiles() {
             return new ArrayList<>(sourceFiles);
         }
@@ -525,11 +525,11 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
 
     public static class FileBody extends FilesBody {
 
-        public FileBody(@NonNull String name, @NonNull File sourceFile, boolean asArray, boolean ignoreIncorrect) {
+        public FileBody(@NotNull String name, @NotNull File sourceFile, boolean asArray, boolean ignoreIncorrect) {
             super(name, Collections.singletonList(sourceFile), asArray, ignoreIncorrect);
         }
 
-        @NonNull
+        @NotNull
         public File getSourceFile() {
             return getSourceFiles().get(0);
         }
@@ -567,7 +567,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
 
         public final boolean logResponseData;
 
-        @NonNull
+        @NotNull
         public final DownloadWriteMode downloadWriteMode;
 
         /** for download */
@@ -576,14 +576,14 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         /** for upload */
         public final boolean allowDeleteUploadFiles;
 
-        @NonNull
+        @NotNull
         public final ReadBodyMode readBodyMode;
 
         public final String uploadCharset;
 
         public final String downloadCharset;
 
-        public LoadSettings(@NonNull Builder builder) {
+        public LoadSettings(@NotNull Builder builder) {
             connectionTimeout = builder.connectionTimeout;
             readWriteTimeout = builder.readWriteTimeout;
             retryLimit = builder.retryLimit;
@@ -679,7 +679,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
 
             private boolean logResponseData;
 
-            @NonNull
+            @NotNull
             private DownloadWriteMode downloadWriteMode = DownloadWriteMode.DO_NOTING;
 
             /** for download */
@@ -688,13 +688,13 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
             /** for upload */
             private boolean allowDeleteUploadFiles;
 
-            @NonNull
+            @NotNull
             private ReadBodyMode readBodyMode = ReadBodyMode.STRING;
 
-            @NonNull
+            @NotNull
             private String uploadCharset = DEFAULT_CHARSET.name();
 
-            @NonNull
+            @NotNull
             private String downloadCharset = DEFAULT_CHARSET.name();
 
             public Builder() {
@@ -752,7 +752,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
                 return this;
             }
 
-            public Builder setDownloadWriteMode(@NonNull DownloadWriteMode downloadWriteMode) {
+            public Builder setDownloadWriteMode(@NotNull DownloadWriteMode downloadWriteMode) {
                 this.downloadWriteMode = readBodyMode == ReadBodyMode.FILE? downloadWriteMode : DownloadWriteMode.DO_NOTING;
                 return this;
             }
@@ -767,7 +767,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
                 return this;
             }
 
-            public Builder readBodyMode(@NonNull ReadBodyMode mode) {
+            public Builder readBodyMode(@NotNull ReadBodyMode mode) {
                 this.readBodyMode = mode;
                 if (this.readBodyMode != ReadBodyMode.FILE) {
                     this.downloadWriteMode = DownloadWriteMode.DO_NOTING;
@@ -775,15 +775,15 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
                 return this;
             }
 
-            public void uploadCharset(@NonNull String uploadCharset) {
+            public void uploadCharset(@NotNull String uploadCharset) {
                 this.uploadCharset = uploadCharset;
             }
 
-            public void downloadCharset(@NonNull String downloadCharset) {
+            public void downloadCharset(@NotNull String downloadCharset) {
                 this.downloadCharset = downloadCharset;
             }
 
-            @NonNull
+            @NotNull
             @Override
             public LoadSettings build() {
                 return new LoadSettings(this);
@@ -814,10 +814,10 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         APPLICATION_URLENCODED("application/x-www-form-urlencoded"),
         MULTIPART_FORM_DATA("multipart/form-data");
 
-        @NonNull
+        @NotNull
         public final String value;
 
-        ContentType(@NonNull String value) {
+        ContentType(@NotNull String value) {
             this.value = value;
         }
     }

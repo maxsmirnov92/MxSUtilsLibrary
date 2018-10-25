@@ -8,8 +8,8 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.CallSuper;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
@@ -62,28 +62,28 @@ public class TouchWebView extends WebView implements Handler.Callback {
         setWebChromeClient(new TouchWebChromeClient());
     }
 
-    @NonNull
+    @NotNull
     public Handler getClickHandler() {
         return mWebViewHandler;
     }
 
-    public void addPageLoadListener(@NonNull OnPageLoadListener pageLoadListener) {
+    public void addPageLoadListener(@NotNull OnPageLoadListener pageLoadListener) {
         mPageLoadObservable.registerObserver(pageLoadListener);
     }
 
-    public void removePageLoadListener(@NonNull OnPageLoadListener pageLoadListener) {
+    public void removePageLoadListener(@NotNull OnPageLoadListener pageLoadListener) {
         mPageLoadObservable.unregisterObserver(pageLoadListener);
     }
 
-    public void addScrollChangeListener(@NonNull OnScrollChangeListener scrollChangeListener) {
+    public void addScrollChangeListener(@NotNull OnScrollChangeListener scrollChangeListener) {
         mScrollChangeObservable.registerObserver(scrollChangeListener);
     }
 
-    public void removeScrollChangeListener(@NonNull OnScrollChangeListener scrollChangeListener) {
+    public void removeScrollChangeListener(@NotNull OnScrollChangeListener scrollChangeListener) {
         mScrollChangeObservable.unregisterObserver(scrollChangeListener);
     }
 
-    @NonNull
+    @NotNull
     public TouchWebViewClient getWebViewClient() {
         if (webViewClient == null) {
             throw new IllegalStateException(TouchWebViewClient.class.getSimpleName() + " was not initialized");
@@ -115,7 +115,7 @@ public class TouchWebView extends WebView implements Handler.Callback {
         super.setWebChromeClient(webChromeClient = (TouchWebChromeClient) client);
     }
 
-    @NonNull
+    @NotNull
     public ScrollState getScrollState() {
         float scale = webViewClient.getLastScale();
         if (scale <= 0) {

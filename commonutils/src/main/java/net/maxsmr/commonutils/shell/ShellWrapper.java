@@ -1,13 +1,14 @@
 package net.maxsmr.commonutils.shell;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -153,7 +154,7 @@ public class ShellWrapper {
             }
 
             @Override
-            public void shellOut(@NonNull StreamType from, String shellLine) {
+            public void shellOut(@NotNull StreamType from, String shellLine) {
                 logger.v("Command \"" + commandInfo.getCommandsToRun() + "\" output " + from + ": " + shellLine);
             }
 
@@ -170,7 +171,7 @@ public class ShellWrapper {
         }, new ShellUtils.ThreadsCallback() {
 
             @Override
-            public void onThreadStarted(@NonNull ShellUtils.CmdThreadInfo info, @NonNull Thread thread) {
+            public void onThreadStarted(@NotNull ShellUtils.CmdThreadInfo info, @NotNull Thread thread) {
                 synchronized (commandInfo) {
                     commandInfo.getStartedThreads();
                     commandInfo.startedThreads.put(info, thread);
@@ -178,7 +179,7 @@ public class ShellWrapper {
             }
 
             @Override
-            public void onThreadFinished(@NonNull ShellUtils.CmdThreadInfo info, @NonNull Thread thread) {
+            public void onThreadFinished(@NotNull ShellUtils.CmdThreadInfo info, @NotNull Thread thread) {
                 synchronized (commandInfo) {
                     commandInfo.getStartedThreads();
                     commandInfo.startedThreads.remove(info);
@@ -217,10 +218,10 @@ public class ShellWrapper {
 
     public static class CommandInfo {
 
-        @NonNull
+        @NotNull
         private final List<String> commandsToRun;
 
-        @NonNull
+        @NotNull
         private Map<ShellUtils.CmdThreadInfo, Thread> startedThreads = new LinkedHashMap<>();
 
         @Nullable
@@ -230,13 +231,13 @@ public class ShellWrapper {
             this.commandsToRun = commandsToRun != null ? new ArrayList<String>() : new ArrayList<String>();
         }
 
-        public CommandInfo(@NonNull CommandInfo info) {
+        public CommandInfo(@NotNull CommandInfo info) {
             this.commandsToRun = new ArrayList<>(info.commandsToRun);
             this.startedThreads = new LinkedHashMap<>(info.startedThreads);
             this.result = info.result;
         }
 
-        @NonNull
+        @NotNull
         public List<String> getCommandsToRun() {
             return new ArrayList<>(commandsToRun);
         }
@@ -245,7 +246,7 @@ public class ShellWrapper {
             return Predicate.Methods.contains(getStartedThreads().values(), e -> e != null && e.isAlive());
         }
 
-        @NonNull
+        @NotNull
         public Map<ShellUtils.CmdThreadInfo, Thread> getStartedThreads() {
             return new LinkedHashMap<>(startedThreads);
         }

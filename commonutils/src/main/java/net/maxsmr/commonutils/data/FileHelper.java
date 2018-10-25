@@ -11,8 +11,6 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.support.annotation.RawRes;
 import android.support.media.ExifInterface;
 import android.support.v4.util.ArraySet;
@@ -27,6 +25,9 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
 import net.maxsmr.commonutils.shell.ShellUtils;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.BufferedOutputStream;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -38,7 +39,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.lang.reflect.Field;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.channels.OverlappingFileLockException;
@@ -82,13 +82,13 @@ public final class FileHelper {
         return isExternalStorageMounted() && !Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED_READ_ONLY);
     }
 
-    @NonNull
-    public static Set<File> getExternalFilesDirs(@NonNull Context context) {
+    @NotNull
+    public static Set<File> getExternalFilesDirs(@NotNull Context context) {
         return getExternalFilesDirs(context, null);
     }
 
-    @NonNull
-    public static Set<File> getExternalFilesDirs(@NonNull Context context, @Nullable String type) {
+    @NotNull
+    public static Set<File> getExternalFilesDirs(@NotNull Context context, @Nullable String type) {
         Set<File> result = null;
         if (isExternalStorageMounted()) {
             if (type == null) {
@@ -103,11 +103,11 @@ public final class FileHelper {
         return result != null ? result : Collections.<File>emptySet();
     }
 
-    public static Set<File> getFilteredExternalFilesDirs(@NonNull Context context, boolean includeNotRemovable, boolean includePrimaryExternalStorage, boolean onlyRootNames) {
+    public static Set<File> getFilteredExternalFilesDirs(@NotNull Context context, boolean includeNotRemovable, boolean includePrimaryExternalStorage, boolean onlyRootNames) {
         return getFilteredExternalFilesDirs(context, null, includeNotRemovable, includePrimaryExternalStorage, onlyRootNames);
     }
 
-    public static Set<File> getFilteredExternalFilesDirs(@NonNull Context context, @Nullable String type, boolean includeNotRemovable, boolean includePrimaryExternalStorage, boolean onlyRootNames) {
+    public static Set<File> getFilteredExternalFilesDirs(@NotNull Context context, @Nullable String type, boolean includeNotRemovable, boolean includePrimaryExternalStorage, boolean onlyRootNames) {
         Set<File> result = new ArraySet<>();
         Set<File> external = getExternalFilesDirs(context, type);
         for (File d : external) {
@@ -139,7 +139,7 @@ public final class FileHelper {
         }
     }
 
-    public static double getPartitionTotalSpace(String path, @NonNull Units.SizeUnit unit) {
+    public static double getPartitionTotalSpace(String path, @NotNull Units.SizeUnit unit) {
         if (isDirExists(path)) {
             try {
                 return Units.SizeUnit.convert(new File(path).getTotalSpace(), Units.SizeUnit.BYTES, unit);
@@ -150,7 +150,7 @@ public final class FileHelper {
         return 0;
     }
 
-    public static double getPartitionFreeSpace(String path, @NonNull Units.SizeUnit unit) {
+    public static double getPartitionFreeSpace(String path, @NotNull Units.SizeUnit unit) {
         if (isDirExists(path)) {
             try {
                 return Units.SizeUnit.convert(new File(path).getFreeSpace(), Units.SizeUnit.BYTES, unit);
@@ -175,10 +175,10 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static FileLock lockFileChannel(File f, boolean blocking) {
+    public static FileLock lockFileChannel(@Nullable File f, boolean blocking) {
 
-        if (f == null || !f.isFile() || !f.exists()) {
-            logger.e("incorrect file: " + f);
+        if (!isFileExists(f)) {
+            logger.e("File '" + f + "' is not exists");
             return null;
         }
 
@@ -484,6 +484,7 @@ public final class FileHelper {
         return null;
     }
 
+    @Nullable
     public static File renameFile(File sourceFile, String destinationDir, String newFileName, boolean deleteIfExists, boolean deleteEmptyDirs) {
 
         if (!isFileExists(sourceFile)) {
@@ -588,7 +589,7 @@ public final class FileHelper {
         }
     }
 
-    @NonNull
+    @NotNull
     public static List<String> readStringsFromFile(File file) {
 
         List<String> lines = new ArrayList<>();
@@ -617,8 +618,8 @@ public final class FileHelper {
         return !strings.isEmpty() ? TextUtils.join(System.getProperty("line.separator"), strings) : null;
     }
 
-    @NonNull
-    public static Collection<String> readStringsFromAsset(@NonNull Context context, String assetName) {
+    @NotNull
+    public static Collection<String> readStringsFromAsset(@NotNull Context context, String assetName) {
         try {
             return readStringsFromInputStream(context.getAssets().open(assetName), true);
         } catch (IOException e) {
@@ -628,7 +629,7 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static String readStringFromAsset(@NonNull Context context, String assetName) {
+    public static String readStringFromAsset(@NotNull Context context, String assetName) {
         try {
             return readStringFromInputStream(context.getAssets().open(assetName), true);
         } catch (IOException e) {
@@ -637,8 +638,8 @@ public final class FileHelper {
         }
     }
 
-    @NonNull
-    public static Collection<String> readStringsFromRes(@NonNull Context context, @RawRes int resId) {
+    @NotNull
+    public static Collection<String> readStringsFromRes(@NotNull Context context, @RawRes int resId) {
         try {
             return readStringsFromInputStream(context.getResources().openRawResource(resId), true);
         } catch (Resources.NotFoundException e) {
@@ -648,7 +649,7 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static String readStringFromRes(@NonNull Context context, @RawRes int resId) {
+    public static String readStringFromRes(@NotNull Context context, @RawRes int resId) {
         try {
             return readStringFromInputStream(context.getResources().openRawResource(resId), true);
         } catch (Resources.NotFoundException e) {
@@ -658,7 +659,7 @@ public final class FileHelper {
     }
 
 
-    public static boolean writeBytesToFile(@NonNull File file, byte[] data, boolean append) {
+    public static boolean writeBytesToFile(@NotNull File file, byte[] data, boolean append) {
         if (data == null || data.length == 0) {
             return false;
         }
@@ -926,12 +927,12 @@ public final class FileHelper {
         return true;
     }
 
-    @NonNull
+    @NotNull
     public static String getFileExtension(@Nullable File file) {
         return getFileExtension(file != null? file.getName() : null);
     }
 
-    @NonNull
+    @NotNull
     public static String getFileExtension(@Nullable String name) {
         if (name == null) {
             name = "";
@@ -957,7 +958,7 @@ public final class FileHelper {
     /**
      * @return same sorted list or created sorted array list
      */
-    public static Collection<File> sortFiles(Collection<File> files, boolean allowModifyCollection, @NonNull Comparator<? super File> comparator) {
+    public static Collection<File> sortFiles(Collection<File> files, boolean allowModifyCollection, @NotNull Comparator<? super File> comparator) {
 
         if (files == null || files.isEmpty()) {
             return files;
@@ -986,8 +987,8 @@ public final class FileHelper {
         return sortFiles(filesList, allowModifyList, new FileComparator(Collections.singletonMap(FileComparator.SortOption.LAST_MODIFIED, ascending)));
     }
 
-    @NonNull
-    public static Set<File> getFiles(Collection<File> fromFiles, @NonNull GetMode mode, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
+    @NotNull
+    public static Set<File> getFiles(Collection<File> fromFiles, @NotNull GetMode mode, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
         Set<File> collected = new LinkedHashSet<>();
         if (fromFiles != null) {
             for (File fromFile : fromFiles) {
@@ -1001,13 +1002,13 @@ public final class FileHelper {
      * @param fromFile file or directory
      * @return collected set of files or directories from specified directories without source files
      */
-    @NonNull
-    public static Set<File> getFiles(File fromFile, @NonNull GetMode mode, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
+    @NotNull
+    public static Set<File> getFiles(File fromFile, @NotNull GetMode mode, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
         return getFiles(fromFile, mode, comparator, notifier, depth, 0, null);
     }
 
-    @NonNull
-    private static Set<File> getFiles(File fromFile, @NonNull GetMode mode,
+    @NotNull
+    private static Set<File> getFiles(File fromFile, @NotNull GetMode mode,
                                       @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier,
                                       int depth, int currentLevel, @Nullable Set<File> collected) {
 
@@ -1084,8 +1085,8 @@ public final class FileHelper {
         return result;
     }
 
-    @NonNull
-    public static Set<File> searchByName(String name, Collection<File> searchFiles, @NonNull GetMode mode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
+    @NotNull
+    public static Set<File> searchByName(String name, Collection<File> searchFiles, @NotNull GetMode mode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
         Set<File> collected = new LinkedHashSet<>();
         if (searchFiles != null) {
             for (File searchFile : searchFiles) {
@@ -1099,13 +1100,13 @@ public final class FileHelper {
      * @param comparator to sort each folders list and result set
      * @return found set of files or directories with matched name
      */
-    @NonNull
-    public static Set<File> searchByName(String name, File searchFile, @NonNull GetMode mode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
+    @NotNull
+    public static Set<File> searchByName(String name, File searchFile, @NotNull GetMode mode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
         return searchByName(name, searchFile, mode, searchFlags, comparator, notifier, depth, 0, null);
     }
 
-    @NonNull
-    private static Set<File> searchByName(String name, File searchFile, @NonNull GetMode mode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier,
+    @NotNull
+    private static Set<File> searchByName(String name, File searchFile, @NotNull GetMode mode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier,
                                           int depth, int currentLevel, @Nullable Set<File> foundFiles) {
 
         Set<File> result = new LinkedHashSet<>();
@@ -1178,8 +1179,8 @@ public final class FileHelper {
         return result;
     }
 
-    @NonNull
-    public static Set<File> searchByNameFirst(String name, Collection<File> searchFiles, @NonNull GetMode getMode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable final IGetNotifier notifier, int depth) {
+    @NotNull
+    public static Set<File> searchByNameFirst(String name, Collection<File> searchFiles, @NotNull GetMode getMode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable final IGetNotifier notifier, int depth) {
         Set<File> collected = new LinkedHashSet<>();
         for (File file : searchFiles) {
             collected.addAll(searchByName(name, file, getMode, searchFlags, comparator, notifier, depth));
@@ -1188,27 +1189,27 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static File searchByNameFirst(String name, File searchFile, @NonNull GetMode getMode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable final IGetNotifier notifier, int depth) {
+    public static File searchByNameFirst(String name, File searchFile, @NotNull GetMode getMode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable final IGetNotifier notifier, int depth) {
         Set<File> found = searchByName(name, searchFile, getMode, searchFlags, comparator, new IGetNotifier() {
             @Override
-            public boolean onProcessing(@NonNull File current, @NonNull Set<File> found, int currentLevel) {
+            public boolean onProcessing(@NotNull File current, @NotNull Set<File> found, int currentLevel) {
                 return (notifier == null || notifier.onProcessing(current, found, currentLevel)) && found.size() == 0;
             }
 
             @Override
-            public boolean onGetFile(@NonNull File file) {
+            public boolean onGetFile(@NotNull File file) {
                 return notifier == null || notifier.onGetFile(file);
             }
 
             @Override
-            public boolean onGetFolder(@NonNull File folder) {
+            public boolean onGetFolder(@NotNull File folder) {
                 return notifier == null || notifier.onGetFolder(folder);
             }
         }, depth);
         return !found.isEmpty() ? new ArrayList<>(found).get(0) : null;
     }
 
-    @NonNull
+    @NotNull
     public static Set<File> searchByNameWithStat(final String name, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier) {
         return searchByNameWithStat(name, null, comparator, notifier);
     }
@@ -1217,7 +1218,7 @@ public final class FileHelper {
      * @param name        file or folder name part
      * @param searchFiles if null or empty, 'PATH' environment variable will be used
      */
-    @NonNull
+    @NotNull
     public static Set<File> searchByNameWithStat(final String name, @Nullable Collection<File> searchFiles, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier) {
 
         final Set<File> foundFiles = new LinkedHashSet<>();
@@ -1253,7 +1254,7 @@ public final class FileHelper {
                 }
 
                 @Override
-                public void shellOut(@NonNull StreamType from, String shellLine) {
+                public void shellOut(@NotNull StreamType from, String shellLine) {
                     if (shellLine.contains("File: ") && shellLine.contains(name)) {
                         foundFiles.add(new File(currentPath));
                     }
@@ -1333,7 +1334,7 @@ public final class FileHelper {
         return false;
     }
 
-    @NonNull
+    @NotNull
     public static Set<File> delete(Collection<File> fromFiles, boolean deleteEmptyDirs, @Nullable Collection<File> excludeFiles, @Nullable Comparator<? super File> comparator, @Nullable IDeleteNotifier notifier, int depth) {
         Set<File> collected = new LinkedHashSet<>();
         if (fromFiles != null) {
@@ -1348,12 +1349,12 @@ public final class FileHelper {
      * @param comparator to sort each folders list
      * @return set of deleted files
      */
-    @NonNull
+    @NotNull
     public static Set<File> delete(File fromFile, boolean deleteEmptyDirs, @Nullable Collection<File> excludeFiles, @Nullable Comparator<? super File> comparator, @Nullable IDeleteNotifier notifier, int depth) {
         return delete(fromFile, deleteEmptyDirs, excludeFiles, comparator, notifier, depth, 0, null);
     }
 
-    @NonNull
+    @NotNull
     private static Set<File> delete(File fromFile, boolean deleteEmptyDirs, @Nullable Collection<File> excludeFiles, @Nullable Comparator<? super File> comparator, @Nullable IDeleteNotifier notifier,
                                     int depth, int currentLevel, @Nullable Set<File> deletedFiles) {
 
@@ -1737,7 +1738,7 @@ public final class FileHelper {
                 }
 
                 @Override
-                public boolean onProcessing(@NonNull InputStream inputStream, @NonNull OutputStream outputStream, long bytesWrite, long bytesLeft) {
+                public boolean onProcessing(@NotNull InputStream inputStream, @NotNull OutputStream outputStream, long bytesWrite, long bytesLeft) {
                     return notifier.onProcessing(sourceFile, finalDestFile, bytesWrite, totalBytesCount);
                 }
             } : null) != null) {
@@ -1758,7 +1759,7 @@ public final class FileHelper {
     /**
      * @param fromFile file or directory
      */
-    @NonNull
+    @NotNull
     @Deprecated
     public static Set<File> copyFilesWithBuffering(File fromFile, File destDir,
                                                    @Nullable Comparator<? super File> comparator,
@@ -1767,7 +1768,7 @@ public final class FileHelper {
         return copyFilesWithBuffering(fromFile, destDir, comparator, singleNotifier, multipleCopyNotifier, preserveFileDate, depth, 0, 0, null, null);
     }
 
-    @NonNull
+    @NotNull
     @Deprecated
     private static Set<File> copyFilesWithBuffering(File fromFile, File destDir,
                                                     @Nullable Comparator<? super File> comparator,
@@ -1792,17 +1793,17 @@ public final class FileHelper {
                 if (currentLevel == 0) {
                     totalFilesCount = getFiles(fromFile, GetMode.FILES, comparator, multipleCopyNotifier != null ? new IGetNotifier() {
                         @Override
-                        public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
+                        public boolean onProcessing(@NotNull File current, @NotNull Set<File> collected, int currentLevel) {
                             return multipleCopyNotifier.onCalculatingSize(current, collected, currentLevel);
                         }
 
                         @Override
-                        public boolean onGetFile(@NonNull File file) {
+                        public boolean onGetFile(@NotNull File file) {
                             return true;
                         }
 
                         @Override
-                        public boolean onGetFolder(@NonNull File folder) {
+                        public boolean onGetFolder(@NotNull File folder) {
                             return false;
                         }
                     } : null, depth).size();
@@ -1958,17 +1959,17 @@ public final class FileHelper {
 
         final Set<File> files = getFiles(fromFile, GetMode.FILES, comparator, multipleCopyNotifier != null ? new IGetNotifier() {
             @Override
-            public boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel) {
+            public boolean onProcessing(@NotNull File current, @NotNull Set<File> collected, int currentLevel) {
                 return multipleCopyNotifier.onCalculatingSize(current, collected);
             }
 
             @Override
-            public boolean onGetFile(@NonNull File file) {
+            public boolean onGetFile(@NotNull File file) {
                 return true;
             }
 
             @Override
-            public boolean onGetFolder(@NonNull File folder) {
+            public boolean onGetFolder(@NotNull File folder) {
                 return false;
             }
         } : null, depth);
@@ -2224,35 +2225,6 @@ public final class FileHelper {
         return result;
     }
 
-    /**
-     * @param id      the constant value of resource subclass field
-     * @param resType subclass where the static final field with given id value declared
-     */
-    public static boolean checkResourceIdExists(int id, String resName, Class<?> resType) throws NullPointerException, IllegalArgumentException, IllegalAccessException {
-
-        if (resType == null)
-            throw new NullPointerException("resType is null");
-
-        Field[] fields = resType.getDeclaredFields();
-
-        if (fields == null || fields.length == 0)
-            return false;
-
-        for (Field field : fields) {
-            field.setAccessible(true);
-            if (field.getName().equals(resName)) {
-                try {
-                    if (CompareUtils.objectsEqual(field.getInt(null), id))
-                        return true;
-                } catch (Exception e) {
-                    logger.e("an Exception occurred during getInt()");
-                }
-            }
-        }
-
-        return false;
-    }
-
     public enum GetMode {
         FILES, FOLDERS, ALL
     }
@@ -2262,18 +2234,18 @@ public final class FileHelper {
         /**
          * @return false if client code wants to interrupt collecting
          */
-        boolean onProcessing(@NonNull File current, @NonNull Set<File> collected, int currentLevel);
+        boolean onProcessing(@NotNull File current, @NotNull Set<File> collected, int currentLevel);
 
         /**
          * @return false if client code doesn't want to append this file to result
          */
-        boolean onGetFile(@NonNull File file);
+        boolean onGetFile(@NotNull File file);
 
 
         /**
          * @return false if client code doesn't want to append this folder to result
          */
-        boolean onGetFolder(@NonNull File folder);
+        boolean onGetFolder(@NotNull File folder);
     }
 
     public interface IDeleteNotifier {
@@ -2281,7 +2253,7 @@ public final class FileHelper {
         /**
          * @return false if client code wants to interrupt deleting
          */
-        boolean onProcessing(@NonNull File current, @NonNull Set<File> deleted, int currentLevel);
+        boolean onProcessing(@NotNull File current, @NotNull Set<File> deleted, int currentLevel);
 
         /**
          * @return false if client code doesn't want to delete this file
@@ -2302,22 +2274,22 @@ public final class FileHelper {
 
         long notifyInterval();
 
-        boolean onProcessing(@NonNull File sourceFile, @NonNull File destFile, long bytesCopied, long bytesTotal);
+        boolean onProcessing(@NotNull File sourceFile, @NotNull File destFile, long bytesCopied, long bytesTotal);
     }
 
     public interface IMultipleCopyNotifier {
 
-        boolean onCalculatingSize(@NonNull File current, @NonNull Set<File> collected, int currentLevel);
+        boolean onCalculatingSize(@NotNull File current, @NotNull Set<File> collected, int currentLevel);
 
-        boolean onProcessing(@NonNull File currentFile, @NonNull File destDir, @NonNull Set<File> copied, long filesTotal, int currentLevel);
+        boolean onProcessing(@NotNull File currentFile, @NotNull File destDir, @NotNull Set<File> copied, long filesTotal, int currentLevel);
 
-        boolean confirmCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel);
+        boolean confirmCopy(@NotNull File currentFile, @NotNull File destDir, int currentLevel);
 
-        File onBeforeCopy(@NonNull File currentFile, @NonNull File destDir, int currentLevel);
+        File onBeforeCopy(@NotNull File currentFile, @NotNull File destDir, int currentLevel);
 
-        boolean onExists(@NonNull File destFile, int currentLevel);
+        boolean onExists(@NotNull File destFile, int currentLevel);
 
-        void onFailed(@Nullable File currentFile, @NonNull File destFile, int currentLevel);
+        void onFailed(@Nullable File currentFile, @NotNull File destFile, int currentLevel);
     }
 
     public interface IMultipleCopyNotifier2 {
@@ -2370,7 +2342,7 @@ public final class FileHelper {
         }
 
         @Override
-        protected int compare(@Nullable File lhs, @Nullable File rhs, @NonNull SortOption option, boolean ascending) {
+        protected int compare(@Nullable File lhs, @Nullable File rhs, @NotNull SortOption option, boolean ascending) {
 
             int result = 0;
 
@@ -2394,8 +2366,8 @@ public final class FileHelper {
         }
     }
 
-    @NonNull
-    public static Map<File, Long> suListFiles(@NonNull Collection<File> fromDirs, @Nullable Comparator<? super File> comparator, @Nullable final ISuGetNotifier notifier) {
+    @NotNull
+    public static Map<File, Long> suListFiles(@NotNull Collection<File> fromDirs, @Nullable Comparator<? super File> comparator, @Nullable final ISuGetNotifier notifier) {
         final Map<File, Long> collectedMap = new LinkedHashMap<>();
         final Set<File> collected = new LinkedHashSet<>();
         for (final File dir : new LinkedHashSet<>(fromDirs)) {
@@ -2408,7 +2380,7 @@ public final class FileHelper {
                     }
 
                     @Override
-                    public void shellOut(@NonNull StreamType from, String shellLine) {
+                    public void shellOut(@NotNull StreamType from, String shellLine) {
                         if (from == StreamType.OUT && !TextUtils.isEmpty(shellLine)) {
                             File current = new File(dir, shellLine);
                             if (notifier != null) {
@@ -2448,7 +2420,7 @@ public final class FileHelper {
                         }
 
                         @Override
-                        public void shellOut(@NonNull StreamType from, String shellLine) {
+                        public void shellOut(@NotNull StreamType from, String shellLine) {
                             if (from == StreamType.OUT && !TextUtils.isEmpty(shellLine)) {
                                 long size = 0;
                                 String[] parts = shellLine.split("\\t");
@@ -2491,7 +2463,7 @@ public final class FileHelper {
         void onNonSuccessExitCode(int exitCode, File forFile);
     }
 
-    public static String filesToString(@NonNull Context context, Collection<File> files, int depth) {
+    public static String filesToString(@NotNull Context context, Collection<File> files, int depth) {
         if (files != null) {
             Map<File, Long> map = new LinkedHashMap<>();
             for (File f : files) {
@@ -2504,7 +2476,7 @@ public final class FileHelper {
         return "";
     }
 
-    public static String filePairsToString(@NonNull Context context, Collection<Pair<File, File>> files, int depth) {
+    public static String filePairsToString(@NotNull Context context, Collection<Pair<File, File>> files, int depth) {
         if (files != null) {
             Map<Pair<File, File>, Long> map = new LinkedHashMap<>();
             for (Pair<File, File> p : files) {
@@ -2517,14 +2489,14 @@ public final class FileHelper {
         return "";
     }
 
-    public static String filesWithSizeToString(@NonNull Context context, Map<File, Long> files) {
+    public static String filesWithSizeToString(@NotNull Context context, Map<File, Long> files) {
         return filesWithSizeToString(context, files.entrySet());
     }
 
     /**
      * @param files file < - > size in bytes
      */
-    public static String filesWithSizeToString(@NonNull Context context, Collection<Map.Entry<File, Long>> files) {
+    public static String filesWithSizeToString(@NotNull Context context, Collection<Map.Entry<File, Long>> files) {
         StringBuilder sb = new StringBuilder();
         if (files != null) {
             boolean isFirst = false;
@@ -2545,14 +2517,14 @@ public final class FileHelper {
         return sb.toString();
     }
 
-    public static String filePairsWithSizeToString(@NonNull Context context, Map<Pair<File, File>, Long> files) {
+    public static String filePairsWithSizeToString(@NotNull Context context, Map<Pair<File, File>, Long> files) {
         return filePairsWithSizeToString(context, files.entrySet());
     }
 
     /**
      * @param files pair < source file - destination file > <-> size in bytes
      */
-    public static String filePairsWithSizeToString(@NonNull Context context, Collection<Map.Entry<Pair<File, File>, Long>> files) {
+    public static String filePairsWithSizeToString(@NotNull Context context, Collection<Map.Entry<Pair<File, File>, Long>> files) {
         StringBuilder sb = new StringBuilder();
         if (files != null) {
             boolean isFirst = false;

@@ -7,7 +7,7 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.support.annotation.CallSuper;
 import android.support.annotation.MainThread;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.v4.content.LocalBroadcastManager;
 import android.text.TextUtils;
 
@@ -23,7 +23,7 @@ public class ServiceBroadcastReceiver extends BroadcastReceiver {
 
     public static final String EXTRA_SERVICE_NAME = "service_name";
 
-    @NonNull
+    @NotNull
     public final Set<Class<? extends Service>> serviceClasses = new LinkedHashSet<>();
 
     /**
@@ -69,37 +69,37 @@ public class ServiceBroadcastReceiver extends BroadcastReceiver {
     }
 
     @MainThread
-    protected void doActionOnCreate(@NonNull String className) {
+    protected void doActionOnCreate(@NotNull String className) {
     }
 
     @MainThread
-    protected void doActionOnStart(@NonNull String className) {
+    protected void doActionOnStart(@NotNull String className) {
     }
 
     @MainThread
-    protected void doActionOnDestroyed(@NonNull String className) {
+    protected void doActionOnDestroyed(@NotNull String className) {
     }
 
-    public static <S extends Service> void sendBroadcastCreated(@NonNull S service) {
+    public static <S extends Service> void sendBroadcastCreated(@NotNull S service) {
         sendBroadcast(service, ACTION_SERVICE_CREATED);
     }
 
-    public static <S extends Service> void sendBroadcastStarted(@NonNull S service) {
+    public static <S extends Service> void sendBroadcastStarted(@NotNull S service) {
         sendBroadcast(service, ACTION_SERVICE_STARTED);
     }
 
-    public static <S extends Service> void sendBroadcastDestroyed(@NonNull S service) {
+    public static <S extends Service> void sendBroadcastDestroyed(@NotNull S service) {
         sendBroadcast(service, ACTION_SERVICE_DESTROYED);
     }
 
-    private static <S extends Service> void sendBroadcast(@NonNull S service, String action) {
+    private static <S extends Service> void sendBroadcast(@NotNull S service, String action) {
         if (TextUtils.isEmpty(action)) {
             throw new IllegalArgumentException("empty action");
         }
         LocalBroadcastManager.getInstance(service).sendBroadcast(new Intent(action).putExtra(EXTRA_SERVICE_NAME, service.getClass().getName()));
     }
 
-    public static void register(@NonNull Context context, @NonNull ServiceBroadcastReceiver receiver) {
+    public static void register(@NotNull Context context, @NotNull ServiceBroadcastReceiver receiver) {
         IntentFilter filter = new IntentFilter();
         filter.addAction(ACTION_SERVICE_CREATED);
         filter.addAction(ACTION_SERVICE_STARTED);
@@ -107,7 +107,7 @@ public class ServiceBroadcastReceiver extends BroadcastReceiver {
         LocalBroadcastManager.getInstance(context).registerReceiver(receiver, filter);
     }
 
-    public static void unregister(@NonNull Context context, @NonNull ServiceBroadcastReceiver receiver) {
+    public static void unregister(@NotNull Context context, @NotNull ServiceBroadcastReceiver receiver) {
         LocalBroadcastManager.getInstance(context).unregisterReceiver(receiver);
     }
 }

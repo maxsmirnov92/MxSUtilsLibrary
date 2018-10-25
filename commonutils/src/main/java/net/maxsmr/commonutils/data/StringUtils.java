@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.data;
 
 import android.content.Context;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import java.util.ArrayList;
@@ -47,7 +47,7 @@ public class StringUtils {
         return TextUtils.isEmpty(s) || "null".equalsIgnoreCase(s.toString());
     }
 
-    public static boolean isNoData(CharSequence s, @NonNull Context ctx) {
+    public static boolean isNoData(CharSequence s, @NotNull Context ctx) {
         return isEmpty(s) || ctx.getString(R.string.no_data).equalsIgnoreCase(s.toString());
     }
 
@@ -69,8 +69,8 @@ public class StringUtils {
 //        parts[i] = parts[i].replace(first, first.toUpperCase());
     }
 
-    @NonNull
-    public static String insertAt(@NonNull CharSequence target, int index, @NonNull CharSequence what) {
+    @NotNull
+    public static String insertAt(@NotNull CharSequence target, int index, @NotNull CharSequence what) {
 
         if (index < 0 || index >= target.length()) {
             throw new IllegalArgumentException("incorrect index: " + index);
@@ -79,7 +79,7 @@ public class StringUtils {
         return target.toString().substring(0, index) + what + target.toString().substring(index, target.length());
     }
 
-    public static int indexOf(@NonNull CharSequence s, char c) {
+    public static int indexOf(@NotNull CharSequence s, char c) {
         for (int index = 0; index < s.length(); index++) {
             if (s.charAt(index) == c) {
                 return index;
@@ -88,8 +88,8 @@ public class StringUtils {
         return -1;
     }
 
-    @NonNull
-    public static CharSequence removeNonDigits(@NonNull CharSequence s) {
+    @NotNull
+    public static CharSequence removeNonDigits(@NotNull CharSequence s) {
         StringBuilder format = new StringBuilder(s);
         for (int i = 0; i < format.length(); )
             if (!Character.isDigit(format.charAt(i)))
@@ -98,8 +98,8 @@ public class StringUtils {
         return format;
     }
 
-    @NonNull
-    public static String replace(@NonNull CharSequence s, int start, int end, @NonNull CharSequence replacement) {
+    @NotNull
+    public static String replace(@NotNull CharSequence s, int start, int end, @NotNull CharSequence replacement) {
 
         if (start < 0)
             throw new StringIndexOutOfBoundsException("start < 0");
@@ -113,8 +113,8 @@ public class StringUtils {
         return sb.toString();
     }
 
-    @NonNull
-    public static String delete(@NonNull CharSequence s, int start, int end) {
+    @NotNull
+    public static String delete(@NotNull CharSequence s, int start, int end) {
 
         if (start < 0)
             throw new StringIndexOutOfBoundsException("start < 0");
@@ -128,8 +128,8 @@ public class StringUtils {
         return sb.toString();
     }
 
-    @NonNull
-    public static String deleteCharAt(@NonNull CharSequence s, int index) {
+    @NotNull
+    public static String deleteCharAt(@NotNull CharSequence s, int index) {
 
         if (index < 0 || index >= s.length())
             throw new StringIndexOutOfBoundsException("incorrect index: " + index);
@@ -169,8 +169,8 @@ public class StringUtils {
         }
     }
 
-    @NonNull
-    private static List<CharacterMap> lowerCaseAlphabet(@NonNull List<CharacterMap> alphabet) {
+    @NotNull
+    private static List<CharacterMap> lowerCaseAlphabet(@NotNull List<CharacterMap> alphabet) {
         List<CharacterMap> newAlphabet = new ArrayList<>();
         for (CharacterMap map : alphabet) {
             if (map != null) {
@@ -180,8 +180,8 @@ public class StringUtils {
         return newAlphabet;
     }
 
-    @NonNull
-    private static List<CharacterMap> upperCaseAlphabet(@NonNull List<CharacterMap> alphabet) {
+    @NotNull
+    private static List<CharacterMap> upperCaseAlphabet(@NotNull List<CharacterMap> alphabet) {
         List<CharacterMap> newAlphabet = new ArrayList<>();
         for (CharacterMap map : alphabet) {
             if (map != null) {
@@ -191,17 +191,17 @@ public class StringUtils {
         return newAlphabet;
     }
 
-    @NonNull
+    @NotNull
     public static String trim(CharSequence cs) {
         return trim(cs, true, true);
     }
 
-    @NonNull
+    @NotNull
     public static String trim(CharSequence cs, boolean fromStart, boolean fromEnd) {
         return trim(cs, CompareUtils.Condition.LESS_OR_EQUAL, ' ', fromStart, fromEnd);
     }
 
-    @NonNull
+    @NotNull
     public static String trim(CharSequence cs, CompareUtils.Condition condition, char byChar, boolean fromStart, boolean fromEnd) {
 
         if (cs == null) {
@@ -227,7 +227,7 @@ public class StringUtils {
     }
 
     @Nullable
-    private static Character findCharByLeft(@NonNull List<CharacterMap> alphabet, Character c, boolean ignoreCase) {
+    private static Character findCharByLeft(@NotNull List<CharacterMap> alphabet, Character c, boolean ignoreCase) {
         for (CharacterMap map : alphabet) {
             if (CompareUtils.charsEqual(c, map.leftCh, ignoreCase))
                 return map.rightCh;
@@ -236,7 +236,7 @@ public class StringUtils {
     }
 
     @Nullable
-    private static Character findCharByRight(@NonNull List<CharacterMap> alphabet, Character c, boolean ignoreCase) {
+    private static Character findCharByRight(@NotNull List<CharacterMap> alphabet, Character c, boolean ignoreCase) {
         for (CharacterMap map : alphabet) {
             if (CompareUtils.charsEqual(c, map.rightCh, ignoreCase))
                 return map.leftCh;
@@ -245,7 +245,7 @@ public class StringUtils {
     }
 
     @Nullable
-    public static CharSequence replaceChars(@NonNull List<CharacterMap> alphabet, @Nullable CharSequence sequence, @NonNull ReplaceDirection direction, boolean ignoreCase) {
+    public static CharSequence replaceChars(@NotNull List<CharacterMap> alphabet, @Nullable CharSequence sequence, @NotNull ReplaceDirection direction, boolean ignoreCase) {
         if (sequence != null) {
             char[] source = new char[sequence.length()];
             for (int i = 0; i < sequence.length(); i++) {
@@ -258,7 +258,7 @@ public class StringUtils {
         return null;
     }
 
-    @NonNull
+    @NotNull
     public static String appendOrReplaceChar(CharSequence source, Character what, String to, boolean ignoreCase, boolean appendOrReplace) {
 
         if (TextUtils.isEmpty(source) || TextUtils.isEmpty(to)) {
@@ -285,7 +285,7 @@ public class StringUtils {
     }
 
     @Nullable
-    private static CharSequence replaceByLatinCyrillicAlphabet(CharSequence sequence, boolean ignoreCase, @NonNull StringUtils.ReplaceDirection direction) {
+    private static CharSequence replaceByLatinCyrillicAlphabet(CharSequence sequence, boolean ignoreCase, @NotNull StringUtils.ReplaceDirection direction) {
         return replaceChars(replaceLatinCyrillicAlphabet, sequence, direction, ignoreCase);
     }
 

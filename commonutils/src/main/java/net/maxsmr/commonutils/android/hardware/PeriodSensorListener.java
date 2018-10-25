@@ -6,16 +6,16 @@ import android.hardware.Sensor;
 import android.hardware.SensorEvent;
 import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 public class PeriodSensorListener {
 
-    public PeriodSensorListener(@NonNull Context context, int sensorType) {
+    public PeriodSensorListener(@NotNull Context context, int sensorType) {
         this.context = context;
         this.sensorType = sensorType;
     }
 
-    @NonNull
+    @NotNull
     private final Context context;
 
     private final SensorEventObservable sensorEventObservable = new SensorEventObservable();

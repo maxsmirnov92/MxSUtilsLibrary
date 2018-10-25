@@ -9,8 +9,8 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.Handler;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import net.maxsmr.commonutils.android.location.info.TrackingStatus;
 import net.maxsmr.commonutils.data.CompareUtils;
@@ -88,7 +88,7 @@ public final class LocationWatcher {
         }
     }
 
-    private boolean updateLocation(@NonNull Location location) {
+    private boolean updateLocation(@NotNull Location location) {
 
         final boolean isSameLocationInfos = CompareUtils.objectsEqual(mLastLocation, location);
         logger.i("last location info: " + mLastLocation + ", new location info: " + location + ", is same: " + isSameLocationInfos);

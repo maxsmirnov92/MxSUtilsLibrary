@@ -9,7 +9,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.DimenRes;
 import android.support.annotation.DrawableRes;
-import android.support.annotation.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
@@ -19,6 +18,8 @@ import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import net.maxsmr.commonutils.R;
+
+import org.jetbrains.annotations.Nullable;
 
 /**
  * @author maxsmirnov

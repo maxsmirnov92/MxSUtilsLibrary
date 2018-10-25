@@ -10,8 +10,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
 import android.support.annotation.DrawableRes;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.android.hardware.DeviceUtils;
@@ -30,7 +30,7 @@ public final class ServiceUtils {
         throw new AssertionError("no instances.");
     }
 
-    public static <S extends Service> boolean isServiceRunning(@NonNull Context context, @NonNull final Class<S> serviceClass) {
+    public static <S extends Service> boolean isServiceRunning(@NotNull Context context, @NotNull final Class<S> serviceClass) {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         if (manager == null) {
             throw new RuntimeException(ActivityManager.class.getSimpleName() + " is null");
@@ -38,7 +38,7 @@ public final class ServiceUtils {
         return Predicate.Methods.contains(manager.getRunningServices(Integer.MAX_VALUE), service -> serviceClass.getName().equals(service.service.getClassName()));
     }
 
-    public static <S extends Service> boolean isServiceForeground(@NonNull Context context, @NonNull final Class<S> serviceClass) {
+    public static <S extends Service> boolean isServiceForeground(@NotNull Context context, @NotNull final Class<S> serviceClass) {
         ActivityManager manager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         if (manager == null) {
             throw new RuntimeException(ActivityManager.class.getSimpleName() + " is null");
@@ -46,50 +46,50 @@ public final class ServiceUtils {
         return Predicate.Methods.contains(manager.getRunningServices(Integer.MAX_VALUE), service -> serviceClass.getName().equals(service.service.getClassName()) && service.foreground);
     }
 
-    public static <S extends Service> void startNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass) {
+    public static <S extends Service> void startNoCheck(@NotNull Context context, @NotNull Class<S> serviceClass) {
         startNoCheck(context, serviceClass, null);
     }
 
-    public static <S extends Service> void startNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass, @Nullable Intent args) {
+    public static <S extends Service> void startNoCheck(@NotNull Context context, @NotNull Class<S> serviceClass, @Nullable Intent args) {
         context.startService(createServiceIntent(context.getPackageName(), serviceClass, args));
     }
 
-    public static <S extends Service> void start(@NonNull Context context, @NonNull Class<S> serviceClass) {
+    public static <S extends Service> void start(@NotNull Context context, @NotNull Class<S> serviceClass) {
         start(context, serviceClass, null);
     }
 
-    public static <S extends Service> void start(@NonNull Context context, @NonNull Class<S> serviceClass, @Nullable Intent args) {
+    public static <S extends Service> void start(@NotNull Context context, @NotNull Class<S> serviceClass, @Nullable Intent args) {
         if (!isServiceRunning(context, serviceClass)) {
             restartNoCheck(context, serviceClass, args);
         }
     }
 
-    public static <S extends Service> void restart(@NonNull Context context, @NonNull Class<S> serviceClass) {
+    public static <S extends Service> void restart(@NotNull Context context, @NotNull Class<S> serviceClass) {
         restart(context, serviceClass, null);
     }
 
-    public static <S extends Service> void restart(@NonNull Context context, @NonNull Class<S> serviceClass, @Nullable Intent args) {
+    public static <S extends Service> void restart(@NotNull Context context, @NotNull Class<S> serviceClass, @Nullable Intent args) {
         stop(context, serviceClass);
         startNoCheck(context, serviceClass, args);
     }
 
-    private static <S extends Service> void stopNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass) {
+    private static <S extends Service> void stopNoCheck(@NotNull Context context, @NotNull Class<S> serviceClass) {
         Intent service = new Intent(context, serviceClass);
         context.stopService(service);
     }
 
-    public static <S extends Service> void stop(@NonNull Context context, @NonNull Class<S> serviceClass) {
+    public static <S extends Service> void stop(@NotNull Context context, @NotNull Class<S> serviceClass) {
         logger.d("stop(), serviceClass=" + serviceClass);
         if (isServiceRunning(context, serviceClass)) {
             stopNoCheck(context, serviceClass);
         }
     }
 
-    public static <S extends Service> void restartDelay(@NonNull Context context, @NonNull Class<S> serviceClass, long delay, boolean wakeUp) {
+    public static <S extends Service> void restartDelay(@NotNull Context context, @NotNull Class<S> serviceClass, long delay, boolean wakeUp) {
         restartDelay(context, serviceClass, null, delay, wakeUp);
     }
 
-    public static <S extends Service> void restartDelay(@NonNull Context context, @NonNull Class<S> serviceClass, @Nullable Intent args, long delay, boolean wakeUp) {
+    public static <S extends Service> void restartDelay(@NotNull Context context, @NotNull Class<S> serviceClass, @Nullable Intent args, long delay, boolean wakeUp) {
         logger.d("restartDelay(), serviceClass=" + serviceClass + ", delay=" + delay);
 
         if (delay < 0) {
@@ -99,7 +99,7 @@ public final class ServiceUtils {
         startDelayNoCheck(context, serviceClass, args, delay, wakeUp);
     }
 
-    public static <S extends Service> void startDelayNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass, @Nullable Intent args,
+    public static <S extends Service> void startDelayNoCheck(@NotNull Context context, @NotNull Class<S> serviceClass, @Nullable Intent args,
                                                              long delay, boolean wakeUp) {
         cancelDelay(context, serviceClass);
         PendingIntent pendingIntent = PendingIntent.getService(context, 0, createServiceIntent(context.getPackageName(), serviceClass, args),
@@ -107,11 +107,11 @@ public final class ServiceUtils {
         DeviceUtils.setAlarm(context, pendingIntent, System.currentTimeMillis() + delay, wakeUp ? DeviceUtils.AlarmType.RTC_WAKE_UP : DeviceUtils.AlarmType.RTC);
     }
 
-    public static <S extends Service> void startDelay(@NonNull Context context, @NonNull Class<S> serviceClass, long delay, boolean wakeUp) {
+    public static <S extends Service> void startDelay(@NotNull Context context, @NotNull Class<S> serviceClass, long delay, boolean wakeUp) {
         startDelay(context, serviceClass, null, delay, wakeUp);
     }
 
-    public static <S extends Service> void startDelay(@NonNull Context context, @NonNull Class<S> serviceClass, @Nullable Intent args,
+    public static <S extends Service> void startDelay(@NotNull Context context, @NotNull Class<S> serviceClass, @Nullable Intent args,
                                                       long delay, boolean wakeUp) {
         logger.d("startDelay(), serviceClass=" + serviceClass + ", delay=" + delay);
         if (!isServiceRunning(context, serviceClass)) {
@@ -119,11 +119,11 @@ public final class ServiceUtils {
         }
     }
 
-    public static <S extends Service> void cancelDelay(@NonNull Context context, @NonNull Class<S> serviceClass) {
+    public static <S extends Service> void cancelDelay(@NotNull Context context, @NotNull Class<S> serviceClass) {
         cancelDelay(context, serviceClass, 0, 0);
     }
 
-    public static <S extends Service> void cancelDelay(@NonNull Context context, @NonNull Class<S> serviceClass, int requestCode, int flags) {
+    public static <S extends Service> void cancelDelay(@NotNull Context context, @NotNull Class<S> serviceClass, int requestCode, int flags) {
         logger.d("cancelDelay(), serviceClass=" + serviceClass);
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) {
@@ -134,7 +134,7 @@ public final class ServiceUtils {
         alarmManager.cancel(pendingIntent);
     }
 
-    public static <C extends ServiceConnection, S extends Service> boolean bindService(@NonNull Context ctx, @NonNull Class<S> serviceClass, @NonNull C serviceConnection, int flags) {
+    public static <C extends ServiceConnection, S extends Service> boolean bindService(@NotNull Context ctx, @NotNull Class<S> serviceClass, @NotNull C serviceConnection, int flags) {
         logger.d("bindService(), serviceClass=" + serviceClass + ", serviceConnection=" + serviceConnection + ", flags=" + flags);
         boolean bounded = false;
         try {
@@ -150,7 +150,7 @@ public final class ServiceUtils {
         return true;
     }
 
-    public static <C extends ServiceConnection> void unbindService(@NonNull Context context, @NonNull C serviceConnection) {
+    public static <C extends ServiceConnection> void unbindService(@NotNull Context context, @NotNull C serviceConnection) {
         logger.d("unbindService(), serviceConnection=" + serviceConnection);
         try {
             context.unbindService(serviceConnection);
@@ -159,16 +159,16 @@ public final class ServiceUtils {
         }
     }
 
-    private static <S extends Service> void restartNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass) {
+    private static <S extends Service> void restartNoCheck(@NotNull Context context, @NotNull Class<S> serviceClass) {
         restartNoCheck(context, serviceClass, null);
     }
 
-    private static <S extends Service> void restartNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass, @Nullable Intent args) {
+    private static <S extends Service> void restartNoCheck(@NotNull Context context, @NotNull Class<S> serviceClass, @Nullable Intent args) {
         stopNoCheck(context, serviceClass);
         startNoCheck(context, serviceClass, args);
     }
 
-    private static <S extends Service> void restartDelayNoCheck(@NonNull Context context, @NonNull Class<S> serviceClass, @Nullable Intent args, long delay, boolean wakeUp) {
+    private static <S extends Service> void restartDelayNoCheck(@NotNull Context context, @NotNull Class<S> serviceClass, @Nullable Intent args, long delay, boolean wakeUp) {
 
         if (delay < 0) {
             throw new IllegalArgumentException("incorrect delay: " + delay);
@@ -178,8 +178,8 @@ public final class ServiceUtils {
         startDelayNoCheck(context, serviceClass, args, delay, wakeUp);
     }
 
-    @NonNull
-    private static Intent createServiceIntent(String packageName, @NonNull Class<? extends Service> serviceClass, @Nullable Intent args)  {
+    @NotNull
+    private static Intent createServiceIntent(String packageName, @NotNull Class<? extends Service> serviceClass, @Nullable Intent args)  {
         if (TextUtils.isEmpty(packageName)) {
             throw new IllegalArgumentException("Empty package name: " + packageName);
         }

@@ -4,7 +4,7 @@ import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.CallSuper;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.android.gui.progressable.Progressable;
@@ -18,7 +18,7 @@ public abstract class HandlerProgressableRunnable<T> extends HandlerRunnable<T> 
         this(progressable, new Handler(Looper.getMainLooper()));
     }
 
-    public HandlerProgressableRunnable(@Nullable Progressable progressable, @NonNull Handler handler) {
+    public HandlerProgressableRunnable(@Nullable Progressable progressable, @NotNull Handler handler) {
         super(handler);
         this.progressable = progressable;
         if (getStatus() == AsyncTask.Status.RUNNING) {

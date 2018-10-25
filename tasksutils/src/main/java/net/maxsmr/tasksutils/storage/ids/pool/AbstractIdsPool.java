@@ -1,6 +1,6 @@
 package net.maxsmr.tasksutils.storage.ids.pool;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import java.util.Collection;
@@ -24,7 +24,7 @@ public abstract class AbstractIdsPool {
     public abstract void add(int newId);
 
     /** copy of actual ids set */
-    @NonNull
+    @NotNull
     public abstract Set<Integer> copyOf();
 
     /**

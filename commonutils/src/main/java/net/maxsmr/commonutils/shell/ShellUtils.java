@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.shell;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
@@ -28,7 +28,7 @@ public final class ShellUtils {
     }
 
     @Nullable
-    private static Process createAndStartProcess(@NonNull List<String> cmds, @Nullable String workingDir,
+    private static Process createAndStartProcess(@NotNull List<String> cmds, @Nullable String workingDir,
                                                  @Nullable IProcessBuilderConfigurator configurator,
                                                  @Nullable ShellCallback sc, @Nullable ThreadsCallback tc, @Nullable CountDownLatch latch) {
 
@@ -93,22 +93,22 @@ public final class ShellUtils {
     }
 
 
-    public static boolean execProcessAsync(@NonNull String cmd, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
+    public static boolean execProcessAsync(@NotNull String cmd, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
         return execProcessAsync(cmd, workingDir, null, sc, tc);
     }
 
-    public static boolean execProcessAsync(@NonNull String cmd, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
+    public static boolean execProcessAsync(@NotNull String cmd, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
         return execProcessAsync(Collections.singletonList(cmd), workingDir, configurator, sc, tc);
     }
 
-    public static boolean execProcessAsync(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
+    public static boolean execProcessAsync(@NotNull List<String> cmds, @Nullable String workingDir, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
         return execProcessAsync(cmds, workingDir, null, sc, tc);
     }
 
     /**
      * @return true if started successfully, false - otherwise
      */
-    public static boolean execProcessAsync(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
+    public static boolean execProcessAsync(@NotNull List<String> cmds, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc) {
         logger.v("execProcessAsync(), cmds=" + cmds + ", workingDir=" + workingDir + ", configurator=" + configurator + ", sc=" + sc + ", tc=" + tc);
         final CountDownLatch latch = new CountDownLatch(2);
         Process process = createAndStartProcess(cmds, workingDir, configurator, sc, tc, latch);
@@ -119,26 +119,26 @@ public final class ShellUtils {
         return false;
     }
 
-    @NonNull
-    public static CommandResult execProcess(@NonNull String cmd, @Nullable String workingDir, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
+    @NotNull
+    public static CommandResult execProcess(@NotNull String cmd, @Nullable String workingDir, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
         return execProcess(cmd, workingDir, null, CommandResult.DEFAULT_TARGET_CODE, sc, tc);
     }
 
-    @NonNull
-    public static CommandResult execProcess(@NonNull String cmd, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable Integer targetExitCode, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
+    @NotNull
+    public static CommandResult execProcess(@NotNull String cmd, @Nullable String workingDir, @Nullable IProcessBuilderConfigurator configurator, @Nullable Integer targetExitCode, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
         return execProcess(Collections.singletonList(cmd), workingDir, configurator, targetExitCode, sc, tc);
     }
 
-    @NonNull
-    public static CommandResult execProcess(@NonNull List<String> cmds, @Nullable String workingDir, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
+    @NotNull
+    public static CommandResult execProcess(@NotNull List<String> cmds, @Nullable String workingDir, @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
         return execProcess(cmds, workingDir, null, CommandResult.DEFAULT_TARGET_CODE, sc, tc);
     }
 
     /**
      * @return result code; -1 if start failed or interrupted
      */
-    @NonNull
-    public static CommandResult execProcess(@NonNull List<String> cmds, @Nullable String workingDir,
+    @NotNull
+    public static CommandResult execProcess(@NotNull List<String> cmds, @Nullable String workingDir,
                                             @Nullable IProcessBuilderConfigurator configurator,
                                             @Nullable Integer targetExitCode,
                                             @Nullable final ShellCallback sc, @Nullable final ThreadsCallback tc) {
@@ -157,7 +157,7 @@ public final class ShellUtils {
             }
 
             @Override
-            public void shellOut(@NonNull StreamType from, String shellLine) {
+            public void shellOut(@NotNull StreamType from, String shellLine) {
                 switch (from) {
                     case OUT:
                         stdOutLines.add(shellLine);
@@ -212,10 +212,10 @@ public final class ShellUtils {
 
     private static class StreamConsumeThread extends Thread {
 
-        @NonNull
+        @NotNull
         private final CmdThreadInfo threadInfo;
 
-        @NonNull
+        @NotNull
         final InputStream is;
 
         @Nullable
@@ -227,7 +227,7 @@ public final class ShellUtils {
         @Nullable
         final CountDownLatch latch;
 
-        StreamConsumeThread(@NonNull CmdThreadInfo threadInfo, @NonNull InputStream is, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc, @Nullable CountDownLatch latch) {
+        StreamConsumeThread(@NotNull CmdThreadInfo threadInfo, @NotNull InputStream is, @Nullable ShellCallback sc, @Nullable ThreadsCallback tc, @Nullable CountDownLatch latch) {
             this.threadInfo = threadInfo;
             this.is = is;
             this.sc = sc;
@@ -259,7 +259,7 @@ public final class ShellUtils {
 
     private static class ProcessWaitThread extends Thread {
 
-        @NonNull
+        @NotNull
         final Process process;
 
         @Nullable
@@ -268,7 +268,7 @@ public final class ShellUtils {
         @Nullable
         final CountDownLatch latch;
 
-        public ProcessWaitThread(@NonNull Process process, @Nullable ShellCallback sc, @Nullable CountDownLatch latch) {
+        public ProcessWaitThread(@NotNull Process process, @Nullable ShellCallback sc, @Nullable CountDownLatch latch) {
             super(ProcessWaitThread.class.getName());
             this.process = process;
             this.sc = sc;
@@ -310,16 +310,16 @@ public final class ShellUtils {
 
     public static class CmdThreadInfo {
 
-        @NonNull
+        @NotNull
         private final List<String> cmds;
 
         @Nullable
         private final String workingDir;
 
-        @NonNull
+        @NotNull
         final ShellCallback.StreamType type;
 
-        public CmdThreadInfo(@Nullable List<String> cmds, @Nullable String workingDir, @NonNull ShellCallback.StreamType type) {
+        public CmdThreadInfo(@Nullable List<String> cmds, @Nullable String workingDir, @NotNull ShellCallback.StreamType type) {
             this.cmds = cmds != null? new ArrayList<>(cmds) : new ArrayList<String>();
             this.workingDir = workingDir;
             this.type = type;
@@ -349,7 +349,7 @@ public final class ShellUtils {
 
         boolean needToLogCommands();
 
-        void shellOut(@NonNull StreamType from, String shellLine);
+        void shellOut(@NotNull StreamType from, String shellLine);
 
         void processStartFailed(@Nullable Throwable t);
 
@@ -358,14 +358,14 @@ public final class ShellUtils {
 
     public interface ThreadsCallback {
 
-        void onThreadStarted(@NonNull CmdThreadInfo info, @NonNull Thread thread);
+        void onThreadStarted(@NotNull CmdThreadInfo info, @NotNull Thread thread);
 
-        void onThreadFinished(@NonNull CmdThreadInfo info, @NonNull Thread thread);
+        void onThreadFinished(@NotNull CmdThreadInfo info, @NotNull Thread thread);
     }
 
     public interface IProcessBuilderConfigurator {
 
-        void configure(@NonNull ProcessBuilder builder);
+        void configure(@NotNull ProcessBuilder builder);
     }
 
 }

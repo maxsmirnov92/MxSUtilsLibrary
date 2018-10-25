@@ -1,6 +1,6 @@
 package net.maxsmr.testapplication.logger;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 
@@ -8,10 +8,10 @@ import org.slf4j.Logger;
 
 public class Slf4Logger extends BaseLogger {
 
-    @NonNull
+    @NotNull
     private final Logger logger;
 
-    public Slf4Logger(@NonNull Logger logger) {
+    public Slf4Logger(@NotNull Logger logger) {
         this.logger = logger;
     }
 

@@ -2,15 +2,15 @@ package net.maxsmr.commonutils.data.model;
 
 import android.os.Parcel;
 import android.os.Parcelable;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * Utils for converting Parcelable objects to and from byte arrays
  */
 public class ParcelableUtils {
 
-    @NonNull
+    @NotNull
     public static byte[] marshall(Parcelable parcelable) {
         if (parcelable != null) {
             Parcel parcel = Parcel.obtain();

@@ -3,7 +3,7 @@ package net.maxsmr.tasksutils;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -46,11 +46,11 @@ public class CustomHandlerThread extends HandlerThread {
         }
     }
 
-    public synchronized void addTask(@NonNull Runnable run) {
+    public synchronized void addTask(@NotNull Runnable run) {
         addTask(run, 0);
     }
 
-    public synchronized void addTask(@NonNull Runnable run, final long delay) {
+    public synchronized void addTask(@NotNull Runnable run, final long delay) {
 
         if (!isLooperPrepared())
             throw new RuntimeException("Looper was not prepared()");
@@ -66,7 +66,7 @@ public class CustomHandlerThread extends HandlerThread {
         }
     }
 
-    public synchronized void removeTask(@NonNull Runnable r) {
+    public synchronized void removeTask(@NotNull Runnable r) {
 
         if (!isLooperPrepared())
             throw new RuntimeException("Looper was not prepared()");
@@ -121,7 +121,7 @@ public class CustomHandlerThread extends HandlerThread {
         }
     }
 
-    public static void runOnUiThreadSync(@NonNull final Runnable run) {
+    public static void runOnUiThreadSync(@NotNull final Runnable run) {
         if (Looper.getMainLooper() == Looper.myLooper()) {
             run.run();
         } else {

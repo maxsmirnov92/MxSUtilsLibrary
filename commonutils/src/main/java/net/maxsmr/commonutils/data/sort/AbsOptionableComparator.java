@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.data.sort;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -10,7 +10,7 @@ import java.util.Map;
 
 public abstract class AbsOptionableComparator<O extends ISortOption, T> implements Comparator<T> {
 
-    @NonNull
+    @NotNull
     private final Map<O, Boolean> sortOptions = new LinkedHashMap<>();
 
     protected AbsOptionableComparator(@Nullable Map<O, Boolean> sortOptions) {
@@ -19,7 +19,7 @@ public abstract class AbsOptionableComparator<O extends ISortOption, T> implemen
         }
     }
 
-    @NonNull
+    @NotNull
     public final Map<O, Boolean> getSortOptions() {
         return Collections.unmodifiableMap(sortOptions);
     }
@@ -44,5 +44,5 @@ public abstract class AbsOptionableComparator<O extends ISortOption, T> implemen
         return result;
     }
 
-    protected abstract int compare(@Nullable T lhs, @Nullable T rhs, @NonNull O option, boolean ascending);
+    protected abstract int compare(@Nullable T lhs, @Nullable T rhs, @NotNull O option, boolean ascending);
 }

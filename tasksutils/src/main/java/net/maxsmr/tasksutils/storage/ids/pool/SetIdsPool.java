@@ -1,7 +1,7 @@
 package net.maxsmr.tasksutils.storage.ids.pool;
 
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import java.util.Collection;
@@ -11,7 +11,7 @@ import java.util.Set;
 
 public class SetIdsPool extends AbstractIdsPool {
 
-    @NonNull
+    @NotNull
     private final LinkedHashSet<Integer> ids = new LinkedHashSet<>();
 
     @Override
@@ -32,7 +32,7 @@ public class SetIdsPool extends AbstractIdsPool {
         ids.add(newId);
     }
 
-    @NonNull
+    @NotNull
     @Override
     public synchronized Set<Integer> copyOf() {
         return Collections.unmodifiableSet(ids);

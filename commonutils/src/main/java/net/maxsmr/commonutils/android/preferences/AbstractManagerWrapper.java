@@ -1,14 +1,14 @@
 package net.maxsmr.commonutils.android.preferences;
 
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class AbstractManagerWrapper {
 
-    @NonNull
+    @NotNull
     protected final PreferencesManager manager;
 
-    protected AbstractManagerWrapper(@NonNull PreferencesManager manager) {
+    protected AbstractManagerWrapper(@NotNull PreferencesManager manager) {
         this.manager = manager;
     }
 
@@ -30,7 +30,7 @@ public abstract class AbstractManagerWrapper {
         return manager.hasKey(key);
     }
 
-    public <V> V getOrCreate(String key, @NonNull Class<V> clazz, @Nullable V defaultValue) {
+    public <V> V getOrCreate(String key, @NotNull Class<V> clazz, @Nullable V defaultValue) {
         V value = defaultValue;
         boolean has = false;
         if (manager.hasKey(key)) {
@@ -48,11 +48,11 @@ public abstract class AbstractManagerWrapper {
         }
     }
 
-    public <V> V get(String key, @NonNull Class<V> clazz) {
+    public <V> V get(String key, @NotNull Class<V> clazz) {
         return manager.getValue(key, clazz);
     }
 
-    public <V> V get(String key, @NonNull Class<V> clazz, @Nullable V defaultValue) {
+    public <V> V get(String key, @NotNull Class<V> clazz, @Nullable V defaultValue) {
         return manager.getValue(key, clazz, defaultValue);
     }
 

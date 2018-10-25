@@ -3,8 +3,8 @@ package net.maxsmr.commonutils.android.processmanager;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 
 import net.maxsmr.commonutils.android.AppUtils;
@@ -19,7 +19,7 @@ public class DefaultProcessManager extends AbstractProcessManager {
 
     private final ActivityManager activityManager;
 
-    public DefaultProcessManager(@NonNull Context context) {
+    public DefaultProcessManager(@NotNull Context context) {
         super(context);
         activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         if (activityManager == null) {
@@ -27,7 +27,7 @@ public class DefaultProcessManager extends AbstractProcessManager {
         }
     }
 
-    @NonNull
+    @NotNull
     @Override
     public List<ProcessInfo> getProcesses(boolean includeSystemPackages) {
         List<ActivityManager.RunningAppProcessInfo> runningAppProcesses = activityManager.getRunningAppProcesses();

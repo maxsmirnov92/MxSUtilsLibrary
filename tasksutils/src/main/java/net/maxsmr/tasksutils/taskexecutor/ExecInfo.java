@@ -1,6 +1,6 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import java.io.Serializable;
@@ -13,7 +13,7 @@ public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
 
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
 
-    @NonNull
+    @NotNull
     public final T taskRunnable;
 
     private long timeWaitingInQueue;
@@ -27,11 +27,11 @@ public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
     @Nullable
     private Throwable execException;
 
-    public ExecInfo(@NonNull T taskRunnable) {
+    public ExecInfo(@NotNull T taskRunnable) {
         this.taskRunnable = taskRunnable;
     }
 
-    public ExecInfo(@NonNull ExecInfo<I, ProgressInfo, Result, T> execInfo) {
+    public ExecInfo(@NotNull ExecInfo<I, ProgressInfo, Result, T> execInfo) {
         this.taskRunnable = execInfo.taskRunnable;
         this.timeWaitingInQueue = execInfo.timeWaitingInQueue;
         timeExecuting = execInfo.timeExecuting;
@@ -64,7 +64,7 @@ public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
         return execException;
     }
 
-    @NonNull
+    @NotNull
     synchronized ExecInfo<I, ProgressInfo, Result, T> setTimeWhenAddedToQueue(long timeWhenAddedToQueue) {
         if (this.timeWhenAddedToQueue > 0) {
             throw new IllegalStateException("timeWhenAddedToQueue is already specified");
@@ -79,7 +79,7 @@ public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
         return this;
     }
 
-    @NonNull
+    @NotNull
     synchronized ExecInfo<I, ProgressInfo, Result, T> setTimeWhenStarted(long timeWhenStarted) {
         if (this.timeWhenStarted > 0) {
             throw new IllegalStateException("timeWhenStarted is already specified");
@@ -97,7 +97,7 @@ public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
         return this;
     }
 
-    @NonNull
+    @NotNull
     synchronized ExecInfo<I, ProgressInfo, Result, T> finishedWaitingInQueue(long when) {
         if (timeWaitingInQueue > 0) {
             throw new IllegalStateException("timeWaitingInQueue is already calculated");
@@ -113,7 +113,7 @@ public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
         return this;
     }
 
-    @NonNull
+    @NotNull
     synchronized ExecInfo<I, ProgressInfo, Result, T> finishedExecution(long when, @Nullable Throwable execException) {
         if (timeExecuting > 0) {
             throw new IllegalStateException("timeExecuting is already calculated");
@@ -129,7 +129,7 @@ public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
         return this;
     }
 
-    @NonNull
+    @NotNull
     synchronized ExecInfo<I, ProgressInfo, Result, T> reset() {
         timeWaitingInQueue = 0;
         timeExecuting = 0;

@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.data;
 
 import android.os.Bundle;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import java.util.Arrays;
@@ -212,7 +212,7 @@ public final class CompareUtils {
             this.flag = flag;
         }
 
-        public static boolean contains(@NonNull MatchStringOption option, int flags) {
+        public static boolean contains(@NotNull MatchStringOption option, int flags) {
             return (flags & option.flag) == option.flag;
         }
 
@@ -229,7 +229,7 @@ public final class CompareUtils {
             return contains;
         }
 
-        public static int setFlag(int flags, @NonNull MatchStringOption option) {
+        public static int setFlag(int flags, @NotNull MatchStringOption option) {
             return flags | option.flag;
         }
 
@@ -244,7 +244,7 @@ public final class CompareUtils {
             return flags;
         }
 
-        public static int resetFlag(int flags, @NonNull MatchStringOption option) {
+        public static int resetFlag(int flags, @NotNull MatchStringOption option) {
             return flags & ~option.flag;
         }
 

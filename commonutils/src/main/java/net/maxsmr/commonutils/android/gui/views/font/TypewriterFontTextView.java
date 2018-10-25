@@ -5,7 +5,7 @@ import android.content.res.TypedArray;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 
@@ -140,7 +140,7 @@ public class TypewriterFontTextView extends FontTextView {
         }
     }
 
-    public void startAnimateText(@NonNull AnimateParams animateParams) {
+    public void startAnimateText(@NotNull AnimateParams animateParams) {
 
         synchronized (mHandler) {
             if (!mIsStarted) {
@@ -149,7 +149,7 @@ public class TypewriterFontTextView extends FontTextView {
         }
     }
 
-    public void restartAnimateText(@NonNull AnimateParams animateParams) {
+    public void restartAnimateText(@NotNull AnimateParams animateParams) {
 
         synchronized (mHandler) {
 

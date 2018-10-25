@@ -3,7 +3,7 @@ package net.maxsmr.customcontentprovider.sqlite.providers;
 import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
-import android.support.annotation.NonNull;
+import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
@@ -20,9 +20,9 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
      * @param databasePath if null or empty - default location will be used, otherwise - path on sdcard (for e.g.
      *                     Android/data/com.example.database)
      */
-    @NonNull
-    public static SQLiteOpenHelperImpl createFrom(@NonNull Context context, @NonNull String databaseName, @Nullable String databasePath, int databaseVersion,
-                                                  @NonNull Set<AbstractSQLiteTableProvider> tables) {
+    @NotNull
+    public static SQLiteOpenHelperImpl createFrom(@NotNull Context context, @NotNull String databaseName, @Nullable String databasePath, int databaseVersion,
+                                                  @NotNull Set<AbstractSQLiteTableProvider> tables) {
 
         if (TextUtils.isEmpty(databaseName))
             throw new IllegalArgumentException("databaseName is not specified");
@@ -98,34 +98,34 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
 
     private final List<SQLiteCallbacks> callbacksList = new ArrayList<>();
 
-    public void addSQLiteCallback(@NonNull SQLiteCallbacks callbacks) {
+    public void addSQLiteCallback(@NotNull SQLiteCallbacks callbacks) {
         if (!callbacksList.contains(callbacks)) {
             callbacksList.add(callbacks);
         }
     }
 
-    public void removeSQLiteCallback(@NonNull SQLiteCallbacks callbacks) {
+    public void removeSQLiteCallback(@NotNull SQLiteCallbacks callbacks) {
         if (callbacksList.contains(callbacks)) {
             callbacksList.remove(callbacks);
         }
     }
 
-    private void dispatchDatabaseCreated(@NonNull SQLiteDatabase database) {
+    private void dispatchDatabaseCreated(@NotNull SQLiteDatabase database) {
         for (SQLiteCallbacks callbacks : callbacksList) {
             callbacks.onDatabaseCreated(database);
         }
     }
 
-    private void dispatchDatabaseUpgraded(@NonNull SQLiteDatabase database) {
+    private void dispatchDatabaseUpgraded(@NotNull SQLiteDatabase database) {
         for (SQLiteCallbacks callbacks : callbacksList) {
             callbacks.onDatabaseUpgraded(database);
         }
     }
 
     public interface SQLiteCallbacks {
-        void onDatabaseCreated(@NonNull SQLiteDatabase database);
+        void onDatabaseCreated(@NotNull SQLiteDatabase database);
 
-        void onDatabaseUpgraded(@NonNull SQLiteDatabase database);
+        void onDatabaseUpgraded(@NotNull SQLiteDatabase database);
     }
 
 }
