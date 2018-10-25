@@ -723,7 +723,7 @@ public final class GraphicUtils {
         return null;
     }
 
-    public static Bitmap getCorrectlyOrientedImage(Context context, Uri photoUri, final int MAX_IMAGE_DIMENSION) throws IOException {
+    public static Bitmap getCorrectlyOrientedImage(Context context, Uri photoUri, final int maxImageDimension) throws IOException {
         InputStream is = context.getContentResolver().openInputStream(photoUri);
         BitmapFactory.Options dbo = new BitmapFactory.Options();
         dbo.inJustDecodeBounds = true;
@@ -745,9 +745,9 @@ public final class GraphicUtils {
 
         Bitmap srcBitmap;
         is = context.getContentResolver().openInputStream(photoUri);
-        if (rotatedWidth > MAX_IMAGE_DIMENSION || rotatedHeight > MAX_IMAGE_DIMENSION) {
-            float widthRatio = ((float) rotatedWidth) / ((float) MAX_IMAGE_DIMENSION);
-            float heightRatio = ((float) rotatedHeight) / ((float) MAX_IMAGE_DIMENSION);
+        if (rotatedWidth > maxImageDimension || rotatedHeight > maxImageDimension) {
+            float widthRatio = ((float) rotatedWidth) / ((float) maxImageDimension);
+            float heightRatio = ((float) rotatedHeight) / ((float) maxImageDimension);
             float maxRatio = Math.max(widthRatio, heightRatio);
 
             // Create the bitmap from file

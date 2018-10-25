@@ -3,10 +3,8 @@ package net.maxsmr.commonutils.android.hardware;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.ActivityManager;
 import android.app.AlarmManager;
 import android.app.PendingIntent;
-import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -36,7 +34,6 @@ import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
 
@@ -54,12 +51,18 @@ public final class DeviceUtils {
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
     public static HashMap<String, UsbDevice> getDevicesList(@NonNull Context context) {
         UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
+        if (usbManager == null) {
+            throw new RuntimeException(UsbManager.class.getSimpleName() + " is null");
+        }
         return usbManager.getDeviceList();
     }
 
     @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
     public static UsbAccessory[] getAccessoryList(@NonNull Context context) {
         UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
+        if (usbManager == null) {
+            throw new RuntimeException(UsbManager.class.getSimpleName() + " is null");
+        }
         return usbManager.getAccessoryList();
     }
 
@@ -88,7 +91,7 @@ public final class DeviceUtils {
         PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager
                 .ACQUIRE_CAUSES_WAKEUP | PowerManager
                 .ON_AFTER_RELEASE, name);
-        return acquireWakeLock(context, wakeLock, timeoutMillis)? wakeLock : null;
+        return acquireWakeLock(context, wakeLock, timeoutMillis) ? wakeLock : null;
     }
 
     @SuppressLint("WakelockTimeout")
@@ -149,9 +152,9 @@ public final class DeviceUtils {
     public static String getIMEI(@NonNull Context context) {
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         if (telephonyManager == null) {
-            throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null");
+            throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null, cannot get IMEI");
         }
-        return telephonyManager.getDeviceId();
+        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? telephonyManager.getImei() : telephonyManager.getDeviceId();
     }
 
     /**
@@ -165,7 +168,7 @@ public final class DeviceUtils {
     public static String getIMSI(@NonNull Context context) {
         TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
         if (telephonyManager == null) {
-            throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null");
+            throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null, cannot get IMSI");
         }
         return telephonyManager.getSubscriberId();
     }
@@ -181,31 +184,6 @@ public final class DeviceUtils {
             //noinspection deprecation
             return pm.isScreenOn();
         }
-    }
-
-    public static boolean isAppIsInBackground(Context context) {
-        boolean isInBackground = true;
-        ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        if (Build.VERSION.SDK_INT > Build.VERSION_CODES.KITKAT_WATCH) {
-            List<ActivityManager.RunningAppProcessInfo> runningProcesses = am.getRunningAppProcesses();
-            for (ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
-                if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-                    for (String activeProcess : processInfo.pkgList) {
-                        if (context.getPackageName().equals(activeProcess)) {
-                            isInBackground = false;
-                        }
-                    }
-                }
-            }
-        } else {
-            List<ActivityManager.RunningTaskInfo> taskInfo = am.getRunningTasks(1);
-            ComponentName componentInfo = taskInfo.get(0).topActivity;
-            if (context.getPackageName().equals(componentInfo.getPackageName())) {
-                isInBackground = false;
-            }
-        }
-
-        return isInBackground;
     }
 
     /**
@@ -273,10 +251,13 @@ public final class DeviceUtils {
         return value;
     }
 
-    public static boolean setScreenOffTimeout(@NonNull Context context, @NonNull ScreenTimeout timeout) {
-        int value = getScreenOffTimeout(context);
-        return !(value == 0 || value != timeout.value) ||
-                android.provider.Settings.System.putInt(context.getContentResolver(), android.provider.Settings.System.SCREEN_OFF_TIMEOUT, timeout.value);
+    public static boolean setScreenOffTimeout(@NonNull Context context, int newTimeout) {
+        if (newTimeout < 0) {
+            throw new IllegalArgumentException("Incorrect timeout: " + newTimeout);
+        }
+        int currentTimeout = getScreenOffTimeout(context);
+        return currentTimeout >= 0 && currentTimeout == newTimeout ||
+                android.provider.Settings.System.putInt(context.getContentResolver(), android.provider.Settings.System.SCREEN_OFF_TIMEOUT, newTimeout);
     }
 
     public static LanguageCode getCurrentLanguageCode(@NonNull Context context) {
@@ -311,9 +292,6 @@ public final class DeviceUtils {
         return -1;
     }
 
-    /**
-     * requires root
-     */
     public static void setSystemTime(long timestamp) {
         logger.d("setSystemTime(), timestamp=" + timestamp);
 
@@ -359,7 +337,7 @@ public final class DeviceUtils {
         boolean result = false;
         AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
         if (alarmManager == null) {
-            throw new IllegalStateException("can't connect to " + AlarmManager.class.getSimpleName());
+            throw new IllegalStateException(AlarmManager.class.getSimpleName() + " is null");
         }
         switch (alarmType) {
             case RTC:
@@ -403,23 +381,6 @@ public final class DeviceUtils {
 
     public enum AlarmType {
         RTC, RTC_WAKE_UP, ELAPSED_REALTIME, ELAPSED_REALTIME_WAKE_UP
-    }
-
-    public enum ScreenTimeout {
-
-        NONE(Integer.MAX_VALUE),
-        _15000(15000),
-        _30000(30000),
-        _60000(60000),
-        _120000(12000),
-        _600000(600000),
-        _1800000(1800000);
-
-        public final int value;
-
-        ScreenTimeout(int value) {
-            this.value = value;
-        }
     }
 
     public enum LanguageCode {

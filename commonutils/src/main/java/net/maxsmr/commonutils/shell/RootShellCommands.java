@@ -4,6 +4,8 @@ import android.os.Build;
 import android.support.annotation.NonNull;
 import android.support.annotation.Nullable;
 
+import net.maxsmr.commonutils.android.AppUtils;
+import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -189,13 +191,17 @@ public final class RootShellCommands {
         return false;
     }
 
-    /**
-     * Kill process by pid
-     *
-     * @param pid PID
-     */
-    public static void killProcess(int pid) {
-        RootShellCommands.executeCommand("kill -9 " + pid);
+    public static boolean killProcessByPid(int pid) {
+        return RootShellCommands.executeCommand("kill -9 " + pid).isSuccessful();
+    }
+
+    public static boolean killProcessByName(@Nullable String processName,
+                                            @NonNull AbstractProcessManager manager, boolean includeSystemPackages) {
+        final int pid = AppUtils.getPidByName(processName, manager, includeSystemPackages);
+        if (pid >= 0) {
+            return RootShellCommands.killProcessByPid(pid);
+        }
+        return false;
     }
 
 

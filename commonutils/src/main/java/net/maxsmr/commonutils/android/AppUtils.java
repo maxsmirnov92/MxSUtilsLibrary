@@ -13,6 +13,8 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
+import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
+import net.maxsmr.commonutils.android.processmanager.ProcessInfo;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -24,7 +26,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-import static net.maxsmr.commonutils.shell.RootShellCommands.killProcess;
+import static net.maxsmr.commonutils.shell.RootShellCommands.killProcessByPid;
 
 public final class AppUtils {
 
@@ -234,24 +236,76 @@ public final class AppUtils {
         return getInstalledPackagesFromShell().contains(packageName);
     }
 
-    public static void killApps(@NonNull Context context, List<String> apps) {
-        if (apps == null || apps.isEmpty()) {
-            return;
+    public static boolean isAppInBackground(@NonNull Context context, String packageName) {
+        ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
+        if (am == null) {
+            throw new RuntimeException(ActivityManager.class.getSimpleName() + " is null");
         }
-
-        ActivityManager activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-
-        if (activityManager == null) {
-            logger.e("ActivityManager is null!");
-            return;
-        }
-
-        List<ActivityManager.RunningAppProcessInfo> processes = activityManager.getRunningAppProcesses();
-
-        for (ActivityManager.RunningAppProcessInfo process : processes) {
-            if (apps.contains(process.processName)) {
-                killProcess(process.pid);
+        boolean isInBackground = true;
+        if (!TextUtils.isEmpty(packageName)) {
+            List<ActivityManager.RunningAppProcessInfo> runningProcesses = am.getRunningAppProcesses();
+            for (ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
+                if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
+                    if (packageName.equals(processInfo.processName)) {
+                        isInBackground = false;
+                        break;
+                    }
+                }
             }
         }
+        return isInBackground;
     }
+
+    public static boolean isAppInBackground(String packageName,
+                                            @NonNull AbstractProcessManager manager, boolean includeSystemPackages) {
+        boolean isInBackground = true;
+        if (!TextUtils.isEmpty(packageName)) {
+            for (ProcessInfo info : manager.getProcesses(includeSystemPackages)) {
+                if (info.isForeground) {
+                    isInBackground = false;
+                    break;
+                }
+            }
+        }
+        return isInBackground;
+    }
+
+    /**
+     * @return -1 if not found
+     */
+    public static int getPidByName(@Nullable String packageName,
+                                   @NonNull AbstractProcessManager manager, boolean includeSystemPackages) {
+
+        int pid = -1;
+
+        if (!TextUtils.isEmpty(packageName)) {
+            for (ProcessInfo process : manager.getProcesses(includeSystemPackages)) {
+                if (packageName.equals(process.packageName)) {
+                    pid = process.pid;
+                    break;
+                }
+            }
+        }
+
+        return pid;
+    }
+
+    /**
+     * @return false if at least one kill was failed
+     */
+    public static boolean killApps(@Nullable List<String> apps,
+                                   @NonNull AbstractProcessManager manager, boolean includeSystemPackages) {
+        boolean result = true;
+        if (apps != null && !apps.isEmpty()) {
+            for (ProcessInfo process : manager.getProcesses(includeSystemPackages)) {
+                if (apps.contains(process.packageName)) {
+                    if (!killProcessByPid(process.pid)) {
+                        result = false;
+                    }
+                }
+            }
+        }
+        return result;
+    }
+
 }
