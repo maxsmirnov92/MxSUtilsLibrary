@@ -130,15 +130,6 @@ public final class FileHelper {
         return result;
     }
 
-    public static boolean isFileLocked(File f) {
-        final FileLock l = lockFileChannel(f, false);
-        try {
-            return l == null;
-        } finally {
-            releaseLockNoThrow(l);
-        }
-    }
-
     public static double getPartitionTotalSpace(String path, @NotNull Units.SizeUnit unit) {
         if (isDirExists(path)) {
             try {
@@ -172,6 +163,15 @@ public final class FileHelper {
             }
         }
         return null;
+    }
+
+    public static boolean isFileLocked(File f) {
+        final FileLock l = lockFileChannel(f, false);
+        try {
+            return l == null;
+        } finally {
+            releaseLockNoThrow(l);
+        }
     }
 
     @Nullable

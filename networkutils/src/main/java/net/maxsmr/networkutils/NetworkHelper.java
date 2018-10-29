@@ -248,7 +248,7 @@ public final class NetworkHelper {
     /**
      * ping using {@linkplain InetAddress}
      * */
-    public static boolean isReachable(InetAddress inetAddress, long timeOut) {
+    public static boolean isReachable(InetAddress inetAddress, int timeOut) {
         logger.d("isReachable(), inetAddress=" + inetAddress + ", timeOut=" + timeOut);
 
         if (inetAddress == null) {
@@ -261,7 +261,7 @@ public final class NetworkHelper {
 
         try {
             logger.d("pinging address " + inetAddress.getHostAddress() + "...");
-            return inetAddress.isReachable(MathUtils.safeLongToInt(timeOut));
+            return inetAddress.isReachable(timeOut);
         } catch (Exception e) {
             logger.e("an Exception occurred during isReachable(): " + e.getMessage());
             return false;

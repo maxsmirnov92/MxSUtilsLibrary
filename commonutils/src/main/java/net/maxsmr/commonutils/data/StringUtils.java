@@ -1,14 +1,15 @@
 package net.maxsmr.commonutils.data;
 
 import android.content.Context;
+import android.text.TextUtils;
+
+import net.maxsmr.commonutils.R;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import android.text.TextUtils;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import net.maxsmr.commonutils.R;
 
 public class StringUtils {
 
@@ -137,6 +138,15 @@ public class StringUtils {
         StringBuilder sb = new StringBuilder(s);
         sb.deleteCharAt(index);
         return sb.toString();
+    }
+
+    public static int strToInt(String value) {
+        int result = 0;
+        try {
+            result = Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+        }
+        return result;
     }
 
     public static String getStubValue(@Nullable String value, Context ctx) {

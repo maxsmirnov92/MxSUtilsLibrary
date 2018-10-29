@@ -36,6 +36,8 @@ public class ShellWrapper {
 
     private final Map<Integer, CommandInfo> commandsMap = new LinkedHashMap<>();
 
+    private final boolean addToCommandsMap;
+
     private int targetCode = DEFAULT_TARGET_CODE;
 
     private String workingDir;
@@ -43,6 +45,10 @@ public class ShellWrapper {
     private ShellUtils.IProcessBuilderConfigurator configurator;
 
     private boolean isDisposed = false;
+
+    public ShellWrapper(boolean addToCommandsMap) {
+        this.addToCommandsMap = addToCommandsMap;
+    }
 
     public Map<Integer, CommandInfo> getCommandsMap() {
 
@@ -142,8 +148,10 @@ public class ShellWrapper {
         final int commandId = this.commandId.getAndIncrement();
         final CommandInfo commandInfo = new CommandInfo(commands);
 
-        synchronized (commandsMap) {
-            commandsMap.put(commandId, commandInfo);
+        if (addToCommandsMap) {
+            synchronized (commandsMap) {
+                commandsMap.put(commandId, commandInfo);
+            }
         }
 
         final CommandResult result = ShellUtils.execProcess(commands, workingDir, configurator, targetCode, new ShellUtils.ShellCallback() {
@@ -243,7 +251,12 @@ public class ShellWrapper {
         }
 
         public boolean isAnyThreadRunning() {
-            return Predicate.Methods.contains(getStartedThreads().values(), e -> e != null && e.isAlive());
+            return Predicate.Methods.contains(getStartedThreads().values(), new Predicate<Thread>() {
+                @Override
+                public boolean apply(Thread e) {
+                    return e != null && e.isAlive();
+                }
+            });
         }
 
         @NotNull
@@ -268,6 +281,7 @@ public class ShellWrapper {
             this.result = result;
         }
 
+        @NotNull
         @Override
         public String toString() {
             return "CommandInfo{" +

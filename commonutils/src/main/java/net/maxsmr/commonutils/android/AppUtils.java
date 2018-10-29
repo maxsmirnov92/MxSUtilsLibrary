@@ -8,11 +8,12 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
+import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
-import net.maxsmr.commonutils.android.processmanager.ProcessInfo;
+import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -25,9 +26,9 @@ import org.jetbrains.annotations.Nullable;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
-
-import static net.maxsmr.commonutils.shell.RootShellCommands.killProcessByPid;
+import java.util.Set;
 
 public final class AppUtils {
 
@@ -201,8 +202,14 @@ public final class AppUtils {
         return info != null ? info.uid : -1;
     }
 
-    public static boolean isSystemPackage(ApplicationInfo applicationInfo) {
-        return (applicationInfo.flags & ApplicationInfo.FLAG_SYSTEM) != 0;
+    public static boolean isSystemApp(@Nullable PackageInfo packageInfo) {
+        return isSystemApp(packageInfo != null? packageInfo.applicationInfo : null);
+    }
+
+    public static boolean isSystemApp(@Nullable ApplicationInfo applicationInfo) {
+        return applicationInfo != null &&
+                (applicationInfo.flags &
+                        (ApplicationInfo.FLAG_UPDATED_SYSTEM_APP | ApplicationInfo.FLAG_SYSTEM)) > 0;
     }
 
     /**
@@ -271,42 +278,23 @@ public final class AppUtils {
         return isInBackground;
     }
 
+
     /**
-     * @return -1 if not found
+     * @return empty set if not found
      */
-    public static int getPidByName(@Nullable String packageName,
-                                   @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
-
-        int pid = -1;
-
+    @NonNull
+    public static Set<Integer> getPidsByName(@Nullable String packageName,
+                                             @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+        Set<Integer> pids = new LinkedHashSet<>();
         if (!TextUtils.isEmpty(packageName)) {
             for (ProcessInfo process : manager.getProcesses(includeSystemPackages)) {
                 if (packageName.equals(process.packageName)) {
-                    pid = process.pid;
+                    pids.add(process.pid);
                     break;
                 }
             }
         }
-
-        return pid;
-    }
-
-    /**
-     * @return false if at least one kill was failed
-     */
-    public static boolean killApps(@Nullable List<String> apps,
-                                   @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
-        boolean result = true;
-        if (apps != null && !apps.isEmpty()) {
-            for (ProcessInfo process : manager.getProcesses(includeSystemPackages)) {
-                if (apps.contains(process.packageName)) {
-                    if (!killProcessByPid(process.pid)) {
-                        result = false;
-                    }
-                }
-            }
-        }
-        return result;
+        return pids;
     }
 
 }

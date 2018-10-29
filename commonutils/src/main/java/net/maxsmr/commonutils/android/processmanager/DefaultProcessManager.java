@@ -3,18 +3,23 @@ package net.maxsmr.commonutils.android.processmanager;
 import android.app.ActivityManager;
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 
 import net.maxsmr.commonutils.android.AppUtils;
+import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Default (pre-lollipop) process manager
- */
+ *
+ * ProcessManager using default Android API:
+ * {@linkplain ActivityManager#getRunningAppProcesses()}
+ *
+ * Working on all devices, but almost useless on >= Lollipop
+ * */
 public class DefaultProcessManager extends AbstractProcessManager {
 
     private final ActivityManager activityManager;
@@ -22,9 +27,6 @@ public class DefaultProcessManager extends AbstractProcessManager {
     public DefaultProcessManager(@NotNull Context context) {
         super(context);
         activityManager = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
-        if (activityManager == null) {
-            throw new RuntimeException(ActivityManager.class.getSimpleName() + " is null");
-        }
     }
 
     @NotNull
@@ -57,7 +59,6 @@ public class DefaultProcessManager extends AbstractProcessManager {
 
     @Nullable
     private ProcessInfo parseProcessInfo(ActivityManager.RunningAppProcessInfo runningAppProcessInfo) {
-
         if (!isPackageInstalled(runningAppProcessInfo.processName)) {
             logger.e("Package '" + runningAppProcessInfo.processName + "' is not installed");
             return null;
@@ -74,10 +75,12 @@ public class DefaultProcessManager extends AbstractProcessManager {
                 runningAppProcessInfo.processName,
                 info.loadLabel(context.getPackageManager()),
                 runningAppProcessInfo.pid,
+                0,
                 String.valueOf(runningAppProcessInfo.uid),
                 runningAppProcessInfo.uid,
                 0,
                 0,
+                null,
                 runningAppProcessInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND,
                 isSystemPackage(runningAppProcessInfo.processName)
         );

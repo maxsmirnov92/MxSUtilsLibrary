@@ -109,7 +109,6 @@ dependencies {
     api "com.android.support:palette-v7:$supportLibraryVersion"
     api "com.android.support:design:$supportLibraryVersion"
     api "com.android.support:exifinterface:$supportLibraryVersion"
-    javadocDependencies "com.android.support:appcompat-v7:$supportLibraryVersion"
     javadocDependencies "com.android.support:support-annotations:$supportLibraryVersion"
 
     api "commons-net:commons-net:$commonsNetVersion"

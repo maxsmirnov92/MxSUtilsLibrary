@@ -1,8 +1,9 @@
 package net.maxsmr.commonutils.data;
 
+import android.support.v4.util.Pair;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import android.support.v4.util.Pair;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -20,6 +21,7 @@ public interface Predicate<V> {
             return findWithIndex(elements, predicate) != null;
         }
 
+        @Nullable
         public static <V> Pair<Integer, V> findWithIndex(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             int targetIndex = -1;
             V result = null;
@@ -37,6 +39,7 @@ public interface Predicate<V> {
             return targetIndex >= 0 ? new Pair<>(targetIndex, result) : null;
         }
 
+        @Nullable
         public static <V> V find(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             Pair<Integer, V> result = findWithIndex(elements, predicate);
             return result != null ? result.second : null;

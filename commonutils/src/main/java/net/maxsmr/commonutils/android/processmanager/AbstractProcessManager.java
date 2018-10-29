@@ -1,13 +1,15 @@
 package net.maxsmr.commonutils.android.processmanager;
 
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
-import org.jetbrains.annotations.NotNull;
 
+import net.maxsmr.commonutils.android.AppUtils;
+import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -25,7 +27,7 @@ public abstract class AbstractProcessManager {
     private final List<String> installedPackages = new ArrayList<>();
     private final List<String> systemPackages = new ArrayList<>();
 
-    AbstractProcessManager(@NotNull Context context) {
+    protected AbstractProcessManager(@NotNull Context context) {
         this.context = context;
         this.packageManager = context.getPackageManager();
         refreshPackages();
@@ -42,8 +44,7 @@ public abstract class AbstractProcessManager {
         List<PackageInfo> installedPackagesInfo = packageManager.getInstalledPackages(0);
         for (PackageInfo installedPackage : installedPackagesInfo) {
             installedPackages.add(installedPackage.packageName);
-
-            if ((installedPackage.applicationInfo.flags & (ApplicationInfo.FLAG_UPDATED_SYSTEM_APP | ApplicationInfo.FLAG_SYSTEM)) > 0) {
+            if (AppUtils.isSystemApp(installedPackage)) {
                 systemPackages.add(installedPackage.packageName);
             }
         }

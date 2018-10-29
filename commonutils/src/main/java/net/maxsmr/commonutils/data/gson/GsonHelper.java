@@ -1,16 +1,18 @@
 package net.maxsmr.commonutils.data.gson;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonPrimitive;
+import com.google.gson.reflect.TypeToken;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,11 +25,16 @@ public class GsonHelper {
         throw new AssertionError("no instances.");
     }
 
-    /**
-     * @param type T Serializable or Parcelable
-     */
+    public static <T> T fromJsonObjectString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Class<T> classOfT) {
+        return fromJsonObjectString(gson, jsonString, (Type) classOfT);
+    }
+
+    public static <T> T fromJsonObjectString(@NotNull Gson gson, @Nullable String jsonString, @NotNull TypeToken<T> typeToken) {
+        return fromJsonObjectString(gson, jsonString, typeToken.getType());
+    }
+
     @Nullable
-    public static <T> T fromJsonObjectString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Class<T> type) {
+    private static <T> T fromJsonObjectString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Type type) {
         logger.d("fromJsonObjectString(), jsonString=" + jsonString + ", type=" + type);
         try {
             return gson.fromJson(jsonString, type);
@@ -37,9 +44,6 @@ public class GsonHelper {
         }
     }
 
-    /**
-     * @param type T Serializable or Parcelable
-     */
     @NotNull
     public static <T> List<T> fromJsonArrayString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Class<T[]> type) {
         logger.d("fromJsonArrayString(), jsonString=" + jsonString + ", type=" + type);
