@@ -20,27 +20,25 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-/** Class for storing appropriate {@linkplain AbstractProcessManager} */
 public class ProcessManagerHolder {
 
     private static volatile ProcessManagerHolder instance;
 
     @NotNull
-    private final AbstractProcessManager processManager;
+    private Context context;
+
+    @Nullable
+    private AbstractProcessManager processManager;
 
     @Nullable
     private List<ProcessInfo> cachedProcessList;
 
     private boolean isFirstLaunch = true;
 
-    public ProcessManagerHolder(@NotNull Context context) {
-        processManager = createProcessManager(context);
-    }
-
     public static void initInstance(@NonNull Context context, @NotNull IProcessManagerHolderProvider<?> provider) {
         synchronized (ProcessManagerHolder.class) {
             if (instance == null) {
-                instance = provider.provideProcessManagerWrapper(context);
+                instance = provider.provideProcessManagerHolder(context);
             }
         }
     }
@@ -55,6 +53,10 @@ public class ProcessManagerHolder {
         }
     }
 
+    protected ProcessManagerHolder(@NotNull Context context) {
+        this.context = context;
+    }
+
     @NotNull
     public List<ProcessInfo> getCachedProcessList() {
         if (cachedProcessList == null) {
@@ -65,6 +67,9 @@ public class ProcessManagerHolder {
 
     @NotNull
     public AbstractProcessManager getProcessManager() {
+        if (processManager == null) {
+            processManager = createProcessManager(context);
+        }
         return processManager;
     }
 
@@ -74,7 +79,7 @@ public class ProcessManagerHolder {
             if (isFirstLaunch && cachedProcessList != null && !cachedProcessList.isEmpty()) {
                 return getCachedProcessList();
             }
-            cachedProcessList = processManager.getProcesses(includeSystemPackages);
+            cachedProcessList = getProcessManager().getProcesses(includeSystemPackages);
             return getCachedProcessList();
         } finally {
             isFirstLaunch = false;
@@ -101,7 +106,7 @@ public class ProcessManagerHolder {
     }
 
     @NotNull
-    private AbstractProcessManager createProcessManager(@NotNull Context context) {
+    protected AbstractProcessManager createProcessManager(@NotNull Context context) {
 
         final Set<AbstractProcessManager> managers = getManagersByPriority(context);
 
@@ -127,13 +132,13 @@ public class ProcessManagerHolder {
 
     public interface IProcessManagerHolderProvider<P extends ProcessManagerHolder> {
 
-        @NotNull P provideProcessManagerWrapper(@NotNull Context context);
+        @NotNull P provideProcessManagerHolder(@NotNull Context context);
 
         final class Default implements IProcessManagerHolderProvider<ProcessManagerHolder> {
 
             @NotNull
             @Override
-            public ProcessManagerHolder provideProcessManagerWrapper(@NotNull Context context) {
+            public ProcessManagerHolder provideProcessManagerHolder(@NotNull Context context) {
                 return new ProcessManagerHolder(context);
             }
         }

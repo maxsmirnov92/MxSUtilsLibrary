@@ -252,12 +252,7 @@ public class ShellWrapper {
         }
 
         public boolean isAnyThreadRunning() {
-            return Predicate.Methods.contains(getStartedThreads().values(), new Predicate<Thread>() {
-                @Override
-                public boolean apply(Thread e) {
-                    return e != null && e.isAlive();
-                }
-            });
+            return Predicate.Methods.contains(getStartedThreads().values(), e -> e != null && e.isAlive());
         }
 
         @NotNull

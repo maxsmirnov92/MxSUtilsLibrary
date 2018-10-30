@@ -75,11 +75,15 @@ public final class FileHelper {
     }
 
     public static boolean isExternalStorageMounted() {
-        return Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED);
+        return isExternalStorageMountedAndWritable() || isExternalStorageMountedReadOnly();
     }
 
     public static boolean isExternalStorageMountedAndWritable() {
-        return isExternalStorageMounted() && !Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED_READ_ONLY);
+        return Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED);
+    }
+
+    public static boolean isExternalStorageMountedReadOnly() {
+        return Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED_READ_ONLY);
     }
 
     @NotNull
@@ -2551,6 +2555,10 @@ public final class FileHelper {
             }
         }
         return sb.toString();
+    }
+
+    public static boolean hasKnoxFlag() {
+        return isFileExists("knox", Environment.getExternalStorageDirectory().getAbsolutePath());
     }
 
 

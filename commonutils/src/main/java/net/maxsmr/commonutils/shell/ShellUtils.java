@@ -1,12 +1,13 @@
 package net.maxsmr.commonutils.shell;
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -320,7 +321,7 @@ public final class ShellUtils {
         final ShellCallback.StreamType type;
 
         public CmdThreadInfo(@Nullable List<String> cmds, @Nullable String workingDir, @NotNull ShellCallback.StreamType type) {
-            this.cmds = cmds != null? new ArrayList<>(cmds) : new ArrayList<String>();
+            this.cmds = cmds != null? new ArrayList<>(cmds) : new ArrayList<>();
             this.workingDir = workingDir;
             this.type = type;
         }

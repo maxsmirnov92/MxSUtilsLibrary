@@ -9,9 +9,11 @@ import net.maxsmr.commonutils.android.AppUtils;
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
 import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
 import net.maxsmr.commonutils.data.CompareUtils;
+import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.shell.CommandResult;
+import net.maxsmr.commonutils.shell.RootShellCommands;
 import net.maxsmr.commonutils.shell.ShellWrapper;
 
 import org.jetbrains.annotations.NotNull;
@@ -74,11 +76,12 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
      * in later Android versions 'su' is required for receiving full process list
      */
     protected boolean useSuForCommands(List<String> commands) {
-        return true;
+        return !FileHelper.hasKnoxFlag() && RootShellCommands.isRootAvailable();
     }
 
     /**
      * commands to execute on each {@linkplain AbstractProcessManager#getProcesses(boolean)} call
+     * on some non-rooted devices "su -c" may freeze
      */
     @NotNull
     protected abstract String[] getCommands();
