@@ -8,12 +8,12 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
-import android.support.annotation.NonNull;
 import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
 import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
+import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -103,11 +103,11 @@ public final class AppUtils {
 
     /**
      * @return {@linkplain Intent} only if given apk file is installed
-     * */
+     */
     @Nullable
     public static Intent getArchiveLaunchIntentForPackage(@NotNull Context context, File apkFile) {
         PackageInfo packageInfo = getArchivePackageInfo(context, apkFile);
-        return packageInfo != null? getLaunchIntentForPackage(context, packageInfo.packageName) : null;
+        return packageInfo != null ? getLaunchIntentForPackage(context, packageInfo.packageName) : null;
     }
 
     @Nullable
@@ -203,7 +203,7 @@ public final class AppUtils {
     }
 
     public static boolean isSystemApp(@Nullable PackageInfo packageInfo) {
-        return isSystemApp(packageInfo != null? packageInfo.applicationInfo : null);
+        return isSystemApp(packageInfo != null ? packageInfo.applicationInfo : null);
     }
 
     public static boolean isSystemApp(@Nullable ApplicationInfo applicationInfo) {
@@ -244,33 +244,36 @@ public final class AppUtils {
         return getInstalledPackagesFromShell().contains(packageName);
     }
 
-    public static boolean isAppInBackground(@NotNull Context context, String packageName) {
+    /**
+     * @return null if not found
+     */
+    public static Boolean isAppInBackground(@NotNull Context context, String packageName) {
         ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         if (am == null) {
             throw new RuntimeException(ActivityManager.class.getSimpleName() + " is null");
         }
-        boolean isInBackground = true;
+        Boolean isInBackground = null;
         if (!TextUtils.isEmpty(packageName)) {
             List<ActivityManager.RunningAppProcessInfo> runningProcesses = am.getRunningAppProcesses();
             for (ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
-                if (processInfo.importance == ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND) {
-                    if (packageName.equals(processInfo.processName)) {
-                        isInBackground = false;
-                        break;
-                    }
+                if (packageName.equals(processInfo.processName)) {
+                    isInBackground = processInfo.importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
                 }
             }
         }
         return isInBackground;
     }
 
-    public static boolean isAppInBackground(String packageName,
+    /**
+     * @return null if not found
+     */
+    public static Boolean isAppInBackground(String packageName,
                                             @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
-        boolean isInBackground = true;
+        Boolean isInBackground = null;
         if (!TextUtils.isEmpty(packageName)) {
             for (ProcessInfo info : manager.getProcesses(includeSystemPackages)) {
-                if (info.isForeground) {
-                    isInBackground = false;
+                if (CompareUtils.stringsEqual(info.packageName, packageName, false)) {
+                    isInBackground = !info.isForeground;
                     break;
                 }
             }
@@ -282,15 +285,15 @@ public final class AppUtils {
     /**
      * @return empty set if not found
      */
-    @NonNull
+    @NotNull
     public static Set<Integer> getPidsByName(@Nullable String packageName,
                                              @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
         Set<Integer> pids = new LinkedHashSet<>();
         if (!TextUtils.isEmpty(packageName)) {
-            for (ProcessInfo process : manager.getProcesses(includeSystemPackages)) {
+            final List<ProcessInfo> runningProcesses = manager.getProcesses(includeSystemPackages);
+            for (ProcessInfo process : runningProcesses) {
                 if (packageName.equals(process.packageName)) {
                     pids.add(process.pid);
-                    break;
                 }
             }
         }

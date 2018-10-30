@@ -20,9 +20,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-public class ProcessManagerWrapper {
+/** Class for storing appropriate {@linkplain AbstractProcessManager} */
+public class ProcessManagerHolder {
 
-    private static volatile ProcessManagerWrapper instance;
+    private static volatile ProcessManagerHolder instance;
 
     @NotNull
     private final AbstractProcessManager processManager;
@@ -32,28 +33,29 @@ public class ProcessManagerWrapper {
 
     private boolean isFirstLaunch = true;
 
-    private ProcessManagerWrapper(@NotNull Context context) {
+    public ProcessManagerHolder(@NotNull Context context) {
         processManager = createProcessManager(context);
     }
 
-    @NonNull
-    public static ProcessManagerWrapper getInstance(@NotNull Context context) {
-        ProcessManagerWrapper localInstance = instance;
-
-        if (localInstance == null) {
-            synchronized (ProcessManagerWrapper.class) {
-                localInstance = instance;
-
-                if (localInstance == null) {
-                    instance = localInstance = new ProcessManagerWrapper(context);
-                }
+    public static void initInstance(@NonNull Context context, @NotNull IProcessManagerHolderProvider<?> provider) {
+        synchronized (ProcessManagerHolder.class) {
+            if (instance == null) {
+                instance = provider.provideProcessManagerWrapper(context);
             }
         }
-
-        return localInstance;
     }
 
-    @NonNull
+    @NotNull
+    public static ProcessManagerHolder getInstance() {
+        synchronized (ProcessManagerHolder.class) {
+            if (instance == null) {
+                throw new IllegalStateException(ProcessManagerHolder.class.getSimpleName() + " is not initialized");
+            }
+            return instance;
+        }
+    }
+
+    @NotNull
     public List<ProcessInfo> getCachedProcessList() {
         if (cachedProcessList == null) {
             cachedProcessList = new ArrayList<>();
@@ -80,26 +82,30 @@ public class ProcessManagerWrapper {
     }
 
     @NotNull
-    private AbstractProcessManager createProcessManager(@NotNull Context context) {
-
+    protected Set<AbstractProcessManager> getManagersByPriority(@NotNull Context context) {
+        @NotNull Set<AbstractProcessManager> managers = new LinkedHashSet<>();
         final DefaultProcessManager defaultProcessManager = new DefaultProcessManager(context);
-
-        final Set<AbstractProcessManager> priorityManagers = new LinkedHashSet<>();
         final boolean isKitKat = Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT;
         if (isKitKat) {
-            priorityManagers.add(defaultProcessManager);
+            managers.add(defaultProcessManager);
         }
-        priorityManagers.add(new ToolboxPsProcessManager(context));
-        priorityManagers.add(new TopProcessManager(context));
-        priorityManagers.add(new BusyboxTopProcessManager(context));
-        priorityManagers.add(new PsProcessManager(context));
-        priorityManagers.add(new BusyboxPsProcessManager(context));
-        priorityManagers.add(defaultProcessManager);
+        managers.add(new ToolboxPsProcessManager(context));
+        managers.add(new TopProcessManager(context));
+        managers.add(new BusyboxTopProcessManager(context));
+        managers.add(new PsProcessManager(context));
+        managers.add(new BusyboxPsProcessManager(context));
         if (!isKitKat) {
-            priorityManagers.add(defaultProcessManager);
+            managers.add(defaultProcessManager);
         }
+        return managers;
+    }
 
-        final Iterator<AbstractProcessManager> it = priorityManagers.iterator();
+    @NotNull
+    private AbstractProcessManager createProcessManager(@NotNull Context context) {
+
+        final Set<AbstractProcessManager> managers = getManagersByPriority(context);
+
+        final Iterator<AbstractProcessManager> it = managers.iterator();
 
         AbstractProcessManager targetManager = null;
 
@@ -113,11 +119,24 @@ public class ProcessManagerWrapper {
         }
 
         if (targetManager == null) {
-            targetManager = defaultProcessManager;
+            targetManager = new DefaultProcessManager(context);
         }
 
         return targetManager;
     }
 
+    public interface IProcessManagerHolderProvider<P extends ProcessManagerHolder> {
+
+        @NotNull P provideProcessManagerWrapper(@NotNull Context context);
+
+        final class Default implements IProcessManagerHolderProvider<ProcessManagerHolder> {
+
+            @NotNull
+            @Override
+            public ProcessManagerHolder provideProcessManagerWrapper(@NotNull Context context) {
+                return new ProcessManagerHolder(context);
+            }
+        }
+    }
 
 }

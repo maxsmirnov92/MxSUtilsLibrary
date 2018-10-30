@@ -70,37 +70,48 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
         return parseShellOutput(commandResult.getStdOutLines(), includeSystemPackages);
     }
 
-    /** in later Android versions 'su' is required for receiving full process list */
+    /**
+     * in later Android versions 'su' is required for receiving full process list
+     */
     protected boolean useSuForCommands(List<String> commands) {
         return true;
     }
 
-    /** commands to execute on each {@linkplain AbstractProcessManager#getProcesses(boolean)} call */
+    /**
+     * commands to execute on each {@linkplain AbstractProcessManager#getProcesses(boolean)} call
+     */
     @NotNull
     protected abstract String[] getCommands();
 
     /**
      * @return possible names for known column
-     * */
+     */
     @NotNull
     protected abstract Map<Column, Set<String>> getColumnNamesMap();
+
+    protected boolean isOutputParseAllowed(int currentIndex, @NotNull String[] fields, @NotNull List<String> columnNames) {
+        return fields.length == columnNames.size();
+    }
 
     protected int getOutputHeaderIndex(@NotNull List<String> output) {
         return 0;
     }
 
-    protected int getFirstOutputLineIndex(@NotNull List<String> output) {
-        return getOutputHeaderIndex(output) + 1;
+    protected int getFirstOutputLineIndex(@NotNull List<String> output, int headerIndex) {
+        if (headerIndex < 0 || headerIndex >= output.size()) {
+            throw new IllegalArgumentException("Incorrect header index: " + headerIndex);
+        }
+        return headerIndex + 1;
     }
 
     /**
      * @param columnNames parsed column names from first output line
-     * @param indexMap mapping: known column -- it's index in output array
-     * @param column column for which index should be returned
-     * @param fields column values in current output line (from 1 to size - 1)
+     * @param indexMap    mapping: known column -- it's index in output array
+     * @param column      column for which index should be returned
+     * @param fields      column values in current output line (from 1 to size - 1)
      * @return value index >= 0 if present in output, -1 - otherwise
      */
-    protected int getIndex(@NotNull List<String> columnNames, @NotNull Map<Column, Integer> indexMap, @NotNull Column column, @NotNull String[] fields) {
+    protected int getValueIndex(@NotNull List<String> columnNames, @NotNull Map<Column, Integer> indexMap, @NotNull Column column, @NotNull String[] fields) {
         Integer index = indexMap.get(column);
         return index != null ? index : -1;
     }
@@ -114,35 +125,35 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
             return processes;
         }
 
-        final int outputHeaderIndex = getOutputHeaderIndex(output);
+        final int headerIndex = getOutputHeaderIndex(output);
 
-        if (outputHeaderIndex < 0 || outputHeaderIndex >= output.size() - 1) {
-            logger.e("Cannot parse shell output: incorrect output header index: " + outputHeaderIndex);
+        if (headerIndex < 0 || headerIndex >= output.size() - 1) {
+            logger.e("Cannot parse shell output: incorrect output header index: " + headerIndex);
             return processes;
         }
 
         // skipping some lines (may be = 0) before header
-        final String outputHeaderLine = output.get(outputHeaderIndex);
+        final String headerLine = output.get(headerIndex);
 
-        final Pair<Map<Column, Integer>, List<String>> columnPair = parseColumnIndexes(outputHeaderLine);
+        final Pair<Map<Column, Integer>, List<String>> columnPair = parseColumnIndexes(headerIndex, headerLine);
 
         if (columnPair.first == null || columnPair.second == null) {
             throw new RuntimeException("Cannot parse shell output: pair cannot be null");
         }
 
-        final int firstOutputLineIndex = getFirstOutputLineIndex(output);
+        final int firstLineIndex = getFirstOutputLineIndex(output, headerIndex);
 
-        if (firstOutputLineIndex <= outputHeaderIndex || firstOutputLineIndex >= output.size()) {
-            logger.e("Cannot parse shell output: incorrect first output line index: " + firstOutputLineIndex);
+        if (firstLineIndex <= headerIndex || firstLineIndex >= output.size()) {
+            logger.e("Cannot parse shell output: incorrect first output line index: " + firstLineIndex);
             return processes;
         }
 
-        for (int i = firstOutputLineIndex; i < output.size(); i++) {
+        for (int i = firstLineIndex; i < output.size(); i++) {
             // skipping some lines (may be = 0) before header, header self + some lines (may be = 0) after
 
             final String line = output.get(i);
 
-            ProcessInfo processInfo = parseProcessInfoLine(line, columnPair.second, columnPair.first);
+            ProcessInfo processInfo = parseProcessInfoLine(i, line, columnPair.second, columnPair.first);
 
             if (processInfo == null) {
 //                logger.e("Cannot parse process info for '" + line + "'");
@@ -164,14 +175,18 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
      * @return Pair: first = mapping known column - index, second = all parsed column names
      */
     @NotNull
-    private Pair<Map<Column, Integer>, List<String>> parseColumnIndexes(@Nullable String outputHeaderLine) {
+    private Pair<Map<Column, Integer>, List<String>> parseColumnIndexes(int headerIndex, @Nullable String headerLine) {
+
+        if (headerIndex < 0) {
+            throw new IllegalArgumentException("Incorrect header index: " + headerIndex);
+        }
 
         final List<String> columnNamesList = new ArrayList<>();
         final Map<Column, Integer> indexMap = new LinkedHashMap<>();
         final Pair<Map<Column, Integer>, List<String>> result = new Pair<>(indexMap, columnNamesList);
 
-        if (TextUtils.isEmpty(outputHeaderLine)) {
-            logger.e("Cannot parse output header line: empty");
+        if (TextUtils.isEmpty(headerLine)) {
+            logger.e("Cannot parse output header line " + headerIndex + ": empty");
             return result;
         }
 
@@ -180,25 +195,29 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
         }
 
         if (cachedColumnNamesMap.isEmpty()) {
-            throw new IllegalArgumentException("Cannot parse output header line: column names map is not specified");
+            throw new IllegalArgumentException("Cannot parse output header line " + headerIndex + ": column names map is not specified");
         }
 
-        final String[] columnNames = outputHeaderLine.split("\\s+");
+        final String[] columnNames = headerLine.split("\\s+");
 
         for (String name : columnNames) {
             if (!TextUtils.isEmpty(name)) {
-                int bracketIndex = name.indexOf("["); // cases with merged column names: for example, "S[%CPU]"
-                if (bracketIndex > 0) {
-                    final String namePartOne = name.substring(0, bracketIndex);
-                    final String namePartTwo = name.substring(bracketIndex, name.length());
-                    if (!TextUtils.isEmpty(namePartOne)) {
-                        columnNamesList.add(namePartOne);
+                String[] parts = name.split("\\d");
+                // remove trash, containing digits
+                if (parts.length <= 1) {
+                    int bracketIndex = name.indexOf("["); // cases with merged column names: for example, "S[%CPU]"
+                    if (bracketIndex > 0) {
+                        final String namePartOne = name.substring(0, bracketIndex);
+                        final String namePartTwo = name.substring(bracketIndex, name.length());
+                        if (!TextUtils.isEmpty(namePartOne)) {
+                            columnNamesList.add(namePartOne);
+                        }
+                        if (!TextUtils.isEmpty(namePartTwo)) {
+                            columnNamesList.add(namePartTwo);
+                        }
+                    } else {
+                        columnNamesList.add(name);
                     }
-                    if (!TextUtils.isEmpty(namePartTwo)) {
-                        columnNamesList.add(namePartTwo);
-                    }
-                } else {
-                    columnNamesList.add(name);
                 }
             }
         }
@@ -212,18 +231,15 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
 
             final Set<String> names = e.getValue();
             if (names == null || names.isEmpty()) {
-                throw new IllegalArgumentException("Cannot parse output header line: no names specified for column " + column);
+                throw new IllegalArgumentException("Cannot parse output header line " + headerIndex + ": no names specified for column " + column);
             }
 
             for (final String columnName : names) {
                 if (TextUtils.isEmpty(columnName)) {
-                    throw new IllegalArgumentException("Cannot parse output header line: name is not specified for column " + column);
+                    throw new IllegalArgumentException("Cannot parse output header line " + headerIndex + ": name is not specified for column " + column);
                 }
-                Pair<Integer, String> indexPair = Predicate.Methods.findWithIndex(columnNamesList, new Predicate<String>() {
-                    @Override
-                    public boolean apply(String element) {
-                        return CompareUtils.stringsEqual(element, columnName, true); // May be "NAME" or "Name", for example
-                    }
+                Pair<Integer, String> indexPair = Predicate.Methods.findWithIndex(columnNamesList, element -> {
+                    return CompareUtils.stringsEqual(element, columnName, true); // May be "NAME" or "Name", for example
                 });
                 if (indexPair != null && indexPair.first != null && indexPair.first >= 0) {
                     indexMap.put(column, indexPair.first);
@@ -235,31 +251,40 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
     }
 
     /**
-     * @param outputLine line from index 1
-     * */
+     * @param line line from index 1
+     */
     @Nullable
-    private ProcessInfo parseProcessInfoLine(@Nullable String outputLine, @NotNull List<String> columnNames, @NotNull Map<Column, Integer> indexMap) {
+    private ProcessInfo parseProcessInfoLine(int lineIndex, @Nullable String line, @NotNull List<String> columnNames, @NotNull Map<Column, Integer> indexMap) {
 
-        if (TextUtils.isEmpty(outputLine)) {
-            logger.e("Cannot parse output line: empty");
+        if (lineIndex < 0) {
+            throw new IllegalArgumentException("Incorrect line index: " + lineIndex);
+        }
+
+        if (TextUtils.isEmpty(line)) {
+            logger.e("Cannot parse output line " + lineIndex + ": empty");
             return null;
         }
 
         if (columnNames.isEmpty()) {
-            logger.e("Cannot parse output line: parsed column names is empty");
+            logger.e("Cannot parse output line " + lineIndex + ": parsed column names is empty");
             return null;
         }
 
         if (indexMap.isEmpty()) {
-            logger.e("Cannot parse output line: index map is empty");
+            logger.e("Cannot parse output line " + lineIndex + ": index map is empty");
             return null;
         }
 
-        final String[] fields = outputLine.split("\\s+");
+        final String[] fields = line.split("\\s+");
 
-        final Integer processNameIndex = getIndex(columnNames, indexMap, Column.NAME, fields);
+        if (!isOutputParseAllowed(lineIndex, fields, columnNames)) {
+            logger.e("Cannot parse output line " + lineIndex + ": not allowed");
+            return null;
+        }
 
-        String processName = isIndexValid(processNameIndex, fields) ? fields[processNameIndex].trim() : null;
+        final Integer processNameIndex = getValueIndex(columnNames, indexMap, Column.NAME, fields);
+
+        String processName = isValueIndexValid(processNameIndex, fields) ? fields[processNameIndex].trim() : null;
 
         final String[] processNameParts = processName != null ? processName.split("[ ]+") : null;
 
@@ -281,23 +306,23 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
             return null;
         }
 
-        final Integer userIndex = getIndex(columnNames, indexMap, Column.USER, fields);
-        final Integer pidIndex = getIndex(columnNames, indexMap, Column.PID, fields);
-        final Integer pPidIndex = getIndex(columnNames, indexMap, Column.PPID, fields);
-        final Integer vSizeIndex = getIndex(columnNames, indexMap, Column.VSIZE, fields);
-        final Integer rssIndex = getIndex(columnNames, indexMap, Column.RSS, fields);
-        final Integer pcyIndex = getIndex(columnNames, indexMap, Column.PCY, fields);
-        final Integer statIndex = getIndex(columnNames, indexMap, Column.STAT, fields);
+        final Integer userIndex = getValueIndex(columnNames, indexMap, Column.USER, fields);
+        final Integer pidIndex = getValueIndex(columnNames, indexMap, Column.PID, fields);
+        final Integer pPidIndex = getValueIndex(columnNames, indexMap, Column.PPID, fields);
+        final Integer vSizeIndex = getValueIndex(columnNames, indexMap, Column.VSIZE, fields);
+        final Integer rssIndex = getValueIndex(columnNames, indexMap, Column.RSS, fields);
+        final Integer pcyIndex = getValueIndex(columnNames, indexMap, Column.PCY, fields);
+        final Integer statIndex = getValueIndex(columnNames, indexMap, Column.STAT, fields);
 
-        final String user = isIndexValid(userIndex, fields) ? fields[userIndex].trim() : null;
+        final String user = isValueIndexValid(userIndex, fields) ? fields[userIndex].trim() : null;
         final int userId = StringUtils.strToInt(user);
-        final int pid = StringUtils.strToInt(isIndexValid(pidIndex, fields) ? fields[pidIndex].trim() : null);
-        final int pPid = StringUtils.strToInt(isIndexValid(pPidIndex, fields) ? fields[pPidIndex].trim() : null);
-        final int vSize = StringUtils.strToInt(isIndexValid(vSizeIndex, fields) ? fields[vSizeIndex].trim() : null);
-        final int rss = StringUtils.strToInt(isIndexValid(rssIndex, fields) ? fields[rssIndex].trim() : null);
+        final int pid = StringUtils.strToInt(isValueIndexValid(pidIndex, fields) ? fields[pidIndex].trim() : null);
+        final int pPid = StringUtils.strToInt(isValueIndexValid(pPidIndex, fields) ? fields[pPidIndex].trim() : null);
+        final int vSize = StringUtils.strToInt(isValueIndexValid(vSizeIndex, fields) ? fields[vSizeIndex].trim() : null);
+        final int rss = StringUtils.strToInt(isValueIndexValid(rssIndex, fields) ? fields[rssIndex].trim() : null);
 
-        final ProcessInfo.PCY pcy = ProcessInfo.PCY.fromName(isIndexValid(pcyIndex, fields) ? fields[pcyIndex].trim() : null);
-        final ProcessInfo.ProcessState state = ProcessInfo.ProcessState.fromName(isIndexValid(statIndex, fields) ? fields[statIndex].trim() : null);
+        final ProcessInfo.PCY pcy = ProcessInfo.PCY.fromName(isValueIndexValid(pcyIndex, fields) ? fields[pcyIndex].trim() : null);
+        final ProcessInfo.ProcessState state = ProcessInfo.ProcessState.fromName(isValueIndexValid(statIndex, fields) ? fields[statIndex].trim() : null);
 
         Boolean isForeground = null;
 
@@ -311,7 +336,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
                 pid, pPid, user, userId, rss, vSize, state, isForeground, isSystemPackage(processName));
     }
 
-    private static boolean isIndexValid(int index, String[] fields) {
+    private static boolean isValueIndexValid(int index, String[] fields) {
         int length = fields != null ? fields.length : 0;
         return index >= 0 && index < length;
     }

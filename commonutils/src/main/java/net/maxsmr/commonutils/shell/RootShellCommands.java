@@ -2,20 +2,22 @@ package net.maxsmr.commonutils.shell;
 
 import android.content.Context;
 import android.os.Build;
-import android.support.annotation.NonNull;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.android.AppUtils;
-import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
+import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
+import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 public final class RootShellCommands {
@@ -29,7 +31,7 @@ public final class RootShellCommands {
     /**
      * Execute SU command
      */
-    @NonNull
+    @NotNull
     public static CommandResult executeCommand(String command) {
 
         try {
@@ -93,7 +95,7 @@ public final class RootShellCommands {
      * @param file File to read from
      * @return File's contents
      */
-    @android.support.annotation.Nullable
+    @Nullable
     public static String readFileAsRoot(File file) {
         String command = String.format("cat %s", file.getAbsolutePath());
 
@@ -126,7 +128,7 @@ public final class RootShellCommands {
      *
      * @param packageName If we need to update existing apk, you can pass the package name
      */
-    public static boolean installApk(File apkFile, @android.support.annotation.Nullable String packageName, @NotNull Context context) {
+    public static boolean installApk(File apkFile, @Nullable String packageName, @NotNull Context context) {
 
         if (!FileHelper.isFileCorrect(apkFile)) {
             logger.e("Cannot install: incorrect apk file: " + apkFile);
@@ -229,11 +231,33 @@ public final class RootShellCommands {
     }
 
     public static boolean killProcessesByName(@Nullable String processName,
-                                              @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+                                                                      @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+        final Map<Integer, Boolean> statusMap = killProcessesByNameWithStatus(processName, manager, includeSystemPackages);
         boolean result = true;
+        if (statusMap != null) {
+            for (Boolean status : statusMap.values()) {
+                if (status == null || !status) {
+                    result = false;
+                    break;
+                }
+            }
+        }
+        return result;
+    }
+
+    /** @return null if not found, map with PID - kill result for PID otherwise */
+    @Nullable
+    public static Map<Integer, Boolean> killProcessesByNameWithStatus(@Nullable String processName,
+                                                                                @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+        final Map<Integer, Boolean> result = new LinkedHashMap<>();
         final Set<Integer> pids = AppUtils.getPidsByName(processName, manager, includeSystemPackages);
         for (Integer pid : pids) {
-            result &= RootShellCommands.killProcessByPid(pid);
+            if (pid > 0) {
+                result.put(pid, RootShellCommands.killProcessByPid(pid));
+            }
+        }
+        if (result.isEmpty()) {
+            return null;
         }
         return result;
     }
@@ -241,12 +265,13 @@ public final class RootShellCommands {
     /**
      * @return false if at least one kill was failed
      */
-    public static boolean killApps(@Nullable List<String> apps,
-                                   @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+    public static boolean killProcessesByNames(@Nullable List<String> processNames,
+                                               @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
         boolean result = true;
-        if (apps != null && !apps.isEmpty()) {
-            for (ProcessInfo process : manager.getProcesses(includeSystemPackages)) {
-                if (apps.contains(process.packageName)) {
+        if (processNames != null && !processNames.isEmpty()) {
+            final List<ProcessInfo> runningProcesses = manager.getProcesses(includeSystemPackages);
+            for (ProcessInfo process : runningProcesses) {
+                if (processNames.contains(process.packageName)) {
                     if (!killProcessByPid(process.pid)) {
                         result = false;
                     }
@@ -255,5 +280,4 @@ public final class RootShellCommands {
         }
         return result;
     }
-
 }

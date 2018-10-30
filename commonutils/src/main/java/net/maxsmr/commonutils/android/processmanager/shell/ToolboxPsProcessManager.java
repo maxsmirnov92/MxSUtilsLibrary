@@ -47,14 +47,20 @@ public class ToolboxPsProcessManager extends AbstractShellProcessManager {
         return map;
     }
 
+    @Override
+    protected boolean isOutputParseAllowed(int currentIndex, @NotNull String[] fields, @NotNull List<String> columnNames) {
+        final int diff = fields.length - columnNames.size();
+        return super.isOutputParseAllowed(currentIndex, fields, columnNames) || (diff >= 0 && diff <= 1);
+    }
+
     // костыль для отсутствующего названия столбца 'STAT' в шапке
     @Override
-    protected int getIndex(@NotNull List<String> columnNames, @NotNull Map<Column, Integer> indexMap, @NotNull Column column, @NotNull String[] fields) {
-        int index = super.getIndex(columnNames, indexMap, column, fields);
+    protected int getValueIndex(@NotNull List<String> columnNames, @NotNull Map<Column, Integer> indexMap, @NotNull Column column, @NotNull String[] fields) {
+        int index = super.getValueIndex(columnNames, indexMap, column, fields);
         if (fields.length > columnNames.size()) { // only when output values count > declared columns count
             final int diff = fields.length - columnNames.size();
             if (diff == 1) {
-                final int nameIndex = super.getIndex(columnNames, indexMap, Column.NAME, fields);
+                final int nameIndex = super.getValueIndex(columnNames, indexMap, Column.NAME, fields);
                 if (nameIndex >= 0) {
                     if (index < 0 && column == Column.STAT) {
                         if (nameIndex >= 1) {

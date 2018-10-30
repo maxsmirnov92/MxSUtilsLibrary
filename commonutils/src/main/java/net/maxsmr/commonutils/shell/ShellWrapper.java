@@ -181,7 +181,6 @@ public class ShellWrapper {
             @Override
             public void onThreadStarted(@NotNull ShellUtils.CmdThreadInfo info, @NotNull Thread thread) {
                 synchronized (commandInfo) {
-                    commandInfo.getStartedThreads();
                     commandInfo.startedThreads.put(info, thread);
                 }
             }
@@ -189,14 +188,16 @@ public class ShellWrapper {
             @Override
             public void onThreadFinished(@NotNull ShellUtils.CmdThreadInfo info, @NotNull Thread thread) {
                 synchronized (commandInfo) {
-                    commandInfo.getStartedThreads();
                     commandInfo.startedThreads.remove(info);
                 }
             }
         });
 
-        commandInfo.setResult(result);
-        logger.v("Command completed: " + commandInfo);
+        synchronized (commandInfo) {
+            commandInfo.setResult(result);
+            // synchronize in case of threadss not still finished (otherwise - ConcurrentModificationException)
+            logger.v("Command completed: " + commandInfo);
+        }
 
         return result;
     }
@@ -286,7 +287,6 @@ public class ShellWrapper {
         public String toString() {
             return "CommandInfo{" +
                     "commandsToRun=" + commandsToRun +
-                    ", startedThreads=" + startedThreads +
                     ", result=" + result +
                     '}';
         }
