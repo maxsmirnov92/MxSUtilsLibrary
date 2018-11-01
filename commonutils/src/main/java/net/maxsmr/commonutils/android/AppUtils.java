@@ -8,6 +8,9 @@ import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.net.Uri;
+import android.os.Build;
+import android.os.StrictMode;
+import android.support.v4.content.FileProvider;
 import android.text.TextUtils;
 import android.webkit.MimeTypeMap;
 
@@ -15,6 +18,7 @@ import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
 import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.ReflectionUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
@@ -24,6 +28,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.LinkedHashSet;
@@ -115,16 +120,56 @@ public final class AppUtils {
         return getLaunchIntentForPackage(context, context.getPackageName());
     }
 
+    /**
+     * @param fileUriProviderAuthority specify string after packageName + ".", if intended to use FileProvider instead of file://
+     * */
     @Nullable
-    public static Intent getViewFileIntent(@NotNull Context context, @Nullable File file) {
+    public static Intent getViewFileIntent(@NotNull Context context, @Nullable File file, @Nullable String fileUriProviderAuthority) {
         Intent result = null;
-        if (file != null) {
+        if (FileHelper.isFileExists(file)) {
             result = new Intent(Intent.ACTION_VIEW);
-            String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(FileHelper.getFileExtension(file));
-            result.setDataAndType(Uri.fromFile(file), mimeType);
+
+            final Uri fileUri;
+
+            if (!TextUtils.isEmpty(fileUriProviderAuthority)) {
+                fileUri= FileProvider.getUriForFile(context, context.getPackageName() + "." + fileUriProviderAuthority, file);
+            } else {
+                fileUri = Uri.fromFile(file);
+            }
+
+            final String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(FileHelper.getFileExtension(file));
+            result.setDataAndType(fileUri, mimeType);
+
             result.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            if (!TextUtils.isEmpty(fileUriProviderAuthority)) {
+                result.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+            }
             if (!canHandleActivityIntent(context, result)) {
                 result = null;
+            }
+        }
+        return result;
+    }
+
+    /** try to disable throwing exception when sharing file:// scheme instead of FileProvider */
+    public static boolean disableFileUriStrictMode() {
+        boolean result = true;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            result = false;
+            Method disableMethod = null;
+            try {
+                disableMethod = ReflectionUtils.findMethod(StrictMode.class, "disableDeathOnFileUriExposure");
+            } catch (NoSuchMethodException e) {
+                logger.e("Cannot disable \"death on file uri exposure\": " + e.getMessage(), e);
+            }
+            if (disableMethod != null) {
+                try {
+                    disableMethod.invoke(null);
+                    result = true;
+                } catch (Exception e) {
+                    logger.e("Cannot disable \"death on file uri exposure\": " + e.getMessage(), e);
+                }
             }
         }
         return result;

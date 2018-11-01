@@ -2,7 +2,6 @@ package net.maxsmr.commonutils.android.processmanager;
 
 import android.content.Context;
 import android.os.Build;
-import android.support.annotation.NonNull;
 
 import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
 import net.maxsmr.commonutils.android.processmanager.shell.BusyboxPsProcessManager;
@@ -35,7 +34,7 @@ public class ProcessManagerHolder {
 
     private boolean isFirstLaunch = true;
 
-    public static void initInstance(@NonNull Context context, @NotNull IProcessManagerHolderProvider<?> provider) {
+    public static void initInstance(@NotNull Context context, @NotNull IProcessManagerHolderProvider<?> provider) {
         synchronized (ProcessManagerHolder.class) {
             if (instance == null) {
                 instance = provider.provideProcessManagerHolder(context);
@@ -76,11 +75,11 @@ public class ProcessManagerHolder {
     @NotNull
     public List<ProcessInfo> getProcesses(boolean includeSystemPackages) {
         try {
+            final AbstractProcessManager manager = getProcessManager();
             if (isFirstLaunch && cachedProcessList != null && !cachedProcessList.isEmpty()) {
                 return getCachedProcessList();
             }
-            cachedProcessList = getProcessManager().getProcesses(includeSystemPackages);
-            return getCachedProcessList();
+            return (cachedProcessList = manager.getProcesses(includeSystemPackages));
         } finally {
             isFirstLaunch = false;
         }

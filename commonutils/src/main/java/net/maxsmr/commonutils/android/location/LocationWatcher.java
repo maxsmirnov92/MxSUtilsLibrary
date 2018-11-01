@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils.android.location;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Observable;
@@ -9,13 +10,15 @@ import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
 import android.os.Handler;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import android.text.TextUtils;
 
 import net.maxsmr.commonutils.android.location.info.TrackingStatus;
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.LinkedHashSet;
@@ -271,6 +274,51 @@ public final class LocationWatcher {
         }
     }
 
+    public static boolean isProviderEnabled(@NotNull Context context, @Nullable String provider) {
+        if (TextUtils.isEmpty(provider)) {
+            return false;
+        }
+        final LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null) {
+            throw new RuntimeException(LocationManager.class.getSimpleName() + " is null");
+        }
+        return locationManager.isProviderEnabled(provider);
+    }
+
+    /**
+     * @return requested {@linkplain Location} from any provider (best if more than one)
+     * */
+    @Nullable
+    @SuppressLint("MissingPermission")
+    public static Location getLastActualLocation(@NotNull Context context) {
+        final LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);
+        if (locationManager == null) {
+            throw new RuntimeException(LocationManager.class.getSimpleName() + " is null");
+        }
+
+        List<String> providers = locationManager.getProviders(true);
+
+        Location bestLocation = null;
+
+        for (String provider : providers) {
+            logger.i("Provider: " + provider);
+            if (!locationManager.isProviderEnabled(provider)) {
+                logger.e("Provider " + provider + " is not enabled");
+                continue;
+            }
+            try {
+                final Location location = locationManager.getLastKnownLocation(provider);
+                if (location != null &&
+                        (bestLocation == null || bestLocation.getAccuracy() < location.getAccuracy())) {
+                    bestLocation = location;
+                }
+            } catch (RuntimeException e) {
+                logger.e("A RuntimeException occurred: " + e.getMessage(), e);
+            }
+        }
+
+        return bestLocation;
+    }
 
     private static class LocationObservable extends Observable<LocationTrackingListener> {
 

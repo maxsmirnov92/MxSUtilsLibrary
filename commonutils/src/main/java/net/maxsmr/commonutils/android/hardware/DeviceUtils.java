@@ -11,13 +11,12 @@ import android.content.IntentFilter;
 import android.hardware.usb.UsbAccessory;
 import android.hardware.usb.UsbDevice;
 import android.hardware.usb.UsbManager;
+import android.media.AudioManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.PowerManager;
 import android.os.SystemClock;
 import android.provider.Settings;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import android.telephony.TelephonyManager;
 import android.view.WindowManager;
 
@@ -27,6 +26,8 @@ import net.maxsmr.commonutils.shell.ShellUtils;
 
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -270,6 +271,14 @@ public final class DeviceUtils {
         } else {
             return LanguageCode.OTHER;
         }
+    }
+
+    public static boolean isCallActive(Context context) {
+        AudioManager manager = (AudioManager) context.getSystemService(Context.AUDIO_SERVICE);
+        if (manager == null) {
+            throw new RuntimeException(AudioManager.class.getSimpleName() + " is null");
+        }
+        return manager.getMode() == AudioManager.MODE_IN_CALL;
     }
 
     /**
