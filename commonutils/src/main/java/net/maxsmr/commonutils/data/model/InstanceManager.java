@@ -18,7 +18,11 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public abstract class InstanceManager<T> {
 
@@ -42,8 +46,34 @@ public abstract class InstanceManager<T> {
     @Nullable
     protected abstract T deserializeFromString(String data);
 
+    public void saveAsByteArray(@NotNull T inst) {
+        FileHelper.writeBytesToFile(file, serializeAsByteArray(inst), false);
+    }
+
+    public void saveAsString(@NotNull T inst) {
+        FileHelper.writeStringToFile(file, serializeAsString(inst), false);
+    }
+
     @Nullable
-    public static <T extends Serializable> byte[] asByteArray(@Nullable T object) {
+    public T loadFromByteArray() {
+        byte[] data = FileHelper.readBytesFromFile(file);
+        if (data != null && data.length > 0) {
+            return deserializeFromByteArray(data);
+        }
+        return null;
+    }
+
+    @Nullable
+    public T loadFromString() {
+        List<String> data = FileHelper.readStringsFromFile(file);
+        if (data.size() > 0) {
+            return deserializeFromString(data.get(0));
+        }
+        return null;
+    }
+
+    @Nullable
+    public static <T extends Serializable> byte[] toByteArray(@Nullable T object) {
         if (object != null) {
             ByteArrayOutputStream bos = new ByteArrayOutputStream();
             ObjectOutput out = null;
@@ -153,30 +183,39 @@ public abstract class InstanceManager<T> {
         return null;
     }
 
-    public void saveAsByteArray(@NotNull T inst) {
-        FileHelper.writeBytesToFile(file, serializeAsByteArray(inst), false);
-    }
-
-    public void saveAsString(@NotNull T inst) {
-        FileHelper.writeStringToFile(file, serializeAsString(inst), false);
-    }
-
-    @Nullable
-    public T loadFromByteArray() {
-        byte[] data = FileHelper.readBytesFromFile(file);
-        if (data != null && data.length > 0) {
-            return deserializeFromByteArray(data);
+    @NotNull
+    public static <T extends Serializable> Map<T, byte[]> toByteArray(@Nullable Collection<T> listOfObjects) {
+        Map<T, byte[]> result = new LinkedHashMap<>();
+        if (listOfObjects != null) {
+            for (T o : listOfObjects) {
+                result.put(o, toByteArray(o));
+            }
         }
-        return null;
+        return result;
     }
 
-    @Nullable
-    public T loadFromString() {
-        List<String> data = FileHelper.readStringsFromFile(file);
-        if (data.size() > 0) {
-            return deserializeFromString(data.get(0));
+    public static List<byte[]> toByteArrays(@Nullable Collection<String> strings) {
+        List<byte[]> result = new ArrayList<>();
+        if (strings != null) {
+            for (String s : strings) {
+                if (s != null) {
+                    result.add(s.getBytes());
+                }
+            }
         }
-        return null;
+        return result;
+    }
+
+    public static long getByteCount(@Nullable Collection<byte[]> bytes) {
+        long result = 0;
+        if (bytes != null) {
+            for (byte[] b : bytes) {
+                if (b != null) {
+                    result += b.length;
+                }
+            }
+        }
+        return result;
     }
 
 }

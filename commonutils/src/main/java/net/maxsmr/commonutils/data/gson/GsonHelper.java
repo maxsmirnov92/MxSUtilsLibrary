@@ -3,6 +3,7 @@ package net.maxsmr.commonutils.data.gson;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParseException;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 
@@ -15,7 +16,10 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class GsonHelper {
 
@@ -25,46 +29,55 @@ public class GsonHelper {
         throw new AssertionError("no instances.");
     }
 
+    @Nullable
     public static <T> T fromJsonObjectString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Class<T> classOfT) {
         return fromJsonObjectString(gson, jsonString, (Type) classOfT);
     }
 
+    @Nullable
     public static <T> T fromJsonObjectString(@NotNull Gson gson, @Nullable String jsonString, @NotNull TypeToken<T> typeToken) {
         return fromJsonObjectString(gson, jsonString, typeToken.getType());
     }
 
     @Nullable
     private static <T> T fromJsonObjectString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Type type) {
-        logger.d("fromJsonObjectString(), jsonString=" + jsonString + ", type=" + type);
         try {
             return gson.fromJson(jsonString, type);
-        } catch (Exception e) {
-            logger.e("an Exception occurred during fromJson(): " + e.getMessage(), e);
+        } catch (JsonParseException e) {
+            logger.e("an JsonParseException occurred during fromJson(): " + e.getMessage(), e);
             return null;
         }
     }
 
     @NotNull
     public static <T> List<T> fromJsonArrayString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Class<T[]> type) {
-        logger.d("fromJsonArrayString(), jsonString=" + jsonString + ", type=" + type);
         try {
             return new ArrayList<>(Arrays.asList(gson.fromJson(jsonString, type)));
-        } catch (Exception e) {
-            logger.e("an Exception occurred during fromJson(): " + e.getMessage(), e);
+        } catch (JsonParseException e) {
+            logger.e("an JsonParseException occurred during fromJson(): " + e.getMessage(), e);
             return new ArrayList<>();
         }
     }
 
     @NotNull
-    public static <T> String toJsonString(@NotNull Gson gson, T... what) {
-        logger.d("toJsonString(), what=" + Arrays.toString(what));
-
+    public static <T> String toJsonString(@NotNull Gson gson, T object) {
         try {
-            return gson.toJson(what != null && what.length == 1? what[0] : what);
-        } catch (Exception e) {
-            logger.e("an Exception occurred during toJson(): " + e.getMessage(), e);
+            return gson.toJson(object);
+        } catch (JsonParseException e) {
+            logger.e("an JsonParseException occurred during toJson(): " + e.getMessage(), e);
             return "null";
         }
+    }
+
+    @NotNull
+    public static <T> Map<T, String> toJsonStringMap(@NotNull Gson gson, @Nullable Collection<T> listOfObjects) {
+        Map<T, String> result = new LinkedHashMap<>();
+        if (listOfObjects != null) {
+            for (T o : listOfObjects) {
+                result.put(o, toJsonString(gson, o));
+            }
+        }
+        return result;
     }
 
     @SuppressWarnings("unchecked")

@@ -318,7 +318,7 @@ public final class AppUtils {
         if (!TextUtils.isEmpty(packageName)) {
             for (ProcessInfo info : manager.getProcesses(includeSystemPackages)) {
                 if (CompareUtils.stringsEqual(info.packageName, packageName, false)) {
-                    isInBackground = !info.isForeground;
+                    isInBackground = info.isForeground != null && !info.isForeground;
                     break;
                 }
             }
