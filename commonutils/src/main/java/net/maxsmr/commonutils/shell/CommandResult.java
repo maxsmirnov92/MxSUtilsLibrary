@@ -1,8 +1,9 @@
 package net.maxsmr.commonutils.shell;
 
+import android.text.TextUtils;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import android.text.TextUtils;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -63,6 +64,10 @@ public class CommandResult {
 
     public boolean isSuccessful() {
         return isCompleted() && exitCode == targetExitCode /*&& stdErrLines.isEmpty()*/;
+    }
+
+    public boolean isFailed() {
+        return isCompleted() && !isSuccessful();
     }
 
     @NotNull

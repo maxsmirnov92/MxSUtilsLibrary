@@ -2,9 +2,6 @@ package net.maxsmr.commonutils.data;
 
 import android.text.TextUtils;
 
-import net.maxsmr.commonutils.logger.BaseLogger;
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -12,8 +9,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
 public class ReflectionUtils {
-
-    private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ReflectionUtils.class);
 
     /**
      * Finds method in class by iterating the available methods
@@ -34,24 +29,23 @@ public class ReflectionUtils {
         throw new NoSuchMethodException("Method '" + methodName + "' not found in class " + clazz.getName());
     }
 
-    /** @param callObject null if field is static */
+    /**
+     * @param callObject null if field is static
+     */
     @SuppressWarnings("unchecked")
     public static <T, O> T getFieldValue(@NotNull Class<O> classOfO, @Nullable O callObject, String fieldName) throws RuntimeException, NoSuchFieldException {
         if (TextUtils.isEmpty(fieldName)) {
             throw new IllegalArgumentException("Field name is empty");
         }
         final Field targetField = classOfO.getDeclaredField(fieldName);
-        if (targetField != null) {
-            if (!targetField.isAccessible()) {
-                targetField.setAccessible(true);
-            }
-            try {
-                return (T) targetField.get(callObject);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            }
+        if (!targetField.isAccessible()) {
+            targetField.setAccessible(true);
         }
-        throw new NoSuchFieldException("Field '" + fieldName + "' not found in class " + classOfO.getName());
+        try {
+            return (T) targetField.get(callObject);
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException(e);
+        }
     }
 
     /**
@@ -75,13 +69,12 @@ public class ReflectionUtils {
                     if (CompareUtils.objectsEqual(field.getInt(null), id))
                         return true;
                 } catch (Exception e) {
-                    logger.e("an Exception occurred during getInt()");
+                    e.printStackTrace();
                 }
             }
         }
 
         return false;
     }
-
 
 }

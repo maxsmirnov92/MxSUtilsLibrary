@@ -238,7 +238,7 @@ public class ScheduledThreadPoolExecutorManager {
             try {
                 command.run();
             } catch (Throwable e) {
-                logger.e("an Exception occurred during run(): " + e.getMessage(), e);
+                logger.e("An Exception occurred during run(): " + e.getMessage(), e);
                 synchronized (lock) {
                     if (exceptionHandler != null) {
                         exceptionHandler.onRunnableCrash(e);

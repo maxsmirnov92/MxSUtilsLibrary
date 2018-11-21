@@ -26,8 +26,6 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     public static final int RETRY_DISABLED = -1;
     public static final int RETRY_NO_LIMIT = 0;
 
-    private final Object lock = new Object();
-
     @NotNull
     protected final TaskObservable observable = new TaskObservable();
 
@@ -102,13 +100,13 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
     @Nullable
     public Handler getCallbacksHandler() {
-        synchronized (lock) {
+        synchronized (observers) {
             return callbacksHandler;
         }
     }
 
     public void setCallbacksHandler(@Nullable Handler callbacksHandler) {
-        synchronized (lock) {
+        synchronized (observers) {
             this.callbacksHandler = callbacksHandler;
         }
     }
@@ -145,7 +143,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
             onTaskFailed(e, reRun);
 
             int limit = getRetryLimit();
-            if (reRun && (limit > 0 && retryCount < limit || limit == RETRY_NO_LIMIT)) {
+            if (reRun) {
                 retryCount++;
 
                 long sleepTime = getRetryDelayInMs();
@@ -298,7 +296,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     private class TaskObservable extends Observable<Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>>> {
 
         private void notifyPreExecute() {
-            synchronized (lock) {
+            synchronized (observers) {
                 Runnable r = () -> {
                     synchronized (observers) {
                         for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
@@ -311,7 +309,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         }
 
         private void notifyProgress(final ProgressInfo progressInfo) {
-            synchronized (lock) {
+            synchronized (observers) {
                 final Runnable r = () -> {
                     synchronized (observers) {
                         for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
@@ -324,7 +322,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         }
 
         private void notifyPostExecute(final Result result) {
-            synchronized (lock) {
+            synchronized (observers) {
                 final Runnable r = () -> {
                     synchronized (observers) {
                         for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
@@ -337,7 +335,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         }
 
         private void notifyFailed(@NotNull final Throwable e, final int runCount, final int maxRunCount) {
-            synchronized (lock) {
+            synchronized (observers) {
                 final Runnable r = () -> {
                     synchronized (observers) {
                         for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {
@@ -350,7 +348,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         }
 
         private void notifyCancelled() {
-            synchronized (lock) {
+            synchronized (observers) {
                 final Runnable r = () -> {
                     synchronized (observers) {
                         for (Callbacks<I, ProgressInfo, Result, TaskRunnable<I, ProgressInfo, Result>> c : observers) {

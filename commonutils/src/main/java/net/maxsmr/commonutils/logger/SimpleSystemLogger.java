@@ -16,13 +16,15 @@ public class SimpleSystemLogger extends BaseTagLogger {
     @Override
     public void v(String message) {
         if (isLoggingEnabled()) {
-            log(Level.VERBOSE, message, null);
+            log(Level.VERBOSE, message);
         }
     }
 
     @Override
     public void v(Throwable exception) {
-        e(exception);
+        if (exception != null) {
+            v(exception.toString());
+        }
     }
 
     @Override
@@ -34,13 +36,13 @@ public class SimpleSystemLogger extends BaseTagLogger {
     @Override
     public void d(String message) {
         if (isLoggingEnabled()) {
-            log(Level.DEBUG, message, null);
+            log(Level.DEBUG, message);
         }
     }
 
     @Override
     public void d(Throwable exception) {
-        e(exception);
+        d(exception.toString());
     }
 
     @Override
@@ -53,13 +55,13 @@ public class SimpleSystemLogger extends BaseTagLogger {
     @Override
     public void i(String message) {
         if (isLoggingEnabled()) {
-            log(Level.INFO, message, null);
+            log(Level.INFO, message);
         }
     }
 
     @Override
     public void i(Throwable exception) {
-        e(exception);
+        i(exception.toString());
     }
 
     @Override
@@ -71,13 +73,13 @@ public class SimpleSystemLogger extends BaseTagLogger {
     @Override
     public void w(String message) {
         if (isLoggingEnabled()) {
-            log(Level.WARN, message, null);
+            log(Level.WARN, message);
         }
     }
 
     @Override
     public void w(Throwable exception) {
-        e(exception);
+        w(exception.toString());
     }
 
     @Override
@@ -89,15 +91,13 @@ public class SimpleSystemLogger extends BaseTagLogger {
     @Override
     public void e(String message) {
         if (isLoggingEnabled()) {
-            log(Level.ERROR, message, null);
+            log(Level.ERROR, message);
         }
     }
 
     @Override
     public void e(Throwable exception) {
-        if (isLoggingEnabled()) {
-            log(Level.ERROR, null, exception);
-        }
+        e(exception.toString());
     }
 
     @Override
@@ -109,13 +109,15 @@ public class SimpleSystemLogger extends BaseTagLogger {
     @Override
     public void wtf(String message) {
         if (isLoggingEnabled()) {
-            log(Level.WTF, message, null);
+            log(Level.WTF, message);
         }
     }
 
     @Override
     public void wtf(Throwable exception) {
-        e(exception);
+        if (exception != null) {
+            wtf(exception.toString());
+        }
     }
 
     @Override
@@ -124,13 +126,14 @@ public class SimpleSystemLogger extends BaseTagLogger {
         wtf(exception);
     }
 
-    private void log(@NotNull Level level, @Nullable String message, @Nullable Throwable exception) {
+    private void log(@NotNull Level level, @Nullable String message) {
         if (message != null) {
             LogEntry logEntry = new LogEntry(level, tag, message, System.currentTimeMillis());
-            System.out.println(logEntry.toString());
-        }
-        if (exception != null) {
-            exception.printStackTrace();
+            if (level == Level.ERROR || level == Level.WTF) {
+                System.err.println(logEntry.toString());
+            } else {
+                System.out.println(logEntry.toString());
+            }
         }
     }
 

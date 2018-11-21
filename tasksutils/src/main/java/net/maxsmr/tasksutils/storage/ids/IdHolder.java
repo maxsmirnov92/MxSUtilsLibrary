@@ -13,7 +13,8 @@ public class IdHolder {
     private final int initialValue;
 
     public IdHolder(@NotNull IdHolder idHolder) {
-        this(idHolder.initialValue);
+        this.initialValue = idHolder.initialValue;
+        this.lastId = idHolder.lastId;
     }
 
     public IdHolder(int initialValue) {
