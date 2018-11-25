@@ -7,7 +7,9 @@ import android.text.TextUtils;
 import net.maxsmr.commonutils.android.AppUtils;
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
 import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
+import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -15,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -124,6 +127,36 @@ public final class RootShellCommands {
     }
 
     /**
+     * Gets installed packages via pm list command
+     * THIS IS WORKAROUND for PackageManager bug — it can suddenly crash if there is too much apps installed
+     * There is no exact info about apps count limitations :(
+     *
+     * @return List of packages
+     */
+    public static List<String> getInstalledPackages() {
+        CommandResult commandResult = RootShellCommands.executeCommand("pm list packages");
+        if (!commandResult.isSuccessful()) {
+            return new ArrayList<>(0);
+        }
+        List<String> packages = new ArrayList<>();
+        for (String out : commandResult.getStdOutLines()) {
+            if (!TextUtils.isEmpty(out)) {
+                packages.add(out.replaceFirst("package:", ""));
+            }
+        }
+        return packages;
+    }
+
+    /**
+     * Check if the given package is installed
+     *
+     * @param packageName Package to check
+     */
+    public static boolean isPackageInstalled(String packageName) {
+        return getInstalledPackages().contains(packageName);
+    }
+
+    /**
      * Install the given APK file via the Package manager
      *
      * @param packageName If we need to update existing apk, you can pass the package name
@@ -143,7 +176,7 @@ public final class RootShellCommands {
         } else {
             if (!TextUtils.isEmpty(packageName)
                     && !packageName.equals(context.getPackageName())
-                    && AppUtils.isPackageInstalledFromShell(packageName)) {
+                    && isPackageInstalled(packageName)) {
                 command = String.format("pm uninstall -k %s", packageName);
                 commandResult = executeCommand(command);
                 logger.i("Uninstall result: " + commandResult);
@@ -157,8 +190,7 @@ public final class RootShellCommands {
         commandResult = executeCommand(command);
 
         logger.i("Install result: " + commandResult);
-
-        return commandResult.isSuccessful() && commandResult.getStdOut().toLowerCase().contains("success");
+        return isInstallOrUninstallSuccess(commandResult);
 
     }
 
@@ -197,12 +229,7 @@ public final class RootShellCommands {
         CommandResult commandResult = executeCommand(command);
 
         logger.i("uninstall result: " + commandResult);
-
-        if (commandResult.isSuccessful()) {
-            return commandResult.getStdOut().toLowerCase().contains("success");
-        }
-
-        return false;
+        return isInstallOrUninstallSuccess(commandResult);
     }
 
 
@@ -231,8 +258,13 @@ public final class RootShellCommands {
     }
 
     public static boolean killProcessesByName(@Nullable String processName,
-                                                                      @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
-        final Map<Integer, Boolean> statusMap = killProcessesByNameWithStatus(processName, manager, includeSystemPackages);
+                                              @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+        return killProcessesByName(processName, manager, includeSystemPackages, CompareUtils.MatchStringOption.EQUALS.flag);
+    }
+
+    public static boolean killProcessesByName(@Nullable String processName,
+                                              @NotNull AbstractProcessManager manager, boolean includeSystemPackages, int matchFlags) {
+        final Map<Integer, Boolean> statusMap = killProcessesByNameWithStatus(processName, manager, includeSystemPackages, matchFlags);
         boolean result = true;
         if (statusMap != null) {
             for (Boolean status : statusMap.values()) {
@@ -248,9 +280,16 @@ public final class RootShellCommands {
     /** @return null if not found, map with PID - kill result for PID otherwise */
     @Nullable
     public static Map<Integer, Boolean> killProcessesByNameWithStatus(@Nullable String processName,
-                                                                                @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+                                                                      @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+        return killProcessesByNameWithStatus(processName, manager, includeSystemPackages, CompareUtils.MatchStringOption.EQUALS.flag);
+    }
+
+    /** @return null if not found, map with PID - kill result for PID otherwise */
+    @Nullable
+    public static Map<Integer, Boolean> killProcessesByNameWithStatus(@Nullable String processName,
+                                                                      @NotNull AbstractProcessManager manager, boolean includeSystemPackages, int matchFlags) {
         final Map<Integer, Boolean> result = new LinkedHashMap<>();
-        final Set<Integer> pids = AppUtils.getPidsByName(processName, manager, includeSystemPackages);
+        final Set<Integer> pids = AppUtils.getPidsByName(processName, manager, includeSystemPackages, matchFlags);
         for (Integer pid : pids) {
             if (pid > 0) {
                 result.put(pid, RootShellCommands.killProcessByPid(pid));
@@ -267,11 +306,20 @@ public final class RootShellCommands {
      */
     public static boolean killProcessesByNames(@Nullable List<String> processNames,
                                                @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+        return killProcessesByNames(processNames, manager, includeSystemPackages, CompareUtils.MatchStringOption.EQUALS.flag);
+    }
+
+    /**
+     * @return false if at least one kill was failed
+     */
+    public static boolean killProcessesByNames(@Nullable List<String> processNames,
+                                               @NotNull AbstractProcessManager manager, boolean includeSystemPackages, int matchFlags) {
         boolean result = true;
         if (processNames != null && !processNames.isEmpty()) {
             final List<ProcessInfo> runningProcesses = manager.getProcesses(includeSystemPackages);
             for (ProcessInfo process : runningProcesses) {
-                if (processNames.contains(process.packageName)) {
+                if (Predicate.Methods.contains(processNames,
+                        element -> CompareUtils.stringsMatch(process.packageName, element, matchFlags))) {
                     if (!killProcessByPid(process.pid)) {
                         result = false;
                     }
@@ -279,5 +327,35 @@ public final class RootShellCommands {
             }
         }
         return result;
+    }
+
+    public static boolean isInstallOrUninstallSuccess(CommandResult commandResult) {
+        boolean isSuccess = false;
+        if (commandResult.isSuccessful()) {
+            isSuccess = isInstallOrUninstallSuccess(commandResult.getStdOutLines());
+            if (!isSuccess) {
+                isSuccess = isInstallOrUninstallSuccess(commandResult.getStdErrLines());
+            }
+        }
+        return isSuccess;
+
+    }
+
+    private static boolean isInstallOrUninstallSuccess(List<String> std) {
+        return Predicate.Methods.contains(std, s -> !TextUtils.isEmpty(s) && s.toLowerCase().startsWith("success"));
+    }
+
+    @Nullable
+    public static String getInstallFailErrString(CommandResult commandResult) {
+        String failure = getInstallFailErrString(commandResult.getStdErrLines());
+        if (TextUtils.isEmpty(failure)) {
+            failure = getInstallFailErrString(commandResult.getStdOutLines());
+        }
+        return failure;
+    }
+
+    @Nullable
+    private static String getInstallFailErrString(List<String> std) {
+        return Predicate.Methods.find(std, s -> !TextUtils.isEmpty(s) && s.toLowerCase().startsWith("failure"));
     }
 }

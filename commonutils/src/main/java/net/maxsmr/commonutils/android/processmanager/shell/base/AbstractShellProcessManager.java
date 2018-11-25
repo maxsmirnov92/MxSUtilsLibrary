@@ -38,6 +38,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
     @Nullable
     private String[] cachedCommands;
 
+    /** Target cached columns which current realization is interested in*/
     @Nullable
     private Map<Column, Set<String>> cachedColumnNamesMap;
 

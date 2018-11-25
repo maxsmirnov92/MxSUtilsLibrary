@@ -1163,7 +1163,7 @@ public final class FileHelper {
 
             if (isCorrect) {
                 if (searchFile.isFile() ? mode == GetMode.FILES : mode == GetMode.FOLDERS || mode == GetMode.ALL) {
-                    if (CompareUtils.stringMatches(searchFile.getName(), name, searchFlags)) {
+                    if (CompareUtils.stringsMatch(searchFile.getName(), name, searchFlags)) {
                         if (notifier == null || (searchFile.isFile() ? notifier.onGetFile(searchFile) : notifier.onGetFolder(searchFile))) {
                             result.add(searchFile);
                             foundFiles.add(searchFile);

@@ -1,9 +1,10 @@
 package net.maxsmr.commonutils.data;
 
 import android.os.Bundle;
+import android.text.TextUtils;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import android.text.TextUtils;
 
 import java.util.Arrays;
 import java.util.Date;
@@ -117,7 +118,7 @@ public final class CompareUtils {
     }
 
 
-    public static boolean stringMatches(CharSequence oneS, CharSequence anotherS, int matchFlags, String... separators) {
+    public static boolean stringsMatch(CharSequence oneS, CharSequence anotherS, int matchFlags, String... separators) {
 
         if (oneS == null) {
             oneS = "";
@@ -163,12 +164,12 @@ public final class CompareUtils {
             }
         }
         if (!match && CompareUtils.MatchStringOption.contains(END_WITH, matchFlags)) {
-            if (one.startsWith(another)) {
+            if (one.endsWith(another)) {
                 match = true;
             }
         }
         if (!match && CompareUtils.MatchStringOption.contains(END_WITH_IGNORE_CASE, matchFlags)) {
-            if (one.toLowerCase().startsWith(another.toLowerCase())) {
+            if (one.toLowerCase().endsWith(another.toLowerCase())) {
                 match = true;
             }
         }
@@ -188,7 +189,7 @@ public final class CompareUtils {
                                     break;
                                 }
                             } else {
-                                if (stringMatches(word, another, CompareUtils.MatchStringOption.resetFlags(matchFlags, AUTO, AUTO_IGNORE_CASE))) {
+                                if (stringsMatch(word, another, CompareUtils.MatchStringOption.resetFlags(matchFlags, AUTO, AUTO_IGNORE_CASE))) {
                                     match = true;
                                     break;
                                 }

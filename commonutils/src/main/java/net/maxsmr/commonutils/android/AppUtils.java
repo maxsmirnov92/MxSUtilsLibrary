@@ -21,16 +21,12 @@ import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.ReflectionUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
-import net.maxsmr.commonutils.shell.CommandResult;
-import net.maxsmr.commonutils.shell.RootShellCommands;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
@@ -118,6 +114,15 @@ public final class AppUtils {
     @Nullable
     public static Intent getSelfLaunchIntentForPackage(@NotNull Context context) {
         return getLaunchIntentForPackage(context, context.getPackageName());
+    }
+
+    public static void launchSelf(@NotNull Context context) {
+        Intent activityIntent = AppUtils.getSelfLaunchIntentForPackage(context);
+        if (activityIntent == null) {
+            throw new RuntimeException("Cannot get launch intent for " + context.getPackageName());
+        }
+        activityIntent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+        context.startActivity(activityIntent);
     }
 
     /**
@@ -258,38 +263,6 @@ public final class AppUtils {
     }
 
     /**
-     * Gets installed packages via pm list command
-     * THIS IS WORKAROUND for PackageManager bug — it can suddenly crash if there is too much apps installed
-     * There is no exact info about apps count limitations :(
-     *
-     * @return List of packages
-     */
-    public static List<String> getInstalledPackagesFromShell() {
-        CommandResult commandResult = RootShellCommands.executeCommand("pm list packages");
-        if (!commandResult.isSuccessful()) {
-            return new ArrayList<>(0);
-        }
-
-        String output = commandResult.getStdOut();
-        output = output.replace("package:", "");
-        String[] packagesArray = output.split("\n");
-
-        List<String> packages = new ArrayList<>(packagesArray.length);
-        Collections.addAll(packages, packagesArray);
-
-        return packages;
-    }
-
-    /**
-     * Check if the given package is installed
-     *
-     * @param packageName Package to check
-     */
-    public static boolean isPackageInstalledFromShell(String packageName) {
-        return getInstalledPackagesFromShell().contains(packageName);
-    }
-
-    /**
      * @return null if not found
      */
     public static Boolean isAppInBackground(@NotNull Context context, String packageName) {
@@ -327,17 +300,20 @@ public final class AppUtils {
     }
 
 
-    /**
-     * @return empty set if not found
-     */
     @NotNull
     public static Set<Integer> getPidsByName(@Nullable String packageName,
                                              @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+        return getPidsByName(packageName, manager, includeSystemPackages, CompareUtils.MatchStringOption.EQUALS.flag);
+    }
+
+    @NotNull
+    public static Set<Integer> getPidsByName(@Nullable String packageName,
+                                             @NotNull AbstractProcessManager manager, boolean includeSystemPackages, int matchFlags) {
         Set<Integer> pids = new LinkedHashSet<>();
         if (!TextUtils.isEmpty(packageName)) {
             final List<ProcessInfo> runningProcesses = manager.getProcesses(includeSystemPackages);
             for (ProcessInfo process : runningProcesses) {
-                if (packageName.equals(process.packageName)) {
+                if (CompareUtils.stringsMatch(packageName, process.packageName, matchFlags)) {
                     pids.add(process.pid);
                 }
             }
