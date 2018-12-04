@@ -250,7 +250,7 @@ public final class GraphicUtils {
     }
 
     @Nullable
-    public static byte[] compressedBitmapToByteArray(Bitmap data, Bitmap.CompressFormat format) {
+    public static byte[] writeCompressedBitmapToByteArray(Bitmap data, Bitmap.CompressFormat format) {
 
         if (!isBitmapCorrect(data)) {
             logger.e("bitmap is incorrect");

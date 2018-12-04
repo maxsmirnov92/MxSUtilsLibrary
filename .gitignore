@@ -35,3 +35,5 @@ app/build
 !.gitignore
 !.travis.yml.bak
 bintray.json
+
+keystore.properties

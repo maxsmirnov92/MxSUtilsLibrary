@@ -3,13 +3,14 @@ package net.maxsmr.tasksutils.taskexecutor;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.support.annotation.CallSuper;
-import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -100,13 +101,13 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
 
     @Nullable
     public Handler getCallbacksHandler() {
-        synchronized (observers) {
+        synchronized (rInfo) {
             return callbacksHandler;
         }
     }
 
     public void setCallbacksHandler(@Nullable Handler callbacksHandler) {
-        synchronized (observers) {
+        synchronized (rInfo) {
             this.callbacksHandler = callbacksHandler;
         }
     }

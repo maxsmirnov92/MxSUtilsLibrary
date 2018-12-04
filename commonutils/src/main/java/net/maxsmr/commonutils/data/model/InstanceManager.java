@@ -18,7 +18,6 @@ import java.io.ObjectOutput;
 import java.io.ObjectOutputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -194,12 +193,12 @@ public abstract class InstanceManager<T> {
         return result;
     }
 
-    public static List<byte[]> toByteArrays(@Nullable Collection<String> strings) {
-        List<byte[]> result = new ArrayList<>();
+    public static Map<String, byte[]> toByteArrays(@Nullable Collection<String> strings) {
+        Map<String, byte[]> result = new LinkedHashMap<>();
         if (strings != null) {
             for (String s : strings) {
                 if (s != null) {
-                    result.add(s.getBytes());
+                    result.put(s, s.getBytes());
                 }
             }
         }

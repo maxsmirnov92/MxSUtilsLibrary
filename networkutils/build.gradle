@@ -27,11 +27,14 @@ android {
 
     signingConfigs {
         release {
-            keyAlias 'maxsmirnov'
-            storeFile file('~/.android/release-key.keystore')
-        }
-        debug {
-            storeFile file('~/.android/debug.keystore')
+            def propsFile = rootProject.file('keystore.properties')
+            def props = new Properties()
+            props.load(new FileInputStream(propsFile))
+
+            storeFile file("~/.android/release.keystore")
+            storePassword props['signingPassword']
+            keyAlias "maxsmirnov"
+            keyPassword props['signingPassword']
         }
     }
 
@@ -51,10 +54,9 @@ android {
 
     buildTypes {
         release {
+            signingConfig signingConfigs.release
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-        debug {
         }
     }
 

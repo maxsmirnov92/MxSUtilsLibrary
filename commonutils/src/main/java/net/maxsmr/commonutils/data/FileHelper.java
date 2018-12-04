@@ -451,7 +451,7 @@ public final class FileHelper {
                 }
             }
 
-            if (recreate && newFile != null) {
+            if (newFile != null && !isFileExists(newFile)) {
                 try {
                     if (!newFile.createNewFile()) {
                         newFile = null;
@@ -486,6 +486,22 @@ public final class FileHelper {
             return dir;
 
         return null;
+    }
+
+    @Nullable
+    public static File moveFile(File sourceFile, File destFile, boolean deleteIfExists, boolean deleteEmptyDirs,
+                                boolean preserveFileDate, @Nullable ISingleCopyNotifier notifier) {
+        if (CompareUtils.objectsEqual(sourceFile, destFile)) {
+            return null;
+        }
+        File targetFile = renameFile(sourceFile, destFile.getParent(), destFile.getName(), deleteIfExists, deleteEmptyDirs);
+        if (targetFile == null) {
+            targetFile = copyFileWithBuffering(sourceFile, destFile.getName(), destFile.getParent(), deleteIfExists, preserveFileDate, notifier);
+            if (targetFile != null) {
+                deleteFile(destFile);
+            }
+        }
+        return targetFile;
     }
 
     @Nullable

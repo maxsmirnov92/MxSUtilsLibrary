@@ -76,7 +76,7 @@ public class RunnableInfo implements Serializable {
     }
 
     public byte[] toByteArray() {
-        return InstanceManager.asByteArray(this);
+        return InstanceManager.toByteArray(this);
     }
 
     public boolean toOutputStream(@NotNull OutputStream outputStream) {
