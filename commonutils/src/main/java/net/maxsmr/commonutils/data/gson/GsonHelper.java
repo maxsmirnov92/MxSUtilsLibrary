@@ -17,6 +17,7 @@ import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,18 +46,22 @@ public class GsonHelper {
             return gson.fromJson(jsonString, type);
         } catch (JsonParseException e) {
             logger.e("an JsonParseException occurred during fromJson(): " + e.getMessage(), e);
-            return null;
         }
+        return null;
     }
 
     @NotNull
     public static <T> List<T> fromJsonArrayString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Class<T[]> type) {
+        T[] array = null;
         try {
-            return new ArrayList<>(Arrays.asList(gson.fromJson(jsonString, type)));
+            array = gson.fromJson(jsonString, type);
         } catch (JsonParseException e) {
             logger.e("an JsonParseException occurred during fromJson(): " + e.getMessage(), e);
-            return new ArrayList<>();
         }
+        if (array != null) {
+            return new ArrayList<>(Arrays.asList(array));
+        }
+        return Collections.emptyList();
     }
 
     @NotNull
@@ -65,8 +70,8 @@ public class GsonHelper {
             return gson.toJson(object);
         } catch (JsonParseException e) {
             logger.e("an JsonParseException occurred during toJson(): " + e.getMessage(), e);
-            return "null";
         }
+        return "null";
     }
 
     @NotNull

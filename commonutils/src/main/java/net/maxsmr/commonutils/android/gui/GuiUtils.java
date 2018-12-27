@@ -16,8 +16,10 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.ColorInt;
 import android.support.annotation.IdRes;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
@@ -78,8 +80,8 @@ public final class GuiUtils {
     }
 
     @SuppressWarnings("deprecation")
-    public static void setBackground(Drawable background, View view) {
-        if (background != null && view != null) {
+    public static void setWindowBackground(Drawable background, View view) {
+        if (view != null) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
                 view.setBackground(background);
             } else {
@@ -751,25 +753,30 @@ public final class GuiUtils {
         return result;
     }
 
-    public static boolean copyToClipboard(@NotNull Context context, String label, String text) {
+    public static void copyToClipboard(@NotNull Context context, String label, String text) {
         ClipboardManager clipboard = (ClipboardManager) context.getSystemService(Context.CLIPBOARD_SERVICE);
-        if (clipboard != null) {
-            ClipData clip = ClipData.newPlainText(label, text);
-            clipboard.setPrimaryClip(clip);
-            return true;
+        if (clipboard == null) {
+            throw new NullPointerException(ClipboardManager.class.getSimpleName() + " is null");
         }
-        return false;
+        ClipData clip = ClipData.newPlainText(label, text);
+        clipboard.setPrimaryClip(clip);
     }
 
     @NotNull
-    public static DeviceType getScreenType(Context con) {
-        final DeviceType deviceType;
-        WindowManager wm = (WindowManager) con.getSystemService(Context.WINDOW_SERVICE);
+    public static DisplayMetrics getDisplayMetrics(@NotNull Context context) {
+        WindowManager wm = (WindowManager) context.getSystemService(Context.WINDOW_SERVICE);
         if (wm == null) {
             throw new NullPointerException(WindowManager.class.getSimpleName() + "");
         }
-        DisplayMetrics outMetrics = new DisplayMetrics();
+        final DisplayMetrics outMetrics = new DisplayMetrics();
         wm.getDefaultDisplay().getMetrics(outMetrics);
+        return outMetrics;
+    }
+
+    @NotNull
+    public static DeviceType getScreenType(@NotNull Context context) {
+        final DisplayMetrics outMetrics = getDisplayMetrics(context);
+        final DeviceType deviceType;
         int shortSize = Math.min(outMetrics.heightPixels, outMetrics.widthPixels);
         int shortSizeDp = shortSize * DisplayMetrics.DENSITY_DEFAULT / outMetrics.densityDpi;
         if (shortSizeDp < 600) {
@@ -795,7 +802,7 @@ public final class GuiUtils {
     }
 
     public static void showAboveLockscreen(@NotNull Window window, boolean wakeScreen) {
-        toggleAboveLockscreen(window, wakeScreen,true);
+        toggleAboveLockscreen(window, wakeScreen, true);
     }
 
     public static void hideAboveLockscreen(@NotNull Window window, boolean wakeScreen) {

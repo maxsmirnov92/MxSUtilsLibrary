@@ -2,48 +2,47 @@
 <resources>
 
     <declare-styleable name="MaskedEditText">
-        <attr name="mask" format="string"/>
-        <attr name="allowed_chars" format="string"/>
-        <attr name="denied_chars" format="string"/>
-        <attr name="char_representation" format="string"/>
+        <attr name="mask" format="string" />
+        <attr name="allowed_chars" format="string" />
+        <attr name="denied_chars" format="string" />
+        <attr name="char_representation" format="string" />
     </declare-styleable>
 
-    <attr name="custom_typeface" format="string"/>
+    <attr name="custom_typeface" format="string" />
     <declare-styleable name="FontButton">
-        <attr name="custom_typeface"/>
+        <attr name="custom_typeface" />
     </declare-styleable>
     <declare-styleable name="FontCheckedTextView">
-        <attr name="custom_typeface"/>
+        <attr name="custom_typeface" />
     </declare-styleable>
     <declare-styleable name="FontCheckbox">
-        <attr name="custom_typeface"/>
+        <attr name="custom_typeface" />
     </declare-styleable>
     <declare-styleable name="FontEditText">
-        <attr name="custom_typeface"/>
+        <attr name="custom_typeface" />
     </declare-styleable>
     <declare-styleable name="FontMaskEditText">
-        <attr name="custom_typeface"/>
+        <attr name="custom_typeface" />
     </declare-styleable>
     <declare-styleable name="FontRadioButton">
-        <attr name="custom_typeface"/>
+        <attr name="custom_typeface" />
     </declare-styleable>
     <declare-styleable name="FontTextView">
-        <attr name="custom_typeface"/>
+        <attr name="custom_typeface" />
     </declare-styleable>
 
     <declare-styleable name="ViewPagerIndicator">
-        <attr name="normal_drawable" format="integer"/>
-        <attr name="selected_drawable" format="integer"/>
-        <attr name="margin_size" format="dimension"/>
-        <attr name="allow_display_single" format="boolean"/>
+        <attr name="indicatorBackground" format="reference"/>
+        <attr name="marginSize" format="dimension"/>
+        <attr name="allowDisplaySingle" format="boolean"/>
     </declare-styleable>
 
     <declare-styleable name="TypewriterFontTextView">
-        <attr name="scheduled_text" format="string"/>
-        <attr name="text_anim_time_limit" format="integer"/>
-        <attr name="text_anim_delay" format="integer"/>
-        <attr name="text_anim_looping" format="boolean"/>
-        <attr name="text_anim_start" format="boolean"/>
+        <attr name="scheduled_text" format="string" />
+        <attr name="text_anim_time_limit" format="integer" />
+        <attr name="text_anim_delay" format="integer" />
+        <attr name="text_anim_looping" format="boolean" />
+        <attr name="text_anim_start" format="boolean" />
     </declare-styleable>
 
     <declare-styleable name="PatternedEditText">

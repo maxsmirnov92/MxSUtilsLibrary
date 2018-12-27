@@ -8,12 +8,12 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-public abstract class AbsOptionableComparator<O extends ISortOption, T> implements Comparator<T> {
+public abstract class BaseOptionableComparator<O extends ISortOption, T> implements Comparator<T> {
 
     @NotNull
     private final Map<O, Boolean> sortOptions = new LinkedHashMap<>();
 
-    protected AbsOptionableComparator(@Nullable Map<O, Boolean> sortOptions) {
+    protected BaseOptionableComparator(@Nullable Map<O, Boolean> sortOptions) {
         if (sortOptions != null) {
             this.sortOptions.putAll(sortOptions);
         }

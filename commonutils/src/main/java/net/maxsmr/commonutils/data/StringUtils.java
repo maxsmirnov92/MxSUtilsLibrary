@@ -52,6 +52,10 @@ public class StringUtils {
         return isEmpty(s) || ctx.getString(R.string.no_data).equalsIgnoreCase(s.toString());
     }
 
+    public static String getText(@NotNull Context context, String text) {
+        return isEmpty(text)? context.getString(R.string.no_data) : text;
+    }
+
     @Nullable
     public static String changeCaseFirstLatter(@Nullable CharSequence s, boolean upper) {
         String result;
@@ -266,6 +270,18 @@ public class StringUtils {
             return String.copyValueOf(source);
         }
         return null;
+    }
+
+    @Nullable
+    public static String removeChars(@Nullable String text, String... characters) {
+        if (characters != null) {
+            if (!TextUtils.isEmpty(text)) {
+                for (String c : characters) {
+                    text = text.replace(c, "");
+                }
+            }
+        }
+        return text;
     }
 
     @NotNull

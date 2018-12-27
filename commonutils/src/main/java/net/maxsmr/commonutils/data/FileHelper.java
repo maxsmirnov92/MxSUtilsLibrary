@@ -17,7 +17,7 @@ import android.support.v4.util.ArraySet;
 import android.support.v4.util.Pair;
 import android.text.TextUtils;
 
-import net.maxsmr.commonutils.data.sort.AbsOptionableComparator;
+import net.maxsmr.commonutils.data.sort.BaseOptionableComparator;
 import net.maxsmr.commonutils.data.sort.ISortOption;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -2344,7 +2344,7 @@ public final class FileHelper {
         void onFailed(File currentFile, File destDir);
     }
 
-    public static class FileComparator extends AbsOptionableComparator<FileComparator.SortOption, File> {
+    public static class FileComparator extends BaseOptionableComparator<FileComparator.SortOption, File> {
 
         public enum SortOption implements ISortOption {
 

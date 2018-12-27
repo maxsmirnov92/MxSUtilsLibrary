@@ -6,22 +6,23 @@ import android.graphics.Canvas;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.support.annotation.DrawableRes;
-import android.support.annotation.IntDef;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
+import android.support.v7.widget.RecyclerView.Orientation;
 import android.view.View;
 
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
+import net.maxsmr.commonutils.data.Predicate;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
-
-import net.maxsmr.commonutils.graphic.GraphicUtils;
 
 public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
@@ -36,41 +37,47 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
     @NotNull
     protected DecorationSettings settings = new DecorationSettings();
 
-    @Orientation
-    protected int mOrientation = VERTICAL_LIST;
+    @NotNull
+    protected Set<Integer> orientations = new HashSet<>();
 
     protected boolean isReverse = false;
 
     @Nullable
-    protected Drawable mDivider;
+    protected Drawable divider;
 
-    protected int mSpace = 0;
+    protected int space = 0;
 
-    /**
-     * Default divider will be used
-     */
-    public DividerSpacingItemDecoration(Context context, @Orientation int orientation) {
-        final TypedArray styledAttributes = context.obtainStyledAttributes(ATTRS);
-        setOrientation(orientation);
-        setDivider(styledAttributes.getDrawable(0));
-        styledAttributes.recycle();
-    }
 
-    /**
-     * Custom divider will be used
-     */
     public DividerSpacingItemDecoration(Context context, @Orientation int orientation, @DrawableRes int dividerResId, int space, boolean isReverse) {
-        this(orientation, ContextCompat.getDrawable(context, dividerResId), space, isReverse);
+        this(Collections.singleton(orientation), dividerResId != 0 ? ContextCompat.getDrawable(context, dividerResId) : null, space, isReverse);
     }
 
-    /**
-     * Custom divider will be used
-     */
     public DividerSpacingItemDecoration(@Orientation int orientation, @Nullable Drawable divider, int space, boolean isReverse) {
-        setOrientation(orientation);
+        this(Collections.singleton(orientation), divider, space, isReverse);
+    }
+
+    public DividerSpacingItemDecoration(Context context, List<Integer> orientations, @DrawableRes int dividerResId, int space, boolean isReverse) {
+        this(orientations, dividerResId != 0? ContextCompat.getDrawable(context, dividerResId) : null, space, isReverse);
+    }
+
+    public DividerSpacingItemDecoration(@Nullable Collection<Integer> orientations, @Nullable Drawable divider, int space, boolean isReverse) {
+        setOrientations(orientations);
         setDivider(divider);
         setSpace(space);
         setReverse(isReverse);
+    }
+
+    public DividerSpacingItemDecoration(Context context, @Nullable Collection<Integer> orientations, int space, boolean isReverse) {
+        final TypedArray styledAttributes = context.obtainStyledAttributes(ATTRS);
+        setDivider(styledAttributes.getDrawable(0));
+        styledAttributes.recycle();
+        setOrientations(orientations);
+        setSpace(space);
+        setReverse(isReverse);
+    }
+
+    public boolean isReverse() {
+        return isReverse;
     }
 
     public void setReverse(boolean reverse) {
@@ -86,132 +93,91 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
         this.settings = settings;
     }
 
-    public void setOrientation(@Orientation int orientation) {
-        if (orientation != HORIZONTAL_LIST && orientation != VERTICAL_LIST) {
-            throw new IllegalArgumentException("invalid orientation: " + orientation);
+    public void setOrientations(Collection<Integer> orientations) {
+        this.orientations.clear();
+        if (orientations != null) {
+            for (Integer orientation : orientations) {
+                if (orientation != null) {
+                    if (orientation != HORIZONTAL_LIST && orientation != VERTICAL_LIST) {
+                        throw new IllegalArgumentException("Incorrect orientation: " + orientation);
+                    }
+                    this.orientations.add(orientation);
+                }
+            }
         }
-        mOrientation = orientation;
+        if (this.orientations.isEmpty()) {
+            throw new IllegalArgumentException("No orientations specified");
+        }
     }
 
     @Nullable
     public Drawable getDivider() {
-        return mDivider;
+        return divider;
     }
 
     public void setDivider(@Nullable Drawable divider) {
-        mDivider = divider;
+        this.divider = divider;
     }
 
     public int getSpace() {
-        return mSpace;
+        return space;
     }
 
     public void setSpace(int space) {
         if (space < 0) {
             throw new IllegalArgumentException("incorrect space: " + space);
         }
-        this.mSpace = space;
+        this.space = space;
     }
 
     @Override
-    public void onDraw(Canvas c, RecyclerView parent, RecyclerView.State state) {
+    public void onDraw(@NotNull Canvas c, @NotNull RecyclerView parent, @NotNull RecyclerView.State state) {
         super.onDraw(c, parent, state);
-        if (mOrientation == VERTICAL_LIST) {
+        if (hasOrientation(VERTICAL_LIST)) {
             drawVertical(c, parent);
-        } else {
+        }
+        if (hasOrientation(HORIZONTAL_LIST)) {
             drawHorizontal(c, parent);
         }
     }
 
 
-    public void drawVertical(Canvas c, RecyclerView parent) {
-        if (mDivider != null) {
-            final int left = parent.getPaddingLeft();
-            final int right = parent.getWidth() - parent.getPaddingRight();
-
-            final int childCount = parent.getChildCount();
-            for (int i = 0; i < childCount; i++) {
-                final View child = parent.getChildAt(i);
-                if (isDecorated(child, parent, true)) {
-                    final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child
-                            .getLayoutParams();
-                    final int top;
-                    final int bottom;
-                    final int height = mDivider.getIntrinsicHeight() >= 0? mDivider.getIntrinsicHeight() : 0;
-                    if (!isReverse) {
-                        top = child.getBottom() + params.bottomMargin;
-                        bottom = top + height;
-                    } else {
-                        bottom = child.getTop() + params.topMargin;
-                        top = bottom + height;
-                    }
-                    mDivider.setBounds(left, top, right, bottom);
-                    mDivider.draw(c);
-                }
-            }
-        }
-    }
-
-    public void drawHorizontal(Canvas c, RecyclerView parent) {
-        if (mDivider != null) {
-            final int top = parent.getPaddingTop();
-            final int bottom = parent.getHeight() - parent.getPaddingBottom();
-
-            final int childCount = parent.getChildCount();
-            for (int i = 0; i < childCount; i++) {
-                final View child = parent.getChildAt(i);
-                if (isDecorated(child, parent, true)) {
-                    final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child
-                            .getLayoutParams();
-                    final int left;
-                    final int right;
-                    final int width = mDivider.getIntrinsicWidth() >= 0? mDivider.getIntrinsicWidth() : 0;
-                    if (!isReverse) {
-                        left = child.getRight() + params.rightMargin;
-                        right = left + width;
-                    } else {
-                        right = child.getLeft() + params.leftMargin;
-                        left = right + width;
-                    }
-                    mDivider.setBounds(left, top, right, bottom);
-                    mDivider.draw(c);
-                }
-            }
-        }
-    }
-
     @Override
     public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
         super.getItemOffsets(outRect, view, parent, state);
         if (isDecorated(view, parent, false)) {
-            if (mDivider != null && mSpace == 0) {
-                if (mOrientation == VERTICAL_LIST) {
-                    outRect.set(0, 0, 0, mDivider.getIntrinsicHeight());
-                } else {
-                    outRect.set(0, 0, mDivider.getIntrinsicWidth(), 0);
-                }
-            } else if (mSpace >= 0) {
-                if (mOrientation == VERTICAL_LIST) {
+            if (divider != null && space == 0) {
+                if (hasOrientation(VERTICAL_LIST)) {
                     if (!isReverse) {
-                        outRect.bottom = mSpace;
+                        outRect.set(0, 0, 0, divider.getIntrinsicHeight());
                     } else {
-                        outRect.top = mSpace;
+                        outRect.set(0, divider.getIntrinsicHeight(), 0, 0);
                     }
-                } else {
+                }
+                if (hasOrientation(HORIZONTAL_LIST)) {
                     if (!isReverse) {
-                        outRect.right = mSpace;
+                        outRect.set(0, 0, divider.getIntrinsicWidth(), 0);
                     } else {
-                        outRect.left = mSpace;
+                        outRect.set(divider.getIntrinsicWidth(), 0, 0, 0);
+                    }
+                }
+            } else if (space >= 0) {
+                if (hasOrientation(VERTICAL_LIST)) {
+                    if (!isReverse) {
+                        outRect.set(0, 0, 0, space);
+                    } else {
+                        outRect.set(0, space, 0, 0);
+                    }
+                }
+                if (hasOrientation(HORIZONTAL_LIST)) {
+                    if (!isReverse) {
+                        outRect.set(0, 0, space, 0);
+                    } else {
+                        outRect.set(space, 0, 0, 0);
                     }
                 }
             }
         }
-    }
-
-    @IntDef({HORIZONTAL_LIST, VERTICAL_LIST})
-    @Retention(RetentionPolicy.SOURCE)
-    @interface Orientation {
-
     }
 
     protected boolean isDecorated(View view, RecyclerView parent, boolean dividerOrSpacing) {
@@ -225,7 +191,11 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
                 result = true;
                 break;
             case ALL_EXCEPT_LAST:
-                result = childPos < parent.getAdapter().getItemCount() - 1;
+                final RecyclerView.Adapter adapter = parent.getAdapter();
+                if (adapter == null) {
+                    throw new RuntimeException("Adapter not set");
+                }
+                result = childPos < adapter.getItemCount() - 1;
                 break;
             case CUSTOM:
                 result = dividerOrSpacing ? settings.getDividerPositions().contains(childPos) : (settings.getDividerPositions().contains(childPos) || settings.getSpacingPositions().contains(childPos));
@@ -235,6 +205,66 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
         }
 
         return result;
+    }
+
+    private void drawVertical(Canvas c, RecyclerView parent) {
+        if (divider != null) {
+            final int left = parent.getPaddingLeft();
+            final int right = parent.getWidth() - parent.getPaddingRight();
+
+            final int childCount = parent.getChildCount();
+            for (int i = 0; i < childCount; i++) {
+                final View child = parent.getChildAt(i);
+                if (isDecorated(child, parent, true)) {
+                    final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child
+                            .getLayoutParams();
+                    final int top;
+                    final int bottom;
+                    final int height = divider.getIntrinsicHeight() >= 0? divider.getIntrinsicHeight() : 0;
+                    if (!isReverse) {
+                        top = child.getBottom() + params.bottomMargin;
+                        bottom = top + height;
+                    } else {
+                        bottom = child.getTop() + params.topMargin;
+                        top = bottom + height;
+                    }
+                    divider.setBounds(left, top, right, bottom);
+                    divider.draw(c);
+                }
+            }
+        }
+    }
+
+    private void drawHorizontal(Canvas c, RecyclerView parent) {
+        if (divider != null) {
+            final int top = parent.getPaddingTop();
+            final int bottom = parent.getHeight() - parent.getPaddingBottom();
+
+            final int childCount = parent.getChildCount();
+            for (int i = 0; i < childCount; i++) {
+                final View child = parent.getChildAt(i);
+                if (isDecorated(child, parent, true)) {
+                    final RecyclerView.LayoutParams params = (RecyclerView.LayoutParams) child
+                            .getLayoutParams();
+                    final int left;
+                    final int right;
+                    final int width = divider.getIntrinsicWidth() >= 0? divider.getIntrinsicWidth() : 0;
+                    if (!isReverse) {
+                        left = child.getRight() + params.rightMargin;
+                        right = left + width;
+                    } else {
+                        right = child.getLeft() + params.leftMargin;
+                        left = right + width;
+                    }
+                    divider.setBounds(left, top, right, bottom);
+                    divider.draw(c);
+                }
+            }
+        }
+    }
+
+    private boolean hasOrientation(@Orientation int orientation) {
+        return Predicate.Methods.contains(orientations, element -> element != null && element == orientation);
     }
 
     public static class DecorationSettings {

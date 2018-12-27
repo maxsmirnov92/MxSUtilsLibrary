@@ -3,37 +3,37 @@ package net.maxsmr.commonutils.android.gui.views;
 import android.annotation.TargetApi;
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Color;
-import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.DimenRes;
 import android.support.annotation.DrawableRes;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.util.AttributeSet;
-import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageView;
 import android.widget.LinearLayout;
 
 import net.maxsmr.commonutils.R;
+import net.maxsmr.commonutils.graphic.GraphicUtils;
 
 import org.jetbrains.annotations.Nullable;
+
 
 /**
  * @author maxsmirnov
  */
 public class ViewPagerIndicator extends LinearLayout implements ViewPager.OnPageChangeListener {
 
-    private ViewPager mViewPager;
+    private ViewPager viewPager;
 
-    private Drawable mNormalDrawable = new ColorDrawable(Color.WHITE);
-    private Drawable mSelectedDrawable = new ColorDrawable(Color.BLACK);
+    @Nullable
+    private Drawable indicatorDrawable = null;
 
-    private int mIndicatorMarginPx = 0;
+    private int indicatorMarginPx = 0;
 
-    private boolean mAllowDisplaySingle = true;
+    private boolean allowDisplaySingle = true;
 
     // TODO Animation
 
@@ -70,27 +70,20 @@ public class ViewPagerIndicator extends LinearLayout implements ViewPager.OnPage
     private void init(AttributeSet attrs) {
         if (attrs != null) {
 
-            Drawable normalDrawable = null;
-            Drawable selectedDrawable = null;
+            Drawable indicatorDrawable = null;
             int indicatorMarginPx = 0;
             boolean allowDisplaySingle = false;
 
             TypedArray a = getContext().obtainStyledAttributes(attrs, R.styleable.ViewPagerIndicator, 0, 0);
             try {
-                normalDrawable = a.getDrawable(R.styleable.ViewPagerIndicator_normal_drawable);
-                selectedDrawable = a.getDrawable(R.styleable.ViewPagerIndicator_selected_drawable);
-                indicatorMarginPx = a.getDimensionPixelSize(R.styleable.ViewPagerIndicator_margin_size, 0);
-                allowDisplaySingle = a.getBoolean(R.styleable.ViewPagerIndicator_allow_display_single, false);
+                indicatorDrawable = a.getDrawable(R.styleable.ViewPagerIndicator_indicatorBackground);
+                indicatorMarginPx = a.getDimensionPixelSize(R.styleable.ViewPagerIndicator_marginSize, 0);
+                allowDisplaySingle = a.getBoolean(R.styleable.ViewPagerIndicator_allowDisplaySingle, false);
             } finally {
                 a.recycle();
             }
 
-            if (normalDrawable != null) {
-                setNormalDrawable(normalDrawable);
-            }
-            if (selectedDrawable != null) {
-                setSelectedDrawable(selectedDrawable);
-            }
+            setIndicatorDrawable(indicatorDrawable);
             if (indicatorMarginPx > 0) {
                 setIndicatorMarginPx(indicatorMarginPx);
             }
@@ -98,71 +91,56 @@ public class ViewPagerIndicator extends LinearLayout implements ViewPager.OnPage
         }
     }
 
-    public void setNormalDrawableRes(@DrawableRes int normalDrawableId) {
-        setNormalDrawable(ContextCompat.getDrawable(getContext(), normalDrawableId));
+    public void setIndicatorDrawableRes(@DrawableRes int indicatorDrawableId) {
+        setIndicatorDrawable(ContextCompat.getDrawable(getContext(), indicatorDrawableId));
     }
 
-    public void setNormalDrawable(Drawable normalDrawable) {
-        if (normalDrawable != this.mNormalDrawable) {
-            if (normalDrawable == null) {
+    public void setIndicatorDrawable(@Nullable Drawable indicatorDrawable) {
+        if (indicatorDrawable != this.indicatorDrawable) {
+            if (indicatorDrawable == null) {
                 throw new NullPointerException("drawable can't be null");
             }
-            this.mNormalDrawable = normalDrawable;
-            if (mViewPager != null) {
+            this.indicatorDrawable = indicatorDrawable;
+            if (viewPager != null) {
                 notifyDataSetChanged();
             }
         }
     }
 
-    public void setSelectedDrawableRes(@DrawableRes int selectedDrawableId) {
-        setSelectedDrawable(ContextCompat.getDrawable(getContext(), selectedDrawableId));
-    }
-
-    public void setSelectedDrawable(Drawable selectedDrawable) {
-        if (selectedDrawable != this.mSelectedDrawable) {
-            if (selectedDrawable == null) {
-                throw new NullPointerException("drawable can't be null");
-            }
-            this.mSelectedDrawable = selectedDrawable;
-            if (mViewPager != null) {
-                notifyDataSetChanged();
-            }
-        }
-    }
 
     public void setIndicatorMarginDimenRes(@DimenRes int indicatorMarginResId) {
         setIndicatorMarginPx(getResources().getDimensionPixelSize(indicatorMarginResId));
     }
 
     public void setIndicatorMarginPx(int indicatorMarginPx) {
-        if (indicatorMarginPx != mIndicatorMarginPx) {
+        if (indicatorMarginPx != this.indicatorMarginPx) {
             if (indicatorMarginPx < 0) {
                 throw new IllegalArgumentException("incorrect indicatorMarginPx: " + indicatorMarginPx);
             }
-            this.mIndicatorMarginPx = indicatorMarginPx;
-            if (mViewPager != null) {
+            this.indicatorMarginPx = indicatorMarginPx;
+            if (viewPager != null) {
                 notifyDataSetChanged();
             }
         }
     }
 
     public void setAllowDisplaySingle(boolean toggle) {
-        if (mAllowDisplaySingle != toggle) {
-            mAllowDisplaySingle = toggle;
-            if (mViewPager != null) {
+        if (allowDisplaySingle != toggle) {
+            allowDisplaySingle = toggle;
+            if (viewPager != null) {
                 notifyDataSetChanged();
             }
         }
     }
 
     public void setViewPager(@Nullable ViewPager viewPager) {
-        if (viewPager != mViewPager) {
-            if (mViewPager != null) {
-                mViewPager.removeOnPageChangeListener(this);
+        if (viewPager != this.viewPager) {
+            if (this.viewPager != null) {
+                this.viewPager.removeOnPageChangeListener(this);
             }
-            mViewPager = viewPager;
-            if (mViewPager != null) {
-                mViewPager.addOnPageChangeListener(this);
+            this.viewPager = viewPager;
+            if (this.viewPager != null) {
+                this.viewPager.addOnPageChangeListener(this);
                 notifyDataSetChanged();
             } else {
                 clear();
@@ -181,29 +159,31 @@ public class ViewPagerIndicator extends LinearLayout implements ViewPager.OnPage
 
     private void populate() {
 
-        if (mViewPager == null) {
-            throw new IllegalStateException("no " + ViewPager.class.getSimpleName() + " specified");
+        if (viewPager == null) {
+            throw new IllegalStateException(ViewPager.class.getSimpleName() + " is not specified");
+        }
+
+        PagerAdapter adapter = viewPager.getAdapter();
+
+        if (adapter == null) {
+            throw new IllegalStateException(PagerAdapter.class.getSimpleName() + "is not specified");
         }
 
         clear();
 
-        final int adapterCount = mViewPager.getAdapter().getCount();
-        if (adapterCount > 1 || mAllowDisplaySingle) {
+        final int adapterCount = adapter.getCount();
+        if (adapterCount > 1 || allowDisplaySingle) {
             for (int i = 0; i < adapterCount; i++) {
-                ImageView iv = new ImageView(getContext());
-                LinearLayout.LayoutParams lp = new LinearLayout.LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
-                int margin = mIndicatorMarginPx; // getResources().getDimensionPixelSize(R.dimen.space_16);
+                ImageView imageView = new ImageView(getContext());
+                imageView.setImageDrawable(GraphicUtils.cloneDrawable(indicatorDrawable));
+                LayoutParams lp = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
+                int margin = indicatorMarginPx;
                 lp.setMargins(margin, margin, margin, margin);
-                iv.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
-                iv.setLayoutParams(lp);
+                imageView.setScaleType(ImageView.ScaleType.CENTER_INSIDE);
+                imageView.setLayoutParams(lp);
                 final int itemPosition = i;
-                iv.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        mViewPager.setCurrentItem(itemPosition);
-                    }
-                });
-                addView(iv, lp);
+                imageView.setOnClickListener(v -> viewPager.setCurrentItem(itemPosition));
+                addView(imageView, lp);
             }
         }
         invalidateByCurrentItem();
@@ -211,25 +191,31 @@ public class ViewPagerIndicator extends LinearLayout implements ViewPager.OnPage
 
     private void invalidateByCurrentItem() {
 
-        if (mViewPager == null) {
-            throw new IllegalStateException("no " + ViewPager.class.getSimpleName() + " specified");
+        if (viewPager == null) {
+            throw new IllegalStateException(ViewPager.class.getSimpleName() + " is not specified");
         }
 
-        final int adapterCount = mViewPager.getAdapter().getCount();
+        PagerAdapter adapter = viewPager.getAdapter();
+
+        if (adapter == null) {
+            throw new IllegalStateException(PagerAdapter.class.getSimpleName() + "is not specified");
+        }
+
+        final int adapterCount = adapter.getCount();
         final int childCount = getChildCount();
 
-        if (!mAllowDisplaySingle && adapterCount == 1 && childCount == 0) {
+        if (!allowDisplaySingle && adapterCount == 1 && childCount == 0) {
             return;
         }
 
-        if (childCount != mViewPager.getAdapter().getCount()) {
+        if (childCount != viewPager.getAdapter().getCount()) {
             throw new IllegalStateException("notifyDataSetChanged() was not called");
         }
 
         for (int i = 0; i < childCount; i++) {
-            boolean selected = mViewPager.getCurrentItem() == i;
+            boolean selected = viewPager.getCurrentItem() == i;
             ImageView imageView = (ImageView) getChildAt(i);
-            imageView.setImageDrawable(selected ? mSelectedDrawable : mNormalDrawable);
+            imageView.setSelected(selected);
         }
     }
 

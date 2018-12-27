@@ -188,7 +188,7 @@ public final class CompareUtils {
                                     match = true;
                                     break;
                                 }
-                            } else {
+                            } else if (parts.length > 1) {
                                 if (stringsMatch(word, another, CompareUtils.MatchStringOption.resetFlags(matchFlags, AUTO, AUTO_IGNORE_CASE))) {
                                     match = true;
                                     break;
