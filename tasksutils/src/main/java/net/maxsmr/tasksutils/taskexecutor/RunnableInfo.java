@@ -5,11 +5,11 @@ import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.Predicate;
-import net.maxsmr.commonutils.data.model.InstanceManager;
 import net.maxsmr.commonutils.data.model.SerializationUtils;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.io.File;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.Serializable;
@@ -80,8 +80,12 @@ public class RunnableInfo implements Serializable {
         return SerializationUtils.toByteArray(this);
     }
 
-    public boolean toOutputStream(@NotNull OutputStream outputStream) {
+    public boolean toOutputStream(@Nullable OutputStream outputStream) {
         return SerializationUtils.toOutputStream(this, outputStream);
+    }
+
+    public boolean toFile(@Nullable File file) {
+        return SerializationUtils.toFile(this, file);
     }
 
     @Override
