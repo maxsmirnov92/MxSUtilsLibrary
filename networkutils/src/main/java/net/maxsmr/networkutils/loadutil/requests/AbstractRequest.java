@@ -3,12 +3,13 @@ package net.maxsmr.networkutils.loadutil.requests;
 import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.CallSuper;
-import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;
 import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -124,6 +125,7 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
         this.callback = callback;
         if (callback != null) {
             callback.manager = manager;
+            //noinspection unchecked
             manager.registerLoadListener(callback);
         }
 
@@ -398,6 +400,4 @@ public abstract class AbstractRequest<B extends LoadRunnableInfo.Body, C extends
             }
         }
     }
-
-
 }

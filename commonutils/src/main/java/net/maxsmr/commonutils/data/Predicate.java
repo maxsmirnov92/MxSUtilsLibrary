@@ -7,6 +7,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -64,6 +65,22 @@ public interface Predicate<V> {
         public static <V> List<V> filter(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             Map<Integer, V> map = filterWithIndex(elements, predicate);
             return entriesToValues(map.entrySet());
+        }
+
+        @NotNull
+        public static <V> List<V> remove(@Nullable Iterable<V> elements, @NotNull Predicate<V> predicate) {
+            final List<V> removed = new ArrayList<>();
+            if (elements != null) {
+                final Iterator<V> iterator = elements.iterator();
+                while (iterator.hasNext()) {
+                    V element = iterator.next();
+                    if (predicate.apply(element)) {
+                        iterator.remove();
+                        removed.add(element);
+                    }
+                }
+            }
+            return removed;
         }
 
         @NotNull

@@ -13,7 +13,11 @@ import java.util.List;
 /**
  * Utils for converting Parcelable objects to and from byte arrays
  */
-public class ParcelableUtils {
+public final class ParcelableUtils {
+
+    private ParcelableUtils() {
+        throw new AssertionError("no instances");
+    }
 
     @NotNull
     public static byte[] marshall(@Nullable Parcelable parcelable) {

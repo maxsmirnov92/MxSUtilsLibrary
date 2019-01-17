@@ -8,12 +8,12 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.support.annotation.CallSuper;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
-import android.view.View;
 import android.view.ViewConfiguration;
+import android.view.inputmethod.BaseInputConnection;
+import android.view.inputmethod.EditorInfo;
+import android.view.inputmethod.InputConnection;
 import android.webkit.ConsoleMessage;
 import android.webkit.JsResult;
 import android.webkit.SslErrorHandler;
@@ -28,6 +28,12 @@ import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import static android.text.InputType.TYPE_CLASS_TEXT;
+import static android.view.inputmethod.EditorInfo.IME_ACTION_DONE;
+
 public class TouchWebView extends WebView implements Handler.Callback {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(TouchWebView.class);
@@ -35,17 +41,23 @@ public class TouchWebView extends WebView implements Handler.Callback {
     private static final int CLICK_ON_WEBVIEW = 1;
     private static final int CLICK_ON_URL = 2;
 
-    private final Handler mWebViewHandler = new Handler(Looper.getMainLooper(), this);
+    @NotNull
+    private final Handler webViewHandler = new Handler(Looper.getMainLooper(), this);
 
-    private final PageLoadObservable mPageLoadObservable = new PageLoadObservable();
+    @NotNull
+    private final TouchWebView.PageLoadObservable pageLoadObservable = new TouchWebView.PageLoadObservable();
 
-    private final ScrollChangeObservable mScrollChangeObservable = new ScrollChangeObservable();
+    @NotNull
+    private final TouchWebView.ScrollChangeObservable scrollChangeObservable = new TouchWebView.ScrollChangeObservable();
 
-    private TouchWebViewClient webViewClient;
+    @Nullable
+    private TouchWebView.TouchWebViewClient webViewClient;
 
-    private TouchWebChromeClient webChromeClient;
+    @Nullable
+    private TouchWebView.TouchWebChromeClient webChromeClient;
 
-    private View.OnClickListener clickListener;
+    @Nullable
+    private OnClickListener clickListener;
 
     public TouchWebView(Context context) {
         this(context, null);
@@ -58,65 +70,88 @@ public class TouchWebView extends WebView implements Handler.Callback {
     public TouchWebView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 //        gestureDetector = new GestureDetector(context, new GestureListener());
-        setWebViewClient(new TouchWebViewClient(mWebViewHandler, mPageLoadObservable));
-        setWebChromeClient(new TouchWebChromeClient());
+        setWebViewClient(new TouchWebView.TouchWebViewClient(webViewHandler, pageLoadObservable));
+        setWebChromeClient(new TouchWebView.TouchWebChromeClient());
     }
 
     @NotNull
-    public Handler getClickHandler() {
-        return mWebViewHandler;
+    public Handler getWebViewHandler() {
+        return webViewHandler;
     }
 
-    public void addPageLoadListener(@NotNull OnPageLoadListener pageLoadListener) {
-        mPageLoadObservable.registerObserver(pageLoadListener);
+    public void addPageLoadListener(@NotNull TouchWebView.OnPageLoadListener pageLoadListener) {
+        pageLoadObservable.registerObserver(pageLoadListener);
     }
 
-    public void removePageLoadListener(@NotNull OnPageLoadListener pageLoadListener) {
-        mPageLoadObservable.unregisterObserver(pageLoadListener);
+    public void removePageLoadListener(@NotNull TouchWebView.OnPageLoadListener pageLoadListener) {
+        pageLoadObservable.unregisterObserver(pageLoadListener);
     }
 
-    public void addScrollChangeListener(@NotNull OnScrollChangeListener scrollChangeListener) {
-        mScrollChangeObservable.registerObserver(scrollChangeListener);
+    public void addScrollChangeListener(@NotNull TouchWebView.OnScrollChangeListener scrollChangeListener) {
+        scrollChangeObservable.registerObserver(scrollChangeListener);
     }
 
-    public void removeScrollChangeListener(@NotNull OnScrollChangeListener scrollChangeListener) {
-        mScrollChangeObservable.unregisterObserver(scrollChangeListener);
+    public void removeScrollChangeListener(@NotNull TouchWebView.OnScrollChangeListener scrollChangeListener) {
+        scrollChangeObservable.unregisterObserver(scrollChangeListener);
     }
 
     @NotNull
-    public TouchWebViewClient getWebViewClient() {
+    public PageLoadObservable getPageLoadObservable() {
+        return pageLoadObservable;
+    }
+
+    @NotNull
+    public ScrollChangeObservable getScrollChangeObservable() {
+        return scrollChangeObservable;
+    }
+
+    @NotNull
+    public TouchWebView.TouchWebViewClient getWebViewClient() {
         if (webViewClient == null) {
-            throw new IllegalStateException(TouchWebViewClient.class.getSimpleName() + " was not initialized");
+            throw new IllegalStateException(TouchWebView.TouchWebViewClient.class.getSimpleName() + " was not initialized");
         }
         return webViewClient;
     }
 
     @Override
     public final void setWebViewClient(WebViewClient client) {
-        if (!(client instanceof TouchWebViewClient)) {
-            throw new IllegalArgumentException("client " + client + " is not instance of " + TouchWebViewClient.class);
+        if (!(client instanceof TouchWebView.TouchWebViewClient)) {
+            throw new IllegalArgumentException("client " + client + " is not instance of " + TouchWebView.TouchWebViewClient.class);
         }
-        super.setWebViewClient(webViewClient = (TouchWebViewClient) client);
+        super.setWebViewClient(webViewClient = (TouchWebView.TouchWebViewClient) client);
     }
 
     @Nullable
-    public TouchWebChromeClient getWebChromeClient() {
+    public TouchWebView.TouchWebChromeClient getWebChromeClient() {
         if (webChromeClient == null) {
-            throw new IllegalStateException(TouchWebChromeClient.class.getSimpleName() + " was not initialized");
+            throw new IllegalStateException(TouchWebView.TouchWebChromeClient.class.getSimpleName() + " was not initialized");
         }
         return webChromeClient;
     }
 
     @Override
     public final void setWebChromeClient(WebChromeClient client) {
-        if (!(client instanceof TouchWebChromeClient)) {
+        if (!(client instanceof TouchWebView.TouchWebChromeClient)) {
             throw new IllegalArgumentException("client " + client + " is not instance of " + WebChromeClient.class);
         }
-        super.setWebChromeClient(webChromeClient = (TouchWebChromeClient) client);
+        super.setWebChromeClient(webChromeClient = (TouchWebView.TouchWebChromeClient) client);
+    }
+
+    @Override
+    public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
+        BaseInputConnection baseInputConnection = new BaseInputConnection(this, false);
+        outAttrs.imeOptions = IME_ACTION_DONE;
+        outAttrs.inputType = TYPE_CLASS_TEXT;
+        return baseInputConnection;
+    }
+
+    @Override
+    public boolean onCheckIsTextEditor() {
+        return true;
     }
 
     @NotNull
-    public ScrollState getScrollState() {
+    public TouchWebView.ScrollState getScrollState() {
         float scale = webViewClient.getLastScale();
         if (scale <= 0) {
             scale = getScale();
@@ -126,11 +161,11 @@ public class TouchWebView extends WebView implements Handler.Callback {
         int scrollY = getScrollY();
 //        logger.d("height=" + height + ", webViewHeight=" + webViewHeight + ", scrollY=" + scrollY);
         if (scrollY + webViewHeight >= height - 5) {
-            return ScrollState.BOTTOM;
+            return TouchWebView.ScrollState.BOTTOM;
         } else if (height - scrollY - 5 <= webViewHeight) {
-            return ScrollState.TOP;
+            return TouchWebView.ScrollState.TOP;
         } else {
-            return ScrollState.BETWEEN;
+            return TouchWebView.ScrollState.BETWEEN;
         }
     }
 
@@ -138,13 +173,13 @@ public class TouchWebView extends WebView implements Handler.Callback {
     protected void onScrollChanged(int l, int t, int oldl, int oldt) {
         switch (getScrollState()) {
             case TOP:
-                mScrollChangeObservable.dispatchScrolledToTop();
+                scrollChangeObservable.dispatchScrolledToTop();
                 break;
             case BOTTOM:
-                mScrollChangeObservable.dispatchScrolledToBottom();
+                scrollChangeObservable.dispatchScrolledToBottom();
                 break;
         }
-        mScrollChangeObservable.dispatchScrollChanged(l, t, oldl, oldt);
+        scrollChangeObservable.dispatchScrollChanged(l, t, oldl, oldt);
         super.onScrollChanged(l, t, oldl, oldt);
     }
 
@@ -152,7 +187,7 @@ public class TouchWebView extends WebView implements Handler.Callback {
     @CallSuper
     public boolean handleMessage(Message msg) {
         if (msg.what == CLICK_ON_URL) {
-            mWebViewHandler.removeMessages(CLICK_ON_WEBVIEW);
+            webViewHandler.removeMessages(CLICK_ON_WEBVIEW);
             return true;
         } else if (msg.what == CLICK_ON_WEBVIEW) {
             if (clickListener != null) {
@@ -167,7 +202,7 @@ public class TouchWebView extends WebView implements Handler.Callback {
     @CallSuper
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN) {
-            mWebViewHandler.sendEmptyMessageDelayed(CLICK_ON_WEBVIEW, 500);
+            webViewHandler.sendEmptyMessageDelayed(CLICK_ON_WEBVIEW, 500);
         }
         return super.onTouchEvent(event);
 //        return /* event.getAction() == MotionEvent.ACTION_UP && */  gestureDetector.onTouchEvent(event);
@@ -182,12 +217,7 @@ public class TouchWebView extends WebView implements Handler.Callback {
     // http://stackoverflow.com/questions/5267639/how-to-safely-turn-webview-zooming-on-and-off-as-needed
     @Override
     public void destroy() {
-        mWebViewHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                TouchWebView.this.providerDestroy();
-            }
-        }, ViewConfiguration.getZoomControlsTimeout());
+        webViewHandler.postDelayed(TouchWebView.this::providerDestroy, ViewConfiguration.getZoomControlsTimeout());
     }
 
     private void providerDestroy() {
@@ -212,6 +242,7 @@ public class TouchWebView extends WebView implements Handler.Callback {
         }
 
         @Override
+        @CallSuper
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             logger.d("shouldOverrideUrlLoading(), request=" + request);
             mWebViewHandler.sendEmptyMessage(CLICK_ON_URL);
@@ -219,46 +250,42 @@ public class TouchWebView extends WebView implements Handler.Callback {
         }
 
         @Override
+        @CallSuper
         public void onPageStarted(WebView view, final String url, final Bitmap favicon) {
             super.onPageStarted(view, url, favicon);
-            mWebViewHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mPageLoadObservable.dispatchLoadPageStarted(url, favicon);
-                }
-            });
+            mWebViewHandler.post(() -> mPageLoadObservable.dispatchLoadPageStarted(url, favicon));
         }
 
         @Override
+        @CallSuper
         public void onPageFinished(WebView view, final String url) {
             super.onPageFinished(view, url);
-            mWebViewHandler.post(new Runnable() {
-                @Override
-                public void run() {
-                    mPageLoadObservable.dispatchLoadPageFinished(url);
-                }
-            });
+            mWebViewHandler.post(() -> mPageLoadObservable.dispatchLoadPageFinished(url));
         }
 
         @Override
+        @CallSuper
         public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
             super.onReceivedError(view, request, error);
             logger.e("onReceivedError(), request=" + WebResourceRequestToString(request) + ", error=" + WebResourceErrorToString(error));
         }
 
         @Override
+        @CallSuper
         public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
             super.onReceivedHttpError(view, request, errorResponse);
             logger.e("onReceivedHttpError(), request=" + WebResourceRequestToString(request) + ", errorResponse=" + WebResourceResponseToString(errorResponse));
         }
 
         @Override
+        @CallSuper
         public void onReceivedSslError(WebView view, SslErrorHandler handler, SslError error) {
             super.onReceivedSslError(view, handler, error);
             logger.e("onReceivedSslError(), handler=" + handler + ", error=" + error);
         }
 
         @Override
+        @CallSuper
         public void onScaleChanged(WebView view, float oldScale, float newScale) {
             super.onScaleChanged(view, oldScale, newScale);
             lastScale = newScale;
@@ -268,18 +295,21 @@ public class TouchWebView extends WebView implements Handler.Callback {
     public static class TouchWebChromeClient extends WebChromeClient {
 
         @Override
+        @CallSuper
         public boolean onJsAlert(WebView view, String url, String message, JsResult result) {
             logger.w("onJsAlert(), url=" + ", message=" + message);
             return super.onJsAlert(view, url, message, result);
         }
 
         @Override
+        @CallSuper
         public boolean onJsBeforeUnload(WebView view, String url, String message, JsResult result) {
             logger.w("onJsAlert(), url=" + ", message=" + message);
             return super.onJsBeforeUnload(view, url, message, result);
         }
 
         @Override
+        @CallSuper
         public boolean onConsoleMessage(ConsoleMessage consoleMessage) {
             logger.d("onConsoleMessage(), consoleMessage=" + ConsoleMessageToString(consoleMessage));
             return super.onConsoleMessage(consoleMessage);
@@ -294,23 +324,6 @@ public class TouchWebView extends WebView implements Handler.Callback {
         void onPageFinished(String url);
     }
 
-    private static class PageLoadObservable extends Observable<OnPageLoadListener> {
-
-        void dispatchLoadPageStarted(String url, Bitmap favicon) {
-            synchronized (observers) {
-                for (OnPageLoadListener l : observers)
-                    l.onPageStarted(url, favicon);
-            }
-        }
-
-        void dispatchLoadPageFinished(String url) {
-            synchronized (observers) {
-                for (OnPageLoadListener l : observers)
-                    l.onPageFinished(url);
-            }
-        }
-    }
-
     public interface OnScrollChangeListener {
 
         void onScrolledToTop();
@@ -320,18 +333,35 @@ public class TouchWebView extends WebView implements Handler.Callback {
         void onScrolledToBottom();
     }
 
-    private static class ScrollChangeObservable extends Observable<OnScrollChangeListener> {
+    public static class PageLoadObservable extends Observable<OnPageLoadListener> {
+
+        void dispatchLoadPageStarted(String url, Bitmap favicon) {
+            synchronized (observers) {
+                for (TouchWebView.OnPageLoadListener l : observers)
+                    l.onPageStarted(url, favicon);
+            }
+        }
+
+        void dispatchLoadPageFinished(String url) {
+            synchronized (observers) {
+                for (TouchWebView.OnPageLoadListener l : observers)
+                    l.onPageFinished(url);
+            }
+        }
+    }
+
+    public static class ScrollChangeObservable extends Observable<OnScrollChangeListener> {
 
         void dispatchScrolledToTop() {
             synchronized (observers) {
-                for (OnScrollChangeListener l : observers)
+                for (TouchWebView.OnScrollChangeListener l : observers)
                     l.onScrolledToTop();
             }
         }
 
         void dispatchScrollChanged(int l, int t, int oldl, int oldt) {
             synchronized (observers) {
-                for (OnScrollChangeListener listener : observers) {
+                for (TouchWebView.OnScrollChangeListener listener : observers) {
                     listener.onScrollChanged(l, t, oldl, oldt);
                 }
             }
@@ -339,11 +369,12 @@ public class TouchWebView extends WebView implements Handler.Callback {
 
         void dispatchScrolledToBottom() {
             synchronized (observers) {
-                for (OnScrollChangeListener l : observers)
+                for (TouchWebView.OnScrollChangeListener l : observers)
                     l.onScrolledToBottom();
             }
         }
     }
+
 
     public static String WebResourceRequestToString(WebResourceRequest request) {
         if (request != null) {

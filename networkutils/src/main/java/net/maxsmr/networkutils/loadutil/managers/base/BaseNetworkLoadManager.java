@@ -1,9 +1,7 @@
 package net.maxsmr.networkutils.loadutil.managers.base;
 
-
 import android.os.Handler;
 import android.os.Looper;
-import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Observable;
@@ -17,8 +15,9 @@ import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.ExecInfo;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.StatInfo;
-import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;
@@ -30,99 +29,114 @@ import java.util.concurrent.TimeUnit;
 
 import static net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor.DEFAULT_KEEP_ALIVE_TIME;
 
-
-public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends LoadRunnableInfo<B>,
-        R extends TaskRunnable<LI, Void, Void>> implements TaskRunnableExecutor.Callbacks<LI, Void, Void, R> {
+public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends LoadRunnableInfo<B>, Result,
+        R extends BaseNetworkLoadManager.TaskRunnable<LI, Void, Result>> implements TaskRunnableExecutor.Callbacks<LI, Void, Result, R> {
 
     public static final int LOADS_NO_LIMIT = TaskRunnableExecutor.TASKS_NO_LIMIT;
 
     protected final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(getLoggerClass());
 
-    protected final LoadObservable<LI> mLoadObservable = new LoadObservable<>();
+    protected final LoadObservable<LI> loadObservable = new LoadObservable<>();
 
-    protected final TaskRunnableExecutor<LI, Void, Void, R> mExecutor;
+    protected final TaskRunnableExecutor<LI, Void, Result, R> executor;
+
+    public BaseNetworkLoadManager() {
+        this(1, 1, null, null, (Handler) null);
+    }
 
     public BaseNetworkLoadManager(int limit, int concurrentLoadsCount, @Nullable AbstractSyncStorage<LI> storage,
-                                  @Nullable TaskRunnable.ITaskResultValidator<LI, Void, Void, R> validator, @Nullable final TaskRunnable.ITaskRestorer<LI, Void, Void, R> restorer) {
+                                  @Nullable TaskRunnable.ITaskResultValidator<LI, Void, Result, R> validator, @Nullable final TaskRunnable.ITaskRestorer<LI, Void, Result, R> restorer) {
         this(limit, concurrentLoadsCount, storage, validator, new Handler(Looper.getMainLooper()));
     }
 
     public BaseNetworkLoadManager(int limit, int concurrentLoadsCount, @Nullable AbstractSyncStorage<LI> storage,
-                                  @Nullable TaskRunnable.ITaskResultValidator<LI, Void, Void, R> validator,
+                                  @Nullable TaskRunnable.ITaskResultValidator<LI, Void, Result, R> validator,
                                   @Nullable Handler callbacksHandler) {
-        mExecutor = new TaskRunnableExecutor<>(limit, concurrentLoadsCount, DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS, getClass().getSimpleName(), validator, storage, callbacksHandler);
-        mExecutor.registerCallback(this);
+        executor = new TaskRunnableExecutor<>(limit, concurrentLoadsCount, DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS, getClass().getSimpleName(), validator, storage, callbacksHandler);
+        executor.registerCallback(this);
     }
 
     public final boolean isReleased() {
-        synchronized (mExecutor) {
-            return mExecutor.isShutdown();
+        synchronized (executor) {
+            return executor.isShutdown();
         }
     }
 
     protected final void checkReleased() {
-        synchronized (mExecutor) {
+        synchronized (executor) {
             if (isReleased()) {
                 throw new IllegalStateException(getClass() + " is released");
             }
         }
     }
 
-    protected void doRestore(@NotNull final TaskRunnable.ITaskRestorer<LI, Void, Void, R> restorer) {
-        mExecutor.restoreQueueByRestorer(restorer);
+    protected void doRestore(@NotNull final TaskRunnable.ITaskRestorer<LI, Void, Result, R> restorer) {
+        executor.restoreQueueByRestorer(restorer);
     }
 
     public final void registerLoadListener(@NotNull LoadListener<LI> listener) {
         checkReleased();
-        mLoadObservable.registerObserver(listener);
+        loadObservable.registerObserver(listener);
     }
 
     public final void unregisterLoadListener(@NotNull LoadListener<LI> listener) {
-        mLoadObservable.unregisterObserver(listener);
+        loadObservable.unregisterObserver(listener);
     }
 
     @Nullable
     public final LoadListener<LI> findLoadListenerById(int id) {
-        return mLoadObservable.findLoadListenerById(id);
+        return loadObservable.findLoadListenerById(id);
     }
 
     @NotNull
     public final Set<LoadListener<LI>> getLoadListeners() {
-        return mLoadObservable.copyOfObservers();
+        return loadObservable.copyOfObservers();
     }
 
     private void clearLoadListeners() {
-        mLoadObservable.unregisterAll();
+        loadObservable.unregisterAll();
     }
 
-    public final void enqueueLoad(@NotNull LI rInfo) {
+    public void enqueueLoad(@NotNull LI rInfo) {
         logger.d("enqueueLoad(), rInfo=" + rInfo);
-        synchronized (mExecutor) {
+        synchronized (executor) {
             if (rInfo.id < 0) {
                 throw new IllegalArgumentException("incorrect load id: " + rInfo.id);
             }
             if (containsLoad(rInfo.id)) {
                 throw new IllegalStateException("load with id " + rInfo.id + " already exists");
             }
-            mExecutor.execute(newRunnable(rInfo));
+            executor.execute(newRunnable(rInfo));
         }
     }
 
+    @Nullable
+    public Result runLoad(@NotNull LI rInfo) {
+        R r = newRunnable(rInfo);
+        try {
+            return r.doWork();
+        } catch (Throwable e) {
+            r.onTaskFailed(e, false);
+            return null;
+        }
+    }
+
+    @NotNull
     protected abstract R newRunnable(@NotNull LI rInfo);
 
     @Override
     public void onAddedToQueue(@NotNull R r, int waitingCount, int activeCount) {
-        mLoadObservable.notifyLoadAddedToQueue(r.rInfo, waitingCount, activeCount);
+        loadObservable.notifyLoadAddedToQueue(r.rInfo, waitingCount, activeCount);
     }
 
     @Override
-    public void onBeforeExecute(@NotNull Thread t, @NotNull R r, @NotNull ExecInfo<LI, Void, Void, R> execInfo, int waitingCount, int activeCount) {
+    public void onBeforeExecute(@NotNull Thread t, @NotNull R r, @NotNull ExecInfo<LI, Void, Result, R> execInfo, int waitingCount, int activeCount) {
 
     }
 
     @Override
-    public void onAfterExecute(@NotNull R r, Throwable t, @NotNull ExecInfo<LI, Void, Void, R> execInfo, @NotNull StatInfo<LI, Void, Void, R> statInfo, int waitingCount, int activeCount) {
-        mLoadObservable.notifyLoadRemovedFromQueue(r.rInfo, mExecutor.getWaitingTasksCount(), mExecutor.getActiveTasksCount());
+    public void onAfterExecute(@NotNull R r, Throwable t, @NotNull ExecInfo<LI, Void, Result, R> execInfo, @NotNull StatInfo<LI, Void, Result, R> statInfo, int waitingCount, int activeCount) {
+        loadObservable.notifyLoadRemovedFromQueue(r.rInfo, executor.getWaitingTasksCount(), executor.getActiveTasksCount());
     }
 
     @NotNull
@@ -160,82 +174,82 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
 
     @NotNull
     protected Set<R> getAllLoadRunnables() {
-        synchronized (mExecutor) {
+        synchronized (executor) {
             checkReleased();
-            return mExecutor.getAllTasks();
+            return executor.getAllTasks();
         }
     }
 
     @NotNull
     protected List<R> getWaitingLoadRunnables() {
-        synchronized (mExecutor) {
+        synchronized (executor) {
             checkReleased();
-            return mExecutor.getWaitingTasks();
+            return executor.getWaitingTasks();
         }
     }
 
     @NotNull
     protected List<R> getActiveLoadRunnables() {
-        synchronized (mExecutor) {
+        synchronized (executor) {
             checkReleased();
-            return mExecutor.getActiveTasks();
+            return executor.getActiveTasks();
         }
     }
 
     public boolean containsLoad(int id) {
-        synchronized (mExecutor) {
+        synchronized (executor) {
             checkReleased();
-            return mExecutor.containsTask(id);
+            return executor.containsTask(id);
         }
     }
 
     @SuppressWarnings("unchecked")
     public LI findLoadById(int id) {
-        synchronized (mExecutor) {
+        synchronized (executor) {
             checkReleased();
-            return mExecutor.findRunnableInfoById(id);
+            return executor.findRunnableInfoById(id);
         }
     }
 
 
     public boolean isLoadRunning(int id) {
-        synchronized (mExecutor) {
+        synchronized (executor) {
             checkReleased();
-            return mExecutor.isTaskRunning(id);
+            return executor.isTaskRunning(id);
         }
     }
 
     public boolean isLoadCancelled(int id) {
-        synchronized (mExecutor) {
+        synchronized (executor) {
             checkReleased();
-            return mExecutor.isTaskCancelled(id);
+            return executor.isTaskCancelled(id);
         }
     }
 
     public boolean cancelLoad(int id) {
         logger.d("cancelLoad(), id=" + id);
-        synchronized (mExecutor) {
+        synchronized (executor) {
             checkReleased();
-            return mExecutor.cancelTask(id);
+            return executor.cancelTask(id);
         }
     }
 
     public void cancelAllLoads() {
         logger.d("cancelAllLoads()");
-        synchronized (mExecutor) {
+        synchronized (executor) {
             checkReleased();
-            mExecutor.cancelAllTasks();
+            executor.cancelAllTasks();
         }
     }
 
     public void release() {
         logger.d("release()");
-        synchronized (mExecutor) {
+        synchronized (executor) {
             if (!isReleased()) {
                 clearLoadListeners();
-                mExecutor.cancelAllTasks();
-                mExecutor.shutdown();
-                mExecutor.unregisterCallback(this);
+                executor.cancelAllTasks();
+                executor.shutdown();
+                executor.unregisterCallback(this);
             }
         }
     }
@@ -248,6 +262,23 @@ public abstract class BaseNetworkLoadManager<B extends LoadRunnableInfo.Body, LI
 
     public static boolean isResponseOk(int responseCode) {
         return 200 <= responseCode && responseCode <= 299;
+    }
+
+    public static abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result> extends net.maxsmr.tasksutils.taskexecutor.TaskRunnable<I, ProgressInfo, Result> {
+
+        public TaskRunnable(@NotNull I rInfo) {
+            super(rInfo);
+        }
+
+        @Override
+        public final int getRetryLimit() {
+            return RETRY_DISABLED;
+        }
+
+        @Override
+        public final long getRetryDelayInMs() {
+            return 0;
+        }
     }
 
     protected static class LoadObservable<I extends LoadRunnableInfo> extends Observable<LoadListener<I>> {

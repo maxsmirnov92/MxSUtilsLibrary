@@ -1,10 +1,11 @@
 package net.maxsmr.networkutils.loadutil.managers;
 
-import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
+
+import org.jetbrains.annotations.NotNull;
 
 public interface LoadListener<I extends LoadRunnableInfo> {
 

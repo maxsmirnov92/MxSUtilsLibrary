@@ -3,14 +3,17 @@ package net.maxsmr.commonutils.android.preferences;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
+import java.util.Set;
 
 public class PreferencesManager {
 
@@ -67,6 +70,8 @@ public class PreferencesManager {
                 return (V) Float.valueOf(preferences.getFloat(key, defaultValue != null ? (Float) defaultValue : 0f));
             } else if (clazz.isAssignableFrom(Boolean.class)) {
                 return (V) Boolean.valueOf(preferences.getBoolean(key, defaultValue != null ? (Boolean) defaultValue : false));
+            } else if (clazz.isAssignableFrom(Set.class)) {
+                return (V) preferences.getStringSet(key, defaultValue != null ? (Set<String>) defaultValue : null);
             } else {
                 throw new UnsupportedOperationException("incorrect class: " + clazz);
             }
@@ -96,7 +101,10 @@ public class PreferencesManager {
                     editor.putFloat(key, (Float) value);
                 } else if (value instanceof Boolean) {
                     editor.putBoolean(key, (Boolean) value);
-                } else {
+                } else if (value instanceof Set) {
+                    editor.putStringSet(key, (Set<String>) value);
+                }
+                else {
                     throw new UnsupportedOperationException("incorrect value type: " + value.getClass());
                 }
             } else {

@@ -1,6 +1,5 @@
 package net.maxsmr.devicewatchers.usb;
 
-import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
@@ -12,6 +11,8 @@ import net.maxsmr.commonutils.shell.ShellUtils;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -201,12 +202,12 @@ public class UsbDeviceWatcher {
 
         @Nullable
         @Override
-        protected CommandResult doWork() throws Throwable {
+        public CommandResult doWork() throws Throwable {
             return ShellUtils.execProcess(Arrays.asList("su", "-c", "lsusb"), null, null, null);
         }
 
         @Override
-        protected void onPostExecute(@Nullable CommandResult result) {
+        public void onPostExecute(@Nullable CommandResult result) {
             super.onPostExecute(result);
 
             if (result != null && result.isSuccessful()) {
@@ -352,12 +353,12 @@ public class UsbDeviceWatcher {
 
         @Nullable
         @Override
-        protected CommandResult doWork() throws Throwable {
+        public CommandResult doWork() throws Throwable {
             return ShellUtils.execProcess(Arrays.asList("su", "-c", "cat", "/proc/bus/input/devices"), null, null, null);
         }
 
         @Override
-        protected void onPostExecute(@Nullable CommandResult result) {
+        public void onPostExecute(@Nullable CommandResult result) {
             super.onPostExecute(result);
             if (result != null && result.isSuccessful()) {
 

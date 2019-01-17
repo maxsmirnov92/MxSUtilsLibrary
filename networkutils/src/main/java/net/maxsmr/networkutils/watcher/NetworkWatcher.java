@@ -2,7 +2,6 @@ package net.maxsmr.networkutils.watcher;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
-import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.android.hardware.DeviceUtils;
@@ -16,6 +15,8 @@ import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
@@ -549,7 +550,7 @@ public class NetworkWatcher {
 
         @Nullable
         @Override
-        protected Void doWork() throws Throwable {
+        public Void doWork() throws Throwable {
             logger.d("network type to switch: " + rInfo.networkTypeToSwitch);
 
             switch (rInfo.networkTypeToSwitch) {

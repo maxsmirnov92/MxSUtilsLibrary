@@ -1,9 +1,12 @@
 package net.maxsmr.commonutils.data.gson;
 
+import android.text.TextUtils;
+
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
+import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 
@@ -147,5 +150,23 @@ public class GsonHelper {
             }
         }
         return value;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Nullable
+    public static <J extends JsonElement> J asJsonElement(@Nullable String string, @NotNull Class<J> clazz) {
+        JsonParser parser = new JsonParser();
+        JsonElement element = null;
+        if (!TextUtils.isEmpty(string)) {
+            try {
+                element = parser.parse(string);
+            } catch (JsonParseException e) {
+                logger.e("an JsonParseException occurred during parse(): " + e.getMessage(), e);
+            }
+        }
+        if (element != null && element.getClass().isAssignableFrom(clazz)) {
+            return (J) element;
+        }
+        return null;
     }
 }

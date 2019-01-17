@@ -1,20 +1,6 @@
-buildscript {
-    repositories {
-        jcenter()
-    }
-    dependencies {
-        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:$bintrayGradleVersion"
-        classpath "com.github.dcendents:android-maven-gradle-plugin:$mavenGradleVersion"
-    }
-}
-
 //plugins {
 //    id "com.jfrog.bintray" version "1.7.3"
 //}
-
-repositories {
-    jcenter()
-}
 
 apply plugin: 'com.android.library'
 
@@ -45,15 +31,15 @@ android {
     }
 
 
-    compileSdkVersion sdkVersion
-    buildToolsVersion buildToolsVersion_
+    compileSdkVersion rootProject.ext.androidSdkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
 
     sourceCompatibility = sourceCompatibilityVersion
     targetCompatibility = sourceCompatibilityVersion
 
     defaultConfig {
-        minSdkVersion minSdkVersion_
-        targetSdkVersion sdkVersion
+        minSdkVersion androidMinSdkVersion
+        targetSdkVersion androidSdkVersion
         versionCode 1
         versionName project.commonUtilsVersion
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"

@@ -6,6 +6,7 @@ import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.data.model.InstanceManager;
+import net.maxsmr.commonutils.data.model.SerializationUtils;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -76,11 +77,11 @@ public class RunnableInfo implements Serializable {
     }
 
     public byte[] toByteArray() {
-        return InstanceManager.toByteArray(this);
+        return SerializationUtils.toByteArray(this);
     }
 
     public boolean toOutputStream(@NotNull OutputStream outputStream) {
-        return InstanceManager.toOutputStream(this, outputStream);
+        return SerializationUtils.toOutputStream(this, outputStream);
     }
 
     @Override
@@ -118,12 +119,12 @@ public class RunnableInfo implements Serializable {
 
     @Nullable
     public static <I extends RunnableInfo> I fromByteArray(Class<I> clazz, byte[] byteArray) {
-        return InstanceManager.fromByteArray(clazz, byteArray);
+        return SerializationUtils.fromByteArray(clazz, byteArray);
     }
 
     @Nullable
     public static <I extends RunnableInfo> I fromInputStream(Class<I> clazz, InputStream inputStream) {
-        return InstanceManager.fromInputStream(clazz, inputStream);
+        return SerializationUtils.fromInputStream(clazz, inputStream);
     }
 
 //    @NotNull

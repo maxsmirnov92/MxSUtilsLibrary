@@ -173,21 +173,21 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     }
 
     @CallSuper
-    protected void onPreExecute() {
+    public void onPreExecute() {
         observable.notifyPreExecute();
     }
 
     // check isCancelled(), call publishProgress (if needed)
     @Nullable
-    protected abstract Result doWork() throws Throwable;
+    public abstract Result doWork() throws Throwable;
 
     @CallSuper
-    protected void onProgress(@NotNull ProgressInfo info) {
+    public void onProgress(@NotNull ProgressInfo info) {
         observable.notifyProgress(info);
     }
 
     @CallSuper
-    protected void onPostExecute(@Nullable Result result) {
+    public void onPostExecute(@Nullable Result result) {
         if (!isCanceled()) {
             observable.notifyPostExecute(result);
         } else {
@@ -195,11 +195,11 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         }
     }
 
-    protected void onCancel() {
+    public void onCancel() {
         observable.notifyCancelled();
     }
 
-    protected final void publishProgress(@NotNull ProgressInfo info) {
+    public final void publishProgress(@NotNull ProgressInfo info) {
         onProgress(info);
     }
 
@@ -212,13 +212,13 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     }
 
     // override it and remove limit
-    protected boolean shouldReRunOnThrowable(@NotNull Throwable e) {
+    public boolean shouldReRunOnThrowable(@NotNull Throwable e) {
         final int retryLimit = getRetryLimit();
         return retryLimit > 0 || retryLimit == RETRY_NO_LIMIT;
     }
 
     @CallSuper
-    protected void onTaskFailed(@NotNull Throwable e, boolean reRun) {
+    public void onTaskFailed(@NotNull Throwable e, boolean reRun) {
         logger.e("Task " + this + "  failed with exception: " + e.getMessage(), e);
         observable.notifyFailed(e, retryCount, getRetryLimit());
         if (!reRun) {
@@ -226,6 +226,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         }
     }
 
+    @NotNull
     @Override
     public String toString() {
         return "TaskRunnable{" +

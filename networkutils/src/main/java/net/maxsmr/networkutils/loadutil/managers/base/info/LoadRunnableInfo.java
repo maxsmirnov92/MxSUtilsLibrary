@@ -1,6 +1,5 @@
 package net.maxsmr.networkutils.loadutil.managers.base.info;
 
-import org.jetbrains.annotations.NotNull;
 import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
@@ -9,6 +8,8 @@ import com.google.gson.JsonElement;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.model.IBuilder;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -30,7 +31,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
     public static final Charset DEFAULT_CHARSET = Charset.defaultCharset();
 
     protected LoadRunnableInfo(Builder<B, ?> b) {
-        super(b.id, b.name);
+        super(b.id, TextUtils.isEmpty(b.name)? LoadRunnableInfo.class.getSimpleName() + "_" + b.id : b.name);
         url = b.url;
         settings = b.settings;
         requestMethod = b.requestMethod;
@@ -202,9 +203,6 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
 
         public void name(@Nullable String name) {
             this.name = name;
-            if (TextUtils.isEmpty(this.name)) {
-                this.name = LoadRunnableInfo.class.getSimpleName() + "_" + id;
-            }
         }
 
         public void requestMethod(@NotNull RequestMethod requestMethod) {
