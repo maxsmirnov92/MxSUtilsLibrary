@@ -27,6 +27,7 @@ public class ProcessInfo {
     @Nullable
     public final ProcessState processState;
 
+    @Nullable
     public final Boolean isForeground;
     
     public final boolean isSystemApp;
@@ -34,7 +35,9 @@ public class ProcessInfo {
     public ProcessInfo(String packageName, CharSequence applicationName,
                        int pid, int pPid, String user, int userId, int rss, int vSize,
                        @Nullable ProcessState processState,
-                       Boolean isForeground, boolean isSystemApp) {
+                       @Nullable
+                       Boolean isForeground,
+                       boolean isSystemApp) {
         this.packageName = packageName;
         this.applicationName = applicationName != null? applicationName.toString() : null;
         this.pid = pid;

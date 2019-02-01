@@ -1,9 +1,10 @@
 package net.maxsmr.commonutils.android.gui.progressable;
 
-import org.jetbrains.annotations.Nullable;
 import android.view.View;
 
-public class ImageProgressable implements Progressable {
+import org.jetbrains.annotations.Nullable;
+
+public class ViewProgressable implements Progressable {
 
     @Nullable
     public final View view;
@@ -11,7 +12,7 @@ public class ImageProgressable implements Progressable {
     @Nullable
     private final View bar;
 
-    public ImageProgressable(@Nullable View view, @Nullable View bar) {
+    public ViewProgressable(@Nullable View view, @Nullable View bar) {
         this.view = view;
         this.bar = bar;
     }

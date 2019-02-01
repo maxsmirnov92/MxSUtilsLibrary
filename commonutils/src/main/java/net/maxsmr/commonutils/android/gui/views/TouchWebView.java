@@ -31,9 +31,6 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static android.text.InputType.TYPE_CLASS_TEXT;
-import static android.view.inputmethod.EditorInfo.IME_ACTION_DONE;
-
 public class TouchWebView extends WebView implements Handler.Callback {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(TouchWebView.class);
@@ -59,6 +56,9 @@ public class TouchWebView extends WebView implements Handler.Callback {
     @Nullable
     private OnClickListener clickListener;
 
+    @Nullable
+    private BaseInputConnection inputConnection;
+
     public TouchWebView(Context context) {
         this(context, null);
     }
@@ -70,8 +70,17 @@ public class TouchWebView extends WebView implements Handler.Callback {
     public TouchWebView(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
 //        gestureDetector = new GestureDetector(context, new GestureListener());
-        setWebViewClient(new TouchWebView.TouchWebViewClient(webViewHandler, pageLoadObservable));
+        setWebViewClient(new TouchWebView.TouchWebViewClient());
         setWebChromeClient(new TouchWebView.TouchWebChromeClient());
+    }
+
+    @Nullable
+    public BaseInputConnection getInputConnection() {
+        return inputConnection;
+    }
+
+    public void setInputConnection(@Nullable BaseInputConnection inputConnection) {
+        this.inputConnection = inputConnection;
     }
 
     @NotNull
@@ -96,16 +105,6 @@ public class TouchWebView extends WebView implements Handler.Callback {
     }
 
     @NotNull
-    public PageLoadObservable getPageLoadObservable() {
-        return pageLoadObservable;
-    }
-
-    @NotNull
-    public ScrollChangeObservable getScrollChangeObservable() {
-        return scrollChangeObservable;
-    }
-
-    @NotNull
     public TouchWebView.TouchWebViewClient getWebViewClient() {
         if (webViewClient == null) {
             throw new IllegalStateException(TouchWebView.TouchWebViewClient.class.getSimpleName() + " was not initialized");
@@ -118,7 +117,10 @@ public class TouchWebView extends WebView implements Handler.Callback {
         if (!(client instanceof TouchWebView.TouchWebViewClient)) {
             throw new IllegalArgumentException("client " + client + " is not instance of " + TouchWebView.TouchWebViewClient.class);
         }
-        super.setWebViewClient(webViewClient = (TouchWebView.TouchWebViewClient) client);
+        webViewClient = (TouchWebView.TouchWebViewClient) client;
+        webViewClient.webViewHandler = webViewHandler;
+        webViewClient.pageLoadObservable = pageLoadObservable;
+        super.setWebViewClient(webViewClient);
     }
 
     @Nullable
@@ -139,45 +141,47 @@ public class TouchWebView extends WebView implements Handler.Callback {
 
     @Override
     public InputConnection onCreateInputConnection(EditorInfo outAttrs) {
-        BaseInputConnection baseInputConnection = new BaseInputConnection(this, false);
-        outAttrs.imeOptions = IME_ACTION_DONE;
-        outAttrs.inputType = TYPE_CLASS_TEXT;
-        return baseInputConnection;
-    }
-
-    @Override
-    public boolean onCheckIsTextEditor() {
-        return true;
-    }
-
-    @NotNull
-    public TouchWebView.ScrollState getScrollState() {
-        float scale = webViewClient.getLastScale();
-        if (scale <= 0) {
-            scale = getScale();
-        }
-        int height = (int) Math.floor(getContentHeight() * scale);
-        int webViewHeight = getMeasuredHeight();
-        int scrollY = getScrollY();
-//        logger.d("height=" + height + ", webViewHeight=" + webViewHeight + ", scrollY=" + scrollY);
-        if (scrollY + webViewHeight >= height - 5) {
-            return TouchWebView.ScrollState.BOTTOM;
-        } else if (height - scrollY - 5 <= webViewHeight) {
-            return TouchWebView.ScrollState.TOP;
+        if (inputConnection == null) {
+            return super.onCreateInputConnection(outAttrs);
         } else {
-            return TouchWebView.ScrollState.BETWEEN;
+            return inputConnection;
         }
+    }
+
+    @Nullable
+    public TouchWebView.ScrollState getScrollState() {
+        if (webViewClient != null) {
+            float scale = webViewClient.getLastScale();
+            if (scale <= 0) {
+                scale = getScale();
+            }
+            int height = (int) Math.floor(getContentHeight() * scale);
+            int webViewHeight = getMeasuredHeight();
+            int scrollY = getScrollY();
+//        logger.d("height=" + height + ", webViewHeight=" + webViewHeight + ", scrollY=" + scrollY);
+            if (scrollY + webViewHeight >= height - 5) {
+                return TouchWebView.ScrollState.BOTTOM;
+            } else if (height - scrollY - 5 <= webViewHeight) {
+                return TouchWebView.ScrollState.TOP;
+            } else {
+                return TouchWebView.ScrollState.BETWEEN;
+            }
+        }
+        return null;
     }
 
     @Override
     protected void onScrollChanged(int l, int t, int oldl, int oldt) {
-        switch (getScrollState()) {
-            case TOP:
-                scrollChangeObservable.dispatchScrolledToTop();
-                break;
-            case BOTTOM:
-                scrollChangeObservable.dispatchScrolledToBottom();
-                break;
+        final ScrollState state = getScrollState();
+        if (state != null) {
+            switch (state) {
+                case TOP:
+                    scrollChangeObservable.dispatchScrolledToTop();
+                    break;
+                case BOTTOM:
+                    scrollChangeObservable.dispatchScrolledToBottom();
+                    break;
+            }
         }
         scrollChangeObservable.dispatchScrollChanged(l, t, oldl, oldt);
         super.onScrollChanged(l, t, oldl, oldt);
@@ -226,18 +230,18 @@ public class TouchWebView extends WebView implements Handler.Callback {
 
     public static class TouchWebViewClient extends WebViewClient {
 
-        private final Handler mWebViewHandler;
+        @Nullable
+        protected Handler webViewHandler;
 
-        private final PageLoadObservable mPageLoadObservable;
+        @Nullable
+        protected PageLoadObservable pageLoadObservable;
 
         private float lastScale = 0;
 
-        public TouchWebViewClient(Handler handler, PageLoadObservable pageLoadObservable) {
-            mWebViewHandler = handler;
-            mPageLoadObservable = pageLoadObservable;
+        public TouchWebViewClient() {
         }
 
-        public float getLastScale() {
+        float getLastScale() {
             return lastScale;
         }
 
@@ -245,7 +249,9 @@ public class TouchWebView extends WebView implements Handler.Callback {
         @CallSuper
         public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
             logger.d("shouldOverrideUrlLoading(), request=" + request);
-            mWebViewHandler.sendEmptyMessage(CLICK_ON_URL);
+            if (webViewHandler != null) {
+                webViewHandler.sendEmptyMessage(CLICK_ON_URL);
+            }
             return super.shouldOverrideUrlLoading(view, request);
         }
 
@@ -253,14 +259,26 @@ public class TouchWebView extends WebView implements Handler.Callback {
         @CallSuper
         public void onPageStarted(WebView view, final String url, final Bitmap favicon) {
             super.onPageStarted(view, url, favicon);
-            mWebViewHandler.post(() -> mPageLoadObservable.dispatchLoadPageStarted(url, favicon));
+            if (webViewHandler != null) {
+                webViewHandler.post(() -> {
+                    if (pageLoadObservable != null) {
+                        pageLoadObservable.dispatchLoadPageStarted(url, favicon);
+                    }
+                });
+            }
         }
 
         @Override
         @CallSuper
         public void onPageFinished(WebView view, final String url) {
             super.onPageFinished(view, url);
-            mWebViewHandler.post(() -> mPageLoadObservable.dispatchLoadPageFinished(url));
+            if (webViewHandler != null) {
+                webViewHandler.post(() -> {
+                    if (pageLoadObservable != null) {
+                        pageLoadObservable.dispatchLoadPageFinished(url);
+                    }
+                });
+            }
         }
 
         @Override

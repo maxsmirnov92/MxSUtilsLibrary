@@ -6,7 +6,7 @@ import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 
 /** @see net.maxsmr.commonutils.data.gson.exclusion.FieldExclude */
-class FieldsAnnotationExclusionStrategy implements ExclusionStrategy {
+public class FieldsAnnotationExclusionStrategy implements ExclusionStrategy {
 
     @Override
     public boolean shouldSkipField(@Nullable FieldAttributes f) {

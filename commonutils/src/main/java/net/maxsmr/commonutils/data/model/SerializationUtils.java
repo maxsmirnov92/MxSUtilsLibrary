@@ -191,6 +191,10 @@ public final class SerializationUtils {
     }
 
     public static <T extends Serializable> boolean toFile(@Nullable T object, @Nullable File file) {
+        return toFile(object, file, true);
+    }
+
+    public static <T extends Serializable> boolean toFile(@Nullable T object, @Nullable File file, boolean resetOnFail) {
         if (FileHelper.checkFileNoThrow(file)) {
             FileOutputStream stream = null;
             try {
@@ -200,7 +204,7 @@ public final class SerializationUtils {
             }
             if (toOutputStream(object, stream)) {
                 return true;
-            } else {
+            } else if (resetOnFail) {
                 FileHelper.resetFile(file);
             }
         }

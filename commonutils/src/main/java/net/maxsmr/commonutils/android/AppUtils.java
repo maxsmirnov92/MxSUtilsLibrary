@@ -273,9 +273,11 @@ public final class AppUtils {
         Boolean isInBackground = null;
         if (!TextUtils.isEmpty(packageName)) {
             List<ActivityManager.RunningAppProcessInfo> runningProcesses = am.getRunningAppProcesses();
-            for (ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
-                if (packageName.equals(processInfo.processName)) {
-                    isInBackground = processInfo.importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
+            if (runningProcesses != null) {
+                for (ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
+                    if (packageName.equals(processInfo.processName)) {
+                        isInBackground = processInfo.importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND;
+                    }
                 }
             }
         }

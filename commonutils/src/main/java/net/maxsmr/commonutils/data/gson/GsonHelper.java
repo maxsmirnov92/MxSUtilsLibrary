@@ -143,10 +143,12 @@ public class GsonHelper {
         V value = null;
         if (forElement != null && forElement.isJsonPrimitive()) {
             JsonPrimitive primitive = forElement.getAsJsonPrimitive();
-            if (primitive.isString() && clazz.isAssignableFrom(String.class)) {
+            if (primitive.isString() && String.class.isAssignableFrom(clazz)) {
                 value = (V) primitive.getAsString();
-            } else if (primitive.isNumber() && clazz.isAssignableFrom(Number.class)) {
+            } else if (primitive.isNumber() && Number.class.isAssignableFrom(clazz)) {
                 value = (V) primitive.getAsNumber();
+            } else if (primitive.isBoolean() && Boolean.class.isAssignableFrom(clazz)) {
+                value = (V) Boolean.valueOf(primitive.getAsBoolean());
             }
         }
         return value;
