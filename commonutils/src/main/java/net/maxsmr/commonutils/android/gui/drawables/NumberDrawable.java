@@ -41,13 +41,13 @@ public class NumberDrawable extends BitmapDrawable {
         return this;
     }
 
-    public NumberDrawable(Context ctx, @DrawableRes int sourceDrawableResId, @ColorInt int textColor, int textAlpha, String fontAlias) {
-        this(ctx, GraphicUtils.copyBitmap(GraphicUtils.createBitmapFromResource(ctx, sourceDrawableResId, 1), Bitmap.Config.ARGB_8888), textColor, textAlpha, fontAlias);
+    public NumberDrawable(Context context, @DrawableRes int sourceDrawableResId, @ColorInt int textColor, int textAlpha, String fontAlias) {
+        this(context, GraphicUtils.copyBitmap(GraphicUtils.createBitmapFromResource(context, sourceDrawableResId), Bitmap.Config.ARGB_8888), textColor, textAlpha, fontAlias);
     }
 
-    public NumberDrawable(Context ctx, Bitmap sourceBitmap, @ColorInt int textColor, int textAlpha, String fontAlias) {
-        super(ctx.getResources(), sourceBitmap);
-        mContext = ctx;
+    public NumberDrawable(Context context, Bitmap sourceBitmap, @ColorInt int textColor, int textAlpha, String fontAlias) {
+        super(context.getResources(), sourceBitmap);
+        mContext = context;
         mNeedInvalidate = false;
         setSource(sourceBitmap);
         setTextColor(textColor);

@@ -68,11 +68,7 @@ public class LocationUtils {
     }
 
     public static boolean checkGpsEnabled(@NotNull Activity activity, int requestCode) {
-        final LocationManager locationManager = (LocationManager) activity.getSystemService(Context.LOCATION_SERVICE);
-        if (locationManager == null) {
-            throw new RuntimeException(LocationManager.class.getSimpleName() + " is null");
-        }
-        if (!locationManager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+        if (!isProviderEnabled(activity, LocationManager.GPS_PROVIDER)) {
             final Intent intent = new Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS).addFlags(Intent.FLAG_ACTIVITY_SINGLE_TOP);
             if (requestCode > 0) {
                 activity.startActivityForResult(intent, requestCode);

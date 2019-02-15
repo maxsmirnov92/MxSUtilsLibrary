@@ -141,7 +141,6 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
         }
     }
 
-
     @Override
     public void getItemOffsets(Rect outRect, View view, RecyclerView parent, RecyclerView.State state) {
         super.getItemOffsets(outRect, view, parent, state);
@@ -182,6 +181,12 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
 
     protected boolean isDecorated(View view, RecyclerView parent, boolean dividerOrSpacing) {
 
+        final RecyclerView.Adapter adapter = parent.getAdapter();
+
+        if (adapter == null) {
+            throw new RuntimeException("Adapter not set");
+        }
+
         int childPos = parent.getChildAdapterPosition(view);
 
         boolean result;
@@ -191,11 +196,13 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
                 result = true;
                 break;
             case ALL_EXCEPT_LAST:
-                final RecyclerView.Adapter adapter = parent.getAdapter();
-                if (adapter == null) {
-                    throw new RuntimeException("Adapter not set");
-                }
                 result = childPos < adapter.getItemCount() - 1;
+                break;
+            case FIRST:
+                result = childPos == 0;
+                break;
+            case LAST:
+                result = childPos == adapter.getItemCount() - 1;
                 break;
             case CUSTOM:
                 result = dividerOrSpacing ? settings.getDividerPositions().contains(childPos) : (settings.getDividerPositions().contains(childPos) || settings.getSpacingPositions().contains(childPos));
@@ -310,7 +317,7 @@ public class DividerSpacingItemDecoration extends RecyclerView.ItemDecoration {
         }
 
         public enum Mode {
-            ALL, ALL_EXCEPT_LAST, CUSTOM
+            ALL, ALL_EXCEPT_LAST, FIRST, LAST, CUSTOM
         }
     }
 }

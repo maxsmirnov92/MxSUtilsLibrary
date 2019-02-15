@@ -975,6 +975,20 @@ public final class FileHelper {
         return fileName;
     }
 
+    public static File appendPostfix(@Nullable File file, @Nullable String postfix, boolean checkExists) {
+        File result = file;
+        if (!TextUtils.isEmpty(postfix)) {
+            if (file != null) {
+                do {
+                    String name = result.getName();
+                    name = FileHelper.removeExtension(name) + postfix + "." + FileHelper.getFileExtension(name);
+                    result = new File(result.getParent(), name);
+                } while (checkExists && result.exists());
+            }
+        }
+        return result;
+    }
+
     /**
      * @return same sorted list or created sorted array list
      */

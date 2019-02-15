@@ -10,14 +10,15 @@ import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileDescriptor;
@@ -341,7 +342,7 @@ public final class MetadataRetriever {
         }
 
         MediaMetadataRetriever retriever = createMediaMetadataRetrieverNoThrow(context, resourceUri, null);
-        return retriever != null ? GraphicUtils.createBitmapFromByteArray(retriever.getEmbeddedPicture(), 1) : null;
+        return retriever != null ? GraphicUtils.createBitmapFromByteArray(retriever.getEmbeddedPicture()) : null;
     }
 
     public static long extractMediaDuration(@NotNull Context context, @Nullable Uri resourceUri) {

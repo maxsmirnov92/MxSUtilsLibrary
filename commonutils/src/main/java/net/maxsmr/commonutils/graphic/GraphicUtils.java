@@ -36,14 +36,10 @@ import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.renderscript.Type;
 import android.support.annotation.ColorInt;
 import android.support.annotation.DrawableRes;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import android.support.annotation.XmlRes;
 import android.support.v7.graphics.Palette;
 import android.text.TextUtils;
-import android.util.DisplayMetrics;
 import android.util.TypedValue;
-import android.view.WindowManager;
 
 import net.maxsmr.commonutils.android.gui.GuiUtils;
 import net.maxsmr.commonutils.android.media.MetadataRetriever;
@@ -51,11 +47,12 @@ import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 import org.xmlpull.v1.XmlPullParserException;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -200,9 +197,9 @@ public final class GraphicUtils {
     }
 
     /**
-     * @return null if failed
+     * @return null if failed, otherwise same file or same file with changed extension
      */
-    public static File writeCompressedBitmapToFile(File file, Bitmap data, Bitmap.CompressFormat format) {
+    public static File compressBitmapToFile(File file, Bitmap data, Bitmap.CompressFormat format, int quality) {
 
         if (file == null) {
             logger.e("file not specified");
@@ -211,6 +208,11 @@ public final class GraphicUtils {
 
         if (!isBitmapCorrect(data)) {
             logger.e("bitmap is incorrect");
+            return null;
+        }
+
+        if (quality <= 0) {
+            logger.e("Incorrect quality: $quality");
             return null;
         }
 
@@ -231,7 +233,7 @@ public final class GraphicUtils {
         FileOutputStream fos = null;
         try {
             fos = new FileOutputStream(file);
-            data.compress(format, 100, fos);
+            data.compress(format, quality, fos);
             fos.flush();
             return file;
         } catch (IOException e) {
@@ -250,16 +252,21 @@ public final class GraphicUtils {
     }
 
     @Nullable
-    public static byte[] writeCompressedBitmapToByteArray(Bitmap data, Bitmap.CompressFormat format) {
+    public static byte[] compressBitmapToByteArray(@Nullable Bitmap data, @NotNull Bitmap.CompressFormat format, int quality) {
 
         if (!isBitmapCorrect(data)) {
             logger.e("bitmap is incorrect");
             return null;
         }
 
+        if (quality <= 0) {
+            logger.e("Incorrect quality: $quality");
+            return null;
+        }
+
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
-            data.compress(format, 100, baos);
+            data.compress(format, quality, baos);
             baos.flush();
             try {
                 return baos.toByteArray();
@@ -278,6 +285,74 @@ public final class GraphicUtils {
 
         return null;
     }
+
+    @Nullable
+    public static File compressImage(@Nullable File imageFile, @Nullable File compressedImageFile, long maxSize, int maxRetries, int qualityDecrementStep) {
+        return compressImage(imageFile, compressedImageFile, maxSize, maxRetries, qualityDecrementStep, Bitmap.Config.ARGB_8888, Bitmap.CompressFormat.JPEG);
+    }
+
+    @Nullable
+    public static File compressImage(@Nullable File imageFile, @Nullable File compressedImageFile, long maxSize, int maxRetries, int qualityDecrementStep,
+                                     @NotNull Bitmap.Config config, @NotNull Bitmap.CompressFormat format) {
+
+        if (maxSize < 0) {
+            logger.e("Incorrect maxSize: " + maxSize);
+            return null;
+        }
+
+        if (maxRetries < 0) {
+            logger.e("Incorrect maxRetries: maxRetries" + maxRetries);
+            return null;
+        }
+
+        if (qualityDecrementStep <= 0) {
+            logger.e("Incorrect qualityDecrementStep: " + qualityDecrementStep);
+            return null;
+        }
+
+        boolean result = imageFile != null && GraphicUtils.canDecodeImage(imageFile);
+
+        if (result && maxSize > 0) {
+
+            long currentLength = imageFile.length();
+
+            result = currentLength > 0 && currentLength <= maxSize;
+
+            if (!result && currentLength > 0 && maxRetries > 0) {
+
+                if (FileHelper.checkFileNoThrow(compressedImageFile)) {
+
+                    final Bitmap bm = createBitmapFromFile(imageFile, 1, config);
+
+                    if (bm != null) {
+
+                        FileHelper.deleteFile(compressedImageFile);
+
+                        int currentTry = 0;
+                        int currentQuality = 100;
+
+                        while (currentLength > maxSize && currentTry <= maxRetries && currentQuality > 0) {
+
+                            compressedImageFile = compressBitmapToFile(compressedImageFile, bm, format, currentQuality);
+                            currentLength = compressedImageFile != null? compressedImageFile.length() : 0;
+
+                            currentTry++;
+                            currentQuality = 100 - currentTry * qualityDecrementStep;
+                        }
+
+                        result = currentLength > 0 && currentLength <= maxSize;
+                    }
+                }
+            }
+        }
+
+        if (result) {
+            return FileHelper.isFileCorrect(compressedImageFile)? compressedImageFile : imageFile;
+        } else {
+            return imageFile;
+        }
+    }
+
 
     /**
      * @param gridSize number of width or height chunks in result image
@@ -378,22 +453,16 @@ public final class GraphicUtils {
     /**
      * Converts pixel value to dp value
      */
-    public static int pxToDp(int px, Context context) {
+    public static int pxToDp(int px, @NotNull Context context) {
         return (int) ((float) px / context.getResources().getDisplayMetrics().density);
     }
 
-    public static int dpToPx(int dp, Context ctx) {
-
+    public static int dpToPx(int dp, @NotNull Context context) {
         // OR simply px = dp * density
-
-        if (dp <= 0 || ctx == null) {
+        if (dp <= 0) {
             return 0;
         }
-
-        // getResources().getDisplayMetrics()
-        DisplayMetrics displayMetrics = new DisplayMetrics();
-        ((WindowManager) ctx.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(displayMetrics);
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, displayMetrics);
+        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, context.getResources().getDisplayMetrics());
     }
 
     public static Bitmap cropBitmap(Bitmap srcBitmap, int fromX, int fromY, int toX, int toY) {
@@ -427,7 +496,7 @@ public final class GraphicUtils {
         return bmOverlay;
     }
 
-    private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidthPx, int reqHeightPx) {
+    public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidthPx, int reqHeightPx) {
 
         if (reqWidthPx <= 0 || reqHeightPx <= 0) {
             return 0;
@@ -477,8 +546,8 @@ public final class GraphicUtils {
     }
 
     @Nullable
-    public static Bitmap createBitmapFromFile(File file, int scale) {
-        return createBitmapFromFile(file, scale, null);
+    public static Bitmap createBitmapFromFile(File file) {
+        return createBitmapFromFile(file, 1, null);
     }
 
     @Nullable
@@ -489,17 +558,30 @@ public final class GraphicUtils {
             return null;
         }
 
+        final BitmapFactory.Options options = new BitmapFactory.Options();
+        options.inJustDecodeBounds = true;
+        BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+
+        final int widthPx = scale > 1 ? options.outWidth / scale : options.outWidth;
+        final int heightPx = scale > 1 ? options.outHeight / scale : options.outHeight;
+
+        options.inSampleSize = calculateInSampleSize(options, widthPx, heightPx);
+        options.inPurgeable = true;
+        options.inInputShareable = true;
+        options.inJustDecodeBounds = false;
+        options.inPreferredConfig = config == null ? Bitmap.Config.ARGB_8888 : config;
+
         try {
-            return createBitmapFromStream(new FileInputStream(file), scale, config);
-        } catch (FileNotFoundException e) {
-            logger.e("a FileNotFoundException occurred during open FileInputStream", e);
+            return BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+        } catch (OutOfMemoryError e) {
+            logger.e("an OutOfMemoryError error occurred during decodeFile()", e);
             return null;
         }
     }
 
     @Nullable
-    public static Bitmap createBitmapFromByteArray(byte[] data, int scale) {
-        return createBitmapFromByteArray(data, scale, null);
+    public static Bitmap createBitmapFromByteArray(byte[] data) {
+        return createBitmapFromByteArray(data, 1, null);
     }
 
     @Nullable
@@ -532,8 +614,8 @@ public final class GraphicUtils {
     }
 
     @Nullable
-    public static Bitmap createBitmapFromStream(InputStream is, int scale) {
-        return createBitmapFromStream(is, scale, null);
+    public static Bitmap createBitmapFromStream(InputStream is) {
+        return createBitmapFromStream(is, 1, null);
     }
 
     @Nullable
@@ -555,18 +637,18 @@ public final class GraphicUtils {
         try {
             return BitmapFactory.decodeStream(is, null, options);
         } catch (OutOfMemoryError e) {
-            logger.e("an OutOfMemoryError error occurred during decodeByteArray()", e);
+            logger.e("an OutOfMemoryError error occurred during decodeStream()", e);
             return null;
         }
     }
 
     @Nullable
-    public static Bitmap createBitmapFromResource(Context context, @DrawableRes int resId, int scale) {
-        return createBitmapFromResource(context, resId, scale, null);
+    public static Bitmap createBitmapFromResource(@NotNull Context context, @DrawableRes int resId) {
+        return createBitmapFromResource(context, resId, 1, null);
     }
 
     @Nullable
-    public static Bitmap createBitmapFromResource(Context context, @DrawableRes int resId, int scale, @Nullable Bitmap.Config config) {
+    public static Bitmap createBitmapFromResource(@NotNull Context context, @DrawableRes int resId, int scale, @Nullable Bitmap.Config config) {
 
         if (resId == 0) {
             logger.e("resId is not specified");
@@ -595,7 +677,7 @@ public final class GraphicUtils {
     }
 
 
-    public static Bitmap createResizedBitmap(Bitmap bm, int newWidth) {
+    public static Bitmap createScaledBitmap(Bitmap bm, int newWidth) {
 
         if (bm == null) {
             return null;
@@ -646,7 +728,7 @@ public final class GraphicUtils {
     /**
      * Определяет поворот картинки
      */
-    public static int getOrientation(Context context, Uri photoUri) {
+    public static int getOrientation(@NotNull Context context, Uri photoUri) {
     /* it's on the external media. */
         Cursor cursor = context.getContentResolver().query(photoUri,
                 new String[]{MediaStore.Images.ImageColumns.ORIENTATION}, null, null, null);
@@ -704,7 +786,7 @@ public final class GraphicUtils {
         return orientation;
     }
 
-    public static Bitmap getCorrectlyOrientedImage(Context context, Uri uri, Bitmap sourceBitmap) {
+    public static Bitmap getCorrectlyOrientedImage(@NotNull Context context, Uri uri, Bitmap sourceBitmap) {
         if (isBitmapCorrect(sourceBitmap)) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
                 ExifInterface exif;
@@ -723,7 +805,7 @@ public final class GraphicUtils {
         return null;
     }
 
-    public static Bitmap getCorrectlyOrientedImage(Context context, Uri photoUri, final int maxImageDimension) throws IOException {
+    public static Bitmap getCorrectlyOrientedImage(@NotNull Context context, Uri photoUri, final int maxImageDimension) throws IOException {
         InputStream is = context.getContentResolver().openInputStream(photoUri);
         BitmapFactory.Options dbo = new BitmapFactory.Options();
         dbo.inJustDecodeBounds = true;
