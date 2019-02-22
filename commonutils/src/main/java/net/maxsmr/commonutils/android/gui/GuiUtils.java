@@ -16,10 +16,6 @@ import android.graphics.drawable.Drawable;
 import android.os.Build;
 import android.support.annotation.ColorInt;
 import android.support.annotation.IdRes;
-
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import android.support.design.widget.AppBarLayout;
 import android.support.design.widget.BottomSheetBehavior;
 import android.support.design.widget.BottomSheetDialog;
@@ -56,6 +52,9 @@ import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
@@ -544,8 +543,9 @@ public final class GuiUtils {
         }
 
         if (measuredViewSize == null) {
-            return newViewSize;
+            measuredViewSize = new Point();
         }
+
         if (measuredViewSize.x < 0 || measuredViewSize.y < 0) {
             throw new IllegalArgumentException("incorrect view size: " + measuredViewSize.x + "x" + measuredViewSize.y);
         }
@@ -714,17 +714,18 @@ public final class GuiUtils {
         CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) coordinatorChild.getLayoutParams();
         AppBarLayout.ScrollingViewBehavior behavior = (AppBarLayout.ScrollingViewBehavior) params.getBehavior();
         if (behavior != null) {
-            behavior.onNestedFling(rootLayout, appbarLayout, null, 0, 10000, true);
+            behavior.onNestedFling(rootLayout, appbarLayout, coordinatorChild, 0, 10000, true);
         }
     }
 
     public static int getCurrentDisplayOrientation(@NotNull Context context) {
+        final WindowManager windowManager = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE));
+        if (windowManager == null) {
+            throw new NullPointerException(WindowManager.class.getSimpleName() + " is null");
+        }
         int degrees = 0;
-        final int rotation = ((WindowManager) context.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getRotation();
+        final int rotation = windowManager.getDefaultDisplay().getRotation();
         switch (rotation) {
-            case Surface.ROTATION_0:
-                degrees = 0;
-                break;
             case Surface.ROTATION_90:
                 degrees = 90;
                 break;
@@ -749,6 +750,44 @@ public final class GuiUtils {
             result = 180;
         } else if (rotation >= 225 && rotation < 315) {
             result = 270;
+        }
+        return result;
+    }
+
+    public static int calculateViewsRotation(@NotNull Context context, int displayRotation) {
+        int result = 0;
+        displayRotation = getCorrectedDisplayRotation(displayRotation);
+        if (displayRotation != ROTATION_NOT_SPECIFIED) {
+            final int currentOrientation = context.getResources().getConfiguration().orientation;
+            if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+                switch (displayRotation) {
+                    case 0:
+                        result = 270;
+                        break;
+                    case 90:
+                        result = 180;
+                        break;
+                    case 180:
+                        result = 90;
+                        break;
+                    case 270:
+                        result = 0;
+                }
+            } else {
+                switch (displayRotation) {
+                    case 0:
+                        result = 0;
+                        break;
+                    case 90:
+                        result = 270;
+                        break;
+                    case 180:
+                        result = 180;
+                        break;
+                    case 270:
+                        result = 90;
+                }
+            }
         }
         return result;
     }

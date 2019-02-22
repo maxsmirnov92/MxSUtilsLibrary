@@ -24,20 +24,20 @@ public interface Predicate<V> {
 
         @Nullable
         public static <V> Pair<Integer, V> findWithIndex(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
-            int targetIndex = -1;
+            int resultIndex = -1;
             V result = null;
             if (elements != null) {
                 int index = 0;
                 for (V elem : elements) {
                     if (predicate.apply(elem)) {
                         result = elem;
-                        targetIndex = index;
+                        resultIndex = index;
                         break;
                     }
                     index++;
                 }
             }
-            return targetIndex >= 0 ? new Pair<>(targetIndex, result) : null;
+            return resultIndex >= 0 ? new Pair<>(resultIndex, result) : null;
         }
 
         @Nullable
@@ -67,20 +67,55 @@ public interface Predicate<V> {
             return entriesToValues(map.entrySet());
         }
 
-        @NotNull
-        public static <V> List<V> remove(@Nullable Iterable<V> elements, @NotNull Predicate<V> predicate) {
-            final List<V> removed = new ArrayList<>();
+        @Nullable
+        public static <V> Pair<Integer, V> removeFirstWithIndex(@Nullable Iterable<V> elements, @NotNull Predicate<V> predicate) {
+            int resultIndex = -1;
+            V result = null;
             if (elements != null) {
                 final Iterator<V> iterator = elements.iterator();
+                int index = 0;
                 while (iterator.hasNext()) {
                     V element = iterator.next();
                     if (predicate.apply(element)) {
                         iterator.remove();
-                        removed.add(element);
+                        result = element;
+                        resultIndex = index;
+                        break;
                     }
+                    index++;
+                }
+            }
+            return resultIndex >= 0 ? new Pair<>(resultIndex, result) : null;
+        }
+
+        @Nullable
+        public static <V> V removeFirst(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
+            Pair<Integer, V> result = removeFirstWithIndex(elements, predicate);
+            return result != null ? result.second : null;
+        }
+
+        @NotNull
+        public static <V> Map<Integer, V> removeAllWithIndex(@Nullable Iterable<V> elements, @NotNull Predicate<V> predicate) {
+            Map<Integer, V> removed = new LinkedHashMap<>();
+            if (elements != null) {
+                final Iterator<V> iterator = elements.iterator();
+                int index = 0;
+                while (iterator.hasNext()) {
+                    V element = iterator.next();
+                    if (predicate.apply(element)) {
+                        iterator.remove();
+                        removed.put(index, element);
+                    }
+                    index++;
                 }
             }
             return removed;
+        }
+
+        @NotNull
+        public static <V> List<V> removeAll(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
+            Map<Integer, V> map = removeAllWithIndex(elements, predicate);
+            return entriesToValues(map.entrySet());
         }
 
         @NotNull
