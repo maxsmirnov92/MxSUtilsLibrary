@@ -19,7 +19,7 @@ public abstract class BaseTagLogger extends BaseLogger {
 
     public static class Stub extends BaseTagLogger {
 
-        protected Stub(@Nullable String tag) {
+        public Stub(@Nullable String tag) {
             super(tag);
         }
 

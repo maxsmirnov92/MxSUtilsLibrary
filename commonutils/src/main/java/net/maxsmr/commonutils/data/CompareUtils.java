@@ -117,19 +117,34 @@ public final class CompareUtils {
         return false;
     }
 
+    /**
+     * то же самое, что и расширенная версия {@linkplain CompareUtils#stringsMatch},
+     * но с дефолтным флагом и разделителями
+     */
+    public static boolean stringsMatch(@Nullable CharSequence initialText, @Nullable CharSequence matchText) {
+        return stringsMatch(initialText, matchText, MatchStringOption.AUTO_IGNORE_CASE.flag);
+    }
 
-    public static boolean stringsMatch(CharSequence oneS, CharSequence anotherS, int matchFlags, String... separators) {
+    /**
+     * @param initialText строка, в которой ищутся вхождения
+     * @param matchText   сопостовляемая строка
+     * @param matchFlags  флаги, собранные из {@linkplain MatchStringOption} для выбора опций поиска соответствий
+     * @param separators  опциональные разделители для разбивки на подстроки в режиме [MatchStringOption.AUTO] или [MatchStringOption.AUTO_IGNORE_CASE]
+     * @return true если соответствие найдено, false - в противном случае
+     */
+    public static boolean stringsMatch(@Nullable CharSequence initialText, @Nullable CharSequence matchText, int matchFlags,
+                                       String... separators) {
 
-        if (oneS == null) {
-            oneS = "";
+        if (initialText == null) {
+            initialText = "";
         }
 
-        if (anotherS == null) {
-            anotherS = "";
+        if (matchText == null) {
+            matchText = "";
         }
 
-        String one = oneS.toString();
-        String another = anotherS.toString();
+        String one = initialText.toString();
+        String another = matchText.toString();
 
         boolean match = false;
 
@@ -175,16 +190,21 @@ public final class CompareUtils {
         }
         if (!match && (CompareUtils.MatchStringOption.contains(AUTO, matchFlags) || CompareUtils.MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags))) {
             if (!TextUtils.isEmpty(one)) {
-                one = CompareUtils.MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags) ? one.toLowerCase().trim() : one;
-                another = CompareUtils.MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags) ? another.toLowerCase().trim() : another;
+                final boolean isIgnoreCase = CompareUtils.MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags);
+                one = isIgnoreCase ? one.toLowerCase().trim() : one;
+                another = isIgnoreCase ? another.toLowerCase().trim() : another;
                 if (stringsEqual(one, another, false)) {
                     match = true;
                 } else {
-                    final String[] parts = one.split("[" + (separators != null && separators.length > 0 ? TextUtils.join("", separators) : " ") + "]+");
+                    final String[] parts = one.split("[" + (separators != null && separators.length > 0 ?
+                            TextUtils.join("", separators) : " ") + "]+");
                     if (parts.length > 0) {
                         for (String word : parts) {
+                            if (isIgnoreCase) {
+                                word = word.toLowerCase();
+                            }
                             if (!CompareUtils.MatchStringOption.containsAny(matchFlags, CompareUtils.MatchStringOption.valuesExceptOf(AUTO, AUTO_IGNORE_CASE).toArray(new CompareUtils.MatchStringOption[]{}))) {
-                                if (word.startsWith(another)) {
+                                if (word.startsWith(another) || word.endsWith(another)) {
                                     match = true;
                                     break;
                                 }
