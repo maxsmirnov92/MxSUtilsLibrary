@@ -220,7 +220,7 @@ public final class GraphicUtils {
 
         if (TextUtils.isEmpty(ext)) {
             logger.e("unknown format: " + format);
-            return null;
+            ext = FileHelper.getFileExtension(file.getName());
         }
 
         file = FileHelper.createNewFile(FileHelper.removeExtension(file.getName()) + "." + ext, file.getParent());

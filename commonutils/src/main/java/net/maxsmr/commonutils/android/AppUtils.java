@@ -125,6 +125,17 @@ public final class AppUtils {
         context.startActivity(activityIntent);
     }
 
+    public static boolean canLaunchIntent(@NotNull Context context, @Nullable Intent intent) {
+        boolean result = false;
+        if (intent != null) {
+            final PackageManager pm = context.getPackageManager();
+            if (pm.resolveActivity(intent, 0) != null) {
+                result = true;
+            }
+        }
+        return result;
+    }
+
     /**
      * @param fileUriProviderAuthority specify string after packageName + ".", if intended to use FileProvider instead of file://
      * */

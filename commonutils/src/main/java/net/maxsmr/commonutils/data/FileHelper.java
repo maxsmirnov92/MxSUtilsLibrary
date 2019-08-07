@@ -949,7 +949,7 @@ public final class FileHelper {
 
     @NotNull
     public static String getFileExtension(@Nullable File file) {
-        return getFileExtension(file != null? file.getName() : null);
+        return getFileExtension(file != null ? file.getName() : null);
     }
 
     @NotNull
@@ -963,14 +963,11 @@ public final class FileHelper {
 
     public static String removeExtension(String fileName) {
         if (!TextUtils.isEmpty(fileName)) {
-            String ext = getFileExtension(fileName);
-            if (!TextUtils.isEmpty(ext)) {
-                int startIndex = fileName.lastIndexOf('.');
-                if (startIndex >= 0) {
-                    fileName = StringUtils.replace(fileName, startIndex, fileName.length(), "");
-                }
-                return fileName;
+            int startIndex = fileName.lastIndexOf('.');
+            if (startIndex >= 0) {
+                fileName = StringUtils.replace(fileName, startIndex, fileName.length(), "");
             }
+            return fileName;
         }
         return fileName;
     }
@@ -1585,29 +1582,28 @@ public final class FileHelper {
      * @param selectionArgs (Optional) Selection arguments used in the query.
      * @return The value of the _data column, which is typically a file path.
      */
-    public static String getDataColumn(Context context, Uri uri, String selection,
-                                       String[] selectionArgs) {
+    public static String getDataColumn(@NotNull Context context,
+                                       @Nullable Uri uri,
+                                       @Nullable String selection,
+                                       @Nullable String[] selectionArgs) {
 
-        Cursor cursor = null;
-        final String column = "_data";
+        if (uri == null) {
+            return "";
+        }
+
+        final String column = MediaStore.Images.ImageColumns.DATA;
         final String[] projection = {
                 column
         };
-
-        try {
-            cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs,
-                    null);
+        try (Cursor cursor = context.getContentResolver().query(uri, projection, selection, selectionArgs,
+                null)) {
             if (cursor != null && cursor.moveToFirst()) {
                 final int index = cursor.getColumnIndexOrThrow(column);
                 return cursor.getString(index);
             }
-        } finally {
-            if (cursor != null)
-                cursor.close();
         }
         return null;
     }
-
 
     /**
      * @param uri The Uri to check.

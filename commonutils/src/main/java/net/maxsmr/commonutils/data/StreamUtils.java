@@ -25,6 +25,8 @@ public final class StreamUtils {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(StreamUtils.class);
 
+    private final static int DEFAULT_STREAM_BUF_SIZE = 256;
+
     private StreamUtils() {
         throw new AssertionError("no instances.");
     }
@@ -34,14 +36,18 @@ public final class StreamUtils {
     }
 
     public static boolean revectorStream(InputStream in, OutputStream out, boolean closeInput, boolean closeOutput) {
-        return revectorStream(in, out, null, closeInput, closeOutput);
+        return revectorStream(in, out, null, 0, closeInput, closeOutput);
     }
 
     public static boolean revectorStream(InputStream in, OutputStream out, IStreamNotifier notifier) {
-        return revectorStream(in, out, notifier, true, true);
+        return revectorStream(in, out, notifier, 0, true, true);
     }
 
-    public static boolean revectorStream(InputStream in, OutputStream out, IStreamNotifier notifier, boolean closeInput, boolean closeOutput) {
+    public static boolean revectorStream(InputStream in, OutputStream out, IStreamNotifier notifier, int buffSize, boolean closeInput, boolean closeOutput) {
+
+        if (buffSize <= 0) {
+            buffSize = DEFAULT_STREAM_BUF_SIZE;
+        }
 
         if (in == null || out == null)
             return false;
@@ -49,7 +55,7 @@ public final class StreamUtils {
         boolean result = true;
 
         try {
-            byte[] buff = new byte[256];
+            byte[] buff = new byte[buffSize];
 
             int bytesWriteCount = 0;
             int totalBytesCount = 0;
@@ -64,7 +70,7 @@ public final class StreamUtils {
             while ((len = in.read(buff)) > 0) {
                 if (notifier != null) {
                     long interval = notifier.notifyInterval();
-                    if (interval <= 0 || lastNotifyTime == 0 || (System.currentTimeMillis() - lastNotifyTime) >= interval) {
+                    if (interval >= 0 && (interval == 0 || lastNotifyTime == 0 || (System.currentTimeMillis() - lastNotifyTime) >= interval)) {
                         if (!notifier.onProcessing(in, out, bytesWriteCount,
                                 totalBytesCount > 0 && bytesWriteCount <= totalBytesCount ? totalBytesCount - bytesWriteCount : 0)) {
                             result = false;
