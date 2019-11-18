@@ -2,16 +2,13 @@ apply plugin: 'com.android.application'
 
 android {
 
-    compileSdkVersion rootProject.ext.androidSdkVersion
+    compileSdkVersion rootProject.ext.sdkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
 
-    sourceCompatibility = sourceCompatibilityVersion
-    targetCompatibility = sourceCompatibilityVersion
-
     defaultConfig {
-        applicationId project.appId
-        minSdkVersion androidMinSdkVersion
-        targetSdkVersion androidSdkVersion
+        applicationId "net.maxsmr.testapplication"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.sdkVersion
         versionCode 1
         versionName "1.0"
 
@@ -27,8 +24,8 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        sourceCompatibility sourceCompatibilityVersion
+        targetCompatibility sourceCompatibilityVersion
     }
 
 }

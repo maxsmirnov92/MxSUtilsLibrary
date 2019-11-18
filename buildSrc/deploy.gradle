@@ -1,0 +1,134 @@
+import groovy.json.JsonSlurper
+
+apply from: "$rootDir/buildSrc/config.gradle"
+
+apply plugin: 'com.jfrog.bintray'
+apply plugin: 'maven'
+apply plugin: 'maven-publish'
+
+def siteUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary'
+def gitUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary.git'
+
+def localReleaseDest = project.hasProperty("LOCAL_REPO") ? "${rootProject.projectDir}/${project.LOCAL_REPO}" : "${rootProject.buildDir}/release/repo"
+
+ext.getModuleVersion = { path ->
+    if (path.isEmpty()) return ""
+//    def lastIndex = path.lastIndexOf("/")
+//    def lastPathSegment
+//    if (lastIndex < 0 || lastIndex == path.size() - 1) {
+//        lastPathSegment = path
+//    } else {
+//        lastPathSegment = path.substring(lastIndex + 1, path.length())
+//    }
+    def modules = new JsonSlurper().parse(new File("$rootDir/buildSrc/modules.json"), 'utf-8')
+    def version = ""
+    modules.each { module ->
+        if (module.id == path) {
+            version = module.versionName
+            return true
+        }
+    }
+    if (version.isEmpty()) {
+        throw new GradleException("Version for module with path $lastPathSegment not found")
+    }
+    return version
+}
+
+ext.configureDeploy = { context ->
+
+    context.afterEvaluate {
+
+        task sourcesJar(type: Jar) {
+            classifier = 'sources'
+            from android.sourceSets.main.java.srcDirs
+        }
+
+//        task javadoc(type: Javadoc) {
+//            source = android.sourceSets.main.java.srcDirs
+//            classpath += project.files(android.getBootClasspath().join(File.pathSeparator))
+//        }
+//
+//        task javaDocsJar(type: Jar, dependsOn: javaDocs) {
+//            classifier = 'javadoc'
+//            from javaDocs.destinationDir
+//        }
+
+        artifacts {
+            archives sourcesJar
+//            archives javadocJar
+        }
+
+        uploadArchives {
+            repositories.mavenDeployer {
+                pom.groupId = project.groupIdName
+                pom.artifactId = project.archivesBaseName
+                pom.version = project.getModuleVersion(project.path)
+                repository(url: "file://${localReleaseDest}")
+            }
+        }
+
+        bintray {
+            user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
+            key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+            dryRun = false //[Default: false] Whether to run this as dry-run, without deploying
+            publish = true
+            //[Default: false] Whether version should be auto published after an upload
+            override = false
+            //[Default: false] Whether to override version artifacts already published
+            publications = ['artifactPublication']
+            pkg {
+                repo = 'maven'
+                name = rootProject.name /*+ File.separator + project.name*/
+                userOrg = user
+                websiteUrl = siteUrl
+                licenses = ['Apache-2.0']
+                vcsUrl = gitUrl
+                version {
+                    name = project.projectVersion
+                }
+                publicDownloadNumbers = true
+            }
+        }
+
+        publishing {
+            publications {
+                artifactPublication(MavenPublication) {
+
+                    groupId = project.groupIdName
+                    artifactId = project.archivesBaseName
+                    version = project.getModuleVersion(project.path)
+                    artifact "${project.buildDir}/outputs/aar/${project.archivesBaseName}-release.aar"
+                    artifact sourcesJar
+//                    artifact javaDocsJar
+
+                    pom.withXml {
+                        def dependenciesNode = asNode().appendNode('dependencies')
+
+                        //Iterate over the compile dependencies (we don't want the test ones), adding a <dependency> node for each
+                        configurations.api.allDependencies.each {
+                            // Ensure dependencies such as fileTree are not included.
+                            if (it.group != null && it.name != 'unspecified') {
+                                def dependencyNode = dependenciesNode.appendNode('dependency')
+                                dependencyNode.appendNode('groupId', it.group)
+                                dependencyNode.appendNode('artifactId', it.name)
+                                dependencyNode.appendNode('version', it.version)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * Generating "bintray.json" if using Travis CI
+ */
+task generateBintrayJson {
+    def template = new File("$rootDir/buildSrc/ci", "bintray_template.json").text
+    File configFileText = new File("$rootDir/buildSrc/ci", "bintray.json")
+    configFileText.createNewFile()
+    configFileText.write(template.replace('[version]', projectVersion))
+}
+
+
