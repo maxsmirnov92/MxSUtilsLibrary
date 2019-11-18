@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.data;
 
 import org.jetbrains.annotations.Nullable;
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 
 import java.util.ArrayList;
 import java.util.Arrays;

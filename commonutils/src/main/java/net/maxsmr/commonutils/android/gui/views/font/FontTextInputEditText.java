@@ -3,8 +3,9 @@ package net.maxsmr.commonutils.android.gui.views.font;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Typeface;
-import android.support.design.widget.TextInputEditText;
 import android.util.AttributeSet;
+
+import com.google.android.material.textfield.TextInputEditText;
 
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;

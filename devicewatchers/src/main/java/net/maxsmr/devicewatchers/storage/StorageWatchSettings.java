@@ -1,11 +1,10 @@
 package net.maxsmr.devicewatchers.storage;
 
-import android.support.annotation.Nullable;
-
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Units;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Comparator;

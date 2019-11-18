@@ -2,10 +2,11 @@ package net.maxsmr.commonutils.android.gui.views.checkable;
 
 import android.content.Context;
 import android.os.Build;
-import android.support.annotation.RequiresApi;
 import android.util.AttributeSet;
 import android.widget.Checkable;
 import android.widget.LinearLayout;
+
+import androidx.annotation.RequiresApi;
 
 /**
  * This is a simple wrapper for {@link LinearLayout} that implements the {@link Checkable}

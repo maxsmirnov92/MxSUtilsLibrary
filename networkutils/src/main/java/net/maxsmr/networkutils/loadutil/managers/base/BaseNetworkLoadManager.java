@@ -2,7 +2,6 @@ package net.maxsmr.networkutils.loadutil.managers.base;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.data.Predicate;
@@ -18,6 +17,7 @@ import net.maxsmr.tasksutils.taskexecutor.StatInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.HttpURLConnection;

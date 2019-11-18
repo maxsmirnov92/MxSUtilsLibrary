@@ -2,25 +2,21 @@ package net.maxsmr.commonutils.android.service;
 
 import android.app.ActivityManager;
 import android.app.AlarmManager;
-import android.app.Notification;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.support.annotation.DrawableRes;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.android.hardware.DeviceUtils;
-import net.maxsmr.commonutils.android.notification.NotificationActionInfo;
-import net.maxsmr.commonutils.android.notification.NotificationController;
-import net.maxsmr.commonutils.android.notification.NotificationInfo;
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public final class ServiceUtils {
 

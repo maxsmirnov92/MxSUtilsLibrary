@@ -2,10 +2,9 @@ package net.maxsmr.tasksutils.storage.sync;
 
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.CallSuper;
-import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
-import android.support.v4.util.Pair;
+
+import androidx.annotation.CallSuper;
+import androidx.core.util.Pair;
 
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -13,6 +12,9 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.CustomHandlerThread;
 import net.maxsmr.tasksutils.handler.HandlerRunnable;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.InputStream;
 import java.util.Iterator;

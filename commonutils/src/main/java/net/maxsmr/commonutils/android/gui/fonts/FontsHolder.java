@@ -2,13 +2,15 @@ package net.maxsmr.commonutils.android.gui.fonts;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import org.jetbrains.annotations.Nullable;
-import android.support.v7.widget.RecyclerView;
 import android.text.TextUtils;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
+
+import androidx.recyclerview.widget.RecyclerView;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.HashMap;
@@ -34,13 +36,13 @@ public final class FontsHolder {
     private FontsHolder() {
     }
 
-    private final Map<String, Typeface> loaded_fonts = new HashMap<>();
+    private final Map<String, Typeface> loadedFonts = new HashMap<>();
 
     @Nullable
     public Typeface getFont(String alias) {
         final Typeface t;
-        if (loaded_fonts.containsKey(alias)) {
-            t = loaded_fonts.get(alias);
+        if (loadedFonts.containsKey(alias)) {
+            t = loadedFonts.get(alias);
         } else {
             t = null;
         }
@@ -50,18 +52,18 @@ public final class FontsHolder {
     public Typeface loadFont(File file, String alias) {
         Typeface tf = null;
         if (!TextUtils.isEmpty(alias)) {
-            if ((tf = loaded_fonts.get(alias)) != null) return tf;
+            if ((tf = loadedFonts.get(alias)) != null) return tf;
             tf = Typeface.createFromFile(file);
-            loaded_fonts.put(alias, tf);
+            loadedFonts.put(alias, tf);
         }
         return tf;
     }
 
     public Typeface loadFont(String asset, Context ctx, String alias) {
         Typeface tf;
-        if ((tf = loaded_fonts.get(alias)) != null) return tf;
+        if ((tf = loadedFonts.get(alias)) != null) return tf;
         tf = Typeface.createFromAsset(ctx.getAssets(), asset);
-        loaded_fonts.put(alias, tf);
+        loadedFonts.put(alias, tf);
         return tf;
     }
 
@@ -103,6 +105,6 @@ public final class FontsHolder {
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        loaded_fonts.clear();
+        loadedFonts.clear();
     }
 }

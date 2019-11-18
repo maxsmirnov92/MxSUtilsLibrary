@@ -3,12 +3,12 @@ package net.maxsmr.testapplication.activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.os.Environment;
-import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
-import android.support.design.widget.Snackbar;
-import android.support.v7.app.AppCompatActivity;
 import android.util.AttributeSet;
 import android.view.View;
+
+import androidx.appcompat.app.AppCompatActivity;
+
+import com.google.android.material.snackbar.Snackbar;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;
@@ -21,6 +21,9 @@ import net.maxsmr.tasksutils.storage.sync.collection.AbstractCollectionSyncStora
 import net.maxsmr.tasksutils.storage.sync.collection.ListSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.Collections;
@@ -54,7 +57,7 @@ public class TestUploadActivity extends AppCompatActivity implements AbstractSyn
 //        storage.setCallbacksHandler(new Handler(Looper.getMainLooper()));
         storage.addStorageListener(this);
 
-        loadManager = new NetworkLoadManager<>(
+        loadManager = new NetworkLoadManager(
                 NetworkLoadManager.LOADS_NO_LIMIT, 1, storage, new TaskRunnable.ITaskResultValidator<LoadRunnableInfo<LoadRunnableInfo.FileBody>, Void, Void, TaskRunnable<LoadRunnableInfo<LoadRunnableInfo.FileBody>, Void, Void>>() {
 
             @Override

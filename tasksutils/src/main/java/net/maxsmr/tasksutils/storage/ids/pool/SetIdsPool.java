@@ -2,7 +2,7 @@ package net.maxsmr.tasksutils.storage.ids.pool;
 
 
 import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.Collections;

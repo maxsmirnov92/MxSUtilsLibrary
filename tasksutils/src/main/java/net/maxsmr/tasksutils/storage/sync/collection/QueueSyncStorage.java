@@ -1,7 +1,7 @@
 package net.maxsmr.tasksutils.storage.sync.collection;
 
 import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 

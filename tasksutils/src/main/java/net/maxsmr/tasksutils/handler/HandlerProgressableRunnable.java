@@ -3,11 +3,13 @@ package net.maxsmr.tasksutils.handler;
 import android.os.AsyncTask;
 import android.os.Handler;
 import android.os.Looper;
-import android.support.annotation.CallSuper;
-import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
+
+import androidx.annotation.CallSuper;
 
 import net.maxsmr.commonutils.android.gui.progressable.Progressable;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public abstract class HandlerProgressableRunnable<T> extends HandlerRunnable<T> {
 

@@ -1,8 +1,6 @@
-apply from: "$rootDir/buildSrc/androidModule.gradle"
-
-configureDeploy(this)
+apply from: "$rootDir/buildSrc/baseBuild.gradle"
 
 dependencies {
 //    api project(':commonutils')
-    api "net.maxsmr:commonutils:$commonUtilsVersion"
+    api "net.maxsmr:commonutils:${project.getModuleVersion(":commonutils")}"
 }

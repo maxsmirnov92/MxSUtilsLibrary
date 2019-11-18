@@ -1,10 +1,9 @@
 package net.maxsmr.testapplication.logger;
 
-import android.support.annotation.Nullable;
-
 import net.maxsmr.commonutils.data.FileHelper;
 
 import org.apache.log4j.Level;
+import org.jetbrains.annotations.Nullable;
 
 import de.mindpipe.android.logging.log4j.LogConfigurator;
 

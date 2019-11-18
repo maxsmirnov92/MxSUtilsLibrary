@@ -1,6 +1,5 @@
 package net.maxsmr.networkutils.loadutil.managers.base.info;
 
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import com.google.gson.JsonElement;
@@ -10,6 +9,7 @@ import net.maxsmr.commonutils.data.model.IBuilder;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;

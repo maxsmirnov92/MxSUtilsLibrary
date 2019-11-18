@@ -1,13 +1,12 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
 import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
-
 
 public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> implements Serializable {
 

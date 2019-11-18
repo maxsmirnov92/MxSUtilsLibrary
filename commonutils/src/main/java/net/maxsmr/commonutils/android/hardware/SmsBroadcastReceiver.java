@@ -6,9 +6,11 @@ import android.content.Intent;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.Telephony;
-import org.jetbrains.annotations.Nullable;
-import android.support.v4.content.LocalBroadcastManager;
 import android.telephony.SmsMessage;
+
+import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
 import java.util.Collection;

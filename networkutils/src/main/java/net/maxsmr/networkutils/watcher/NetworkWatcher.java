@@ -2,7 +2,6 @@ package net.maxsmr.networkutils.watcher;
 
 import android.content.Context;
 import android.net.ConnectivityManager;
-import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.android.hardware.DeviceUtils;
 import net.maxsmr.commonutils.data.Observable;
@@ -17,6 +16,7 @@ import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;

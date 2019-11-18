@@ -9,7 +9,6 @@ import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
 import net.maxsmr.commonutils.android.gui.views.maskedettext.MaskedEditText;
 
-
 public class FontMaskEditText extends MaskedEditText implements ITypefaceChangeable {
 
     public FontMaskEditText(Context context) {

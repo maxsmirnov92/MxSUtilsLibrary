@@ -1,8 +1,5 @@
 package net.maxsmr.networkutils.loadutil.managers.base;
 
-import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
-
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;
@@ -12,6 +9,9 @@ import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.storage.sync.collection.QueueSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 

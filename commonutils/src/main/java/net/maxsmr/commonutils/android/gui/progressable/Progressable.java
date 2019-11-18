@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.android.gui.progressable;
 
-import android.support.annotation.MainThread;
+import androidx.annotation.MainThread;
 
 public interface Progressable {
 

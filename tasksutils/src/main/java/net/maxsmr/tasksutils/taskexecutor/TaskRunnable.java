@@ -2,8 +2,8 @@ package net.maxsmr.tasksutils.taskexecutor;
 
 import android.os.AsyncTask;
 import android.os.Handler;
-import android.support.annotation.CallSuper;
-import android.support.annotation.Nullable;
+
+import androidx.annotation.CallSuper;
 
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.data.Predicate;
@@ -11,6 +11,7 @@ import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;

@@ -6,18 +6,19 @@ import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
-import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
-import android.support.v4.content.ContextCompat;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
 import android.util.Patterns;
 
-import net.maxsmr.commonutils.data.MathUtils;
+import androidx.core.content.ContextCompat;
+
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
 import net.maxsmr.commonutils.shell.ShellUtils;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Method;
 import java.net.InetAddress;

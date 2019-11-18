@@ -2,8 +2,9 @@ package net.maxsmr.commonutils.android.gui.progressable;
 
 
 import android.content.Context;
-import android.support.annotation.IdRes;
 import android.view.View;
+
+import androidx.annotation.IdRes;
 
 public class ContentDialogProgressable extends DialogProgressable {
 

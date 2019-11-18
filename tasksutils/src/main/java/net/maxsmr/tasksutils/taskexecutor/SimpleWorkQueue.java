@@ -1,13 +1,13 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
-import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
-
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable.ITaskRestorer;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable.ITaskResultValidator;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;

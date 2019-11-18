@@ -1,13 +1,13 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
 import android.os.AsyncTask;
-import android.support.annotation.Nullable;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.data.model.SerializationUtils;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.InputStream;

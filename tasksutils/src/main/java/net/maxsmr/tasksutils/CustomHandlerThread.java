@@ -3,11 +3,12 @@ package net.maxsmr.tasksutils;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.Looper;
-import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;

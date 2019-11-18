@@ -11,11 +11,12 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
-import android.support.annotation.RawRes;
-import android.support.media.ExifInterface;
-import android.support.v4.util.ArraySet;
-import android.support.v4.util.Pair;
 import android.text.TextUtils;
+
+import androidx.annotation.RawRes;
+import androidx.collection.ArraySet;
+import androidx.core.util.Pair;
+import androidx.exifinterface.media.ExifInterface;
 
 import net.maxsmr.commonutils.data.sort.BaseOptionableComparator;
 import net.maxsmr.commonutils.data.sort.ISortOption;

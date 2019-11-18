@@ -4,9 +4,11 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ColorFilter;
 import android.graphics.Paint;
+import android.graphics.PixelFormat;
 import android.graphics.drawable.Drawable;
-import android.support.annotation.ColorInt;
-import android.support.v4.view.ViewPager;
+
+import androidx.annotation.ColorInt;
+import androidx.viewpager.widget.ViewPager;
 
 /**
  * Yay, indicator.
@@ -102,6 +104,6 @@ class PagerIndicatorDrawable extends Drawable implements ViewPager.OnPageChangeL
 
     @Override
     public int getOpacity() {
-        return 0;
+        return PixelFormat.UNKNOWN;
     }
 }

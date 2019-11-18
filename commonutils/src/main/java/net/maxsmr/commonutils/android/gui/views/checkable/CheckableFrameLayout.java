@@ -2,14 +2,16 @@ package net.maxsmr.commonutils.android.gui.views.checkable;
 
 import android.content.Context;
 import android.os.Build;
-import android.support.annotation.AttrRes;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import android.support.annotation.RequiresApi;
-import android.support.annotation.StyleRes;
 import android.util.AttributeSet;
 import android.widget.Checkable;
 import android.widget.FrameLayout;
+
+import androidx.annotation.AttrRes;
+import androidx.annotation.RequiresApi;
+import androidx.annotation.StyleRes;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 /**
  * This is a simple wrapper for {@link FrameLayout} that implements the {@link Checkable}

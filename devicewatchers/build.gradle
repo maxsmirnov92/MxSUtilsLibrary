@@ -1,6 +1,4 @@
-apply from: "$rootDir/buildSrc/androidModule.gradle"
-
-configureDeploy(this)
+apply from: "$rootDir/buildSrc/baseBuild.gradle"
 
 dependencies {
 //    api project(':tasksutils')

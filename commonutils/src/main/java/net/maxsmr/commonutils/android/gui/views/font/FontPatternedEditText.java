@@ -1,6 +1,5 @@
 package net.maxsmr.commonutils.android.gui.views.font;
 
-
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Typeface;
@@ -8,6 +7,7 @@ import android.util.AttributeSet;
 
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
 import net.maxsmr.commonutils.android.gui.views.PatternedEditText;
+
 public class FontPatternedEditText extends PatternedEditText {
 
     public FontPatternedEditText(Context context) {

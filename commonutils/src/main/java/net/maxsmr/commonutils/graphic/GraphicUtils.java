@@ -34,12 +34,13 @@ import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.renderscript.Type;
-import android.support.annotation.ColorInt;
-import android.support.annotation.DrawableRes;
-import android.support.annotation.XmlRes;
-import android.support.v7.graphics.Palette;
 import android.text.TextUtils;
 import android.util.TypedValue;
+
+import androidx.annotation.ColorInt;
+import androidx.annotation.DrawableRes;
+import androidx.annotation.XmlRes;
+import androidx.palette.graphics.Palette;
 
 import net.maxsmr.commonutils.android.gui.GuiUtils;
 import net.maxsmr.commonutils.android.media.MetadataRetriever;

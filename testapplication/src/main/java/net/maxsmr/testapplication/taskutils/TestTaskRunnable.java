@@ -1,11 +1,11 @@
 package net.maxsmr.testapplication.taskutils;
 
-import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
-
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 public class TestTaskRunnable extends TaskRunnable<TestRunnableInfo, Void, Boolean> {
 
@@ -17,7 +17,7 @@ public class TestTaskRunnable extends TaskRunnable<TestRunnableInfo, Void, Boole
 
     @Nullable
     @Override
-    protected Boolean doWork() throws Throwable {
+    public Boolean doWork() throws Throwable {
         logger.d("starting sleeping...");
         Thread.sleep(rInfo.delay);
         logger.d("stopped sleeping");

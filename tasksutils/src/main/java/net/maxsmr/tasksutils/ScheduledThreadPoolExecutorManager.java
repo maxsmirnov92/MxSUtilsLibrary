@@ -2,11 +2,12 @@ package net.maxsmr.tasksutils;
 
 import android.os.Handler;
 import android.os.Looper;
-import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collection;

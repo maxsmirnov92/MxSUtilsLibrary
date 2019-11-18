@@ -1,9 +1,9 @@
 package net.maxsmr.commonutils.data.gson.exclusion;
 
-import android.support.annotation.Nullable;
-
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
+
+import org.jetbrains.annotations.Nullable;
 
 /** @see net.maxsmr.commonutils.data.gson.exclusion.FieldExclude */
 public class FieldsAnnotationExclusionStrategy implements ExclusionStrategy {

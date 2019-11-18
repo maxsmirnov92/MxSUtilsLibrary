@@ -1,3 +1,5 @@
+apply from: "$rootDir/buildSrc/buildUtils.gradle"
+
 apply plugin: 'com.android.application'
 
 android {
@@ -13,7 +15,6 @@ android {
         versionName "1.0"
 
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
-
     }
 
     buildTypes {
@@ -27,7 +28,6 @@ android {
         sourceCompatibility sourceCompatibilityVersion
         targetCompatibility sourceCompatibilityVersion
     }
-
 }
 
 ext {
@@ -41,10 +41,8 @@ dependencies {
     implementation "de.mindpipe.android:android-logging-log4j:$log4jVersion"
     implementation "org.slf4j:slf4j-log4j12:$slf4jVersion"
 
-//    implementation project(':networkutils')
-    implementation "net.maxsmr:networkutils:$networkUtilsVersion"
-
-    implementation "com.android.support:appcompat-v7:$supportLibraryVersion"
+    implementation project(':networkutils')
+//    implementation "net.maxsmr:networkutils:${project.getModuleVersion(":networkutils")}"
 
     implementation "junit:junit:$jUnitVersion"
     testImplementation "junit:junit:$jUnitVersion"

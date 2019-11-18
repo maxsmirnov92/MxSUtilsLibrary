@@ -1,14 +1,16 @@
 package net.maxsmr.commonutils.android.certs;
 
 import android.content.Context;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-import android.support.annotation.RawRes;
 import android.text.TextUtils;
 import android.util.Pair;
 
+import androidx.annotation.RawRes;
+
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileInputStream;

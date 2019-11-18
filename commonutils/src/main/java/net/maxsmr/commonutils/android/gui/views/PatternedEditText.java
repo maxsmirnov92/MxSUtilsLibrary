@@ -4,21 +4,20 @@ import android.content.Context;
 import android.content.res.TypedArray;
 import android.os.Build;
 import android.os.Parcel;
-import android.os.Parcelable;
-import android.support.annotation.RequiresApi;
-import android.support.v7.widget.AppCompatEditText;
-import android.text.Editable;
+import android.os.Parcelable;import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.view.ActionMode;
 import android.view.Menu;
 import android.view.MenuItem;
 
+import androidx.annotation.RequiresApi;
+import androidx.appcompat.widget.AppCompatEditText;
+
 import net.maxsmr.commonutils.R;
 
 import java.util.HashSet;
 import java.util.Set;
-
 
 public class PatternedEditText extends AppCompatEditText {
 

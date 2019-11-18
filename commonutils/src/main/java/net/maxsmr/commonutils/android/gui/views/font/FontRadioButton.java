@@ -2,9 +2,9 @@ package net.maxsmr.commonutils.android.gui.views.font;
 
 import android.content.Context;
 import android.content.res.TypedArray;
-import android.graphics.Typeface;
-import android.support.v7.widget.AppCompatRadioButton;
-import android.util.AttributeSet;
+import android.graphics.Typeface;import android.util.AttributeSet;
+
+import androidx.appcompat.widget.AppCompatRadioButton;
 
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;

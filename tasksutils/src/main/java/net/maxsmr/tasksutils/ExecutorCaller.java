@@ -1,7 +1,7 @@
 package net.maxsmr.tasksutils;
 
 import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;

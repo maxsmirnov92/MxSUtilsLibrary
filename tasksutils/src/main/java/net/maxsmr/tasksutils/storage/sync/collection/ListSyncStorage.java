@@ -1,9 +1,9 @@
 package net.maxsmr.tasksutils.storage.sync.collection;
 
-import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
-
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.Collections;

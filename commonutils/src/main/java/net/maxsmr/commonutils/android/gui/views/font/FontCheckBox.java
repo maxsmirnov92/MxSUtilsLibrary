@@ -3,12 +3,12 @@ package net.maxsmr.commonutils.android.gui.views.font;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.Typeface;
-import android.support.v7.widget.AppCompatCheckBox;
 import android.util.AttributeSet;
+
+import androidx.appcompat.widget.AppCompatCheckBox;
 
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
-
 
 public class FontCheckBox extends AppCompatCheckBox implements ITypefaceChangeable {
 

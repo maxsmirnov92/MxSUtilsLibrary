@@ -1,15 +1,15 @@
 package net.maxsmr.commonutils.android.gui.views.maskedettext;
 
 import android.content.Context;
-import android.content.res.TypedArray;
-import android.support.annotation.CallSuper;
-import android.support.v7.widget.AppCompatEditText;
-import android.text.Editable;
+import android.content.res.TypedArray;import android.text.Editable;
 import android.text.TextWatcher;
 import android.util.AttributeSet;
 import android.view.KeyEvent;
 import android.view.View;
 import android.widget.TextView;
+
+import androidx.annotation.CallSuper;
+import androidx.appcompat.widget.AppCompatEditText;
 
 import net.maxsmr.commonutils.R;
 

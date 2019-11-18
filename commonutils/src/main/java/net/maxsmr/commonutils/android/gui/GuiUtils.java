@@ -14,15 +14,6 @@ import android.graphics.PorterDuff;
 import android.graphics.Rect;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
-import android.support.annotation.ColorInt;
-import android.support.annotation.IdRes;
-import android.support.design.widget.AppBarLayout;
-import android.support.design.widget.BottomSheetBehavior;
-import android.support.design.widget.BottomSheetDialog;
-import android.support.design.widget.CoordinatorLayout;
-import android.support.design.widget.TextInputLayout;
-import android.support.v4.content.ContextCompat;
-import android.support.v7.app.AppCompatActivity;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.Spanned;
@@ -47,6 +38,17 @@ import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+
+import androidx.annotation.ColorInt;
+import androidx.annotation.IdRes;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.coordinatorlayout.widget.CoordinatorLayout;
+import androidx.core.content.ContextCompat;
+
+import com.google.android.material.appbar.AppBarLayout;
+import com.google.android.material.bottomsheet.BottomSheetBehavior;
+import com.google.android.material.bottomsheet.BottomSheetDialog;
+import com.google.android.material.textfield.TextInputLayout;
 
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.StringUtils;
@@ -468,7 +470,7 @@ public final class GuiUtils {
         requestFocus(on.getEditText());
     }
 
-
+    @Deprecated
     public static void setErrorTextColor(TextInputLayout textInputLayout, int color) {
         try {
             Field fErrorView = TextInputLayout.class.getDeclaredField("mErrorView");
@@ -663,7 +665,7 @@ public final class GuiUtils {
     }
 
     @NotNull
-    public static android.support.v4.util.Pair<Integer, Integer> calcAspectRatioFor(int width, int height) {
+    public static androidx.core.util.Pair<Integer, Integer> calcAspectRatioFor(int width, int height) {
         double aspectRatio = (double) width / (double) height;
         int dividend = width > height ? width : height;
         int divider = width > height ? height : width;
@@ -681,11 +683,11 @@ public final class GuiUtils {
                 scale++;
             }
         }
-        android.support.v4.util.Pair<Integer, Integer> result;
+        androidx.core.util.Pair<Integer, Integer> result;
         if (width > height) {
-            result = new android.support.v4.util.Pair<>(dividend, divider);
+            result = new androidx.core.util.Pair<>(dividend, divider);
         } else {
-            result = new android.support.v4.util.Pair<>(divider, dividend);
+            result = new androidx.core.util.Pair<>(divider, dividend);
         }
         return result;
     }

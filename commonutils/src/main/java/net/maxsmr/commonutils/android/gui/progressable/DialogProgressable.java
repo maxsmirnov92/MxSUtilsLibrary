@@ -3,15 +3,17 @@ package net.maxsmr.commonutils.android.gui.progressable;
 import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
-import android.support.annotation.MainThread;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 import android.view.KeyEvent;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 
+import androidx.annotation.MainThread;
+
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 

@@ -1,8 +1,6 @@
 package net.maxsmr.networkutils.monitor;
 
 import android.net.TrafficStats;
-import org.jetbrains.annotations.NotNull;
-import android.support.annotation.Nullable;
 
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -10,6 +8,9 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.monitor.model.NetworkTrafficStats;
 import net.maxsmr.networkutils.monitor.model.TrafficDirection;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.TimeUnit;
 

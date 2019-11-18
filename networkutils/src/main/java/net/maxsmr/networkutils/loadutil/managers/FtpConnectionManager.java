@@ -1,8 +1,8 @@
 package net.maxsmr.networkutils.loadutil.managers;
 
-import android.support.annotation.Nullable;
-import android.support.v4.util.Pair;
 import android.text.TextUtils;
+
+import androidx.core.util.Pair;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
@@ -17,6 +17,7 @@ import org.apache.commons.net.ftp.FTPFile;
 import org.apache.commons.net.ftp.FTPReply;
 import org.apache.commons.net.io.CopyStreamListener;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;

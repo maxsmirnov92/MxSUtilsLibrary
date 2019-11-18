@@ -6,10 +6,10 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
-import android.graphics.drawable.BitmapDrawable;
-import android.support.annotation.ColorInt;
-import android.support.annotation.DrawableRes;
-import android.text.TextUtils;
+import android.graphics.drawable.BitmapDrawable;import android.text.TextUtils;
+
+import androidx.annotation.ColorInt;
+import androidx.annotation.DrawableRes;
 
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
 import net.maxsmr.commonutils.graphic.GraphicUtils;

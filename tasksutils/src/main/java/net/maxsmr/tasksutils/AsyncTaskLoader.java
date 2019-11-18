@@ -1,9 +1,10 @@
 package net.maxsmr.tasksutils;
 
 import android.content.Context;
-import android.support.annotation.MainThread;
 
-public abstract class AsyncTaskLoader<D> extends android.support.v4.content.AsyncTaskLoader<D> {
+import androidx.annotation.MainThread;
+
+public abstract class AsyncTaskLoader<D> extends androidx.loader.content.AsyncTaskLoader<D> {
 
     public AsyncTaskLoader(Context context) {
         super(context);
@@ -60,6 +61,4 @@ public abstract class AsyncTaskLoader<D> extends android.support.v4.content.Asyn
         @MainThread
         void onStartLoading();
     }
-
-
 }

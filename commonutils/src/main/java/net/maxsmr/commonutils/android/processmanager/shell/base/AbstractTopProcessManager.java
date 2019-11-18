@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.android.processmanager.shell.base;
 
 import android.content.Context;
-import android.support.v4.util.Pair;
+import androidx.core.util.Pair;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.Predicate;
