@@ -7,12 +7,9 @@ import android.content.pm.ApplicationInfo;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
-import android.net.Uri;
 import android.os.Build;
 import android.os.StrictMode;
-import androidx.core.content.FileProvider;
 import android.text.TextUtils;
-import android.webkit.MimeTypeMap;
 
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
 import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
@@ -125,49 +122,6 @@ public final class AppUtils {
         context.startActivity(activityIntent);
     }
 
-    public static boolean canLaunchIntent(@NotNull Context context, @Nullable Intent intent) {
-        boolean result = false;
-        if (intent != null) {
-            final PackageManager pm = context.getPackageManager();
-            if (pm.resolveActivity(intent, 0) != null) {
-                result = true;
-            }
-        }
-        return result;
-    }
-
-    /**
-     * @param fileUriProviderAuthority specify string after packageName + ".", if intended to use FileProvider instead of file://
-     * */
-    @Nullable
-    public static Intent getViewFileIntent(@NotNull Context context, @Nullable File file, @Nullable String fileUriProviderAuthority) {
-        Intent result = null;
-        if (FileHelper.isFileExists(file)) {
-            result = new Intent(Intent.ACTION_VIEW);
-
-            final Uri fileUri;
-
-            if (!TextUtils.isEmpty(fileUriProviderAuthority)) {
-                fileUri= FileProvider.getUriForFile(context, context.getPackageName() + "." + fileUriProviderAuthority, file);
-            } else {
-                fileUri = Uri.fromFile(file);
-            }
-
-            final String mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(FileHelper.getFileExtension(file));
-            result.setDataAndType(fileUri, mimeType);
-
-            result.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
-            if (!TextUtils.isEmpty(fileUriProviderAuthority)) {
-                result.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            }
-            if (!canHandleActivityIntent(context, result)) {
-                result = null;
-            }
-        }
-        return result;
-    }
-
     /** try to disable throwing exception when sharing file:// scheme instead of FileProvider */
     public static boolean disableFileUriStrictMode() {
         boolean result = true;
@@ -186,6 +140,17 @@ public final class AppUtils {
                 } catch (Exception e) {
                     logger.e("Cannot disable \"death on file uri exposure\": " + e.getMessage(), e);
                 }
+            }
+        }
+        return result;
+    }
+
+    public static boolean canLaunchIntent(@NotNull Context context, @Nullable Intent intent) {
+        boolean result = false;
+        if (intent != null) {
+            final PackageManager pm = context.getPackageManager();
+            if (pm.resolveActivity(intent, 0) != null) {
+                result = true;
             }
         }
         return result;

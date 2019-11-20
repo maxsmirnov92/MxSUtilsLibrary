@@ -36,8 +36,9 @@ android {
     defaultConfig {
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.sdkVersion
-        versionCode project.moduleVersionCode.toInteger()
-        versionName project.getModuleVersion(project.path)
+        versionCode project.getModuleVersionCode(project.path)
+        versionName project.getModuleVersionName(project.path)
+        vectorDrawables.useSupportLibrary = true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 

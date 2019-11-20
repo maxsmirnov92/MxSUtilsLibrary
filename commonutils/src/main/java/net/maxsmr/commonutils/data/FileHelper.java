@@ -1,6 +1,7 @@
 package net.maxsmr.commonutils.data;
 
 import android.annotation.TargetApi;
+import android.content.ContentResolver;
 import android.content.ContentUris;
 import android.content.Context;
 import android.content.res.Resources;
@@ -65,6 +66,9 @@ import static net.maxsmr.commonutils.data.StreamUtils.revectorStream;
 import static net.maxsmr.commonutils.data.Units.sizeToString;
 import static net.maxsmr.commonutils.shell.ShellUtils.execProcess;
 
+/**
+ * Вспомогательные утилиты для работы с файлами
+ */
 public final class FileHelper {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(FileHelper.class);
@@ -75,14 +79,23 @@ public final class FileHelper {
         throw new AssertionError("no instances.");
     }
 
+    /**
+     * @return true, если внешнее хранилище примонтировано
+     */
     public static boolean isExternalStorageMounted() {
         return isExternalStorageMountedAndWritable() || isExternalStorageMountedReadOnly();
     }
 
+    /**
+     * @return true, если внешнее хранилище примонтировано и доступно для записи
+     */
     public static boolean isExternalStorageMountedAndWritable() {
         return Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED);
     }
 
+    /**
+     * @return true, если внешнее хранилище примонтировано и доступно только для чтения
+     */
     public static boolean isExternalStorageMountedReadOnly() {
         return Environment.getExternalStorageState().equalsIgnoreCase(Environment.MEDIA_MOUNTED_READ_ONLY);
     }
@@ -418,6 +431,13 @@ public final class FileHelper {
         return createNewFile(fileName, parentPath, true);
     }
 
+    /**
+     * Создаёт файл с относительным именем fileName
+     * по родительскому абсолютному или относительному пути parentPath
+     * @param recreate true, если целевой файл должен быть пересоздан,
+     * если уже существует
+     * @return null если целевой файл уже существует и не смог быть пересоздан
+     */
     @SuppressWarnings("ResultOfMethodCallIgnored")
     @Nullable
     public static File createNewFile(String fileName, String parentPath, boolean recreate) {
@@ -463,12 +483,11 @@ public final class FileHelper {
                 }
             }
         }
-
         return newFile;
     }
 
     /**
-     * @return existing or created empty directory
+     * @return существующая или созданная пустая директория
      */
     @Nullable
     public static File createNewDir(String dirPath) {
@@ -639,6 +658,9 @@ public final class FileHelper {
         return !strings.isEmpty() ? TextUtils.join(System.getProperty("line.separator"), strings) : null;
     }
 
+    /**
+     * Читает содержимое assetName в несколько строк
+     */
     @NotNull
     public static Collection<String> readStringsFromAsset(@NotNull Context context, String assetName) {
         try {
@@ -649,6 +671,9 @@ public final class FileHelper {
         }
     }
 
+    /**
+     * Читает содержимое assetName в одну строку
+     */
     @Nullable
     public static String readStringFromAsset(@NotNull Context context, String assetName) {
         try {
@@ -659,6 +684,9 @@ public final class FileHelper {
         }
     }
 
+    /**
+     * Читает содержимое ресурса resId в несколько строк
+     */
     @NotNull
     public static Collection<String> readStringsFromRes(@NotNull Context context, @RawRes int resId) {
         try {
@@ -669,6 +697,9 @@ public final class FileHelper {
         }
     }
 
+    /**
+     * Читает содержимое ресурса resId в одну строку
+     */
     @Nullable
     public static String readStringFromRes(@NotNull Context context, @RawRes int resId) {
         try {
@@ -948,11 +979,17 @@ public final class FileHelper {
         return true;
     }
 
+    /**
+     * @return расширение файла
+     */
     @NotNull
     public static String getFileExtension(@Nullable File file) {
         return getFileExtension(file != null ? file.getName() : null);
     }
 
+    /**
+     * @return расширение файла
+     */
     @NotNull
     public static String getFileExtension(@Nullable String name) {
         if (name == null) {
@@ -962,6 +999,10 @@ public final class FileHelper {
         return (index > 0 && index < name.length() - 1) ? name.substring(index + 1) : "";
     }
 
+    /**
+     * убрать расширение файла
+     * @return новое имя
+     */
     public static String removeExtension(String fileName) {
         if (!TextUtils.isEmpty(fileName)) {
             int startIndex = fileName.lastIndexOf('.');
@@ -1604,6 +1645,18 @@ public final class FileHelper {
             }
         }
         return null;
+    }
+
+    public static boolean isFile(Uri uri) {
+        boolean result = false;
+        if (uri != null) {
+            result = true;
+            final String scheme = uri.getScheme();
+            if (!TextUtils.isEmpty(scheme)) {
+                result = scheme.equalsIgnoreCase(ContentResolver.SCHEME_FILE);
+            }
+        }
+        return result;
     }
 
     /**

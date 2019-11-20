@@ -25,6 +25,12 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
+
+/**
+ * Вспомогательный класс для работы с json
+ * посредством [Gson]
+ */
 public class GsonHelper {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(GsonHelper.class);
@@ -33,16 +39,31 @@ public class GsonHelper {
         throw new AssertionError("no instances.");
     }
 
+    /**
+     * Преобразует строку [jsonString] в инстанс указанного типа [T],
+     * информация о котором содержится в [classOfT],
+     * используя [gson]
+     */
     @Nullable
     public static <T> T fromJsonObjectString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Class<T> classOfT) {
         return fromJsonObjectString(gson, jsonString, (Type) classOfT);
     }
 
+    /**
+     * Преобразует строку [jsonString] в инстанс указанного типа [T],
+     * информация о котором содержится в [typeToken],
+     * используя [gson]
+     */
     @Nullable
     public static <T> T fromJsonObjectString(@NotNull Gson gson, @Nullable String jsonString, @NotNull TypeToken<T> typeToken) {
         return fromJsonObjectString(gson, jsonString, typeToken.getType());
     }
 
+    /**
+     * Преобразует строку [jsonString] в инстанс указанного типа [T],
+     * информация о котором содержится в [type],
+     * используя [gson]
+     */
     @Nullable
     private static <T> T fromJsonObjectString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Type type) {
         try {
@@ -53,6 +74,11 @@ public class GsonHelper {
         return null;
     }
 
+    /**
+     * Преобразует строку [jsonString] в список сущностей указанного типа [T],
+     * информация о котором содержится в [type],
+     * используя [gson]
+     */
     @NotNull
     public static <T> List<T> fromJsonArrayString(@NotNull Gson gson, @Nullable String jsonString, @NotNull Class<T[]> type) {
         T[] array = null;
@@ -67,6 +93,10 @@ public class GsonHelper {
         return Collections.emptyList();
     }
 
+    /**
+     * Преобразует объект [obj] указанного типа [T]
+     * в строку, используя [gson]
+     */
     @NotNull
     public static <T> String toJsonString(@NotNull Gson gson, T object) {
         try {
@@ -74,9 +104,13 @@ public class GsonHelper {
         } catch (JsonParseException e) {
             logger.e("an JsonParseException occurred during toJson(): " + e.getMessage(), e);
         }
-        return "null";
+        return EMPTY_STRING;
     }
 
+    /**
+     * Преобразует коллекцию объектов [listOfObjects] указанного типа [T]
+     * в маппинг: объект - json-строка, используя [gson]
+     */
     @NotNull
     public static <T> Map<T, String> toJsonStringMap(@NotNull Gson gson, @Nullable Collection<T> listOfObjects) {
         Map<T, String> result = new LinkedHashMap<>();

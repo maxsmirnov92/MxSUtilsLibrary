@@ -1,6 +1,32 @@
 import groovy.json.JsonSlurper
 
-ext.getModuleVersion = { path ->
+ext.getModuleVersionCode = { path ->
+    def module = getModule(path)
+    def version = null
+    if (module != null) {
+        version = module.versionCode
+    }
+    if (version == null) {
+        throw new GradleException("Version code for module with path $path not found")
+    }
+    return version
+}
+
+ext.getModuleVersionName = { path ->
+    def module = getModule(path)
+    def version = ""
+    if (module != null) {
+        version = module.versionName
+    }
+    if (version.isEmpty()) {
+        throw new GradleException("Version name for module with path $path not found")
+    }
+    return version
+}
+
+
+
+ext.getModule = { path ->
     if (path.isEmpty()) return ""
 //    def lastIndex = path.lastIndexOf("/")
 //    def lastPathSegment
@@ -10,15 +36,15 @@ ext.getModuleVersion = { path ->
 //        lastPathSegment = path.substring(lastIndex + 1, path.length())
 //    }
     def modules = new JsonSlurper().parse(new File("$rootDir/buildSrc/modules.json"), 'utf-8')
-    def version = ""
+    def result = null
     modules.each { module ->
         if (module.id == path) {
-            version = module.versionName
+            result = module
             return true
         }
     }
-    if (version.isEmpty()) {
-        throw new GradleException("Version for module with path $lastPathSegment not found")
+    if (result == null) {
+        throw new GradleException("Module with id $path not found")
     }
-    return version
+    return result
 }

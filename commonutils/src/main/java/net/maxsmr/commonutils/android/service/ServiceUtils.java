@@ -10,6 +10,7 @@ import android.content.Intent;
 import android.content.ServiceConnection;
 import android.text.TextUtils;
 
+import net.maxsmr.commonutils.android.SdkUtils;
 import net.maxsmr.commonutils.android.hardware.DeviceUtils;
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -47,7 +48,13 @@ public final class ServiceUtils {
     }
 
     public static <S extends Service> void startNoCheck(@NotNull Context context, @NotNull Class<S> serviceClass, @Nullable Intent args) {
-        context.startService(createServiceIntent(context.getPackageName(), serviceClass, args));
+        final Intent i = createServiceIntent(context.getPackageName(), serviceClass, args);
+        if (SdkUtils.INSTANCE.isAtLeastOreo()) {
+            // On Android 8+ can start only in foreground
+            context.startForegroundService(i);
+        } else {
+            context.startService(i);
+        }
     }
 
     public static <S extends Service> void start(@NotNull Context context, @NotNull Class<S> serviceClass) {

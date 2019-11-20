@@ -7,6 +7,7 @@ dependencies {
     // Support
     api "androidx.annotation:annotation:$androidXAnnotationVersion"
     javadocDependencies "androidx.annotation:annotation:$androidXAnnotationVersion"
+    api "androidx.core:core-ktx:$androidXAnnotationVersion"
     api "androidx.palette:palette:$androidXVersion"
     api "androidx.exifinterface:exifinterface:$androidXVersion"
     api "com.google.android.material:material:$androidXVersion"

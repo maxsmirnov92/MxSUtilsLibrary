@@ -25,7 +25,6 @@ import android.graphics.drawable.BitmapDrawable;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.graphics.drawable.StateListDrawable;
-import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
@@ -40,6 +39,7 @@ import android.util.TypedValue;
 import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.XmlRes;
+import androidx.exifinterface.media.ExifInterface;
 import androidx.palette.graphics.Palette;
 
 import net.maxsmr.commonutils.android.gui.GuiUtils;
@@ -61,10 +61,29 @@ import java.io.InputStream;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
+
+import static androidx.exifinterface.media.ExifInterface.TAG_DATETIME;
+import static androidx.exifinterface.media.ExifInterface.TAG_EXPOSURE_TIME;
+import static androidx.exifinterface.media.ExifInterface.TAG_FLASH;
+import static androidx.exifinterface.media.ExifInterface.TAG_FOCAL_LENGTH;
+import static androidx.exifinterface.media.ExifInterface.TAG_GPS_ALTITUDE;
+import static androidx.exifinterface.media.ExifInterface.TAG_GPS_ALTITUDE_REF;
+import static androidx.exifinterface.media.ExifInterface.TAG_GPS_DATESTAMP;
+import static androidx.exifinterface.media.ExifInterface.TAG_GPS_LATITUDE;
+import static androidx.exifinterface.media.ExifInterface.TAG_GPS_LATITUDE_REF;
+import static androidx.exifinterface.media.ExifInterface.TAG_GPS_LONGITUDE;
+import static androidx.exifinterface.media.ExifInterface.TAG_GPS_LONGITUDE_REF;
+import static androidx.exifinterface.media.ExifInterface.TAG_GPS_PROCESSING_METHOD;
+import static androidx.exifinterface.media.ExifInterface.TAG_GPS_TIMESTAMP;
+import static androidx.exifinterface.media.ExifInterface.TAG_MAKE;
+import static androidx.exifinterface.media.ExifInterface.TAG_MODEL;
+import static androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION;
+import static androidx.exifinterface.media.ExifInterface.TAG_WHITE_BALANCE;
 
 public final class GraphicUtils {
 
@@ -76,21 +95,17 @@ public final class GraphicUtils {
 
     @Nullable
     public static String getFileExtByCompressFormat(Bitmap.CompressFormat compressFormat) {
-
         if (compressFormat == null) {
             logger.e("compressFormat is null");
             return null;
         }
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH && compressFormat == Bitmap.CompressFormat.WEBP) {
-            return "webp";
-        }
-
         switch (compressFormat) {
             case PNG:
                 return "png";
             case JPEG:
                 return "jpg";
+            case WEBP:
+                return "webp";
             default:
                 return null;
         }
@@ -335,7 +350,7 @@ public final class GraphicUtils {
                         while (currentLength > maxSize && currentTry <= maxRetries && currentQuality > 0) {
 
                             compressedImageFile = compressBitmapToFile(compressedImageFile, bm, format, currentQuality);
-                            currentLength = compressedImageFile != null? compressedImageFile.length() : 0;
+                            currentLength = compressedImageFile != null ? compressedImageFile.length() : 0;
 
                             currentTry++;
                             currentQuality = 100 - currentTry * qualityDecrementStep;
@@ -348,7 +363,7 @@ public final class GraphicUtils {
         }
 
         if (result) {
-            return FileHelper.isFileCorrect(compressedImageFile)? compressedImageFile : imageFile;
+            return FileHelper.isFileCorrect(compressedImageFile) ? compressedImageFile : imageFile;
         } else {
             return imageFile;
         }
@@ -497,9 +512,13 @@ public final class GraphicUtils {
         return bmOverlay;
     }
 
-    public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidthPx, int reqHeightPx) {
+    private static int calculateInSampleSize(
+            BitmapFactory.Options options,
+            int reqWidth,
+            int reqHeight
+    ) {
 
-        if (reqWidthPx <= 0 || reqHeightPx <= 0) {
+        if (reqWidth <= 0 || reqHeight <= 0) {
             return 0;
         }
 
@@ -512,16 +531,37 @@ public final class GraphicUtils {
         final int width = options.outWidth;
         int inSampleSize = 1;
 
-        if (height > reqHeightPx || width > reqWidthPx) {
+        if (height > reqHeight || width > reqWidth) {
 
             // Calculate ratios of height and width to requested height and width
-            final int heightRatio = Math.round((float) height / (float) reqHeightPx);
-            final int widthRatio = Math.round((float) width / (float) reqWidthPx);
+            final int heightRatio = Math.round((float) height / reqHeight);
+            final int widthRatio = Math.round((float) width / reqWidth);
 
             // Choose the smallest ratio as inSampleSize value, this will guarantee
             // a final image with both dimensions larger than or equal to the
             // requested height and width.
             inSampleSize = heightRatio < widthRatio ? heightRatio : widthRatio;
+        }
+        return inSampleSize;
+    }
+
+    private static int calculateInSampleSizeHalf(
+            BitmapFactory.Options options,
+            int reqWidth,
+            int reqHeight) {
+
+        final int height = options.outHeight;
+        final int width = options.outWidth;
+        int inSampleSize = 1;
+
+        if (height > reqHeight || width > reqWidth) {
+
+            final int halfHeight = height / 2;
+            final int halfWidth = width / 2;
+
+            while (halfHeight / inSampleSize > reqHeight && halfWidth / inSampleSize > reqWidth) {
+                inSampleSize *= 2;
+            }
         }
         return inSampleSize;
     }
@@ -563,10 +603,10 @@ public final class GraphicUtils {
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeFile(file.getAbsolutePath(), options);
 
-        final int widthPx = scale > 1 ? options.outWidth / scale : options.outWidth;
-        final int heightPx = scale > 1 ? options.outHeight / scale : options.outHeight;
+        final int width = scale > 1 ? options.outWidth / scale : options.outWidth;
+        final int height = scale > 1 ? options.outHeight / scale : options.outHeight;
 
-        options.inSampleSize = calculateInSampleSize(options, widthPx, heightPx);
+        options.inSampleSize = calculateInSampleSizeHalf(options, width, height);
         options.inPurgeable = true;
         options.inInputShareable = true;
         options.inJustDecodeBounds = false;
@@ -597,10 +637,10 @@ public final class GraphicUtils {
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeByteArray(data, 0, data.length, options);
 
-        final int widthPx = scale > 1 ? options.outWidth / scale : options.outWidth;
-        final int heightPx = scale > 1 ? options.outHeight / scale : options.outHeight;
+        final int width = scale > 1 ? options.outWidth / scale : options.outWidth;
+        final int height = scale > 1 ? options.outHeight / scale : options.outHeight;
 
-        options.inSampleSize = calculateInSampleSize(options, widthPx, heightPx);
+        options.inSampleSize = calculateInSampleSizeHalf(options, width, height);
         options.inPurgeable = true;
         options.inInputShareable = true;
         options.inJustDecodeBounds = false;
@@ -626,10 +666,10 @@ public final class GraphicUtils {
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeStream(is, null, options);
 
-        final int widthPx = scale > 1 ? options.outWidth / scale : options.outWidth;
-        final int heightPx = scale > 1 ? options.outHeight / scale : options.outHeight;
+        final int width = scale > 1 ? options.outWidth / scale : options.outWidth;
+        final int height = scale > 1 ? options.outHeight / scale : options.outHeight;
 
-        options.inSampleSize = calculateInSampleSize(options, widthPx, heightPx);
+        options.inSampleSize = calculateInSampleSizeHalf(options, width, height);
         options.inPurgeable = true;
         options.inInputShareable = true;
         options.inJustDecodeBounds = false;
@@ -660,10 +700,10 @@ public final class GraphicUtils {
         options.inJustDecodeBounds = true;
         BitmapFactory.decodeResource(context.getResources(), resId, options);
 
-        final int widthPx = scale > 1 ? options.outWidth / scale : options.outWidth;
-        final int heightPx = scale > 1 ? options.outHeight / scale : options.outHeight;
+        final int width = scale > 1 ? options.outWidth / scale : options.outWidth;
+        final int height = scale > 1 ? options.outHeight / scale : options.outHeight;
 
-        options.inSampleSize = calculateInSampleSize(options, widthPx, heightPx);
+        options.inSampleSize = calculateInSampleSizeHalf(options, width, height);
         options.inPurgeable = true;
         options.inInputShareable = true;
         options.inJustDecodeBounds = false;
@@ -730,7 +770,7 @@ public final class GraphicUtils {
      * Определяет поворот картинки
      */
     public static int getOrientation(@NotNull Context context, Uri photoUri) {
-    /* it's on the external media. */
+        /* it's on the external media. */
         Cursor cursor = context.getContentResolver().query(photoUri,
                 new String[]{MediaStore.Images.ImageColumns.ORIENTATION}, null, null, null);
 
@@ -756,8 +796,6 @@ public final class GraphicUtils {
      */
     public static int getRotationAngleByExifOrientation(int orientation) {
         switch (orientation) {
-            case ExifInterface.ORIENTATION_NORMAL:
-                return 0;
             case ExifInterface.ORIENTATION_ROTATE_90:
                 return 90;
             case ExifInterface.ORIENTATION_ROTATE_180:
@@ -790,14 +828,21 @@ public final class GraphicUtils {
     public static Bitmap getCorrectlyOrientedImage(@NotNull Context context, Uri uri, Bitmap sourceBitmap) {
         if (isBitmapCorrect(sourceBitmap)) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                ExifInterface exif;
-                try {
-                    exif = new ExifInterface(FileHelper.getPath(context, uri));
-                    int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-                    int rotateAngle = getRotationAngleByExifOrientation(orientation);
-                    return rotateBitmap(sourceBitmap, rotateAngle);
-                } catch (Exception e) {
-                    logger.e("an Exception occurred", e);
+                final String path = FileHelper.getPath(context, uri);
+                if (!TextUtils.isEmpty(path)) {
+                    ExifInterface exif = null;
+                    try {
+                        exif = new ExifInterface(path);
+                    } catch (Exception e) {
+                        logger.e("an Exception occurred during opening " + path, e);
+                    }
+                    if (exif != null) {
+                        int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
+                        int rotateAngle = getRotationAngleByExifOrientation(orientation);
+                        return rotateBitmap(sourceBitmap, rotateAngle);
+                    }
+                } else {
+                    logger.e("cannot extract path from uri: " + uri);
                 }
             } else {
                 return sourceBitmap;
@@ -845,9 +890,9 @@ public final class GraphicUtils {
         }
 
         /*
-        * if the orientation is not 0 (or -1, which means we don't know), we
-        * have to do a rotation.
-        */
+         * if the orientation is not 0 (or -1, which means we don't know), we
+         * have to do a rotation.
+         */
         if (orientation > 0 && Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
             return rotateBitmap(srcBitmap, orientation);
         }
@@ -890,6 +935,75 @@ public final class GraphicUtils {
             logger.e("an IOException occurred", e);
             return false;
         }
+    }
+
+    /**
+     * Копирование exif-информации из одного файла в другой
+     *
+     * @param sourcePath исходный файл с exif-информацией
+     * @param targetPath файл-получатель
+     */
+    public boolean copyDefaultExifInfo(String sourcePath, String targetPath) {
+        final String[] attributes = new String[]{
+                TAG_DATETIME,
+                TAG_EXPOSURE_TIME,
+                TAG_FLASH,
+                TAG_FOCAL_LENGTH,
+                TAG_GPS_ALTITUDE,
+                TAG_GPS_ALTITUDE_REF,
+                TAG_GPS_DATESTAMP,
+                TAG_GPS_LATITUDE,
+                TAG_GPS_LATITUDE_REF,
+                TAG_GPS_LONGITUDE,
+                TAG_GPS_LONGITUDE_REF,
+                TAG_GPS_PROCESSING_METHOD,
+                TAG_GPS_TIMESTAMP,
+                TAG_MAKE,
+                TAG_MODEL,
+                TAG_ORIENTATION,
+                TAG_WHITE_BALANCE
+        };
+        return copyExifInfo(sourcePath, targetPath, Arrays.asList(attributes));
+    }
+
+    public boolean copyExifInfo(
+            String sourcePath,
+            String targetPath,
+            Collection<String> attributes
+    ) {
+        final ExifInterface oldExif;
+        final ExifInterface newExif;
+        try {
+            oldExif = new ExifInterface(sourcePath);
+        } catch (IOException e) {
+            logger.e("an Exception occurred during opening " + sourcePath, e);
+            return false;
+        }
+        try {
+            newExif = new ExifInterface(targetPath);
+        } catch (IOException e) {
+            logger.e("an Exception occurred during opening " + sourcePath, e);
+            return false;
+        }
+        if (attributes != null) {
+            for (String attr : attributes) {
+                if (!TextUtils.isEmpty(attr)) {
+                    final String value = oldExif.getAttribute(attr);
+                    if (value != null) {
+                        newExif.setAttribute(attr, value);
+                    }
+                }
+            }
+        }
+
+        try {
+            newExif.saveAttributes();
+        } catch (IOException e) {
+            logger.e("an Exception occurred during saving attribute", e);
+            return false;
+        }
+
+        return true;
     }
 
     @Nullable
@@ -967,16 +1081,12 @@ public final class GraphicUtils {
 
     @SuppressLint("NewApi")
     public static int getBitmapByteCount(Bitmap b) {
-
         if (b == null)
             return 0;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB_MR1 && Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
             return b.getByteCount();
-        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
-            return b.getAllocationByteCount();
         } else {
-            return 0;
+            return b.getAllocationByteCount();
         }
     }
 
@@ -1378,37 +1488,6 @@ public final class GraphicUtils {
         return cloned;
     }
 
-    public enum Swatch {
-        VIBRANT,
-        LIGHT_VIBRANT,
-        DARK_VIBRANT,
-        MUTED,
-        LIGHT_MUTED,
-        DARK_MUTED
-    }
-
-    public static class PaletteColors {
-        @ColorInt
-        public int background = Color.WHITE;
-        @ColorInt
-        public int title = Color.BLACK;
-        @ColorInt
-        public int body = Color.BLACK;
-
-        public PaletteColors() {
-        }
-
-        public PaletteColors(@ColorInt int background, @ColorInt int title, @ColorInt int body) {
-            this.background = background;
-            this.title = title;
-            this.body = body;
-        }
-    }
-
-    public interface OnPaletteColorsGeneratedListener {
-        void onPaletteColorsGenerated(@NotNull PaletteColors colors);
-    }
-
     @NotNull
     private static PaletteColors makePaletteColors(Palette palette, @ColorInt final int defaultColor, final Swatch sw) {
         final PaletteColors colors = new PaletteColors();
@@ -1525,5 +1604,38 @@ public final class GraphicUtils {
         }
 
         return bitmap;
+    }
+
+    public enum Swatch {
+        VIBRANT,
+        LIGHT_VIBRANT,
+        DARK_VIBRANT,
+        MUTED,
+        LIGHT_MUTED,
+        DARK_MUTED
+    }
+
+    public static class PaletteColors {
+
+        @ColorInt
+        public int background = Color.WHITE;
+        @ColorInt
+        public int title = Color.BLACK;
+        @ColorInt
+        public int body = Color.BLACK;
+
+        public PaletteColors() {
+        }
+
+        public PaletteColors(@ColorInt int background, @ColorInt int title, @ColorInt int body) {
+            this.background = background;
+            this.title = title;
+            this.body = body;
+        }
+    }
+
+    public interface OnPaletteColorsGeneratedListener {
+
+        void onPaletteColorsGenerated(@NotNull PaletteColors colors);
     }
 }

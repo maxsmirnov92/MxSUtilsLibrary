@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.data;
+package net.maxsmr.commonutils.data.number;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

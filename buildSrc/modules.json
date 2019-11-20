@@ -2,26 +2,31 @@
   {
     "id": ":commonutils",
     "versionName": "1.0.6.3",
+    "versionCode": 1,
     "dir": "commonutils"
   },
   {
     "id": ":customcontentprovider",
     "versionName": "1.0.2.3",
+    "versionCode": 1,
     "dir": "customcontentprovider"
   },
   {
     "id": ":tasksutils",
     "versionName": "1.0.7.3",
+    "versionCode": 1,
     "dir": "tasksutils"
   },
   {
     "id": ":networkutils",
     "versionName": "1.0.8.9",
+    "versionCode": 1,
     "dir": "networkutils"
   },
   {
     "id": ":devicewatchers",
     "versionName": "1.0.8.3",
+    "versionCode": 1,
     "dir": "devicewatchers"
   }
 ]

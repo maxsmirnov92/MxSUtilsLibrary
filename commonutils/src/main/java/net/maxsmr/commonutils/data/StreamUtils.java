@@ -20,7 +20,12 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static net.maxsmr.commonutils.data.SymbolConstKt.NEXT_LINE;
 
+/**
+ * Вспомогательные методы для чтения из {@link InputStream]
+ * и записи в {@link OutputStream}
+ */
 public final class StreamUtils {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(StreamUtils.class);
@@ -141,29 +146,61 @@ public final class StreamUtils {
         return null;
     }
 
+    /**
+     * То же самое, что основной [readStringFromInputStream],
+     * но с дефолтной кодировкой и чтением всех строк
+     */
     @Nullable
     public static String readStringFromInputStream(InputStream is, boolean closeInput) {
-        return readStringFromInputStream(is, 0, closeInput);
+        return readStringFromInputStream(is, 0, closeInput, null);
     }
 
+    /**
+     * Читает в одну строку содержимое [inputStream]
+     * @param count количество исходных строк для чтения
+     * @param charsetName имя кодировки
+     * */
     @Nullable
-    public static String readStringFromInputStream(InputStream is, int count, boolean closeInput) {
-        Collection<String> strings = readStringsFromInputStream(is, count, closeInput);
-        return !strings.isEmpty() ? TextUtils.join(System.getProperty("line.separator"), strings) : null;
+    public static String readStringFromInputStream(
+            InputStream is,
+            int count,
+            boolean closeInput,
+            String charsetName
+    ) {
+        Collection<String> strings = readStringsFromInputStream(is, count, closeInput, charsetName);
+        return !strings.isEmpty() ? TextUtils.join(NEXT_LINE, strings) : null;
     }
 
+    /**
+     * То же самое, что основной [readStringsFromInputStream],
+     * но с дефолтной кодировкой и чтением всех строк
+     */
     @NotNull
     public static List<String> readStringsFromInputStream(InputStream is, boolean closeInput) {
-        return readStringsFromInputStream(is, 0, closeInput);
+        return readStringsFromInputStream(is, 0, closeInput, null);
     }
 
+    /**
+     * Читает в несколько строк содержимое [inputStream]
+     *
+     * @param count       количество исходных строк для чтения
+     * @param charsetName имя кодировки
+     */
     @NotNull
-    public static List<String> readStringsFromInputStream(InputStream is, int count, boolean closeInput) {
+    public static List<String> readStringsFromInputStream(
+            InputStream is,
+            int count,
+            boolean closeInput,
+            String charsetName
+    ) {
+        if (TextUtils.isEmpty(charsetName)) {
+            charsetName = "UTF-8";
+        }
         if (is != null) {
             BufferedReader in = null;
             try {
                 List<String> out = new ArrayList<>();
-                in = new BufferedReader(new InputStreamReader(is, "UTF-8"));
+                in = new BufferedReader(new InputStreamReader(is, charsetName));
                 String line;
                 while ((count <= 0 || out.size() < count) && (line = in.readLine()) != null) {
                     out.add(line);
@@ -204,5 +241,4 @@ public final class StreamUtils {
 
         boolean onProcessing(InputStream inputStream, OutputStream outputStream, long bytesWrite, long bytesLeft);
     }
-
 }

@@ -21,10 +21,8 @@ import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
 import android.util.Pair;
-import android.util.TypedValue;
 import android.view.Display;
 import android.view.KeyEvent;
-import android.view.MenuItem;
 import android.view.Surface;
 import android.view.View;
 import android.view.ViewGroup;
@@ -43,14 +41,12 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.IdRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
-import androidx.core.content.ContextCompat;
 
 import com.google.android.material.appbar.AppBarLayout;
 import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.textfield.TextInputLayout;
 
-import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -132,56 +128,6 @@ public final class GuiUtils {
     }
 
     /**
-     * Меняет цвет статусбара на заданный
-     */
-    public static boolean setStatusBarColor(Window window, @ColorInt int color) {
-        boolean result = false;
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                window.setStatusBarColor(color);
-                result = true;
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                TypedValue typedValue = new TypedValue();
-
-                TypedArray a = window.getContext().obtainStyledAttributes(typedValue.data, new int[]{R.attr.colorPrimaryDark});
-                int colorPrimaryDark = a.getColor(0, 0);
-                a.recycle();
-
-                window.setStatusBarColor(colorPrimaryDark);
-
-                result = true;
-            }
-        } catch (Exception ignored) {
-        }
-
-        return result;
-    }
-
-
-    public static boolean setNavigationBarColor(@NotNull Window window, @ColorInt int color) {
-        boolean result = false;
-        try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                window.setNavigationBarColor(color);
-                result = true;
-            } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-                TypedValue typedValue = new TypedValue();
-
-                TypedArray a = window.getContext().obtainStyledAttributes(typedValue.data, new int[]{R.attr.colorPrimaryDark});
-                int colorPrimaryDark = a.getColor(0, 0);
-                a.recycle();
-
-                window.setNavigationBarColor(colorPrimaryDark);
-
-                result = true;
-            }
-        } catch (Exception ignored) {
-        }
-
-        return result;
-    }
-
-    /**
      * Меняет цвет иконок статусбара на темный/светлый
      *
      * @param v      корневая {@link View} лейаута
@@ -195,17 +141,6 @@ public final class GuiUtils {
                 flags = toogle ? flags | View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR : flags & ~View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR;
                 v.setSystemUiVisibility(flags);
             } catch (Exception ignored) {
-            }
-        }
-    }
-
-    public static void applyItemColorTint(@NotNull Context context, MenuItem item, int color) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
-            if (item != null) {
-                Drawable icon = item.getIcon();
-                if (icon != null) {
-                    icon.setTintList(ContextCompat.getColorStateList(context, color));
-                }
             }
         }
     }
@@ -280,7 +215,11 @@ public final class GuiUtils {
         }
     }
 
-    public static boolean isKeyboardShowed(View view) {
+    public static boolean isKeyboardShown(Activity activity) {
+        return isKeyboardShown(activity.getCurrentFocus());
+    }
+
+    public static boolean isKeyboardShown(View view) {
         if (view == null) {
             return false;
         }
@@ -293,28 +232,43 @@ public final class GuiUtils {
         return false;
     }
 
-    public static void hideKeyboard(Activity activity) {
+    public static void showKeyboard(Activity activity) {
         if (activity != null) {
-            hideKeyboard(activity, activity.getCurrentFocus());
+            showKeyboard(activity.getCurrentFocus());
         }
     }
 
-    public static boolean hideKeyboard(Context context, View hostView) {
-        return hostView != null && hostView.getWindowToken() != null && ((InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE)).hideSoftInputFromWindow(hostView.getWindowToken(), 0);
-    }
-
-    public static boolean showKeyboard(Context mContext, EditText etText) {
-        if (etText != null && etText.getWindowToken() != null) {
-            etText.requestFocus();
-            InputMethodManager imm = (InputMethodManager) mContext.getSystemService(Context.INPUT_METHOD_SERVICE);
-            return imm.showSoftInput(etText, 1);
+    public static boolean showKeyboard(View hostView) {
+        if (hostView != null && hostView.getWindowToken() != null) {
+            InputMethodManager imm = (InputMethodManager) hostView.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
+            return imm.showSoftInput(hostView, InputMethodManager.SHOW_IMPLICIT);
         } else {
             return true;
         }
     }
 
-    public static void toggleKeyboard(Context context) {
-        ((InputMethodManager) context.getSystemService(Context.INPUT_METHOD_SERVICE)).toggleSoftInput(2, 0);
+    public static void hideKeyboard(Activity activity) {
+        if (activity != null) {
+            hideKeyboard(activity.getCurrentFocus());
+        }
+    }
+
+    public static boolean hideKeyboard(View hostView) {
+        return hostView != null && hostView.getWindowToken() != null
+                && ((InputMethodManager) hostView.getContext().getSystemService(Context.INPUT_METHOD_SERVICE))
+                .hideSoftInputFromWindow(hostView.getWindowToken(), 0);
+    }
+
+    public static void toggleKeyboard(Activity activity) {
+        toggleKeyboard(activity.getCurrentFocus());
+    }
+
+    public static void toggleKeyboard(View hostView) {
+        if (isKeyboardShown(hostView)) {
+            hideKeyboard(hostView);
+        } else {
+            showKeyboard(hostView);
+        }
     }
 
     public static void setHomeButtonEnabled(@NotNull AppCompatActivity activity, boolean toggle) {

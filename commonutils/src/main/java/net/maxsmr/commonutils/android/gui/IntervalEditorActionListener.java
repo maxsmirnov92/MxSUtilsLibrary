@@ -37,7 +37,7 @@ public abstract class IntervalEditorActionListener implements TextView.OnEditorA
         boolean result = false;
         if (shouldDoAction(v, actionId, event)) {
             final long currentTime = System.currentTimeMillis();
-            if (targetInterval == 0 || lastActionTime == 0 || currentTime - lastActionTime >= targetInterval) {
+            if (targetInterval <= 0 || lastActionTime == 0 || currentTime - lastActionTime >= targetInterval) {
                 doAction(v, actionId, event);
                 lastActionTime = currentTime;
                 result = true;

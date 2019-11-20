@@ -41,8 +41,8 @@ dependencies {
     implementation "de.mindpipe.android:android-logging-log4j:$log4jVersion"
     implementation "org.slf4j:slf4j-log4j12:$slf4jVersion"
 
-    implementation project(':networkutils')
-//    implementation "net.maxsmr:networkutils:${project.getModuleVersion(":networkutils")}"
+//    implementation project(':networkutils')
+    implementation "net.maxsmr:networkutils:${project.getModuleVersionName(":networkutils")}"
 
     implementation "junit:junit:$jUnitVersion"
     testImplementation "junit:junit:$jUnitVersion"

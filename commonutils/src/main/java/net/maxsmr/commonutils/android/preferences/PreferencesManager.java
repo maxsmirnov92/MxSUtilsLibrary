@@ -15,6 +15,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.Set;
 
+// TODO refac
 public class PreferencesManager {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(PreferencesManager.class);
@@ -26,7 +27,6 @@ public class PreferencesManager {
     protected final String preferencesName;
 
     private final ChangeObservable changeObservable = new ChangeObservable();
-
 
     public PreferencesManager(@NotNull Context ctx, @Nullable String preferencesName) {
         this(ctx, preferencesName, Context.MODE_PRIVATE);

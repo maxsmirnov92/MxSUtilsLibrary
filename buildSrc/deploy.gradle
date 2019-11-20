@@ -38,7 +38,7 @@ ext.configureDeploy = { context ->
             repositories.mavenDeployer {
                 pom.groupId = project.groupIdName
                 pom.artifactId = project.archivesBaseName
-                pom.version = project.getModuleVersion(project.path)
+                pom.version = project.getModuleVersionName(project.path)
                 repository(url: "file://${localReleaseDest}")
             }
         }
@@ -72,7 +72,7 @@ ext.configureDeploy = { context ->
 
                     groupId = project.groupIdName
                     artifactId = project.archivesBaseName
-                    version = project.getModuleVersion(project.path)
+                    version = project.getModuleVersionName(project.path)
                     artifact "${project.buildDir}/outputs/aar/${project.archivesBaseName}-release.aar"
                     artifact sourcesJar
 //                    artifact javaDocsJar
@@ -106,5 +106,3 @@ task generateBintrayJson {
     configFileText.createNewFile()
     configFileText.write(template.replace('[version]', projectVersion))
 }
-
-
