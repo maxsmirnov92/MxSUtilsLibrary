@@ -3,7 +3,7 @@ import net.maxsmr.android.build.tasks.*
 apply from: "$rootDir/buildSrc/buildUtils.gradle"
 
 task signReleaseAarTask(type: SignReleaseAarTask) {
-    def propsFile = rootProject.file('keystore.properties')
+    def propsFile = new File("$rootDir/buildSrc/keystore.properties")
     def props = new Properties()
     props.load(new FileInputStream(propsFile))
     keystoreAlias = props['alias']
@@ -13,7 +13,7 @@ task signReleaseAarTask(type: SignReleaseAarTask) {
 }
 
 task checkSignedReleaseAarTask(type: CheckSignedAarTask) {
-    def propsFile = rootProject.file('keystore.properties')
+    def propsFile = new File("$rootDir/buildSrc/keystore.properties")
     def props = new Properties()
     props.load(new FileInputStream(propsFile))
     keystoreAlias = props['alias']

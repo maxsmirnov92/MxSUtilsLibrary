@@ -15,7 +15,7 @@ ext.getProjectVersion = { project ->
 }
 
 ext.getProjectInfo = {
-    return new JsonSlurper().parse(new File("$rootDir/buildSrc/projectConfig.json"), 'utf-8')
+    return new JsonSlurper().parse(new File("$rootDir/projectConfig.json"), 'utf-8')
 }
 
 ext.getModuleVersionName = { path ->
@@ -54,7 +54,7 @@ ext.getModuleInfo = { path ->
 //    } else {
 //        lastPathSegment = path.substring(lastIndex + 1, path.length())
 //    }
-    def modules = new JsonSlurper().parse(new File("$rootDir/buildSrc/modules.json"), 'utf-8')
+    def modules = new JsonSlurper().parse(new File("$rootDir/modules.json"), 'utf-8')
     def result = null
     modules.each { module ->
         if (module.id == path) {
