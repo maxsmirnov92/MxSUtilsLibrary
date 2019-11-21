@@ -1,6 +1,3 @@
-!.gitignore
-.*
-
 .DS_Store
 /captures
 #################
@@ -9,19 +6,18 @@
 *.ipr
 *.iws
 
-#################
-# TeamCity is a build add-in
-_TeamCity*
+.gradle
+.idea/
 
 #################
 # generated files
-build/
+/build
+*/.cxx
+*/*/.cxx
 
-.classpath
-.project
-bin
-gen
-proguard-project.txt
-project.properties
-local.*
+.externalNativeBuild
+/temp
+_mirror
+
 keystore.properties
+local.properties

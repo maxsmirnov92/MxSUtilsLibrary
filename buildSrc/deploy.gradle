@@ -1,18 +1,20 @@
 apply from: "$rootDir/buildSrc/config.gradle"
-apply from: "$rootDir/buildSrc/buildUtils.gradle"
+apply from: "$rootDir/buildSrc/buildTasks.gradle"
 
 apply plugin: 'com.jfrog.bintray'
 apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
-def siteUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary'
-def gitUrl = 'https://github.com/maxsmirnov92/MxSUtilsLibrary.git'
+def projectInfo = project.getProjectInfo()
+def moduleVersion = project.getModuleVersionName(project.path)
 
-def localReleaseDest = project.hasProperty("LOCAL_REPO") ? "${rootProject.projectDir}/${project.LOCAL_REPO}" : "${rootProject.buildDir}/release/repo"
+def localReleaseDest = projectInfo.localRepo != "" ? "${rootProject.projectDir}/${projectInfo.localRepo}" : "${rootProject.buildDir}/release/repo"
 
 ext.configureDeploy = { context ->
 
     context.afterEvaluate {
+
+        assembleRelease.finalizedBy(signReleaseAarTask)
 
         task sourcesJar(type: Jar) {
             classifier = 'sources'
@@ -36,16 +38,16 @@ ext.configureDeploy = { context ->
 
         uploadArchives {
             repositories.mavenDeployer {
-                pom.groupId = project.groupIdName
+                pom.groupId = projectInfo.groupId
                 pom.artifactId = project.archivesBaseName
-                pom.version = project.getModuleVersionName(project.path)
+                pom.version = moduleVersion
                 repository(url: "file://${localReleaseDest}")
             }
         }
 
         bintray {
-            user = project.hasProperty('bintrayUser') ? project.property('bintrayUser') : System.getenv('BINTRAY_USER')
-            key = project.hasProperty('bintrayApiKey') ? project.property('bintrayApiKey') : System.getenv('BINTRAY_API_KEY')
+            user = projectInfo.bintrayUser != "" ? projectInfo.bintrayUser : System.getenv('BINTRAY_USER')
+            key = projectInfo.bintrayApiKey != "" ? projectInfo.bintrayApiKey : System.getenv('BINTRAY_API_KEY')
             dryRun = false //[Default: false] Whether to run this as dry-run, without deploying
             publish = true
             //[Default: false] Whether version should be auto published after an upload
@@ -53,14 +55,14 @@ ext.configureDeploy = { context ->
             //[Default: false] Whether to override version artifacts already published
             publications = ['artifactPublication']
             pkg {
-                repo = 'maven'
-                name = rootProject.name /*+ File.separator + project.name*/
+                repo = projectInfo.repo
+                name = projectInfo.name != ""? projectInfo.name : rootProject.name /*+ File.separator + project.name*/
                 userOrg = user
-                websiteUrl = siteUrl
+                websiteUrl = projectInfo.websiteUrl
                 licenses = ['Apache-2.0']
-                vcsUrl = gitUrl
+                vcsUrl = projectInfo.vcsUrl
                 version {
-                    name = project.projectVersion
+                    name = project.getProjectVersion(projectInfo)
                 }
                 publicDownloadNumbers = true
             }
@@ -70,10 +72,10 @@ ext.configureDeploy = { context ->
             publications {
                 artifactPublication(MavenPublication) {
 
-                    groupId = project.groupIdName
+                    groupId = projectInfo.groupId
                     artifactId = project.archivesBaseName
-                    version = project.getModuleVersionName(project.path)
-                    artifact "${project.buildDir}/outputs/aar/${project.archivesBaseName}-release.aar"
+                    version = moduleVersion
+                    artifact "${project.buildDir}/outputs/aar/${project.archivesBaseName}-release-signed.aar"
                     artifact sourcesJar
 //                    artifact javaDocsJar
 
@@ -95,14 +97,4 @@ ext.configureDeploy = { context ->
             }
         }
     }
-}
-
-/**
- * Generating "bintray.json" if using Travis CI
- */
-task generateBintrayJson {
-    def template = new File("$rootDir/buildSrc/ci", "bintray_template.json").text
-    File configFileText = new File("$rootDir/buildSrc/ci", "bintray.json")
-    configFileText.createNewFile()
-    configFileText.write(template.replace('[version]', projectVersion))
 }

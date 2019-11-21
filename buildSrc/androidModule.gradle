@@ -23,7 +23,7 @@ android {
             def props = new Properties()
             props.load(new FileInputStream(propsFile))
 
-            storeFile file("~/.android/release.keystore")
+            storeFile file("${System.getenv('ANDROID_HOME')}/release.keystore")
             storePassword props['signingPassword']
             keyAlias props['alias']
             keyPassword props['signingPassword']
@@ -53,8 +53,11 @@ android {
     }
 
     buildTypes {
-        release {
+        degug {
+            debuggable true
             minifyEnabled false
+        }
+        release {
             signingConfig signingConfigs.release
             minifyEnabled false
 //            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'

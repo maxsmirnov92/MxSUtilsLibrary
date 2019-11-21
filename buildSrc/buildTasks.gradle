@@ -1,0 +1,35 @@
+import net.maxsmr.android.build.tasks.*
+
+apply from: "$rootDir/buildSrc/buildUtils.gradle"
+
+task signReleaseAarTask(type: SignReleaseAarTask) {
+    def propsFile = rootProject.file('keystore.properties')
+    def props = new Properties()
+    props.load(new FileInputStream(propsFile))
+    keystoreAlias = props['alias']
+    keystorePassword = props['signingPassword']
+    aarPath = "${project.buildDir}/outputs/aar/${project.name}-release.aar"
+    // no "archivesBaseName" here before deploy
+}
+
+task checkSignedReleaseAarTask(type: CheckSignedAarTask) {
+    def propsFile = rootProject.file('keystore.properties')
+    def props = new Properties()
+    props.load(new FileInputStream(propsFile))
+    keystoreAlias = props['alias']
+    keystorePassword = props['signingPassword']
+    aarPath = "${project.buildDir}/outputs/aar/${project.name}-release-signed.aar"
+    // no "archivesBaseName" here before deploy
+}
+
+/**
+ * Generating "bintray.json" if using Travis CI
+ */
+task generateBintrayJson {
+    def projectInfo = project.getProjectInfo()
+    def projectVersion = getProjectVersion(projectInfo)
+    def template = new File("$rootDir/buildSrc/ci", "bintray_template.json").text
+    File configFileText = new File("$rootDir/buildSrc/ci", "bintray.json")
+    configFileText.createNewFile()
+    configFileText.write(template.replace('[version]', projectVersion))
+}

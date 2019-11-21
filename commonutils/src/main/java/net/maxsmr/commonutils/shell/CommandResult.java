@@ -8,6 +8,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static net.maxsmr.commonutils.data.SymbolConstKt.NEXT_LINE;
+
+// TODO refac
 public class CommandResult {
 
     public static final int PROCESS_EXIT_CODE_SUCCESS = 0;
@@ -72,7 +75,7 @@ public class CommandResult {
 
     @NotNull
     public String getStdOut() {
-        return TextUtils.join(System.getProperty("line.separator"), stdOutLines);
+        return TextUtils.join(NEXT_LINE, stdOutLines);
     }
 
     @NotNull
@@ -89,7 +92,7 @@ public class CommandResult {
 
     @NotNull
     public String getStdErr() {
-        return TextUtils.join(System.getProperty("line.separator"), stdOutLines);
+        return TextUtils.join(NEXT_LINE, stdOutLines);
     }
 
 
