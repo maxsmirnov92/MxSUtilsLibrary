@@ -1,10 +1,14 @@
-package net.maxsmr.android.build.tasks.misc.shell
+package net.maxsmr.commonutils.shell
 
-import net.maxsmr.android.build.tasks.misc.shell.ShellCallback.StreamType
+import net.maxsmr.commonutils.logger.BaseLogger
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.shell.ShellCallback.StreamType
 import java.io.*
 import java.util.*
 import java.util.concurrent.CountDownLatch
 import kotlin.collections.ArrayList
+
+private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("ShellUtils")
 
 private fun createAndStartProcess(
         cmds: List<String>,
@@ -28,7 +32,7 @@ private fun createAndStartProcess(
         if (workingDirFile.exists() && workingDirFile.isDirectory) {
             pb.directory(workingDirFile)
         } else {
-            System.err.println("working directory $workingDir not exists")
+            logger.e("working directory $workingDir not exists")
         }
     }
 
@@ -90,7 +94,7 @@ fun execProcessAsync(
         sc: ShellCallback?,
         tc: ThreadsCallback?
 ): Boolean {
-    println("execProcessAsync(), cmds=$cmds, workingDir=$workingDir, configurator=$configurator, sc=$sc, tc=$tc")
+    logger.d("execProcessAsync(), cmds=$cmds, workingDir=$workingDir, configurator=$configurator, sc=$sc, tc=$tc")
     val latch = CountDownLatch(2)
     val process = createAndStartProcess(cmds, workingDir, configurator, sc, tc, latch)
     if (process != null) {
@@ -121,7 +125,7 @@ fun execProcess(
         sc: ShellCallback?,
         tc: ThreadsCallback?
 ): CommandResult {
-    println("execProcess(), cmds=$cmds, workingDir=$workingDir, configurator=$configurator, targetExitCode=$targetExitCode, sc=$sc, tc=$tc")
+    logger.d("execProcess(), cmds=$cmds, workingDir=$workingDir, configurator=$configurator, targetExitCode=$targetExitCode, sc=$sc, tc=$tc")
 
     val stdOutLines = ArrayList<String>()
     val stdErrLines = ArrayList<String>()
@@ -135,7 +139,7 @@ fun execProcess(
         try {
             latch.await()
         } catch (e: InterruptedException) {
-            System.err.println("an InterruptedException occurred during await(): $e")
+            logger.e("an InterruptedException occurred during await(): $e")
         }
     }
 
@@ -144,7 +148,7 @@ fun execProcess(
         exitCode = process?.waitFor() ?: -1
     } catch (e: InterruptedException) {
         Thread.currentThread().interrupt()
-        System.err.println("an InterruptedException occurred during waitFor(): $e")
+        logger.e("an InterruptedException occurred during waitFor(): $e")
     } finally {
         process?.destroy()
         sc?.processComplete(exitCode)
@@ -169,7 +173,7 @@ private class StreamConsumeThread internal constructor(private val threadInfo: C
                 line = br.readLine()
             }
         } catch (e: IOException) {
-            System.err.println("an IOException occurred: $e")
+            logger.e("an IOException occurred: $e")
         }
 
         latch?.countDown()
@@ -190,7 +194,7 @@ private class ProcessWaitThread(internal val process: Process, internal val sc: 
             try {
                 latch.await()
             } catch (e: InterruptedException) {
-                System.err.println("an InterruptedException occurred during await(): $e")
+                logger.e("an InterruptedException occurred during await(): $e")
             }
         }
 
@@ -198,7 +202,7 @@ private class ProcessWaitThread(internal val process: Process, internal val sc: 
             exitVal = process.waitFor()
         } catch (e: InterruptedException) {
             currentThread().interrupt()
-            System.err.println("an InterruptedException occurred during waitFor(): $e")
+            logger.e("an InterruptedException occurred during waitFor(): $e")
         }
 
         process.destroy()

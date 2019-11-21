@@ -14,5 +14,6 @@ dependencies {
 
     api "commons-net:commons-net:$commonsNetVersion"
     api "com.google.code.gson:gson:$gsonVersion"
+    androidTestImplementation 'junit:junit:4.12'
 }
 

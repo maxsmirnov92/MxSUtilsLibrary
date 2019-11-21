@@ -13,7 +13,7 @@ public abstract class BaseTagLoggerHolder extends BaseLoggerHolder {
     /** %1s - app prefix, %2s - log tag */
     private static final String TAG_FORMAT = "%1s/%2s";
 
-    private static final Map<Class, String> TAGS = Collections.synchronizedMap(new HashMap<Class, String>());
+    private static final Map<String, String> TAGS = Collections.synchronizedMap(new HashMap<>());
 
     private final String logTag;
 
@@ -27,14 +27,16 @@ public abstract class BaseTagLoggerHolder extends BaseLoggerHolder {
 
     protected abstract BaseTagLogger createLogger(@NotNull Class<?> clazz);
 
-    protected String getTag(Class clazz) {
-        String tag = TAGS.get(clazz);
+    protected String getTag(Class<?> clazz) {
+        return getTag(clazz.getSimpleName());
+    }
 
+    protected String getTag(String className) {
+        String tag = TAGS.get(className);
         if (tag == null) {
-            tag = String.format(TAG_FORMAT, logTag, clazz.getSimpleName());
-            TAGS.put(clazz, tag);
+            tag = String.format(TAG_FORMAT, logTag, className);
+            TAGS.put(className, tag);
         }
-
         return tag;
     }
 }

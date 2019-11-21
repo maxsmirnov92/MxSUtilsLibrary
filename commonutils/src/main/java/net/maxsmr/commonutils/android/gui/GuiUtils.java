@@ -61,6 +61,7 @@ import java.util.List;
 import java.util.Locale;
 
 import static net.maxsmr.commonutils.android.gui.OrientationIntervalListener.ROTATION_NOT_SPECIFIED;
+import static net.maxsmr.commonutils.data.SymbolConstKt.NEXT_LINE;
 
 public final class GuiUtils {
 
@@ -84,16 +85,6 @@ public final class GuiUtils {
             } else {
                 view.setBackgroundDrawable(background);
             }
-        }
-    }
-
-    public int getDimensionFromAttr(@NotNull Context context, int attr) {
-        final TypedArray styledAttributes = context.getTheme().obtainStyledAttributes(
-                new int[]{attr});
-        try {
-            return (int) styledAttributes.getDimension(0, 0);
-        } finally {
-            styledAttributes.recycle();
         }
     }
 
@@ -148,9 +139,6 @@ public final class GuiUtils {
     public static void setProgressBarColor(@ColorInt int color, @Nullable ProgressBar progressBar) {
         if (progressBar != null) {
             PorterDuff.Mode mode = PorterDuff.Mode.SRC_IN;
-            if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.GINGERBREAD_MR1) {
-                mode = PorterDuff.Mode.MULTIPLY;
-            }
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
                 if (progressBar.isIndeterminate() && progressBar.getIndeterminateDrawable() != null) {
                     progressBar.getIndeterminateDrawable().setColorFilter(color, mode);
@@ -914,7 +902,7 @@ public final class GuiUtils {
                     String text = et.getText().toString().trim();
 
                     // find how many rows it cointains
-                    int editTextRowCount = text.split("\\n").length;
+                    int editTextRowCount = text.split(NEXT_LINE).length;
 
                     // user has input more than limited - lets do something
                     // about that

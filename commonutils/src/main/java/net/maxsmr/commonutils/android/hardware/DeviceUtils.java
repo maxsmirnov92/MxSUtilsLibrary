@@ -22,7 +22,7 @@ import android.view.WindowManager;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
-import net.maxsmr.commonutils.shell.ShellUtils;
+import net.maxsmr.commonutils.shell.ShellCallback;
 
 import org.apache.commons.net.ntp.NTPUDPClient;
 import org.apache.commons.net.ntp.TimeInfo;
@@ -39,6 +39,8 @@ import java.util.Locale;
 import java.util.TimeZone;
 
 import static android.os.Build.VERSION.SDK_INT;
+import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
+import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 
 
 public final class DeviceUtils {
@@ -310,15 +312,20 @@ public final class DeviceUtils {
 
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd.HHmmss", Locale.getDefault());
 
-        ShellUtils.ShellCallback sc = new ShellUtils.ShellCallback() {
+        ShellCallback sc = new ShellCallback() {
             @Override
             public boolean needToLogCommands() {
                 return true;
             }
 
             @Override
-            public void shellOut(@NotNull StreamType from, String shellLine) {
+            public void shellOut(@NotNull StreamType from, @NotNull String shellLine) {
                 logger.d("shellOut(), from=" + from + ", shellLine=" + shellLine);
+            }
+
+            @Override
+            public void processStarted() {
+                logger.d("processStarted()");
             }
 
             @Override
@@ -338,7 +345,7 @@ public final class DeviceUtils {
 
         dateFormat.setTimeZone(TimeZone.getDefault());
         String formatTime = dateFormat.format(new Date(timestamp));
-        ShellUtils.execProcess(Arrays.asList("su", "-c", "date", "-s", formatTime), null, sc, null);
+        execProcess(Arrays.asList("su", "-c", "date", "-s", formatTime), EMPTY_STRING, null, null, sc, null);
     }
 
     public static boolean setAlarm(@NotNull Context context, @NotNull PendingIntent pIntent, long delayTime, boolean shouldWakeUp) {

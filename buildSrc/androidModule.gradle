@@ -87,12 +87,12 @@ dependencies {
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
 
     // Tests
+    testImplementation "androidx.test:core:$testCoreVersion"
+    testImplementation "androidx.test.ext:junit:$jUnitExtVersion"
+    testImplementation "androidx.test:rules:$testCoreVersion"
     testImplementation "junit:junit:$jUnitVersion"
-    androidTestImplementation "com.android.support.test:runner:$testRunnerVersion"
-    androidTestImplementation "com.android.support.test:rules:$testRunnerVersion"
-    androidTestImplementation('androidx.test.espresso:espresso-core:3.1.0', {
-        exclude group: 'com.android.support', module: 'support-annotations'
-    })
+    androidTestImplementation "androidx.test:runner:$testCoreVersion"
+
 }
 
 configurations {

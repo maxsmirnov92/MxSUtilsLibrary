@@ -1,8 +1,12 @@
-package net.maxsmr.android.build.tasks.misc.shell
+package net.maxsmr.commonutils.shell
 
+import net.maxsmr.commonutils.logger.BaseLogger
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
+
+private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(ShellWrapper::class.java)
 
 class ShellWrapper(var addToCommandsMap: Boolean = true) {
 
@@ -60,7 +64,7 @@ class ShellWrapper(var addToCommandsMap: Boolean = true) {
 
     fun executeCommand(commands: List<String>, useSU: Boolean): CommandResult {
         var commands = ArrayList(commands)
-        println("Execute commands: \"$commands\", useSU: $useSU")
+        logger.d("Execute commands: \"$commands\", useSU: $useSU")
 
         check(!isDisposed) { ShellWrapper::class.java.simpleName + " is disposed" }
 
@@ -89,15 +93,15 @@ class ShellWrapper(var addToCommandsMap: Boolean = true) {
             }
 
             override fun shellOut(from: ShellCallback.StreamType, shellLine: String) {
-                println("Output $from: $shellLine")
+                logger.d("Output $from: $shellLine")
             }
 
             override fun processStarted() {
-                println("Command \"" + commandInfo.commandsToRun + "\" started")
+                logger.d("Command \"" + commandInfo.commandsToRun + "\" started")
             }
 
             override fun processStartFailed(t: Throwable?) {
-                System.err.println("Command \"" + commandInfo.commandsToRun + "\" start failed: $t")
+                logger.e("Command \"" + commandInfo.commandsToRun + "\" start failed: $t")
 //                commandInfo.setResult(new CommandResult(targetCode, -1, null, null));
             }
 
@@ -122,7 +126,7 @@ class ShellWrapper(var addToCommandsMap: Boolean = true) {
         synchronized(commandInfo) {
             commandInfo.result = result
             // synchronize in case of threads still not finished (otherwise - ConcurrentModificationException)
-            println("Command completed: $commandInfo")
+            logger.d("Command completed: $commandInfo")
         }
 
         return result
@@ -180,5 +184,4 @@ class ShellWrapper(var addToCommandsMap: Boolean = true) {
             return "CommandInfo(commandsToRun=$commandsToRun, startedThreads=$startedThreads, result=$result)"
         }
     }
-
 }

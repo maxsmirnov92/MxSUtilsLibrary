@@ -7,13 +7,19 @@ import org.jetbrains.annotations.Nullable;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
-import net.maxsmr.commonutils.shell.ShellUtils;
+import net.maxsmr.commonutils.shell.CmdThreadInfo;
+import net.maxsmr.commonutils.shell.ShellCallback;
+import net.maxsmr.commonutils.shell.ThreadsCallback;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
+
+import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
+import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
+import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcessAsync;
 
 public final class ShScreenshotMaker {
 
@@ -41,7 +47,7 @@ public final class ShScreenshotMaker {
     /**
      * @return true if started successfully, false - otherwise
      */
-    public boolean makeScreenshotAsync(String folderName, String fileName, @Nullable ShellUtils.ShellCallback sc) {
+    public boolean makeScreenshotAsync(String folderName, String fileName, @Nullable ShellCallback sc) {
         logger.d("makeScreenshotAsync(), folderName=" + folderName + ", fileName=" + fileName);
 
         if (watcher.isRunning()) {
@@ -56,14 +62,20 @@ public final class ShScreenshotMaker {
             return false;
         }
 
-        return ShellUtils.execProcessAsync(new ArrayList<>(Arrays.asList(new String[]{"su", "-c", SCREENCAP_PROCESS_NAME, destFile.getName()})), destFile.getParent(), sc, watcher);
+        return execProcessAsync(
+                Arrays.asList("su", "-c", SCREENCAP_PROCESS_NAME, destFile.getName()),
+                destFile.getParent(),
+                null,
+                sc,
+                watcher
+        );
     }
 
     /**
      * @return screenshot file if completed successfully
      */
     @Nullable
-    public File makeScreenshot(String folderName, String fileName, @Nullable ShellUtils.ShellCallback sc) {
+    public File makeScreenshot(String folderName, String fileName, @Nullable ShellCallback sc) {
         logger.d("makeScreenshot(), folderName=" + folderName + ", fileName=" + fileName);
 
         if (watcher.isRunning()) {
@@ -78,10 +90,17 @@ public final class ShScreenshotMaker {
             return null;
         }
 
-        return ShellUtils.execProcess(new ArrayList<>(Arrays.asList(new String[]{"su", "-c", SCREENCAP_PROCESS_NAME, destFile.getAbsolutePath()})), null, sc, watcher).isSuccessful() ? destFile : null;
+        return execProcess(
+                Arrays.asList("su", "-c", SCREENCAP_PROCESS_NAME, destFile.getAbsolutePath()),
+                EMPTY_STRING,
+                null,
+                null,
+                sc,
+                watcher
+        ).isSuccessful() ? destFile : null;
     }
 
-    private static class ThreadsWatcher implements ShellUtils.ThreadsCallback {
+    private static class ThreadsWatcher implements ThreadsCallback {
 
         private final Set<Thread> threads = new LinkedHashSet<>();
 
@@ -95,12 +114,12 @@ public final class ShScreenshotMaker {
         }
 
         @Override
-        public void onThreadStarted(@NotNull ShellUtils.CmdThreadInfo info, @NotNull Thread thread) {
+        public void onThreadStarted(@NotNull CmdThreadInfo info, @NotNull Thread thread) {
             threads.remove(thread);
         }
 
         @Override
-        public void onThreadFinished(@NotNull ShellUtils.CmdThreadInfo info, @NotNull Thread thread) {
+        public void onThreadFinished(@NotNull CmdThreadInfo info, @NotNull Thread thread) {
             threads.add(thread);
         }
     }

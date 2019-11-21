@@ -1,10 +1,13 @@
-package net.maxsmr.android.build.tasks.misc.shell
+package net.maxsmr.commonutils.shell
 
+import android.text.TextUtils
+import net.maxsmr.commonutils.data.NEXT_LINE
 import java.util.*
 
 const val PROCESS_EXIT_CODE_SUCCESS = 0
 
 const val DEFAULT_TARGET_CODE = PROCESS_EXIT_CODE_SUCCESS
+const val DEFAULT_FAIL_CODE = -1
 
 class CommandResult @JvmOverloads constructor(
         val targetExitCode: Int? = DEFAULT_TARGET_CODE,
@@ -28,6 +31,8 @@ class CommandResult @JvmOverloads constructor(
 
     constructor(from: CommandResult) : this(from.targetExitCode, from.exitCode, from.stdOutLines, from.stdErrLines)
 
+    fun getStdOut(): String = TextUtils.join(NEXT_LINE, stdOutLines)
+
     fun getStdOutLines(): List<String> {
         return ArrayList(stdOutLines)
     }
@@ -38,6 +43,8 @@ class CommandResult @JvmOverloads constructor(
             this.stdOutLines.addAll(stdOutLines)
         }
     }
+
+    fun getStdErr(): String = TextUtils.join(NEXT_LINE, stdErrLines)
 
     fun getStdErrLines(): List<String> {
         return ArrayList(stdErrLines)

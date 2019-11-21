@@ -21,6 +21,7 @@ import static net.maxsmr.commonutils.data.CompareUtils.MatchStringOption.EQUALS;
 import static net.maxsmr.commonutils.data.CompareUtils.MatchStringOption.EQUALS_IGNORE_CASE;
 import static net.maxsmr.commonutils.data.CompareUtils.MatchStringOption.STARTS_WITH;
 import static net.maxsmr.commonutils.data.CompareUtils.MatchStringOption.STARTS_WITH_IGNORE_CASE;
+import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
 
 public final class CompareUtils {
 
@@ -136,11 +137,11 @@ public final class CompareUtils {
                                        String... separators) {
 
         if (initialText == null) {
-            initialText = "";
+            initialText = EMPTY_STRING;
         }
 
         if (matchText == null) {
-            matchText = "";
+            matchText = EMPTY_STRING;
         }
 
         String one = initialText.toString();
@@ -197,7 +198,7 @@ public final class CompareUtils {
                     match = true;
                 } else {
                     final String[] parts = one.split("[" + (separators != null && separators.length > 0 ?
-                            TextUtils.join("", separators) : " ") + "]+");
+                            TextUtils.join(EMPTY_STRING, separators) : " ") + "]+");
                     if (parts.length > 0) {
                         for (String word : parts) {
                             if (isIgnoreCase) {

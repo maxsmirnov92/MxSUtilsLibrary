@@ -24,8 +24,7 @@ import net.maxsmr.commonutils.data.sort.ISortOption;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
-import net.maxsmr.commonutils.shell.CommandResult;
-import net.maxsmr.commonutils.shell.ShellUtils;
+import net.maxsmr.commonutils.shell.ShellCallback;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -63,8 +62,11 @@ import static net.maxsmr.commonutils.data.StreamUtils.readBytesFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringsFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.revectorStream;
+import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
+import static net.maxsmr.commonutils.data.SymbolConstKt.NEXT_LINE;
 import static net.maxsmr.commonutils.data.Units.sizeToString;
-import static net.maxsmr.commonutils.shell.ShellUtils.execProcess;
+import static net.maxsmr.commonutils.shell.CommandResultKt.PROCESS_EXIT_CODE_SUCCESS;
+import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 
 /**
  * Вспомогательные утилиты для работы с файлами
@@ -110,7 +112,7 @@ public final class FileHelper {
         Set<File> result = null;
         if (isExternalStorageMounted()) {
             if (type == null) {
-                type = "";
+                type = EMPTY_STRING;
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 result = new ArraySet<>(Arrays.asList(context.getExternalFilesDirs(type)));
@@ -655,7 +657,7 @@ public final class FileHelper {
     @Nullable
     public static String readStringFromFile(File file) {
         List<String> strings = readStringsFromFile(file);
-        return !strings.isEmpty() ? TextUtils.join(System.getProperty("line.separator"), strings) : null;
+        return !strings.isEmpty() ? TextUtils.join(NEXT_LINE, strings) : null;
     }
 
     /**
@@ -818,7 +820,7 @@ public final class FileHelper {
         try {
             for (String line : data) {
                 bw.append(line);
-                bw.append(System.getProperty("line.separator"));
+                bw.append(NEXT_LINE);
                 bw.flush();
             }
             return true;
@@ -993,10 +995,10 @@ public final class FileHelper {
     @NotNull
     public static String getFileExtension(@Nullable String name) {
         if (name == null) {
-            name = "";
+            name = EMPTY_STRING;
         }
         int index = name.lastIndexOf('.');
-        return (index > 0 && index < name.length() - 1) ? name.substring(index + 1) : "";
+        return (index > 0 && index < name.length() - 1) ? name.substring(index + 1) : EMPTY_STRING;
     }
 
     /**
@@ -1007,7 +1009,7 @@ public final class FileHelper {
         if (!TextUtils.isEmpty(fileName)) {
             int startIndex = fileName.lastIndexOf('.');
             if (startIndex >= 0) {
-                fileName = StringUtils.replace(fileName, startIndex, fileName.length(), "");
+                fileName = StringUtils.replace(fileName, startIndex, fileName.length(), EMPTY_STRING);
             }
             return fileName;
         }
@@ -1314,11 +1316,20 @@ public final class FileHelper {
 
             final String currentPath = path;
 
-            execProcess(Arrays.asList("stat", currentPath + name), null, new ShellUtils.ShellCallback() {
+            execProcess(Arrays.asList("stat", currentPath + name),
+                    EMPTY_STRING,
+                    null,
+                    null,
+                    new ShellCallback() {
 
                 @Override
                 public boolean needToLogCommands() {
                     return false;
+                }
+
+                @Override
+                public void processStarted() {
+
                 }
 
                 @Override
@@ -1327,7 +1338,7 @@ public final class FileHelper {
                 }
 
                 @Override
-                public void shellOut(@NotNull StreamType from, String shellLine) {
+                public void shellOut(@NotNull ShellCallback.StreamType from, @NotNull String shellLine) {
                     if (shellLine.contains("File: ") && shellLine.contains(name)) {
                         foundFiles.add(new File(currentPath));
                     }
@@ -1630,7 +1641,7 @@ public final class FileHelper {
                                        @Nullable String[] selectionArgs) {
 
         if (uri == null) {
-            return "";
+            return EMPTY_STRING;
         }
 
         final String column = MediaStore.Images.ImageColumns.DATA;
@@ -1715,7 +1726,14 @@ public final class FileHelper {
             result = revectorStream(ctx.getResources().openRawResource(resId), out);
 
             if (result && mode > 0) {
-                return ShellUtils.execProcess(Arrays.asList("chmod", String.valueOf(mode), destFilePath), null, null, null).isSuccessful();
+                return execProcess(
+                        Arrays.asList("chmod", String.valueOf(mode), destFilePath),
+                        EMPTY_STRING,
+                        null,
+                        null,
+                        null,
+                        null
+                ).isSuccessful();
             }
         }
 
@@ -2457,14 +2475,18 @@ public final class FileHelper {
         for (final File dir : new LinkedHashSet<>(fromDirs)) {
 
             if (dir != null/* && isDirExists(dir.getAbsolutePath())*/) {
-                execProcess(Arrays.asList("su", "-c", "ls", dir.getAbsolutePath()), null, new ShellUtils.ShellCallback() {
+                execProcess(Arrays.asList("su", "-c", "ls", dir.getAbsolutePath()),
+                        EMPTY_STRING,
+                        null,
+                        null,
+                        new ShellCallback() {
                     @Override
                     public boolean needToLogCommands() {
                         return true;
                     }
 
                     @Override
-                    public void shellOut(@NotNull StreamType from, String shellLine) {
+                    public void shellOut(@NotNull StreamType from, @NotNull String shellLine) {
                         if (from == StreamType.OUT && !TextUtils.isEmpty(shellLine)) {
                             File current = new File(dir, shellLine);
                             if (notifier != null) {
@@ -2477,13 +2499,18 @@ public final class FileHelper {
                     }
 
                     @Override
-                    public void processStartFailed(Throwable t) {
+                    public void processStarted() {
+                        // do nothing
+                    }
 
+                    @Override
+                    public void processStartFailed(Throwable t) {
+                        // do nothing
                     }
 
                     @Override
                     public void processComplete(int exitValue) {
-
+                        // do nothing
                     }
                 }, null);
             }
@@ -2496,7 +2523,11 @@ public final class FileHelper {
         }
         for (final File current : collected) {
             // option "-b" is not supported on android version
-            execProcess(Arrays.asList("su", "-c", "du", "-s", current.getAbsolutePath()), null, new ShellUtils.ShellCallback() {
+            execProcess(Arrays.asList("su", "-c", "du", "-s", current.getAbsolutePath()),
+                    EMPTY_STRING,
+                    null,
+                    null,
+                    new ShellCallback() {
 
                         @Override
                         public boolean needToLogCommands() {
@@ -2504,7 +2535,7 @@ public final class FileHelper {
                         }
 
                         @Override
-                        public void shellOut(@NotNull StreamType from, String shellLine) {
+                        public void shellOut(@NotNull ShellCallback.StreamType from, @NotNull String shellLine) {
                             if (from == StreamType.OUT && !TextUtils.isEmpty(shellLine)) {
                                 long size = 0;
                                 String[] parts = shellLine.split("\\t");
@@ -2520,6 +2551,11 @@ public final class FileHelper {
                         }
 
                         @Override
+                        public void processStarted() {
+                            // do nothing
+                        }
+
+                        @Override
                         public void processStartFailed(Throwable t) {
                             if (notifier != null) {
                                 notifier.onStartFailed(t, current);
@@ -2528,7 +2564,7 @@ public final class FileHelper {
 
                         @Override
                         public void processComplete(int exitValue) {
-                            if (exitValue != CommandResult.PROCESS_EXIT_CODE_SUCCESS && notifier != null) {
+                            if (exitValue != PROCESS_EXIT_CODE_SUCCESS && notifier != null) {
                                 notifier.onNonSuccessExitCode(exitValue, current);
                             }
                         }
@@ -2557,7 +2593,7 @@ public final class FileHelper {
             }
             return filesWithSizeToString(context, map);
         }
-        return "";
+        return EMPTY_STRING;
     }
 
     public static String filePairsToString(@NotNull Context context, Collection<Pair<File, File>> files, int depth) {
@@ -2570,7 +2606,7 @@ public final class FileHelper {
             }
             return filePairsWithSizeToString(context, map);
         }
-        return "";
+        return EMPTY_STRING;
     }
 
     public static String filesWithSizeToString(@NotNull Context context, Map<File, Long> files) {
@@ -2589,7 +2625,7 @@ public final class FileHelper {
                     if (!isFirst) {
                         isFirst = true;
                     } else {
-                        sb.append(System.getProperty("line.separator"));
+                        sb.append(NEXT_LINE);
                     }
                     sb.append(f.getKey().getAbsolutePath());
                     sb.append(": ");
@@ -2620,7 +2656,7 @@ public final class FileHelper {
                         if (!isFirst) {
                             isFirst = true;
                         } else {
-                            sb.append(System.getProperty("line.separator"));
+                            sb.append(NEXT_LINE);
                         }
                         sb.append(sourceFile.getAbsolutePath());
                         if (destinationFile != null) {
@@ -2640,6 +2676,4 @@ public final class FileHelper {
     public static boolean hasKnoxFlag() {
         return isFileExists("knox", Environment.getExternalStorageDirectory().getAbsolutePath());
     }
-
-
 }

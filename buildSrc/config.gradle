@@ -21,6 +21,8 @@ ext {
     gsonVersion = '2.8.5'
 
     jUnitVersion = '4.12'
+    jUnitExtVersion = '1.1.1'
+    testCoreVersion = '1.2.0'
     testRunnerVersion = '1.0.1'
     espressoVersion = '2.2.2'
 }

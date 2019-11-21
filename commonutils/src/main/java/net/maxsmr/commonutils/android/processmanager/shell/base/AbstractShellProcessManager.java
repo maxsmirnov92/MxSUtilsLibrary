@@ -13,7 +13,6 @@ import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.shell.CommandResult;
-import net.maxsmr.commonutils.shell.RootShellCommands;
 import net.maxsmr.commonutils.shell.ShellWrapper;
 
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +27,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import static net.maxsmr.commonutils.android.processmanager.model.ProcessInfo.ProcessState.S;
+import static net.maxsmr.commonutils.shell.RootShellCommandsKt.isRootAvailable;
 
 public abstract class AbstractShellProcessManager extends AbstractProcessManager {
 
@@ -77,7 +77,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
      * in later Android versions 'su' is required for receiving full process list
      */
     protected boolean useSuForCommands(List<String> commands) {
-        return !FileHelper.hasKnoxFlag() && RootShellCommands.isRootAvailable();
+        return !FileHelper.hasKnoxFlag() && isRootAvailable();
     }
 
     /**

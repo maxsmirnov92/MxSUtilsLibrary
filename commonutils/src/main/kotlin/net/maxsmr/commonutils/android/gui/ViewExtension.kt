@@ -33,7 +33,7 @@ import com.google.android.material.textfield.TextInputLayout
 import net.maxsmr.commonutils.R
 import net.maxsmr.commonutils.android.SdkUtils
 import net.maxsmr.commonutils.android.getColorFilteredDrawable
-import net.maxsmr.commonutils.android.getColorForAttrs
+import net.maxsmr.commonutils.android.getColorFromAttrs
 import net.maxsmr.commonutils.android.gui.GuiUtils.hideKeyboard
 import net.maxsmr.commonutils.android.gui.GuiUtils.showKeyboard
 import net.maxsmr.commonutils.android.getBrowseLinkIntent
@@ -293,7 +293,7 @@ fun TextView.setTextWithSelection(@ColorInt highlightColor: Int, str: String, se
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 fun Activity.setDefaultStatusBarColor() {
     setStatusBarColor(
-            window.context.getColorForAttrs(intArrayOf(R.attr.colorPrimaryDark))
+            window.context.getColorFromAttrs(intArrayOf(R.attr.colorPrimaryDark))
     )
 }
 
@@ -322,7 +322,7 @@ fun Activity.setStatusBarColor(@ColorInt color: Int) {
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 fun Activity.setDefaultNavigationColor() {
     setNavigationBarColor(
-            window.context.getColorForAttrs(intArrayOf(R.attr.colorPrimaryDark))
+            window.context.getColorFromAttrs(intArrayOf(R.attr.colorPrimaryDark))
     )
 }
 

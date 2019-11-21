@@ -11,6 +11,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.List;
 
+import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
+
 public class StringUtils {
 
     private static List<CharacterMap> replaceLatinCyrillicAlphabet = new ArrayList<>();
@@ -219,7 +221,7 @@ public class StringUtils {
     public static String trim(CharSequence cs, CompareUtils.Condition condition, char byChar, boolean fromStart, boolean fromEnd) {
 
         if (cs == null) {
-            return "";
+            return EMPTY_STRING;
         }
 
         String str = cs.toString();
@@ -277,7 +279,7 @@ public class StringUtils {
         if (characters != null) {
             if (!TextUtils.isEmpty(text)) {
                 for (String c : characters) {
-                    text = text.replace(c, "");
+                    text = text.replace(c, EMPTY_STRING);
                 }
             }
         }
@@ -288,7 +290,7 @@ public class StringUtils {
     public static String appendOrReplaceChar(CharSequence source, Character what, String to, boolean ignoreCase, boolean appendOrReplace) {
 
         if (TextUtils.isEmpty(source) || TextUtils.isEmpty(to)) {
-            return "";
+            return EMPTY_STRING;
         }
 
         StringBuilder newStr = new StringBuilder();

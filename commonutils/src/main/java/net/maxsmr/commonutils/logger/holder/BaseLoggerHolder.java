@@ -1,5 +1,7 @@
 package net.maxsmr.commonutils.logger.holder;
 
+import android.text.TextUtils;
+
 import net.maxsmr.commonutils.logger.BaseLogger;
 
 import org.jetbrains.annotations.NotNull;
@@ -29,7 +31,7 @@ public abstract class BaseLoggerHolder {
         }
     }
 
-    private final Map<Class<?>, BaseLogger> loggersMap = new LinkedHashMap<>();
+    private final Map<String, BaseLogger> loggersMap = new LinkedHashMap<>();
 
     private final boolean isNullInstancesAllowed;
 
@@ -37,7 +39,7 @@ public abstract class BaseLoggerHolder {
         this.isNullInstancesAllowed = isNullInstancesAllowed;
     }
 
-    public Map<Class<?>, BaseLogger> getLoggersMap() {
+    public Map<String, BaseLogger> getLoggersMap() {
         synchronized (loggersMap) {
             return Collections.unmodifiableMap(loggersMap);
         }
@@ -56,29 +58,37 @@ public abstract class BaseLoggerHolder {
      * */
     @SuppressWarnings("unchecked")
     public <L extends BaseLogger> L getLogger(Class<?> clazz) {
-        if (clazz == null) {
-            throw new IllegalArgumentException("clazz is null");
+        return getLogger(clazz.getSimpleName());
+    }
+
+    /**
+     * @param className object class to get/create logger for
+     * */
+    @SuppressWarnings("unchecked")
+    public <L extends BaseLogger> L getLogger(String className) {
+        if (TextUtils.isEmpty(className)) {
+            throw new IllegalArgumentException("className is empty");
         }
         synchronized (loggersMap) {
-            BaseLogger logger = loggersMap.get(clazz);
+            BaseLogger logger = loggersMap.get(className);
             if (logger == null) {
                 boolean addToMap = true;
-                logger = createLogger(clazz);
+                logger = createLogger(className);
                 if (logger == null) {
                     if (!isNullInstancesAllowed) {
-                        throw new RuntimeException("Logger was not created for class: " + clazz);
+                        throw new RuntimeException("Logger was not created for className: " + className);
                     }
                     logger = new BaseLogger.Stub();
                     addToMap = false;
                 }
                 if (addToMap) {
-                    loggersMap.put(clazz, logger);
+                    loggersMap.put(className, logger);
                 }
             }
             return (L) logger;
         }
     }
 
-    protected abstract BaseLogger createLogger(@NotNull Class<?> clazz);
+    protected abstract BaseLogger createLogger(@NotNull String className);
 
 }

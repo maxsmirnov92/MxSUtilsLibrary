@@ -66,13 +66,23 @@ fun Resources.getColorFilteredDrawable(@DrawableRes icon: Int,
 }
 
 @ColorInt
-fun Context.getColorForAttrs(attrs: IntArray): Int {
+fun Context.getColorFromAttrs(attrs: IntArray): Int {
     val typedValue = TypedValue()
-    val a = theme.obtainStyledAttributes(typedValue.data, attrs)
+    val array = theme.obtainStyledAttributes(typedValue.data, attrs)
     try {
-        return a.getColor(0, 0)
+        return array.getColor(0, 0)
     } finally {
-        a.recycle()
+        array.recycle()
+    }
+}
+
+fun getDimensionFromAttrs(context: Context, attrs: IntArray): Int {
+    val array = context.theme
+            .obtainStyledAttributes(attrs)
+    try {
+        return array.getDimension(0, 0f).toInt()
+    } finally {
+        array.recycle()
     }
 }
 
