@@ -8,17 +8,20 @@ import kotlin.collections.ArrayList
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(ShellWrapper::class.java)
 
-class ShellWrapper(var addToCommandsMap: Boolean = true) {
+class ShellWrapper(
+        var addToCommandsMap: Boolean = true,
+
+        var targetCode: Int = DEFAULT_TARGET_CODE,
+
+        var workingDir: String = "",
+
+        var configurator: IProcessBuilderConfigurator? = null
+) {
 
     private val commandId = AtomicInteger(1)
 
     private val commandsMap = mutableMapOf<Int, CommandInfo?>()
 
-    var targetCode = DEFAULT_TARGET_CODE
-
-    var workingDir: String = ""
-
-    var configurator: IProcessBuilderConfigurator? = null
 
     var isDisposed = false
         private set

@@ -4,17 +4,21 @@ import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
 import kotlin.collections.ArrayList
 
-class ShellWrapper(var addToCommandsMap: Boolean = true) {
+class ShellWrapper(
+        var addToCommandsMap: Boolean = true,
+
+        var targetCode: Int = DEFAULT_TARGET_CODE,
+
+        var workingDir: String = "",
+
+        var configurator: IProcessBuilderConfigurator? = null,
+
+        var enableLogging: Boolean = true
+) {
 
     private val commandId = AtomicInteger(1)
 
     private val commandsMap = mutableMapOf<Int, CommandInfo?>()
-
-    var targetCode = DEFAULT_TARGET_CODE
-
-    var workingDir: String = ""
-
-    var configurator: IProcessBuilderConfigurator? = null
 
     var isDisposed = false
         private set
@@ -60,7 +64,7 @@ class ShellWrapper(var addToCommandsMap: Boolean = true) {
 
     fun executeCommand(commands: List<String>, useSU: Boolean): CommandResult {
         var commands = ArrayList(commands)
-        println("Execute commands: \"$commands\", useSU: $useSU")
+        log("Execute commands: \"$commands\", useSU: $useSU", false)
 
         check(!isDisposed) { ShellWrapper::class.java.simpleName + " is disposed" }
 
@@ -89,15 +93,15 @@ class ShellWrapper(var addToCommandsMap: Boolean = true) {
             }
 
             override fun shellOut(from: ShellCallback.StreamType, shellLine: String) {
-                println("Output $from: $shellLine")
+                log("Output $from: $shellLine", false)
             }
 
             override fun processStarted() {
-                println("Command \"" + commandInfo.commandsToRun + "\" started")
+                log("Command \"" + commandInfo.commandsToRun + "\" started", false)
             }
 
             override fun processStartFailed(t: Throwable?) {
-                System.err.println("Command \"" + commandInfo.commandsToRun + "\" start failed: $t")
+                log("Command \"" + commandInfo.commandsToRun + "\" start failed: $t", true)
 //                commandInfo.setResult(new CommandResult(targetCode, -1, null, null));
             }
 
@@ -122,10 +126,20 @@ class ShellWrapper(var addToCommandsMap: Boolean = true) {
         synchronized(commandInfo) {
             commandInfo.result = result
             // synchronize in case of threads still not finished (otherwise - ConcurrentModificationException)
-            println("Command completed: $commandInfo")
+            log("Command completed: $commandInfo", false)
         }
 
         return result
+    }
+
+    fun log(msg: String, isError: Boolean) {
+        if (enableLogging) {
+            if (!isError) {
+                println(msg)
+            } else {
+                System.err.println(msg)
+            }
+        }
     }
 
     class CommandInfo {

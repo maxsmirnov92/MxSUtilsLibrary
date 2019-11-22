@@ -21,15 +21,3 @@ task checkSignedReleaseAarTask(type: CheckSignedAarTask) {
     aarPath = "${project.buildDir}/outputs/aar/${project.name}-release-signed.aar"
     // no "archivesBaseName" here before deploy
 }
-
-/**
- * Generating "bintray.json" if using Travis CI
- */
-task generateBintrayJson {
-    def projectInfo = project.getProjectInfo()
-    def projectVersion = getProjectVersion(projectInfo)
-    def template = new File("$rootDir/buildSrc/ci", "bintray_template.json").text
-    File configFileText = new File("$rootDir/buildSrc/ci", "bintray.json")
-    configFileText.createNewFile()
-    configFileText.write(template.replace('[version]', projectVersion))
-}

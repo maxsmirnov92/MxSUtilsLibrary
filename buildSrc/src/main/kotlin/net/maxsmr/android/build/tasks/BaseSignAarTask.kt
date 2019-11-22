@@ -27,7 +27,7 @@ abstract class BaseSignAarTask : DefaultTask() {
 
     protected fun runScript(script: String) {
         println("Executing script: $script")
-        with(ShellWrapper()) {
+        with(ShellWrapper(enableLogging = false)) {
             var jreHome = System.getenv("JRE_HOME") ?: ""
             if (jreHome.isNotEmpty()) {
                 if (!jreHome.endsWith("/") && !jreHome.endsWith("\\")) {

@@ -71,12 +71,6 @@ public final class GuiUtils {
         throw new AssertionError("no instances.");
     }
 
-    @SuppressWarnings("unchecked")
-    @Nullable
-    public static <V extends View> V findViewById(@Nullable View view, @IdRes int id) throws ClassCastException {
-        return view != null ? (V) view.findViewById(id) : null;
-    }
-
     @SuppressWarnings("deprecation")
     public static void setWindowBackground(Drawable background, View view) {
         if (view != null) {
