@@ -17,10 +17,7 @@ import android.text.style.URLSpan
 import android.view.KeyEvent
 import android.view.View
 import android.view.inputmethod.EditorInfo
-import android.widget.EditText
-import android.widget.ImageView
-import android.widget.TextView
-import android.widget.Toast
+import android.widget.*
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
@@ -389,7 +386,7 @@ fun ImageView.setTint(colorStateList: ColorStateList?,
  * Выставить цветовой фильтр [ColorStateList] для [Drawable]
  */
 fun Drawable.setColor(color: ColorStateList,
-             mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN) {
+                      mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN) {
     if (SdkUtils.isAtLeastLollipop()) {
         DrawableCompat.setTintList(this, color)
         DrawableCompat.setTintMode(this, mode)
@@ -463,7 +460,7 @@ fun showWithDuration(targetDuration: Long, toastFunc: (() -> Toast)): CountDownT
     if (targetDuration <= 0) {
         throw IllegalArgumentException("Incorrect targetDuration: $targetDuration")
     }
-    return object: CountDownTimer(targetDuration, TimeUnit.SECONDS.toMillis(1)) {
+    return object : CountDownTimer(targetDuration, TimeUnit.SECONDS.toMillis(1)) {
 
         private var previousToast: Toast? = null
 
@@ -477,7 +474,7 @@ fun showWithDuration(targetDuration: Long, toastFunc: (() -> Toast)): CountDownT
 
         private fun show() {
             previousToast?.cancel()
-            with (toastFunc()) {
+            with(toastFunc()) {
                 // меняем на 1 секунду для правильного интервала таймера
                 duration = Toast.LENGTH_SHORT
                 previousToast = this
@@ -485,4 +482,10 @@ fun showWithDuration(targetDuration: Long, toastFunc: (() -> Toast)): CountDownT
             }
         }
     }.start()
+}
+
+fun RadioGroup.getSelectedIndexInRadioGroup(): Int {
+    val radioButtonId = checkedRadioButtonId
+    val radioButton = findViewById<RadioButton>(radioButtonId) ?: null
+    return radioButton?.let { indexOfChild(it) } ?: RecyclerView.NO_POSITION
 }

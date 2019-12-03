@@ -5,7 +5,7 @@ ext {
     mavenGradleVersion = "1+"
 
     sdkVersion = 28
-    minSdkVersion = 16
+    minSdkVersion = 17
 
     gradlePluginVersion = '3.5.2'
     kotlinGradlePluginVersion = '1.3.50'
@@ -25,4 +25,6 @@ ext {
     testCoreVersion = '1.2.0'
     testRunnerVersion = '1.0.1'
     espressoVersion = '3.2.0'
+
+    multidexVersion = "2.0.1"
 }

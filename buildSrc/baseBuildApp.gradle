@@ -14,13 +14,17 @@ android {
     useLibrary 'android.test.runner'
 
     defaultConfig {
-        def module = project.getModuleInfo(project.path)
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.sdkVersion
+
+        def module = project.getModuleInfo(project.path)
         versionCode project.getModuleVersionCode(module)
         versionName project.getModuleVersionName(module)
         applicationId project.getAppId(module)
+
+        multiDexEnabled true
         vectorDrawables.useSupportLibrary = true
+
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -32,6 +36,18 @@ android {
     lintOptions {
         checkReleaseBuilds false
         abortOnError false
+    }
+
+    testOptions {
+        unitTests.returnDefaultValues = true
+    }
+
+    sourceSets {
+        main {
+            java.srcDirs += 'src/main/kotlin/'
+            test.java.srcDirs += 'src/test/kotlin'
+            androidTest.java.srcDirs += 'src/androidTest/kotlin'
+        }
     }
 
     buildTypes {
@@ -49,6 +65,9 @@ android {
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Multi Dex
+    implementation "androidx.multidex:multidex:$multidexVersion"
 
     // Kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"

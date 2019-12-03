@@ -34,13 +34,12 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
 
     defaultConfig {
-        def module = project.getModuleInfo(project.path)
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.sdkVersion
+        def module = project.getModuleInfo(project.path)
         versionCode project.getModuleVersionCode(module)
         versionName project.getModuleVersionName(module)
         vectorDrawables.useSupportLibrary = true
-        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
 
     compileOptions {
@@ -53,6 +52,14 @@ android {
         abortOnError false
     }
 
+    sourceSets {
+        main {
+            java.srcDirs += 'src/main/kotlin/'
+            test.java.srcDirs += 'src/test/kotlin'
+            androidTest.java.srcDirs += 'src/androidTest/kotlin'
+        }
+    }
+
     buildTypes {
         degug {
             debuggable true
@@ -62,18 +69,6 @@ android {
             signingConfig signingConfigs.release
             minifyEnabled false
 //            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-        }
-    }
-
-    testOptions {
-        unitTests.returnDefaultValues = true
-    }
-
-    sourceSets {
-        main {
-            java.srcDirs += 'src/main/kotlin/'
-            test.java.srcDirs += 'src/test/kotlin'
-            androidTest.java.srcDirs += 'src/androidTest/kotlin'
         }
     }
 }
