@@ -34,10 +34,11 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
 
     defaultConfig {
+        def module = project.getModuleInfo(project.path)
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.sdkVersion
-        versionCode project.getModuleVersionCode(project.path)
-        versionName project.getModuleVersionName(project.path)
+        versionCode project.getModuleVersionCode(module)
+        versionName project.getModuleVersionName(module)
         vectorDrawables.useSupportLibrary = true
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -85,14 +86,6 @@ dependencies {
     // Kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
-
-    // Tests
-    testImplementation "androidx.test:core:$testCoreVersion"
-    testImplementation "androidx.test.ext:junit:$jUnitExtVersion"
-    testImplementation "androidx.test:rules:$testCoreVersion"
-    testImplementation "junit:junit:$jUnitVersion"
-    androidTestImplementation "androidx.test:runner:$testCoreVersion"
-
 }
 
 configurations {

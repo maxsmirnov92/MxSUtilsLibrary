@@ -1,4 +1,4 @@
-apply from: "$rootDir/buildSrc/baseBuild.gradle"
+apply from: "$rootDir/buildSrc/androidLib.gradle"
 
 dependencies {
     // Jetbrains annotations
@@ -9,11 +9,10 @@ dependencies {
     javadocDependencies "androidx.annotation:annotation:$androidXAnnotationVersion"
     api "androidx.core:core-ktx:$androidXAnnotationVersion"
     api "androidx.palette:palette:$androidXVersion"
-    api "androidx.exifinterface:exifinterface:$androidXVersion"
+    api "androidx.exifinterface:exifinterface:$androidXAnnotationVersion"
     api "com.google.android.material:material:$androidXVersion"
 
     api "commons-net:commons-net:$commonsNetVersion"
     api "com.google.code.gson:gson:$gsonVersion"
-    androidTestImplementation 'junit:junit:4.12'
 }
 

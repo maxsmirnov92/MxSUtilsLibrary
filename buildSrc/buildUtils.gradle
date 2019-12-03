@@ -18,23 +18,26 @@ ext.getProjectInfo = {
     return new JsonSlurper().parse(new File("$rootDir/projectConfig.json"), 'utf-8')
 }
 
-ext.getModuleVersionName = { path ->
-    def module = getModuleInfo(path)
+ext.getModuleVersionNameByPath = { path ->
+    return getModuleVersionName(getModuleInfo(path))
+}
+
+ext.getModuleVersionName = { module ->
     def version = ""
     if (module != null) {
         version = module.versionName
-        if (!module.stable && module.unstableVersion > 0) {
+        if (version != null && !version.isEmpty()
+                && !module.stable && module.unstableVersion > 0) {
             version += "-alpha.$unstableVersion"
         }
     }
-    if (version.isEmpty()) {
+    if (version == null || version.isEmpty()) {
         throw new GradleException("Version name for module with path $path not found")
     }
     return version
 }
 
-ext.getModuleVersionCode = { path ->
-    def module = getModuleInfo(path)
+ext.getModuleVersionCode = { module ->
     def version = null
     if (module != null) {
         version = module.versionCode
@@ -43,6 +46,17 @@ ext.getModuleVersionCode = { path ->
         throw new GradleException("Version code for module with path $path not found")
     }
     return version
+}
+
+ext.getAppId = { module ->
+    def appId = ""
+    if (module != null && module.type == "app") {
+        appId = module.appId
+    }
+    if (appId == null || appId.isEmpty()) {
+        throw new GradleException("App ID for module with path $path not found")
+    }
+    return appId
 }
 
 ext.getModuleInfo = { path ->

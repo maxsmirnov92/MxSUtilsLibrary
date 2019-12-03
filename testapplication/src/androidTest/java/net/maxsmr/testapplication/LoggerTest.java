@@ -1,10 +1,6 @@
-import androidx.annotation.CallSuper;
+package net.maxsmr.testapplication;
 
-import org.junit.Assert;
-import org.junit.Before;
-import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.JUnit4;
+import androidx.annotation.CallSuper;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.LogcatLogger;
@@ -12,7 +8,11 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.logger.holder.ILoggerHolderProvider;
 
 import org.jetbrains.annotations.NotNull;
-
+import org.junit.Assert;
+import org.junit.Before;
+import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.JUnit4;
 
 @RunWith(JUnit4.class)
 public class LoggerTest {
@@ -33,7 +33,6 @@ public class LoggerTest {
     @Test
     public void test() {
         logger.setLoggingEnabled(true);
-        logger.d("abc");
         Assert.assertEquals(1, Holder.getInstance().getLoggersCount());
     }
 

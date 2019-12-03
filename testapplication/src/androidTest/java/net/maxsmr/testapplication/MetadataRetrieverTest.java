@@ -1,8 +1,10 @@
+package net.maxsmr.testapplication;
+
 import android.content.Context;
 import android.graphics.Bitmap;
 import android.os.Environment;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.runner.AndroidJUnit4;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import net.maxsmr.commonutils.android.media.MetadataRetriever;
 
@@ -22,14 +24,13 @@ public class MetadataRetrieverTest extends LoggerTest {
     @Override
     public void prepare() {
         super.prepare();
-        context = InstrumentationRegistry.getContext();
+        context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().getContext();
     }
     
     @Test
     @Override
     public void test() {
         logger.d("registry context: " + context);
-        logger.d("registry target context: " + InstrumentationRegistry.getTargetContext());
         logger.d("app dir: " + context.getFilesDir());
 //        Map<Long, Bitmap> frames = MetadataRetriever.extractFrames(context, Uri.parse("file:///android_asset/video/1.mp4"), null, 5);
 //        Map<Long, Bitmap> frames = null;

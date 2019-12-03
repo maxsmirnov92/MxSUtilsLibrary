@@ -6,7 +6,7 @@ apply plugin: 'maven'
 apply plugin: 'maven-publish'
 
 def projectInfo = project.getProjectInfo()
-def moduleVersion = project.getModuleVersionName(project.path)
+def moduleVersion = project.getModuleVersionNameByPath(project.path)
 
 def localReleaseDest = projectInfo.localRepo != "" ? "${rootProject.projectDir}/${projectInfo.localRepo}" : "${rootProject.buildDir}/release/repo"
 

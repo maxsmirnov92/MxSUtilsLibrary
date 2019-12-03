@@ -1,6 +1,8 @@
+package net.maxsmr.testapplication;
+
 import android.content.Context;
-import android.support.test.InstrumentationRegistry;
-import android.support.test.runner.AndroidJUnit4;
+
+import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
@@ -34,7 +36,7 @@ public class FileHelperTest extends LoggerTest {
     @Before
     public void prepare() {
         super.prepare();
-        context = InstrumentationRegistry.getTargetContext();
+        context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().getContext();
         sourceDir = new File(context.getFilesDir(), SOURCE_NAME);
         destinationDir = new File(context.getFilesDir(), DEST_NAME);
         FileHelper.delete(destinationDir, true, null, null, new FileHelper.IDeleteNotifier() {

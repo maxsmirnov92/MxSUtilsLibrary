@@ -1,3 +1,0 @@
-apply from: "$rootDir/buildSrc/androidModule.gradle"
-
-configureDeploy(this)

@@ -1,3 +1,5 @@
+package net.maxsmr.testapplication;
+
 import android.graphics.Point;
 
 import net.maxsmr.commonutils.android.gui.GuiUtils;

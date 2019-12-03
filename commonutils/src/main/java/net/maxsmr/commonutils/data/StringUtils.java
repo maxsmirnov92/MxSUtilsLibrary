@@ -10,6 +10,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
 
@@ -58,22 +59,20 @@ public class StringUtils {
         return isEmpty(text)? context.getString(R.string.no_data) : text;
     }
 
-    @Nullable
+    @NotNull
     public static String changeCaseFirstLatter(@Nullable CharSequence s, boolean upper) {
-        String result;
-        if (TextUtils.isEmpty(s)) {
-            result = null;
-        } else {
+        String result = EMPTY_STRING;
+        if (!TextUtils.isEmpty(s)) {
             result = s.toString();
             if (s.length() == 1) {
-                result = upper? result.toUpperCase() : result.toLowerCase();
+                result = upper? result.toUpperCase(Locale.getDefault()) : result.toLowerCase(Locale.getDefault());
             } else {
-                result = (upper? result.substring(0, 1).toUpperCase() : result.substring(0, 1).toLowerCase()) + result.substring(1);
+                result = (upper? result.substring(0, 1).toUpperCase(Locale.getDefault())
+                        : result.substring(0, 1).toLowerCase(Locale.getDefault()))
+                        + result.substring(1);
             }
         }
         return result;
-//        String first = parts[i].substring(0, 1);
-//        parts[i] = parts[i].replace(first, first.toUpperCase());
     }
 
     @NotNull
