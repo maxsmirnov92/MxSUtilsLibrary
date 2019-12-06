@@ -1,9 +1,8 @@
 //plugins {
 //    id "com.jfrog.bintray" version "1.7.3"
 //}
-
-apply from: "$rootDir/buildSrc/deploy.gradle"
 apply from: "$rootDir/buildSrc/config.gradle"
+apply from: "$rootDir/buildSrc/buildUtils.gradle"
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
@@ -61,7 +60,7 @@ android {
     }
 
     buildTypes {
-        degug {
+        debug {
             debuggable true
             minifyEnabled false
         }
@@ -70,6 +69,21 @@ android {
             minifyEnabled false
 //            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+
+        libraryVariants.all { variant ->
+            variant.outputs.all { output ->
+                def baseName = "${project.name}-${variant.name}"
+                def outputFileName = "${baseName}.aar"
+                println "Setting aar name to $outputFileName for variant ${variant.name}"
+                output.outputFileName = outputFileName
+                setProperty("archivesBaseName", project.name)
+                if (variant.name == "release") {
+                    project.ext.releaseArchivesBaseName = baseName
+                }
+            }
+        }
+//        productFlavors.all { flavor ->
+//        }
     }
 }
 
@@ -86,3 +100,5 @@ dependencies {
 configurations {
     javadocDependencies
 }
+
+apply from: "$rootDir/buildSrc/deploy.gradle"

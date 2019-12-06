@@ -1,15 +1,12 @@
 import net.maxsmr.android.build.tasks.*
 
-apply from: "$rootDir/buildSrc/buildUtils.gradle"
-
 task signReleaseAarTask(type: SignReleaseAarTask) {
     def propsFile = new File("$rootDir/buildSrc/keystore.properties")
     def props = new Properties()
     props.load(new FileInputStream(propsFile))
     keystoreAlias = props['alias']
     keystorePassword = props['signingPassword']
-    aarPath = "${project.buildDir}/outputs/aar/${project.name}-release.aar"
-    // no "archivesBaseName" here before deploy
+    aarPath = "${project.buildDir}/outputs/aar/${project.archivesBaseName}-release.aar"
 }
 
 task checkSignedReleaseAarTask(type: CheckSignedAarTask) {
@@ -18,6 +15,6 @@ task checkSignedReleaseAarTask(type: CheckSignedAarTask) {
     props.load(new FileInputStream(propsFile))
     keystoreAlias = props['alias']
     keystorePassword = props['signingPassword']
-    aarPath = "${project.buildDir}/outputs/aar/${project.name}-release-signed.aar"
-    // no "archivesBaseName" here before deploy
+    aarPath = "${project.buildDir}/outputs/aar//${project.archivesBaseName}-release-signed.aar"
+    enableLogging = true
 }

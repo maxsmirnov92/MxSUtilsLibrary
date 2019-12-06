@@ -1,4 +1,6 @@
 import groovy.json.JsonSlurper
+import java.util.regex.Matcher
+import java.util.regex.Pattern
 
 ext.getProjectVersion = { project ->
     def version = ""
@@ -80,4 +82,25 @@ ext.getModuleInfo = { path ->
         throw new GradleException("Module with id $path not found")
     }
     return result
+}
+
+ext.getCurrentFlavorOrVariant = { isFlavor ->
+    Gradle gradle = getGradle()
+    String tskReqStr = gradle.getStartParameter().getTaskRequests().toString()
+
+    Pattern pattern
+
+    if (tskReqStr.contains("assemble"))
+        pattern = Pattern.compile("assemble(\\w+)(Release|Debug)")
+    else
+        pattern = Pattern.compile("generate(\\w+)(Release|Debug)")
+
+    Matcher matcher = pattern.matcher(tskReqStr)
+
+    if (matcher.find()) {
+        def result = matcher.group(isFlavor? 1 : 2).toLowerCase()
+        return result
+    } else {
+        throw new GradleException("No flavor/variant match found")
+    }
 }
