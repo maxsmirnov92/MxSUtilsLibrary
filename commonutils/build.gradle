@@ -15,4 +15,3 @@ dependencies {
     api "commons-net:commons-net:$commonsNetVersion"
     api "com.google.code.gson:gson:$gsonVersion"
 }
-

@@ -1,23 +1,16 @@
 package net.maxsmr.android.build.tasks.misc
 
 import java.io.File
-import java.lang.IllegalArgumentException
 
-fun checkNotEmpty(str: String?, name: String) {
-    if (str.isNullOrEmpty()) {
-        throw IllegalArgumentException("Argument $name is empty")
-    }
+fun checkNotEmpty(str: String?, argName: String) {
+    require(!str.isNullOrEmpty()) { "Argument $argName is null or empty" }
 }
 
-fun checkFilePathValid(path: String?, name: String) {
-    if (path.isNullOrEmpty()) {
-        throw IllegalArgumentException("Path $name is empty")
-    }
-    checkFileValid(File(path), name)
+fun checkFilePathValid(path: String?, argName: String) {
+    require(!path.isNullOrEmpty()) { "Path $argName is null or empty" }
+    checkFileValid(File(path), argName)
 }
 
-fun checkFileValid(file: File?, name: String) {
-    if (file == null || !file.exists() || !file.isFile || file.length() <= 0) {
-        throw IllegalArgumentException("File $file for $name is not valid")
-    }
+fun checkFileValid(file: File?, argName: String) {
+    require(!(file == null || !file.exists() || !file.isFile || file.length() <= 0)) { "File $file for $argName is not valid" }
 }

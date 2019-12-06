@@ -7,7 +7,7 @@ import java.util.concurrent.CountDownLatch
 import kotlin.collections.ArrayList
 
 private fun createAndStartProcess(
-        cmds: List<String>,
+        commands: List<String>,
         workingDir: String,
         configurator: IProcessBuilderConfigurator?,
         sc: ShellCallback?,
@@ -15,13 +15,13 @@ private fun createAndStartProcess(
         latch: CountDownLatch?
 ): Process? {
 
-    var cmds = ArrayList(cmds)
+    val commands = commands.toMutableList()
 
-    for (i in cmds.indices) {
-        cmds[i] = String.format(Locale.US, "%s", cmds[i])
+    for (i in commands.indices) {
+        commands[i] = String.format(Locale.US, "%s", commands[i])
     }
 
-    val pb = ProcessBuilder(cmds)
+    val pb = ProcessBuilder(commands)
 
     if (workingDir.isNotEmpty()) {
         val workingDirFile = File(workingDir)
@@ -34,7 +34,7 @@ private fun createAndStartProcess(
 
     if (sc != null && sc.needToLogCommands()) {
         val cmdLog = StringBuilder()
-        for (cmd in cmds) {
+        for (cmd in commands) {
             cmdLog.append(cmd)
             cmdLog.append(' ')
         }
@@ -59,12 +59,12 @@ private fun createAndStartProcess(
         sc?.processStarted()
     }
 
-    val outThreadInfo = CmdThreadInfo(cmds, workingDir, StreamType.OUT)
+    val outThreadInfo = CmdThreadInfo(commands, workingDir, StreamType.OUT)
     val outThread = StreamConsumeThread(outThreadInfo, process.inputStream, sc, tc, latch)
     outThread.start()
     tc?.onThreadStarted(outThreadInfo, outThread)
 
-    val errThreadInfo = CmdThreadInfo(cmds, workingDir, StreamType.ERR)
+    val errThreadInfo = CmdThreadInfo(commands, workingDir, StreamType.ERR)
     val errThread = StreamConsumeThread(errThreadInfo, process.errorStream, sc, tc, latch)
     errThread.start()
     tc?.onThreadStarted(errThreadInfo, errThread)
@@ -90,7 +90,7 @@ fun execProcessAsync(
         sc: ShellCallback?,
         tc: ThreadsCallback?
 ): Boolean {
-    println("execProcessAsync(), cmds=$cmds, workingDir=$workingDir, configurator=$configurator, sc=$sc, tc=$tc")
+    println("execProcessAsync(), commands=$cmds, workingDir=$workingDir, configurator=$configurator, sc=$sc, tc=$tc")
     val latch = CountDownLatch(2)
     val process = createAndStartProcess(cmds, workingDir, configurator, sc, tc, latch)
     if (process != null) {
@@ -121,7 +121,7 @@ fun execProcess(
         sc: ShellCallback?,
         tc: ThreadsCallback?
 ): CommandResult {
-    println("execProcess(), cmds=$cmds, workingDir=$workingDir, configurator=$configurator, targetExitCode=$targetExitCode, sc=$sc, tc=$tc")
+    println("execProcess(), commands=$cmds, workingDir=$workingDir, configurator=$configurator, targetExitCode=$targetExitCode, sc=$sc, tc=$tc")
 
     val stdOutLines = ArrayList<String>()
     val stdErrLines = ArrayList<String>()
@@ -215,7 +215,7 @@ class CmdThreadInfo(cmds: List<String>?,
 
 
     override fun toString(): String {
-        return "CmdThreadInfo(workingDir=$workingDir, type=$type, cmds=$cmds)"
+        return "CmdThreadInfo(workingDir=$workingDir, type=$type, commands=$cmds)"
     }
 
     override fun equals(other: Any?): Boolean {

@@ -22,18 +22,21 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
 import static net.maxsmr.commonutils.android.processmanager.model.ProcessInfo.ProcessState.S;
+import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
+import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
 import static net.maxsmr.commonutils.shell.RootShellCommandsKt.isRootAvailable;
 
 public abstract class AbstractShellProcessManager extends AbstractProcessManager {
 
     private static final Pattern PACKAGE_PATTERN = Pattern.compile("^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+[0-9a-z_]$");
 
-    protected final ShellWrapper shellWrapper = new ShellWrapper(false);
+    protected final ShellWrapper shellWrapper = new ShellWrapper(false, DEFAULT_TARGET_CODE, EMPTY_STRING, null);
 
     @Nullable
     private String[] cachedCommands;
@@ -212,7 +215,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
                     int bracketIndex = name.indexOf("["); // cases with merged column names: for example, "S[%CPU]"
                     if (bracketIndex > 0) {
                         final String namePartOne = name.substring(0, bracketIndex);
-                        final String namePartTwo = name.substring(bracketIndex, name.length());
+                        final String namePartTwo = name.substring(bracketIndex);
                         if (!TextUtils.isEmpty(namePartOne)) {
                             columnNamesList.add(namePartOne);
                         }
@@ -286,7 +289,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
             return null;
         }
 
-        final Integer processNameIndex = getValueIndex(columnNames, indexMap, Column.NAME, fields);
+        final int processNameIndex = getValueIndex(columnNames, indexMap, Column.NAME, fields);
 
         String processName = isValueIndexValid(processNameIndex, fields) ? fields[processNameIndex].trim() : null;
 
@@ -297,7 +300,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
         }
 
         final boolean isPackageValid = !TextUtils.isEmpty(processName)
-                && PACKAGE_PATTERN.matcher(processName.toLowerCase()).matches()
+                && PACKAGE_PATTERN.matcher(processName.toLowerCase(Locale.getDefault())).matches()
                 && isPackageInstalled(processName);
 
         if (!isPackageValid) {
@@ -310,13 +313,13 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
             return null;
         }
 
-        final Integer userIndex = getValueIndex(columnNames, indexMap, Column.USER, fields);
-        final Integer pidIndex = getValueIndex(columnNames, indexMap, Column.PID, fields);
-        final Integer pPidIndex = getValueIndex(columnNames, indexMap, Column.PPID, fields);
-        final Integer vSizeIndex = getValueIndex(columnNames, indexMap, Column.VSIZE, fields);
-        final Integer rssIndex = getValueIndex(columnNames, indexMap, Column.RSS, fields);
-        final Integer pcyIndex = getValueIndex(columnNames, indexMap, Column.PCY, fields);
-        final Integer statIndex = getValueIndex(columnNames, indexMap, Column.STAT, fields);
+        final int userIndex = getValueIndex(columnNames, indexMap, Column.USER, fields);
+        final int pidIndex = getValueIndex(columnNames, indexMap, Column.PID, fields);
+        final int pPidIndex = getValueIndex(columnNames, indexMap, Column.PPID, fields);
+        final int vSizeIndex = getValueIndex(columnNames, indexMap, Column.VSIZE, fields);
+        final int rssIndex = getValueIndex(columnNames, indexMap, Column.RSS, fields);
+        final int pcyIndex = getValueIndex(columnNames, indexMap, Column.PCY, fields);
+        final int statIndex = getValueIndex(columnNames, indexMap, Column.STAT, fields);
 
         final String user = isValueIndexValid(userIndex, fields) ? fields[userIndex].trim() : null;
         final int userId = StringUtils.strToInt(user);

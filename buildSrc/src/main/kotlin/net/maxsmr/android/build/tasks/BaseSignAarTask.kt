@@ -19,15 +19,22 @@ abstract class BaseSignAarTask : DefaultTask() {
     @Input
     var aarPath: String = ""
 
+    @Input
+    var keystoreFileName: String = "release.keystore"
+    
+    @Input
+    var enableLogging: Boolean = false
+
     open fun checkArgs() {
         checkNotEmpty(keystoreAlias, "Keystore alias")
         checkNotEmpty(keystorePassword, "Keystore password")
+        checkNotEmpty(keystoreFileName, "Keystore file name")
         checkFilePathValid(aarPath, "AAR")
     }
 
     protected fun runScript(script: String) {
         println("Executing script: $script")
-        with(ShellWrapper(enableLogging = false)) {
+        with(ShellWrapper(enableLogging = enableLogging)) {
             var jreHome = System.getenv("JRE_HOME") ?: ""
             if (jreHome.isNotEmpty()) {
                 if (!jreHome.endsWith("/") && !jreHome.endsWith("\\")) {
@@ -46,9 +53,9 @@ abstract class BaseSignAarTask : DefaultTask() {
         var keystoreFile: File? = null
         val homeDir = System.getenv("ANDROID_HOME") ?: ""
         if (homeDir.isNotEmpty()) {
-            keystoreFile = File(homeDir, "release.keystore")
+            keystoreFile = File(homeDir, keystoreFileName)
         }
-        checkFileValid(keystoreFile, "Keystore")
+        checkFileValid(keystoreFile, "Keystore file")
         return keystoreFile!!
     }
 }

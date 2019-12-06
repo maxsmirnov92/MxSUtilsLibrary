@@ -1,5 +1,7 @@
 package net.maxsmr.commonutils.shell
 
+import net.maxsmr.commonutils.data.EMPTY_STRING
+import net.maxsmr.commonutils.data.FileHelper
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.shell.ShellCallback.StreamType
@@ -11,7 +13,7 @@ import kotlin.collections.ArrayList
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("ShellUtils")
 
 private fun createAndStartProcess(
-        cmds: List<String>,
+        commands: List<String>,
         workingDir: String,
         configurator: IProcessBuilderConfigurator?,
         sc: ShellCallback?,
@@ -19,17 +21,17 @@ private fun createAndStartProcess(
         latch: CountDownLatch?
 ): Process? {
 
-    var cmds = ArrayList(cmds)
+    val commands = commands.toMutableList()
 
-    for (i in cmds.indices) {
-        cmds[i] = String.format(Locale.US, "%s", cmds[i])
+    for (i in commands.indices) {
+        commands[i] = String.format(Locale.US, "%s", commands[i])
     }
 
-    val pb = ProcessBuilder(cmds)
+    val pb = ProcessBuilder(commands)
 
     if (workingDir.isNotEmpty()) {
         val workingDirFile = File(workingDir)
-        if (workingDirFile.exists() && workingDirFile.isDirectory) {
+        if (FileHelper.isDirExists(workingDirFile)) {
             pb.directory(workingDirFile)
         } else {
             logger.e("working directory $workingDir not exists")
@@ -38,7 +40,7 @@ private fun createAndStartProcess(
 
     if (sc != null && sc.needToLogCommands()) {
         val cmdLog = StringBuilder()
-        for (cmd in cmds) {
+        for (cmd in commands) {
             cmdLog.append(cmd)
             cmdLog.append(' ')
         }
@@ -63,12 +65,12 @@ private fun createAndStartProcess(
         sc?.processStarted()
     }
 
-    val outThreadInfo = CmdThreadInfo(cmds, workingDir, StreamType.OUT)
+    val outThreadInfo = CmdThreadInfo(commands, workingDir, StreamType.OUT)
     val outThread = StreamConsumeThread(outThreadInfo, process.inputStream, sc, tc, latch)
     outThread.start()
     tc?.onThreadStarted(outThreadInfo, outThread)
 
-    val errThreadInfo = CmdThreadInfo(cmds, workingDir, StreamType.ERR)
+    val errThreadInfo = CmdThreadInfo(commands, workingDir, StreamType.ERR)
     val errThread = StreamConsumeThread(errThreadInfo, process.errorStream, sc, tc, latch)
     errThread.start()
     tc?.onThreadStarted(errThreadInfo, errThread)
@@ -78,7 +80,7 @@ private fun createAndStartProcess(
 
 fun execProcessAsync(
         cmd: String,
-        workingDir: String = "",
+        workingDir: String = EMPTY_STRING,
         configurator: IProcessBuilderConfigurator? = null,
         sc: ShellCallback?,
         tc: ThreadsCallback?
@@ -89,7 +91,7 @@ fun execProcessAsync(
  */
 fun execProcessAsync(
         cmds: List<String>,
-        workingDir: String = "",
+        workingDir: String = EMPTY_STRING,
         configurator: IProcessBuilderConfigurator? = null,
         sc: ShellCallback?,
         tc: ThreadsCallback?
@@ -107,7 +109,7 @@ fun execProcessAsync(
 
 fun execProcess(
         cmd: String,
-        workingDir: String = "",
+        workingDir: String = EMPTY_STRING,
         configurator: IProcessBuilderConfigurator? = null,
         targetExitCode: Int?,
         sc: ShellCallback?,
@@ -119,7 +121,7 @@ fun execProcess(
  */
 fun execProcess(
         cmds: List<String>,
-        workingDir: String = "",
+        workingDir: String = EMPTY_STRING,
         configurator: IProcessBuilderConfigurator? = null,
         targetExitCode: Int?,
         sc: ShellCallback?,

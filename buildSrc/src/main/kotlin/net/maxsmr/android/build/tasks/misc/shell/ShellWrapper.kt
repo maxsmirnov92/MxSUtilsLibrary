@@ -63,14 +63,13 @@ class ShellWrapper(
             executeCommand(mutableListOf(command), useSU)
 
     fun executeCommand(commands: List<String>, useSU: Boolean): CommandResult {
-        var commands = ArrayList(commands)
         log("Execute commands: \"$commands\", useSU: $useSU", false)
 
         check(!isDisposed) { ShellWrapper::class.java.simpleName + " is disposed" }
 
         require(commands.isNotEmpty()) { "Nothing to execute" }
 
-        commands = ArrayList(commands)
+        val commands = commands.toMutableList()
 
         if (useSU) {
             commands.add(0, "su")

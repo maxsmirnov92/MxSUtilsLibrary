@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils.shell
 
+import net.maxsmr.commonutils.data.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.util.*
@@ -13,7 +14,7 @@ class ShellWrapper(
 
         var targetCode: Int = DEFAULT_TARGET_CODE,
 
-        var workingDir: String = "",
+        var workingDir: String = EMPTY_STRING,
 
         var configurator: IProcessBuilderConfigurator? = null
 ) {
@@ -66,14 +67,13 @@ class ShellWrapper(
             executeCommand(mutableListOf(command), useSU)
 
     fun executeCommand(commands: List<String>, useSU: Boolean): CommandResult {
-        var commands = ArrayList(commands)
         logger.d("Execute commands: \"$commands\", useSU: $useSU")
 
         check(!isDisposed) { ShellWrapper::class.java.simpleName + " is disposed" }
 
         require(commands.isNotEmpty()) { "Nothing to execute" }
 
-        commands = ArrayList(commands)
+        val commands = commands.toMutableList()
 
         if (useSU) {
             commands.add(0, "su")
