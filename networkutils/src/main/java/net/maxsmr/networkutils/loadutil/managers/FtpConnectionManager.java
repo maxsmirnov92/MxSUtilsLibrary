@@ -28,7 +28,7 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
 
-import static net.maxsmr.commonutils.data.MathUtils.safeLongToInt;
+import static net.maxsmr.commonutils.data.number.MathUtils.safeLongToInt;
 
 public class FtpConnectionManager {
 
@@ -879,5 +879,4 @@ public class FtpConnectionManager {
 
         REWRITE, APPEND, DO_NOTING
     }
-
 }

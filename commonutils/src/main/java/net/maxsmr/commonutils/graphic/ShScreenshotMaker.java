@@ -28,8 +28,8 @@ public final class ShScreenshotMaker {
     private static ShScreenshotMaker sInstance;
 
     public static void initInstance() {
+        synchronized (ShScreenshotMaker.class) {
         if (sInstance == null) {
-            synchronized (ShScreenshotMaker.class) {
                 sInstance = new ShScreenshotMaker();
             }
         }

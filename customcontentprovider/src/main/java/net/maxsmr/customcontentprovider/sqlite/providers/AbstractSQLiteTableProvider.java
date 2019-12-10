@@ -40,6 +40,21 @@ public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteConten
         this.contentProviderClass = contentProviderClass;
     }
 
+    /**
+     * @return column name - type
+     */
+    @Nullable
+    public abstract Map<String, Class<?>> getColumnsMap();
+
+    @Override
+    public void onContentChanged(Context context, OperationType operation, Bundle extras) {
+        // do nothing
+    }
+
+    public final void onCreate(SQLiteDatabase db) {
+        execCreate(db);
+    }
+
     @NotNull
     public final String getTableName() {
         return tableName;
@@ -47,30 +62,28 @@ public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteConten
 
     @NotNull
     public final Uri getBaseUri(@NotNull Context context) {
-        Uri baseUri = ProviderUtils.getContentProviderTableUri(context, context.getPackageName(), contentProviderClass, getTableName());
-        if (baseUri == null) {
-            throw new RuntimeException("can't make base URI");
-        }
-        return baseUri;
+        return getBaseUri(context, contentProviderClass, getTableName());
     }
 
-    @NotNull
-    public static <P extends AbstractSQLiteContentProvider> Uri getBaseUri(@NotNull Context context, @NotNull Class<P> contentProviderClass, @NotNull String tableName) {
-        Uri baseUri = ProviderUtils.getContentProviderTableUri(context, context.getPackageName(), contentProviderClass, tableName);
-        if (baseUri == null) {
-            throw new RuntimeException("can't make base URI");
-        }
-        return baseUri;
+    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
+        db.execSQL("drop table if exists " + tableName + ";");
+        onCreate(db);
     }
 
-    /**
-     * @return column name - type
-     */
-    @Nullable
-    public abstract Map<String, Class<?>> getColumnsMap();
+    public Cursor query(SQLiteDatabase db, String[] columns, String where, String[] whereArgs, String orderBy) {
+        return db.query(tableName, columns, where, whereArgs, null, null, orderBy);
+    }
 
-    public final void onCreate(SQLiteDatabase db) {
-        execCreate(db);
+    public long insert(SQLiteDatabase db, ContentValues values) {
+        return db.insert(tableName, BaseColumns._ID, values);
+    }
+
+    public int delete(SQLiteDatabase db, String where, String[] whereArgs) {
+        return db.delete(tableName, where, whereArgs);
+    }
+
+    public int update(SQLiteDatabase db, ContentValues values, String where, String[] whereArgs) {
+        return db.update(tableName, values, where, whereArgs);
     }
 
     private void execCreate(SQLiteDatabase db) {
@@ -136,31 +149,16 @@ public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteConten
         db.execSQL(createScript.toString());
     }
 
-    public Cursor query(SQLiteDatabase db, String[] columns, String where, String[] whereArgs, String orderBy) {
-        return db.query(tableName, columns, where, whereArgs, null, null, orderBy);
+
+    @NotNull
+    public static <P extends AbstractSQLiteContentProvider> Uri getBaseUri(@NotNull Context context, @NotNull Class<P> contentProviderClass, @NotNull String tableName) {
+        Uri baseUri = ProviderUtils.getContentProviderTableUri(context, context.getPackageName(), contentProviderClass, tableName);
+        if (baseUri == null) {
+            throw new RuntimeException("can't make base URI");
+        }
+        return baseUri;
     }
 
-    public long insert(SQLiteDatabase db, ContentValues values) {
-        return db.insert(tableName, BaseColumns._ID, values);
-    }
-
-    public int delete(SQLiteDatabase db, String where, String[] whereArgs) {
-        return db.delete(tableName, where, whereArgs);
-    }
-
-    public int update(SQLiteDatabase db, ContentValues values, String where, String[] whereArgs) {
-        return db.update(tableName, values, where, whereArgs);
-    }
-
-    public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
-        db.execSQL("drop table if exists " + tableName + ";");
-        onCreate(db);
-    }
-
-    @Override
-    public void onContentChanged(Context context, SQLiteOperation operation, Bundle extras) {
-
-    }
 
     @Nullable
     public static AbstractSQLiteTableProvider findSQLiteTableProvider(Collection<AbstractSQLiteTableProvider> providers, String tableName) {
@@ -175,11 +173,6 @@ public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteConten
     }
 
     public enum Order {
-        ASC, DESC;
-
-        public String getName() {
-            return toString();
-        }
+        ASC, DESC
     }
-
 }

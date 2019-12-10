@@ -5,76 +5,45 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.Observable;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.LinkedHashSet;
-import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 
 public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
 
-    /**
-     * @param databasePath if null or empty - default location will be used, otherwise - path on sdcard (for e.g.
-     *                     Android/data/com.example.database)
-     */
     @NotNull
-    public static SQLiteOpenHelperImpl createFrom(@NotNull Context context, @NotNull String databaseName, @Nullable String databasePath, int databaseVersion,
-                                                  @NotNull Set<AbstractSQLiteTableProvider> tables) {
+    private final Set<AbstractSQLiteTableProvider> tableProviders = new LinkedHashSet<>();
 
-        if (TextUtils.isEmpty(databaseName))
-            throw new IllegalArgumentException("databaseName is not specified");
-
-        if (tables.isEmpty())
-            throw new RuntimeException("tables is empty");
-
-        if (databaseVersion < 0)
-            throw new RuntimeException("incorrect databaseVersion: " + databaseVersion);
-
-        if (!databaseName.toLowerCase().endsWith(".db")) {
-            databaseName += ".db";
-        }
-
-        String targetName;
-
-        if (!TextUtils.isEmpty(databasePath)) {
-            targetName = FileHelper.checkPath(databasePath, databaseName).getAbsolutePath();
-        } else {
-            targetName = databaseName;
-        }
-
-        return new SQLiteOpenHelperImpl(context, targetName, databaseVersion, tables);
-    }
+    @NotNull
+    private final CallbacksObservable callbacksObservable = new CallbacksObservable();
 
     @Nullable
     private SQLiteDatabase sqLiteDatabase;
 
-    private final Set<AbstractSQLiteTableProvider> tableProviders = new LinkedHashSet<>();
-
     private SQLiteOpenHelperImpl(Context context, String databaseName, int databaseVersion,
-                                 Set<AbstractSQLiteTableProvider> tableProviders) {
+                                 Set<? extends AbstractSQLiteTableProvider> tableProviders) {
         super(context, databaseName, null, databaseVersion);
         this.tableProviders.addAll(tableProviders);
-    }
-
-
-    @Nullable
-    public SQLiteDatabase getSqLiteDatabase() {
-        return sqLiteDatabase;
     }
 
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.beginTransactionNonExclusive();
         try {
-            for (final AbstractSQLiteTableProvider table : tableProviders) {
-                table.onCreate(db);
+            for (AbstractSQLiteTableProvider table : tableProviders) {
+                if (CompareUtils.stringsEqual(db.getPath(), table.getTableName(), false)) {
+                    table.onCreate(db);
+                }
             }
             db.setTransactionSuccessful();
-            dispatchDatabaseCreated(db);
+            callbacksObservable.dispatchDatabaseCreated(db);
 
         } finally {
             db.endTransaction();
@@ -86,47 +55,96 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.beginTransactionNonExclusive();
         try {
-            for (final AbstractSQLiteTableProvider table : tableProviders) {
-                table.onUpgrade(db, oldVersion, newVersion);
+            for (AbstractSQLiteTableProvider table : tableProviders) {
+                if (CompareUtils.stringsEqual(db.getPath(), table.getTableName(), false)) {
+                    table.onUpgrade(db, oldVersion, newVersion);
+                }
             }
             db.setTransactionSuccessful();
-            dispatchDatabaseUpgraded(db);
+            callbacksObservable.dispatchDatabaseUpgraded(db);
         } finally {
             db.endTransaction();
             this.sqLiteDatabase = db;
         }
     }
 
-    private final List<SQLiteCallbacks> callbacksList = new ArrayList<>();
+    @NotNull
+    public Set<AbstractSQLiteTableProvider> getTableProviders() {
+        return new LinkedHashSet<>(tableProviders);
+    }
+
+    @Nullable
+    public SQLiteDatabase getSQLiteDatabase() {
+        return sqLiteDatabase;
+    }
 
     public void addSQLiteCallback(@NotNull SQLiteCallbacks callbacks) {
-        if (!callbacksList.contains(callbacks)) {
-            callbacksList.add(callbacks);
-        }
+        callbacksObservable.registerObserver(callbacks);
     }
 
     public void removeSQLiteCallback(@NotNull SQLiteCallbacks callbacks) {
-        if (callbacksList.contains(callbacks)) {
-            callbacksList.remove(callbacks);
-        }
+        callbacksObservable.unregisterObserver(callbacks);
     }
 
-    private void dispatchDatabaseCreated(@NotNull SQLiteDatabase database) {
-        for (SQLiteCallbacks callbacks : callbacksList) {
-            callbacks.onDatabaseCreated(database);
-        }
-    }
+    /**
+     * @param databasePath if null or empty - default location will be used, otherwise - path on sdcard (for e.g.
+     *                     Android/data/com.example.database)
+     */
+    @NotNull
+    public static SQLiteOpenHelperImpl createFrom(
+            @NotNull Context context,
+            @NotNull String databaseName,
+            @Nullable String databasePath,
+            int databaseVersion,
+            @NotNull Set<? extends AbstractSQLiteTableProvider> tableProviders) {
 
-    private void dispatchDatabaseUpgraded(@NotNull SQLiteDatabase database) {
-        for (SQLiteCallbacks callbacks : callbacksList) {
-            callbacks.onDatabaseUpgraded(database);
+        if (TextUtils.isEmpty(databaseName))
+            throw new IllegalArgumentException("databaseName is not specified");
+
+        if (tableProviders.isEmpty())
+            throw new RuntimeException("tableProviders is empty");
+
+        if (databaseVersion < 0)
+            throw new RuntimeException("incorrect databaseVersion: " + databaseVersion);
+
+        if (!databaseName.toLowerCase(Locale.getDefault()).endsWith(".db")) {
+            databaseName += ".db";
         }
+
+        String targetName;
+
+        if (!TextUtils.isEmpty(databasePath)) {
+            targetName = FileHelper.checkPath(databasePath, databaseName).getAbsolutePath();
+        } else {
+            targetName = databaseName;
+        }
+
+        return new SQLiteOpenHelperImpl(context, targetName, databaseVersion, tableProviders);
     }
 
     public interface SQLiteCallbacks {
+
         void onDatabaseCreated(@NotNull SQLiteDatabase database);
 
         void onDatabaseUpgraded(@NotNull SQLiteDatabase database);
     }
 
+    private static class CallbacksObservable extends Observable<SQLiteCallbacks> {
+
+        private void dispatchDatabaseCreated(@NotNull SQLiteDatabase database) {
+            synchronized (observers) {
+                for (SQLiteCallbacks callbacks : observers) {
+                    callbacks.onDatabaseCreated(database);
+                }
+            }
+        }
+
+        private void dispatchDatabaseUpgraded(@NotNull SQLiteDatabase database) {
+            synchronized (observers) {
+                for (SQLiteCallbacks callbacks : observers) {
+                    callbacks.onDatabaseUpgraded(database);
+                }
+            }
+        }
+    }
 }

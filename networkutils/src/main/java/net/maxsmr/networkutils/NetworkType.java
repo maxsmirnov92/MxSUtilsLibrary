@@ -18,14 +18,14 @@ public enum NetworkType {
         return value;
     }
 
-    public static NetworkType fromNativeValue(int value) throws IllegalArgumentException {
+    public static NetworkType fromValue(int value) throws IllegalArgumentException {
 
         for (NetworkType networkType : NetworkType.values()) {
             if (networkType.getValue() == value) {
                 return networkType;
             }
         }
-        throw new IllegalArgumentException("Incorrect native value " + value + " for enum type " + NetworkType.class.getName());
+        throw new IllegalArgumentException("Incorrect value " + value + " for enum type " + NetworkType.class.getName());
 
     }
 

@@ -76,10 +76,86 @@ public class MaskClickLayout extends FrameLayout {
         init();
     }
 
-    private void init() {
-        addView(backgroundImageView = new ImageView(getContext()));
-        addView(masksImageView = new ImageView(getContext()));
-        addView(layersImageView = new ImageView(getContext()));
+    @Override
+    public boolean onTouchEvent(MotionEvent event) {
+        if (clickMask != null) {
+            if (event.getPointerCount() == 1) {
+                if (event.getAction() == MotionEvent.ACTION_DOWN) {
+
+                    Pair<Integer, Integer> backgroundSize = getBackgroundImageSize();
+
+                    int x = (int) event.getX();
+                    int y = (int) event.getY();
+
+                    Point point = correctCoordsBySize(new Point(x, y), new Pair<>(backgroundImageView.getMeasuredWidth(), backgroundImageView.getMeasuredHeight()), new Pair<>(backgroundSize.first, backgroundSize.second));
+                    point.set(x = point.x, y = point.y);
+
+//                  List<Drawable> drawables = new ArrayList<>();
+
+                    List<Item> hitItems = new ArrayList<>();
+
+                    for (Item item : clickMask.items) {
+
+                        Bitmap maskBitmap = item.maskedPair.second; // GraphicUtils.createBitmapFromResource(item.maskResId, 1, getContext());
+
+                        if (item.options.scaleToParent) {
+                            if (backgroundSize.first > 0 && backgroundSize.second > 0) {
+                                Bitmap scaledMaskBitmap = Bitmap.createScaledBitmap(maskBitmap, backgroundSize.first, backgroundSize.second, false);
+
+                                if (scaledMaskBitmap == null) {
+                                    throw new RuntimeException("could not create scaled bitmap: " + backgroundSize.first + "x" + backgroundSize.second);
+                                }
+
+                                maskBitmap.recycle();
+                                maskBitmap = scaledMaskBitmap;
+                            }
+                        }
+
+                        int color = maskBitmap.getPixel(x, y);
+                        color &= ~0xFF000000;
+
+                        if (color == item.maskClickColor) {
+
+                            if (itemHitCallbacks.dispatchItemPreHit(point, item)) {
+                                continue;
+                            }
+
+                            hitItems.add(item);
+
+//                          Drawable currentDrawable = layersImageView.getDrawable();
+//                          final int layersCount = currentDrawable instanceof LayerDrawable ? ((LayerDrawable) currentDrawable).getNumberOfLayers() : 0;
+
+                            if (clickMask.findFirstMatch) {
+                                break;
+                            }
+                        }
+//                  maskBitmap.recycle();
+                    }
+
+                    if (!hitItems.isEmpty()) {
+                        if (!itemHitCallbacks.dispatchItemsHit(point, hitItems)) {
+                            for (Item item : hitItems) {
+                                if (!isItemSelected(item)) {
+                                    setItemSelected(item, true);
+                                } else {
+                                    toggleItemSelected(item);
+                                }
+                            }
+                        }
+                    }
+
+//                LayerDrawable layerDrawable = !drawables.isEmpty() ? new LayerDrawable(drawables.toArray(new Drawable[drawables.size()])) : null;
+//                layersImageView.setImageDrawable(layerDrawable);
+                }
+            }
+        }
+        return super.onTouchEvent(event);
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        unload();
     }
 
     public void addItemHitCallback(@NotNull ItemHitCallback c) {
@@ -388,13 +464,7 @@ public class MaskClickLayout extends FrameLayout {
         masksImageView.setImageDrawable(masksDrawable);
     }
 
-    private static void correctImageViewSize(@NotNull ImageView v) {
-        Pair<Integer, Integer> viewSize = GuiUtils.getRescaledImageViewSize(v);
-        v.setMaxWidth(viewSize.first);
-        v.setMaxHeight(viewSize.second);
-        v.invalidate();
-        v.requestLayout();
-    }
+
 
     public void setBackgroundVisibility(boolean visibility) {
         backgroundImageView.setVisibility(visibility ? View.VISIBLE : View.GONE);
@@ -547,86 +617,18 @@ public class MaskClickLayout extends FrameLayout {
         return new Point(Math.round((float) targetSize.first * scalerX), Math.round((float) targetSize.second * scalerY));
     }
 
-    @Override
-    public boolean onTouchEvent(MotionEvent event) {
-        if (clickMask != null) {
-            if (event.getPointerCount() == 1) {
-                if (event.getAction() == MotionEvent.ACTION_DOWN) {
-
-                    Pair<Integer, Integer> backgroundSize = getBackgroundImageSize();
-
-                    int x = (int) event.getX();
-                    int y = (int) event.getY();
-
-                    Point point = correctCoordsBySize(new Point(x, y), new Pair<>(backgroundImageView.getMeasuredWidth(), backgroundImageView.getMeasuredHeight()), new Pair<>(backgroundSize.first, backgroundSize.second));
-                    point.set(x = point.x, y = point.y);
-
-//                  List<Drawable> drawables = new ArrayList<>();
-
-                    List<Item> hitItems = new ArrayList<>();
-
-                    for (Item item : clickMask.items) {
-
-                        Bitmap maskBitmap = item.maskedPair.second; // GraphicUtils.createBitmapFromResource(item.maskResId, 1, getContext());
-
-                        if (item.options.scaleToParent) {
-                            if (backgroundSize.first > 0 && backgroundSize.second > 0) {
-                                Bitmap scaledMaskBitmap = Bitmap.createScaledBitmap(maskBitmap, backgroundSize.first, backgroundSize.second, false);
-
-                                if (scaledMaskBitmap == null) {
-                                    throw new RuntimeException("could not create scaled bitmap: " + backgroundSize.first + "x" + backgroundSize.second);
-                                }
-
-                                maskBitmap.recycle();
-                                maskBitmap = scaledMaskBitmap;
-                            }
-                        }
-
-                        int color = maskBitmap.getPixel(x, y);
-                        color &= ~0xFF000000;
-
-                        if (color == item.maskClickColor) {
-
-                            if (itemHitCallbacks.dispatchItemPreHit(point, item)) {
-                                continue;
-                            }
-
-                            hitItems.add(item);
-
-//                          Drawable currentDrawable = layersImageView.getDrawable();
-//                          final int layersCount = currentDrawable instanceof LayerDrawable ? ((LayerDrawable) currentDrawable).getNumberOfLayers() : 0;
-
-                            if (clickMask.findFirstMatch) {
-                                break;
-                            }
-                        }
-//                  maskBitmap.recycle();
-                    }
-
-                    if (!hitItems.isEmpty()) {
-                        if (!itemHitCallbacks.dispatchItemsHit(point, hitItems)) {
-                            for (Item item : hitItems) {
-                                if (!isItemSelected(item)) {
-                                    setItemSelected(item, true);
-                                } else {
-                                    toggleItemSelected(item);
-                                }
-                            }
-                        }
-                    }
-
-//                LayerDrawable layerDrawable = !drawables.isEmpty() ? new LayerDrawable(drawables.toArray(new Drawable[drawables.size()])) : null;
-//                layersImageView.setImageDrawable(layerDrawable);
-                }
-            }
-        }
-        return super.onTouchEvent(event);
+    private static void correctImageViewSize(@NotNull ImageView v) {
+        Pair<Integer, Integer> viewSize = GuiUtils.getRescaledImageViewSize(v);
+        v.setMaxWidth(viewSize.first);
+        v.setMaxHeight(viewSize.second);
+        v.invalidate();
+        v.requestLayout();
     }
 
-    @Override
-    protected void finalize() throws Throwable {
-        super.finalize();
-        unload();
+    private void init() {
+        addView(backgroundImageView = new ImageView(getContext()));
+        addView(masksImageView = new ImageView(getContext()));
+        addView(layersImageView = new ImageView(getContext()));
     }
 
     public static class TransformOptions implements Serializable {

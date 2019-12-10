@@ -6,7 +6,6 @@ import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
-import net.maxsmr.commonutils.shell.ShellUtils;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
@@ -17,6 +16,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
+import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
+import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 
 
 public class UsbDeviceWatcher {
@@ -40,8 +42,8 @@ public class UsbDeviceWatcher {
     private DeviceFinderRunnable deviceFinderRunnable;
 
     public static void initInstance() {
-        if (sInstance == null) {
-            synchronized (UsbDeviceWatcher.class) {
+        synchronized (UsbDeviceWatcher.class) {
+            if (sInstance == null) {
                 logger.d("initInstance()");
                 sInstance = new UsbDeviceWatcher();
             }
@@ -49,12 +51,15 @@ public class UsbDeviceWatcher {
     }
 
     public static UsbDeviceWatcher getInstance() {
-        initInstance();
-        return sInstance;
+        synchronized (UsbDeviceWatcher.class) {
+            initInstance();
+            return sInstance;
+        }
     }
 
 
     private UsbDeviceWatcher() {
+        // do nothing
     }
 
     public void addWatchListener(@NotNull DeviceWatchListener l) {
@@ -64,7 +69,6 @@ public class UsbDeviceWatcher {
     public void removeWatchListener(@NotNull DeviceWatchListener l) {
         watchListeners.unregisterObserver(l);
     }
-
 
     public boolean isDeviceListWatcherRunning() {
         return deviceListWatcher.isRunning() && deviceListRunnable != null;
@@ -203,7 +207,7 @@ public class UsbDeviceWatcher {
         @Nullable
         @Override
         public CommandResult doWork() throws Throwable {
-            return ShellUtils.execProcess(Arrays.asList("su", "-c", "lsusb"), null, null, null);
+            return execProcess(Arrays.asList("su", "-c", "lsusb"), EMPTY_STRING, null, null, null, null);
         }
 
         @Override
@@ -245,7 +249,7 @@ public class UsbDeviceWatcher {
 
             } else {
 
-                watchListeners.notifyReadFailed(result != null? result : new CommandResult());
+                watchListeners.notifyReadFailed(result != null ? result : new CommandResult());
             }
         }
 
@@ -354,7 +358,7 @@ public class UsbDeviceWatcher {
         @Nullable
         @Override
         public CommandResult doWork() throws Throwable {
-            return ShellUtils.execProcess(Arrays.asList("su", "-c", "cat", "/proc/bus/input/devices"), null, null, null);
+            return execProcess(Arrays.asList("su", "-c", "cat", "/proc/bus/input/devices"), EMPTY_STRING, null, null, null, null);
         }
 
         @Override
@@ -369,7 +373,7 @@ public class UsbDeviceWatcher {
                 flagsListeners.notifyFlagsChanged(scanFlags(lastEvFlags, evFlagsMask, match), evFlagsMask);
 
             } else {
-                flagsListeners.notifyReadFailed(result != null? result : new CommandResult());
+                flagsListeners.notifyReadFailed(result != null ? result : new CommandResult());
             }
         }
 
@@ -433,7 +437,7 @@ public class UsbDeviceWatcher {
                                   List<DeviceInfo> specifiedAttached, List<DeviceInfo> specifiedDetached,
                                   List<DeviceInfo> currentDeviceInfos, List<DeviceInfo> previousDeviceInfos) {
             synchronized (observers) {
-                for (DeviceWatchListener l : getObservers()) {
+                for (DeviceWatchListener l : observers) {
                     if (!attached.isEmpty())
                         l.onDevicesStatusChanged(new ArrayList<>(attached), true);
                     if (!detached.isEmpty())
@@ -478,7 +482,5 @@ public class UsbDeviceWatcher {
                 }
             }
         }
-
-
     }
 }

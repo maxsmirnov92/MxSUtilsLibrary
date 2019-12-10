@@ -18,6 +18,9 @@ import java.util.List;
 import static net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage.MAX_SIZE_UNLIMITED;
 
 @Deprecated
+/**
+ * storage synchronization already implemented in {@linkplain net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor}
+ */
 public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends LoadRunnableInfo<B>>
         implements LoadListener<LI>, AbstractSyncStorage.IStorageListener {
 

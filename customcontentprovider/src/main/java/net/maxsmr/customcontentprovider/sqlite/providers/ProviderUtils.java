@@ -2,6 +2,7 @@ package net.maxsmr.customcontentprovider.sqlite.providers;
 
 import android.content.ComponentName;
 import android.content.ContentProvider;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.pm.PackageManager;
 import android.content.pm.ProviderInfo;
@@ -33,13 +34,15 @@ public final class ProviderUtils {
     }
 
     public static boolean isCorrectUri(@Nullable Uri uri) {
-        return uri != null && !TextUtils.isEmpty(uri.getScheme()) && uri.getScheme().equalsIgnoreCase(AbstractSQLiteContentProvider.SCHEME_CONTENT_PROVIDER);
+        return uri != null && !TextUtils.isEmpty(uri.getScheme()) && uri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_CONTENT);
     }
 
+    @Nullable
     public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NotNull Context context, @Nullable String packageName, @NotNull Class<P> providerClass) {
         return getProviderInfo(context, packageName,  providerClass,0);
     }
 
+    @Nullable
     public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NotNull Context context, @Nullable String packageName, @NotNull Class<P> providerClass, int flags) {
         if (!TextUtils.isEmpty(packageName)) {
             try {
@@ -65,7 +68,7 @@ public final class ProviderUtils {
         ProviderInfo providerInfo = getProviderInfo(context, packageName, providerClass, PackageManager.GET_META_DATA);
         if (providerInfo != null) {
             Uri.Builder uriBuilder = new Uri.Builder();
-            uriBuilder.scheme(AbstractSQLiteContentProvider.SCHEME_CONTENT_PROVIDER);
+            uriBuilder.scheme(ContentResolver.SCHEME_CONTENT);
             uriBuilder.encodedAuthority(providerInfo.authority);
             return uriBuilder.build();
         }
@@ -95,7 +98,7 @@ public final class ProviderUtils {
     public static List<String> getAllExistingColumns(Uri uri, Context ctx) {
         if (isCorrectUri(uri)) {
             Cursor c = ctx.getContentResolver().query(uri, null, null, null, BaseColumns._ID
-                    + " ASC");
+                    + " " + AbstractSQLiteTableProvider.Order.ASC);
             if (c != null) {
                 try {
                     return new ArrayList<>(Arrays.asList(c.getColumnNames()));
@@ -108,6 +111,7 @@ public final class ProviderUtils {
     }
 
     @SuppressWarnings("unchecked")
+    @Nullable
     public static <V> V getDataFromCursor(@Nullable Cursor c, @Nullable String columnName, @NotNull Class<V> dataClass) {
         if (c != null && !c.isClosed() && c.getCount() > 0) {
             if (!TextUtils.isEmpty(columnName)) {

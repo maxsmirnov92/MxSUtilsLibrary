@@ -5,13 +5,19 @@ import android.os.Bundle;
 
 public interface ISQLiteOperation {
 
-    enum SQLiteOperation {
+    String KEY_LAST_ID = "ru.maxsmr.commoncontentprovider.sqlite.KEY_LAST_ID";
+
+    String KEY_AFFECTED_ROWS = "ru.maxsmr.commoncontentprovider.sqlite.KEY_AFFECTED_ROWS";
+
+    void onContentChanged(Context context, OperationType operation, Bundle extras);
+
+    enum OperationType {
 
         INSERT(0), UPDATE(1), DELETE(2);
 
         private final int value;
 
-        SQLiteOperation(int value) {
+        OperationType(int value) {
             this.value = value;
         }
 
@@ -19,22 +25,16 @@ public interface ISQLiteOperation {
             return value;
         }
 
-        public static SQLiteOperation fromNativeValue(int value) {
+        public static OperationType fromValue(int value) {
 
-            for (SQLiteOperation op : SQLiteOperation.values()) {
+            for (OperationType op : OperationType.values()) {
                 if (op.getValue() == value) {
                     return op;
                 }
             }
-            throw new IllegalArgumentException("Incorrect native value " + value + " for enum type " + SQLiteOperation.class.getName());
+            throw new IllegalArgumentException("Incorrect value " + value + " for enum type " + OperationType.class.getName());
         }
 
     }
-
-    String KEY_LAST_ID = "ru.maxsmr.commoncontentprovider.sqlite.KEY_LAST_ID";
-
-    String KEY_AFFECTED_ROWS = "ru.maxsmr.commoncontentprovider.sqlite.KEY_AFFECTED_ROWS";
-
-    void onContentChanged(Context context, SQLiteOperation operation, Bundle extras);
 
 }

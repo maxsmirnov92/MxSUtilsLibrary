@@ -11,7 +11,7 @@
   {
     "id": ":customcontentprovider",
     "type": "lib",
-    "versionName": "1.0.2.3",
+    "versionName": "1.0.3",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
@@ -20,7 +20,7 @@
   {
     "id": ":tasksutils",
     "type": "lib",
-    "versionName": "1.0.7.3",
+    "versionName": "1.0.7.4",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
@@ -29,7 +29,7 @@
   {
     "id": ":networkutils",
     "type": "lib",
-    "versionName": "1.0.8.9",
+    "versionName": "1.0.9.0",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
@@ -38,14 +38,14 @@
   {
     "id": ":devicewatchers",
     "type": "lib",
-    "versionName": "1.0.8.3",
+    "versionName": "1.0.8.4",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
     "dir": "devicewatchers"
   },
   {
-    "id": ":testapplication",
+    "id": ":testapp",
     "type": "app",
     "versionName": "1.0",
     "versionCode": 1,

@@ -15,7 +15,6 @@ import androidx.core.content.ContextCompat;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
-import net.maxsmr.commonutils.shell.ShellUtils;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -34,6 +33,9 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
+
+import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
+import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 
 public final class NetworkHelper {
 
@@ -248,7 +250,7 @@ public final class NetworkHelper {
 
     /**
      * ping using {@linkplain InetAddress}
-     * */
+     */
     public static boolean isReachable(InetAddress inetAddress, int timeOut) {
         logger.d("isReachable(), inetAddress=" + inetAddress + ", timeOut=" + timeOut);
 
@@ -270,7 +272,8 @@ public final class NetworkHelper {
     }
 
     /**
-     * ping using {@linkplain ShellUtils}
+     * ping using "ping" utility
+     *
      * @param timeoutUnit null == ms
      * @return ping time in ms or -1 if error occurred
      */
@@ -289,9 +292,13 @@ public final class NetworkHelper {
         }
 
         logger.d("pinging address " + inetAddress.getHostAddress() + "...");
-        CommandResult result = ShellUtils.execProcess(Arrays.asList("ping", "-c " + pingCount, "-W " +
-                        (timeoutUnit == null? TimeUnit.MILLISECONDS.toSeconds(timeout) : timeoutUnit.toSeconds(timeout)), inetAddress.getHostAddress()),
-                null, null,null);
+        CommandResult result = execProcess(Arrays.asList(
+                "ping",
+                "-c " + pingCount,
+                "-W " + (timeoutUnit == null ? TimeUnit.MILLISECONDS.toSeconds(timeout) : timeoutUnit.toSeconds(timeout)),
+                inetAddress.getHostAddress()
+                ),
+                EMPTY_STRING, null, null, null, null);
 
         String resultString = result.getStdOut();
 
@@ -302,17 +309,18 @@ public final class NetworkHelper {
 
         logger.d("ping result: " + resultString);
 
-        int startIndex = resultString.indexOf("=", resultString.indexOf("=", resultString.indexOf("=", 0) + 1) + 1) + 1;
+        int startIndex = resultString.indexOf("=", resultString.indexOf("=", resultString.indexOf("=") + 1) + 1) + 1;
         int endIndex = resultString.indexOf(" ms");
 
         if (startIndex < 0 || endIndex < 0 || startIndex > endIndex) {
             return -1;
         }
 
-        logger.d("ping time: " + resultString.substring(startIndex, endIndex) + " ms");
+        final String pingTime = resultString.substring(startIndex, endIndex);
+        logger.d("ping time: " + pingTime + " ms");
 
         try {
-            return Double.parseDouble(resultString.substring(startIndex, endIndex));
+            return Double.parseDouble(pingTime);
         } catch (NumberFormatException e) {
             logger.e("a NumberFormatException occurred during parseDouble(): " + e.getMessage());
         }

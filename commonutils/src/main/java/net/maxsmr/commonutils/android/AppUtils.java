@@ -122,7 +122,7 @@ public final class AppUtils {
         context.startActivity(activityIntent);
     }
 
-    /** try to disable throwing exception when sharing file:// scheme instead of FileProvider */
+    /** try to disable throwing exception when sharing file:// scheme instead of {@linkplain androidx.core.content.FileProvider} */
     public static boolean disableFileUriStrictMode() {
         boolean result = true;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {

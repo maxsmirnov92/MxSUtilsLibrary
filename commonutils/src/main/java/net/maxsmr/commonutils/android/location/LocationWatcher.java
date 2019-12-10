@@ -2,14 +2,12 @@ package net.maxsmr.commonutils.android.location;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.Intent;
 import android.database.Observable;
 import android.location.Location;
 import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
-import android.os.Handler;
 import android.text.TextUtils;
 
 import net.maxsmr.commonutils.android.location.info.TrackingStatus;
@@ -32,18 +30,20 @@ public final class LocationWatcher {
     private static LocationWatcher sInstance;
 
     public static void initInstance(Context ctx) {
+        synchronized (LocationWatcher.class) {
         if (sInstance == null) {
-            synchronized (LocationWatcher.class) {
                 sInstance = new LocationWatcher(ctx);
             }
         }
     }
 
     public static LocationWatcher getInstance() {
-        if (sInstance == null) {
-            throw new IllegalStateException("initInstance() was not called");
+        synchronized (LocationWatcher.class) {
+            if (sInstance == null) {
+                throw new IllegalStateException("initInstance() was not called");
+            }
+            return sInstance;
         }
-        return sInstance;
     }
 
     public static final long DEFAULT_LOCATION_UPDATE_TIME = 5000;

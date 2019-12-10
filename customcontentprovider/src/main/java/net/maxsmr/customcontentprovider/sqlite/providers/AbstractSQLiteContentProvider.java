@@ -1,12 +1,10 @@
 package net.maxsmr.customcontentprovider.sqlite.providers;
 
 import android.content.ContentProvider;
-import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteException;
-import android.database.sqlite.SQLiteOpenHelper;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.BaseColumns;
@@ -17,30 +15,30 @@ import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation;
-import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation.SQLiteOperation;
+import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation.OperationType;
 import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher;
-import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher.URI_MATCH;
+import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher.UriMatch;
 import net.maxsmr.customcontentprovider.sqlite.SQLiteUriMatcher.UriMatcherPair;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import static net.maxsmr.customcontentprovider.sqlite.providers.AbstractSQLiteTableProvider.Order.ASC;
 
 public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(AbstractSQLiteContentProvider.class);
 
-    public static final String SCHEME_CONTENT_PROVIDER = ContentResolver.SCHEME_CONTENT;
-
     public static final String MIME_DIR = "vnd.android.cursor.dir/";
 
     public static final String MIME_ITEM = "vnd.android.cursor.item/";
 
-    private SQLiteOpenHelper sqLiteHelper;
+    @NotNull
+    private final ITableProvidersProvider tablesProvider;
 
     private final String databaseName;
 
@@ -48,18 +46,253 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
     private final int databaseVersion;
 
+    private SQLiteOpenHelperImpl sqLiteHelper;
+
+    private SQLiteUriMatcher uriMatcher;
+
     /**
      * @param databasePath if null - default location will be used, otherwise - path on sdcard (for e.g.
      *                     Android/data/com.example.database)
      */
-    protected AbstractSQLiteContentProvider(String databaseName, String databasePath, int databaseVer, Set<? extends AbstractSQLiteTableProvider> tableProviders) {
-
+    protected AbstractSQLiteContentProvider(String databaseName, String databasePath, int databaseVer, @NotNull ITableProvidersProvider tablesProvider) {
         this.databaseName = databaseName;
         this.databasePath = databasePath;
         this.databaseVersion = databaseVer;
-        this.tableProviders.addAll(tableProviders);
+        this.tablesProvider = tablesProvider;
+        checkFields();
+    }
+
+    @Override
+    public final String getType(@NotNull Uri uri) {
+
+        if (uriMatcher == null)
+            throw new RuntimeException("uriMatcher is null");
+
+        final UriMatch matchResult = uriMatcher.match(uri);
+
+        if (matchResult == null)
+            throw new SQLiteException("Unknown URI: " + uri);
+
+        switch (matchResult) {
+            case MATCH_ALL:
+                return MIME_DIR + ProviderUtils.getTableName(uri);
+            case MATCH_ID:
+                return MIME_ITEM + ProviderUtils.getTableName(uri);
+            default:
+                throw new SQLiteException("Unknown URI: " + uri);
+        }
+    }
+
+    @Override
+    public final boolean onCreate() {
+        logger.d("onCreate()");
+
+        final Context context = getContext();
+
+        if (context == null) {
+            throw new RuntimeException("context is null");
+        }
 
         checkFields();
+
+        uriMatcher = new SQLiteUriMatcher(makeUriMatcherPairs());
+        sqLiteHelper = SQLiteOpenHelperImpl.createFrom(context, databaseName, databasePath, databaseVersion, tablesProvider.provide());
+        return true;
+    }
+
+    @Override
+    public final Cursor query(@NotNull Uri uri, String[] columns, String where, String[] whereArgs, String orderBy) {
+        logger.d("query(), uri=" + uri + ", columns=" + Arrays.toString(columns) + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs) + ", orderBy=" + orderBy);
+
+        final Context context = getContext();
+
+        if (context == null) {
+            throw new RuntimeException("context is null");
+        }
+
+        final UriMatch matchResult = uriMatcher.match(uri);
+
+        if (matchResult == UriMatch.NO_MATCH)
+            throw new SQLiteException("Unknown URI: " + uri);
+
+        final String tableName = ProviderUtils.getTableName(uri);
+        final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(sqLiteHelper.getTableProviders(), tableName);
+
+        if (tableProvider == null)
+            throw new SQLiteException("No such table " + tableName + " specified in schema");
+
+        if (matchResult == UriMatch.MATCH_ALL) {
+
+            if (TextUtils.isEmpty(orderBy))
+                orderBy = BaseColumns._ID + " " + ASC;
+
+        } else if (matchResult == UriMatch.MATCH_ID) {
+
+            if (TextUtils.isEmpty(where)) {
+                where = BaseColumns._ID + "=?";
+            } else {
+                where += " AND " + BaseColumns._ID + "=?";
+            }
+
+            if (whereArgs == null || whereArgs.length == 0) {
+                whereArgs = new String[]{uri.getLastPathSegment()};
+            } else {
+                String[] oldWhereArgs = whereArgs;
+                whereArgs = new String[oldWhereArgs.length + 1];
+                System.arraycopy(oldWhereArgs, 0, whereArgs, 0, oldWhereArgs.length);
+                whereArgs[oldWhereArgs.length] = uri.getLastPathSegment();
+            }
+        }
+
+        final Cursor cursor = tableProvider.query(sqLiteHelper.getReadableDatabase(), columns, where, whereArgs, orderBy);
+        cursor.setNotificationUri(context.getContentResolver(), uri);
+        return cursor;
+    }
+
+    @Override
+    public final Uri insert(@NotNull Uri uri, ContentValues values) {
+        logger.d("insert(), uri=" + uri + ", values=" + values);
+
+        final Context context = getContext();
+
+        if (context == null) {
+            throw new RuntimeException("context is null");
+        }
+
+        final UriMatch matchResult = uriMatcher.match(uri);
+
+        if (matchResult == UriMatch.NO_MATCH)
+            throw new SQLiteException("Unknown URI: " + uri);
+
+        final String tableName = ProviderUtils.getTableName(uri);
+        final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(sqLiteHelper.getTableProviders(), tableName);
+
+        if (tableProvider == null)
+            throw new SQLiteException("No such table " + tableName + " specified in schema");
+
+        final Uri baseUri = tableProvider.getBaseUri(context);
+
+        if (matchResult == UriMatch.MATCH_ID) {
+
+            final int affectedRows = updateInternal(baseUri, tableProvider, values, BaseColumns._ID + "=?",
+                    new String[]{uri.getLastPathSegment()});
+            if (affectedRows > 0) {
+                return uri;
+            }
+        }
+
+        final long lastId = tableProvider.insert(sqLiteHelper.getWritableDatabase(), values);
+        context.getContentResolver().notifyChange(baseUri, null);
+
+        final Bundle extras = new Bundle();
+        extras.putLong(ISQLiteOperation.KEY_LAST_ID, lastId);
+        tableProvider.onContentChanged(context, OperationType.INSERT, extras);
+
+        return uri;
+    }
+
+    @Override
+    public final int delete(@NotNull Uri uri, String where, String[] whereArgs) {
+        logger.d("delete(), uri=" + uri + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs));
+
+        final Context context = getContext();
+
+        if (context == null) {
+            throw new RuntimeException("context is null");
+        }
+
+        final UriMatch matchResult = uriMatcher.match(uri);
+
+        if (matchResult == UriMatch.NO_MATCH)
+            throw new SQLiteException("Unknown URI: " + uri);
+
+        final String tableName = ProviderUtils.getTableName(uri);
+        final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(sqLiteHelper.getTableProviders(), tableName);
+
+        if (tableProvider == null)
+            throw new SQLiteException("No such table " + tableName + " specified in schema");
+
+        if (matchResult == UriMatch.MATCH_ID) {
+
+            if (TextUtils.isEmpty(where)) {
+                where = BaseColumns._ID + "=?";
+            } else {
+                where += " AND " + BaseColumns._ID + "=?";
+            }
+
+            if (whereArgs == null || whereArgs.length == 0) {
+                whereArgs = new String[]{uri.getLastPathSegment()};
+            } else {
+
+                String[] oldWhereArgs = whereArgs;
+                whereArgs = new String[oldWhereArgs.length + 1];
+                System.arraycopy(oldWhereArgs, 0, whereArgs, 0, oldWhereArgs.length);
+                whereArgs[oldWhereArgs.length] = uri.getLastPathSegment();
+            }
+        }
+
+        final int affectedRows = tableProvider.delete(sqLiteHelper.getWritableDatabase(), where, whereArgs);
+
+        if (affectedRows > 0) {
+            context.getContentResolver().notifyChange(uri, null);
+
+            final Bundle extras = new Bundle();
+            extras.putLong(ISQLiteOperation.KEY_AFFECTED_ROWS, affectedRows);
+            tableProvider.onContentChanged(context, OperationType.DELETE, extras);
+        }
+        return affectedRows;
+    }
+
+    @Override
+    public final int update(@NotNull Uri uri, ContentValues values, String where, String[] whereArgs) {
+        logger.d("update(), uri=" + uri + ", values=" + values + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs));
+
+        final Context context = getContext();
+
+        if (context == null) {
+            throw new RuntimeException("context is null");
+        }
+
+        final UriMatch matchResult = uriMatcher.match(uri);
+
+        if (matchResult == UriMatch.NO_MATCH)
+            throw new SQLiteException("Unknown URI: " + uri);
+
+        final String tableName = ProviderUtils.getTableName(uri);
+        final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(sqLiteHelper.getTableProviders(), tableName);
+
+        if (tableProvider == null)
+            throw new SQLiteException("No such table " + tableName + " specified in schema");
+
+        if (matchResult == UriMatch.MATCH_ID) {
+
+            if (TextUtils.isEmpty(where)) {
+                where = BaseColumns._ID + "=?";
+            } else {
+                where += " AND " + BaseColumns._ID + "=?";
+            }
+
+            if (whereArgs == null || whereArgs.length == 0) {
+                whereArgs = new String[]{uri.getLastPathSegment()};
+            } else {
+
+                String[] oldWhereArgs = whereArgs;
+                whereArgs = new String[oldWhereArgs.length + 1];
+                System.arraycopy(oldWhereArgs, 0, whereArgs, 0, oldWhereArgs.length);
+                whereArgs[oldWhereArgs.length] = uri.getLastPathSegment();
+            }
+        }
+
+        return updateInternal(tableProvider.getBaseUri(context), tableProvider, values, where, whereArgs);
+    }
+
+    @NotNull
+    public final Set<String> getAuthorities() {
+        Context context = getContext();
+        if (context == null) {
+            throw new RuntimeException("context is null");
+        }
+        return ProviderUtils.getAuthorities(context, context.getPackageName(), getClass());
     }
 
     public String getDatabaseName() {
@@ -74,26 +307,6 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         return databaseVersion;
     }
 
-    private final Set<AbstractSQLiteTableProvider> tableProviders = new LinkedHashSet<>();
-
-    protected final void checkFields() throws RuntimeException {
-
-        if (TextUtils.isEmpty(databaseName))
-            throw new RuntimeException("databaseName is empty");
-
-        if (!TextUtils.isEmpty(databasePath)) {
-            if (!FileHelper.checkDirNoThrow(databasePath))
-                throw new RuntimeException("can't create database directory: " + databasePath);
-        }
-
-        if (databaseVersion < 1)
-            throw new RuntimeException("incorrect databaseVersion: " + databaseVersion);
-
-        if (tableProviders == null || tableProviders.isEmpty())
-            throw new RuntimeException("tableProviders is null or empty");
-
-    }
-
     protected final boolean checkFieldsNoThrow() {
         try {
             checkFields();
@@ -104,8 +317,19 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         }
     }
 
-    private SQLiteUriMatcher uriMatcher;
+    protected void checkFields() throws RuntimeException {
 
+        if (TextUtils.isEmpty(databaseName))
+            throw new RuntimeException("databaseName is empty");
+
+        FileHelper.checkDir(databasePath);
+
+        if (databaseVersion < 1)
+            throw new RuntimeException("incorrect databaseVersion: " + databaseVersion);
+
+    }
+
+    @NotNull
     private List<UriMatcherPair> makeUriMatcherPairs() throws RuntimeException {
 
         final Set<String> authorities = getAuthorities();
@@ -113,7 +337,9 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         if (authorities.isEmpty())
             throw new RuntimeException("no authorities for this ContentProvider : " + getClass());
 
-        if (tableProviders == null || tableProviders.isEmpty())
+        final Set<AbstractSQLiteTableProvider> tableProviders = sqLiteHelper.getTableProviders();
+
+        if (tableProviders.isEmpty())
             throw new RuntimeException("no tableProviders specified");
 
         List<UriMatcherPair> uriMatcherPairs = new ArrayList<>();
@@ -138,245 +364,27 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         return uriMatcherPairs;
     }
 
-    public final Set<String> getAuthorities() {
-        Context context = getContext();
+    private int updateInternal(Uri uri, AbstractSQLiteTableProvider tableProvider, ContentValues values, String where, String[] whereArgs) {
+
+        final Context context = getContext();
+
         if (context == null) {
             throw new RuntimeException("context is null");
         }
-        return ProviderUtils.getAuthorities(context, context.getPackageName(), getClass());
-    }
 
-    @Override
-    public final String getType(@NotNull Uri uri) {
-
-        if (uriMatcher == null)
-            throw new RuntimeException("uriMatcher is null");
-
-        final URI_MATCH matchResult = uriMatcher.match(uri);
-
-        if (matchResult == null)
-            throw new SQLiteException("Unknown URI: " + uri);
-
-        switch (matchResult) {
-            case NO_MATCH:
-                throw new SQLiteException("Unknown URI: " + uri);
-            case MATCH_ALL:
-                return MIME_DIR + ProviderUtils.getTableName(uri);
-            case MATCH_ID:
-                return MIME_ITEM + ProviderUtils.getTableName(uri);
-            default:
-                throw new SQLiteException("Unknown URI: " + uri);
-        }
-    }
-
-    @Override
-    public final boolean onCreate() {
-        logger.d("onCreate()");
-
-        if (getContext() == null) {
-            throw new RuntimeException("context is null");
-        }
-
-        checkFields();
-
-        uriMatcher = new SQLiteUriMatcher(makeUriMatcherPairs());
-        sqLiteHelper = SQLiteOpenHelperImpl.createFrom(getContext(), databaseName, databasePath, databaseVersion, tableProviders);
-        return true;
-    }
-
-    @Override
-    public final Cursor query(@NotNull Uri uri, String[] columns, String where, String[] whereArgs, String orderBy) {
-        logger.d("query(), uri=" + uri + ", columns=" + Arrays.toString(columns) + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs) + ", orderBy=" + orderBy);
-
-        if (getContext() == null) {
-            throw new RuntimeException("context is null");
-        }
-
-        final URI_MATCH matchResult = uriMatcher.match(uri);
-
-        if (matchResult == URI_MATCH.NO_MATCH)
-            throw new SQLiteException("Unknown URI: " + uri);
-
-        final String tableName = ProviderUtils.getTableName(uri);
-        final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(tableProviders, tableName);
-
-        if (tableProvider == null)
-            throw new SQLiteException("No such table " + tableName + " specified in schema");
-
-        if (matchResult == URI_MATCH.MATCH_ALL) {
-
-            if (TextUtils.isEmpty(orderBy))
-                orderBy = BaseColumns._ID + " ASC";
-
-        } else if (matchResult == URI_MATCH.MATCH_ID) {
-
-            if (TextUtils.isEmpty(where)) {
-                where = BaseColumns._ID + "=?";
-            } else {
-                where += " AND " + BaseColumns._ID + "=?";
-            }
-
-            if (whereArgs == null || whereArgs.length == 0) {
-                whereArgs = new String[]{uri.getLastPathSegment()};
-            } else {
-
-                String[] oldWhereArgs = whereArgs;
-                whereArgs = new String[oldWhereArgs.length + 1];
-                System.arraycopy(oldWhereArgs, 0, whereArgs, 0, oldWhereArgs.length);
-                whereArgs[oldWhereArgs.length] = uri.getLastPathSegment();
-            }
-
-        }
-
-        final Cursor cursor = tableProvider.query(sqLiteHelper.getReadableDatabase(), columns, where, whereArgs, orderBy);
-        cursor.setNotificationUri(getContext().getContentResolver(), uri);
-        return cursor;
-    }
-
-    @Override
-    public final Uri insert(@NotNull Uri uri, ContentValues values) {
-        logger.d("insert(), uri=" + uri + ", values=" + values);
-
-        if (getContext() == null) {
-            throw new RuntimeException("context is null");
-        }
-
-        final URI_MATCH matchResult = uriMatcher.match(uri);
-
-        if (matchResult == URI_MATCH.NO_MATCH)
-            throw new SQLiteException("Unknown URI: " + uri);
-
-        final String tableName = ProviderUtils.getTableName(uri);
-        final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(tableProviders, tableName);
-
-        if (tableProvider == null)
-            throw new SQLiteException("No such table " + tableName + " specified in schema");
-
-        if (matchResult == URI_MATCH.MATCH_ID) {
-
-            final int affectedRows = updateInternal(tableProvider.getBaseUri(getContext()), tableProvider, values, BaseColumns._ID + "=?",
-                    new String[]{uri.getLastPathSegment()});
-            if (affectedRows > 0) {
-                return uri;
-            }
-        }
-
-        final long lastId = tableProvider.insert(sqLiteHelper.getWritableDatabase(), values);
-        getContext().getContentResolver().notifyChange(tableProvider.getBaseUri(getContext()), null);
-
-        final Bundle extras = new Bundle();
-        extras.putLong(ISQLiteOperation.KEY_LAST_ID, lastId);
-        tableProvider.onContentChanged(getContext(), SQLiteOperation.INSERT, extras);
-
-        return uri;
-    }
-
-    @Override
-    public final int delete(@NotNull Uri uri, String where, String[] whereArgs) {
-        logger.d("delete(), uri=" + uri + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs));
-
-        if (getContext() == null) {
-            throw new RuntimeException("context is null");
-        }
-
-        final URI_MATCH matchResult = uriMatcher.match(uri);
-
-        if (matchResult == URI_MATCH.NO_MATCH)
-            throw new SQLiteException("Unknown URI: " + uri);
-
-        final String tableName = ProviderUtils.getTableName(uri);
-        final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(tableProviders, tableName);
-
-        if (tableProvider == null)
-            throw new SQLiteException("No such table " + tableName + " specified in schema");
-
-        if (matchResult == URI_MATCH.MATCH_ID) {
-
-            if (TextUtils.isEmpty(where)) {
-                where = BaseColumns._ID + "=?";
-            } else {
-                where += " AND " + BaseColumns._ID + "=?";
-            }
-
-            if (whereArgs == null || whereArgs.length == 0) {
-                whereArgs = new String[]{uri.getLastPathSegment()};
-            } else {
-
-                String[] oldWhereArgs = whereArgs;
-                whereArgs = new String[oldWhereArgs.length + 1];
-                System.arraycopy(oldWhereArgs, 0, whereArgs, 0, oldWhereArgs.length);
-                whereArgs[oldWhereArgs.length] = uri.getLastPathSegment();
-            }
-        }
-
-        final int affectedRows = tableProvider.delete(sqLiteHelper.getWritableDatabase(), where, whereArgs);
-
+        final int affectedRows = tableProvider.update(sqLiteHelper.getWritableDatabase(), values, where, whereArgs);
         if (affectedRows > 0) {
-            getContext().getContentResolver().notifyChange(uri, null);
-
+            context.getContentResolver().notifyChange(uri, null);
             final Bundle extras = new Bundle();
             extras.putLong(ISQLiteOperation.KEY_AFFECTED_ROWS, affectedRows);
-            tableProvider.onContentChanged(getContext(), SQLiteOperation.DELETE, extras);
+            tableProvider.onContentChanged(context, OperationType.UPDATE, extras);
         }
         return affectedRows;
     }
 
-    @Override
-    public final int update(@NotNull Uri uri, ContentValues values, String where, String[] whereArgs) {
-        logger.d("update(), uri=" + uri + ", values=" + values + ", where=" + where + ", whereArgs=" + Arrays.toString(whereArgs));
+    public interface ITableProvidersProvider {
 
-        if (getContext() == null) {
-            throw new RuntimeException("context is null");
-        }
-
-        final URI_MATCH matchResult = uriMatcher.match(uri);
-
-        if (matchResult == URI_MATCH.NO_MATCH)
-            throw new SQLiteException("Unknown URI: " + uri);
-
-        final String tableName = ProviderUtils.getTableName(uri);
-        final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(tableProviders, tableName);
-
-        if (tableProvider == null)
-            throw new SQLiteException("No such table " + tableName + " specified in schema");
-
-        if (matchResult == URI_MATCH.MATCH_ID) {
-
-            if (TextUtils.isEmpty(where)) {
-                where = BaseColumns._ID + "=?";
-            } else {
-                where += " AND " + BaseColumns._ID + "=?";
-            }
-
-            if (whereArgs == null || whereArgs.length == 0) {
-                whereArgs = new String[]{uri.getLastPathSegment()};
-            } else {
-
-                String[] oldWhereArgs = whereArgs;
-                whereArgs = new String[oldWhereArgs.length + 1];
-                System.arraycopy(oldWhereArgs, 0, whereArgs, 0, oldWhereArgs.length);
-                whereArgs[oldWhereArgs.length] = uri.getLastPathSegment();
-            }
-        }
-
-        return updateInternal(tableProvider.getBaseUri(getContext()), tableProvider, values, where, whereArgs);
+        @NotNull
+        Set<? extends AbstractSQLiteTableProvider> provide();
     }
-
-    private int updateInternal(Uri uri, AbstractSQLiteTableProvider provider, ContentValues values, String where, String[] whereArgs) {
-
-        if (getContext() == null) {
-            throw new RuntimeException("context is null");
-        }
-
-        final int affectedRows = provider.update(sqLiteHelper.getWritableDatabase(), values, where, whereArgs);
-        if (affectedRows > 0) {
-            getContext().getContentResolver().notifyChange(uri, null);
-            final Bundle extras = new Bundle();
-            extras.putLong(ISQLiteOperation.KEY_AFFECTED_ROWS, affectedRows);
-            provider.onContentChanged(getContext(), SQLiteOperation.UPDATE, extras);
-        }
-        return affectedRows;
-    }
-
-
 }

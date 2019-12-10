@@ -7,7 +7,6 @@ import net.maxsmr.commonutils.android.hardware.DeviceUtils;
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
-import net.maxsmr.commonutils.shell.RootShellCommands;
 import net.maxsmr.networkutils.NetworkHelper;
 import net.maxsmr.networkutils.NetworkType;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
@@ -21,6 +20,8 @@ import org.jetbrains.annotations.Nullable;
 import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
 
+import static net.maxsmr.commonutils.shell.RootShellCommandsKt.reboot;
+
 
 public class NetworkWatcher {
 
@@ -31,8 +32,8 @@ public class NetworkWatcher {
     private static NetworkWatcher sInstance;
 
     public static void initInstance(Context context) {
+        synchronized (NetworkWatcher.class) {
         if (sInstance == null) {
-            synchronized (NetworkWatcher.class) {
                 logger.d("initInstance()");
                 sInstance = new NetworkWatcher(context);
             }
@@ -40,10 +41,12 @@ public class NetworkWatcher {
     }
 
     public static NetworkWatcher getInstance() {
-        if (sInstance == null) {
-            throw new IllegalStateException("initInstance() was not called");
+        synchronized (NetworkWatcher.class) {
+            if (sInstance == null) {
+                throw new IllegalStateException("initInstance() was not called");
+            }
+            return sInstance;
         }
-        return sInstance;
     }
 
     public final static long MIN_PREFERABLE_NETWORK_TYPE_SWITCH_TIME = 600000;
@@ -635,7 +638,7 @@ public class NetworkWatcher {
                     rebootListeners.notifyRebootStarting();
 
                     logger.w("trying to reboot phone by shell...");
-                    if (!RootShellCommands.reboot()) {
+                    if (!reboot()) {
                         logger.e("reboot failed");
 
                         rebootListeners.notifyRebootFailed();
@@ -690,10 +693,10 @@ public class NetworkWatcher {
                         this.networkTypeToSwitch = networkTypeToSwitch;
                         break;
                     default:
-                        this.networkTypeToSwitch = NetworkType.fromNativeValue(NetworkHelper.NETWORK_TYPE_NONE);
+                        this.networkTypeToSwitch = NetworkType.fromValue(NetworkHelper.NETWORK_TYPE_NONE);
                 }
             } else {
-                this.networkTypeToSwitch = NetworkType.fromNativeValue(NetworkHelper.NETWORK_TYPE_NONE);
+                this.networkTypeToSwitch = NetworkType.fromValue(NetworkHelper.NETWORK_TYPE_NONE);
             }
 
             if (networkTypeSwitchPostWait < 0) {
