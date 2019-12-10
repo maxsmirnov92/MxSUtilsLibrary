@@ -58,7 +58,7 @@ public abstract class BaseLoggerHolder {
      * */
     @SuppressWarnings("unchecked")
     public <L extends BaseLogger> L getLogger(Class<?> clazz) {
-        return getLogger(clazz.getSimpleName());
+        return getLogger(clazz.getName());
     }
 
     /**
