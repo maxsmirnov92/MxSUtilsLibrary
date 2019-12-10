@@ -1,57 +1,57 @@
 [
   {
-    "id": ":commonutils",
+    "id": "commonutils",
     "type": "lib",
-    "versionName": "1.0.8",
+    "versionName": "1.0.8.1",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
-    "dir": "commonutils"
+    "dir": ":commonutils"
   },
   {
-    "id": ":customcontentprovider",
+    "id": "customcontentprovider",
     "type": "lib",
     "versionName": "1.0.3",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
-    "dir": "customcontentprovider"
+    "dir": ":customcontentprovider"
   },
   {
-    "id": ":tasksutils",
+    "id": "tasksutils",
     "type": "lib",
     "versionName": "1.0.7.4",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
-    "dir": "tasksutils"
+    "dir": ":tasksutils"
   },
   {
-    "id": ":networkutils",
+    "id": "networkutils",
     "type": "lib",
     "versionName": "1.0.9.0",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
-    "dir": "networkutils"
+    "dir": ":networkutils"
   },
   {
-    "id": ":devicewatchers",
+    "id": "devicewatchers",
     "type": "lib",
     "versionName": "1.0.8.4",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
-    "dir": "devicewatchers"
+    "dir": ":devicewatchers"
   },
   {
-    "id": ":testapp",
+    "id": "testapp",
     "type": "app",
     "versionName": "1.0",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
-    "dir": "testapplication",
-    "appId": "net.maxsmr.testapplication"
+    "dir": ":testapp",
+    "appId": "net.maxsmr.testapp"
   }
 ]
