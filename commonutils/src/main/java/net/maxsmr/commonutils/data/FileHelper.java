@@ -123,26 +123,74 @@ public final class FileHelper {
         return result != null ? result : Collections.<File>emptySet();
     }
 
-    public static Set<File> getFilteredExternalFilesDirs(@NotNull Context context, boolean includeNotRemovable, boolean includePrimaryExternalStorage, boolean onlyRootNames) {
-        return getFilteredExternalFilesDirs(context, null, includeNotRemovable, includePrimaryExternalStorage, onlyRootNames);
+    @Nullable
+    public static File getFirstFilteredExternalFilesDir(
+            @NotNull Context context,
+            boolean excludeNotRemovable,
+            boolean includePrimaryExternalStorage,
+            boolean onlyRootPaths
+    ) {
+        final Set<File> filteredPaths = getFilteredExternalFilesDirs(context, excludeNotRemovable, includePrimaryExternalStorage, onlyRootPaths);
+        if (!filteredPaths.isEmpty()) {
+            return filteredPaths.toArray(new File[0])[0];
+        }
+        return null;
     }
 
-    public static Set<File> getFilteredExternalFilesDirs(@NotNull Context context, @Nullable String type, boolean includeNotRemovable, boolean includePrimaryExternalStorage, boolean onlyRootNames) {
-        Set<File> result = new ArraySet<>();
-        Set<File> external = getExternalFilesDirs(context, type);
-        for (File d : external) {
-            if (d != null) {
-                String path = d.getAbsolutePath();
-                if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP || (includeNotRemovable == !Environment.isExternalStorageRemovable(d))) {
-                    File primaryExternalStorage = Environment.getExternalStorageDirectory();
-                    if (includePrimaryExternalStorage || (primaryExternalStorage == null || !path.startsWith(primaryExternalStorage.getAbsolutePath()))) {
-                        if (onlyRootNames) {
-                            int index = path.lastIndexOf(File.separator + "Android" + File.separator + "data");
+    @NotNull
+    public static Set<File> getFilteredExternalFilesDirs(
+            @NotNull Context context,
+            boolean excludeNotRemovable,
+            boolean includePrimaryExternalStorage,
+            boolean onlyRootPaths
+    ) {
+        return getFilteredExternalFilesDirs(context, null, excludeNotRemovable, includePrimaryExternalStorage, onlyRootPaths);
+    }
+
+    @SuppressWarnings("ConstantConditions")
+    @NotNull
+    public static Set<File> getFilteredExternalFilesDirs(
+            @NotNull Context context,
+            @Nullable String type,
+            boolean excludeNotRemovable,
+            boolean includePrimaryExternalStorage,
+            boolean onlyRootPaths
+    ) {
+        final Set<File> result = new ArraySet<>();
+        final String rawSecondaryStorage = System.getenv("SECONDARY_STORAGE");
+        final File primaryExternalStorage = Environment.getExternalStorageDirectory();
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+            // can get getExternalFilesDirs by type
+            Set<File> external = getExternalFilesDirs(context, type);
+            for (File d : external) {
+                if (d != null) {
+                    String path = d.getAbsolutePath();
+                    if (includePrimaryExternalStorage
+                            || (primaryExternalStorage == null || !path.startsWith(primaryExternalStorage.getAbsolutePath()))) {
+                        String secondaryPath = path;
+                        if (onlyRootPaths) {
+                            int index = path.lastIndexOf(File.separator + "Android" /*+ File.separator + "data"*/);
                             if (index > 0) {
-                                d = new File(path.substring(0, index));
+                                secondaryPath = path.substring(0, index);
                             }
                         }
-                        result.add(d);
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
+                                && (!excludeNotRemovable || Environment.isExternalStorageRemovable(d))
+                                || !TextUtils.isEmpty(rawSecondaryStorage) && rawSecondaryStorage.contains(path)) {
+                            result.add(new File(secondaryPath));
+                        }
+                    }
+                }
+            }
+        } else {
+            // if KITKAT or earlier - use splitted "SECONDARY_STORAGE" environment value as external paths
+            if (!TextUtils.isEmpty(rawSecondaryStorage)) {
+                final String[] rawSecondaryStoragePaths = rawSecondaryStorage.split(File.separator);
+                for (String secondaryPath : rawSecondaryStoragePaths) {
+                    if (includePrimaryExternalStorage
+                            || (primaryExternalStorage == null || !secondaryPath.startsWith(primaryExternalStorage.getAbsolutePath()))) {
+                        result.add(new File(secondaryPath));
                     }
                 }
             }
@@ -436,8 +484,9 @@ public final class FileHelper {
     /**
      * Создаёт файл с относительным именем fileName
      * по родительскому абсолютному или относительному пути parentPath
+     *
      * @param recreate true, если целевой файл должен быть пересоздан,
-     * если уже существует
+     *                 если уже существует
      * @return null если целевой файл уже существует и не смог быть пересоздан
      */
     @SuppressWarnings("ResultOfMethodCallIgnored")
@@ -1003,6 +1052,7 @@ public final class FileHelper {
 
     /**
      * убрать расширение файла
+     *
      * @return новое имя
      */
     public static String removeExtension(String fileName) {
@@ -1322,33 +1372,33 @@ public final class FileHelper {
                     null,
                     new ShellCallback() {
 
-                @Override
-                public boolean needToLogCommands() {
-                    return false;
-                }
+                        @Override
+                        public boolean needToLogCommands() {
+                            return false;
+                        }
 
-                @Override
-                public void processStarted() {
+                        @Override
+                        public void processStarted() {
 
-                }
+                        }
 
-                @Override
-                public void processStartFailed(Throwable t) {
-                    logger.e("processStartFailed(), t=" + t);
-                }
+                        @Override
+                        public void processStartFailed(Throwable t) {
+                            logger.e("processStartFailed(), t=" + t);
+                        }
 
-                @Override
-                public void shellOut(@NotNull ShellCallback.StreamType from, @NotNull String shellLine) {
-                    if (shellLine.contains("File: ") && shellLine.contains(name)) {
-                        foundFiles.add(new File(currentPath));
-                    }
-                }
+                        @Override
+                        public void shellOut(@NotNull ShellCallback.StreamType from, @NotNull String shellLine) {
+                            if (shellLine.contains("File: ") && shellLine.contains(name)) {
+                                foundFiles.add(new File(currentPath));
+                            }
+                        }
 
-                @Override
-                public void processComplete(int exitValue) {
-                }
+                        @Override
+                        public void processComplete(int exitValue) {
+                        }
 
-            }, null);
+                    }, null);
         }
 
         if (!foundFiles.isEmpty()) {
@@ -1797,7 +1847,6 @@ public final class FileHelper {
             logger.e("can't write to dest file: " + destDir + File.separator + targetName);
         }
 
-
         return null;
     }
 
@@ -1805,8 +1854,14 @@ public final class FileHelper {
      * @return dest file
      */
     @Nullable
-    public static File copyFileWithBuffering(final File sourceFile, String destName, String destDir, boolean rewrite, boolean preserveFileDate,
-                                             @Nullable final ISingleCopyNotifier notifier) {
+    public static File copyFileWithBuffering(
+            final File sourceFile,
+            String destName,
+            String destDir,
+            boolean rewrite,
+            boolean preserveFileDate,
+            @Nullable final ISingleCopyNotifier notifier
+    ) {
 
         if (!isFileExists(sourceFile)) {
             logger.e("source file not exists: " + sourceFile);
@@ -1863,20 +1918,33 @@ public final class FileHelper {
      */
     @NotNull
     @Deprecated
-    public static Set<File> copyFilesWithBuffering(File fromFile, File destDir,
-                                                   @Nullable Comparator<? super File> comparator,
-                                                   @Nullable final ISingleCopyNotifier singleNotifier, @Nullable final IMultipleCopyNotifier multipleCopyNotifier,
-                                                   boolean preserveFileDate, int depth) {
+    public static Set<File> copyFilesWithBuffering(
+            File fromFile,
+            File destDir,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable final ISingleCopyNotifier singleNotifier,
+            @Nullable final IMultipleCopyNotifier multipleCopyNotifier,
+            boolean preserveFileDate,
+            int depth
+    ) {
         return copyFilesWithBuffering(fromFile, destDir, comparator, singleNotifier, multipleCopyNotifier, preserveFileDate, depth, 0, 0, null, null);
     }
 
     @NotNull
     @Deprecated
-    private static Set<File> copyFilesWithBuffering(File fromFile, File destDir,
-                                                    @Nullable Comparator<? super File> comparator,
-                                                    @Nullable final ISingleCopyNotifier singleNotifier, @Nullable final IMultipleCopyNotifier multipleCopyNotifier,
-                                                    boolean preserveFileDate, int depth,
-                                                    int currentLevel, int totalFilesCount, @Nullable Set<File> copied, List<String> exclusionList) {
+    private static Set<File> copyFilesWithBuffering(
+            File fromFile,
+            File destDir,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable final ISingleCopyNotifier singleNotifier,
+            @Nullable final IMultipleCopyNotifier multipleCopyNotifier,
+            boolean preserveFileDate,
+            int depth,
+            int currentLevel,
+            int totalFilesCount,
+            @Nullable Set<File> copied,
+            List<String> exclusionList
+    ) {
 
         Set<File> result = new LinkedHashSet<>();
 
@@ -2037,11 +2105,16 @@ public final class FileHelper {
         return result;
     }
 
-    public static Set<File> copyFilesWithBuffering2(File fromFile, File destDir,
-                                                    Comparator<? super File> comparator,
-                                                    final ISingleCopyNotifier singleNotifier, final IMultipleCopyNotifier2 multipleCopyNotifier,
-                                                    boolean preserveFileDate, int depth,
-                                                    List<File> exclusionList) {
+    public static Set<File> copyFilesWithBuffering2(
+            File fromFile,
+            File destDir,
+            Comparator<? super File> comparator,
+            final ISingleCopyNotifier singleNotifier,
+            final IMultipleCopyNotifier2 multipleCopyNotifier,
+            boolean preserveFileDate,
+            int depth,
+            List<File> exclusionList
+    ) {
 
         Set<File> result = new LinkedHashSet<>();
 
@@ -2480,39 +2553,39 @@ public final class FileHelper {
                         null,
                         null,
                         new ShellCallback() {
-                    @Override
-                    public boolean needToLogCommands() {
-                        return true;
-                    }
-
-                    @Override
-                    public void shellOut(@NotNull StreamType from, @NotNull String shellLine) {
-                        if (from == StreamType.OUT && !TextUtils.isEmpty(shellLine)) {
-                            File current = new File(dir, shellLine);
-                            if (notifier != null) {
-                                notifier.onProcessing(current, collected, 0);
+                            @Override
+                            public boolean needToLogCommands() {
+                                return true;
                             }
-                            if (notifier == null || notifier.onGetFile(current)) {
-                                collected.add(current);
+
+                            @Override
+                            public void shellOut(@NotNull StreamType from, @NotNull String shellLine) {
+                                if (from == StreamType.OUT && !TextUtils.isEmpty(shellLine)) {
+                                    File current = new File(dir, shellLine);
+                                    if (notifier != null) {
+                                        notifier.onProcessing(current, collected, 0);
+                                    }
+                                    if (notifier == null || notifier.onGetFile(current)) {
+                                        collected.add(current);
+                                    }
+                                }
                             }
-                        }
-                    }
 
-                    @Override
-                    public void processStarted() {
-                        // do nothing
-                    }
+                            @Override
+                            public void processStarted() {
+                                // do nothing
+                            }
 
-                    @Override
-                    public void processStartFailed(Throwable t) {
-                        // do nothing
-                    }
+                            @Override
+                            public void processStartFailed(Throwable t) {
+                                // do nothing
+                            }
 
-                    @Override
-                    public void processComplete(int exitValue) {
-                        // do nothing
-                    }
-                }, null);
+                            @Override
+                            public void processComplete(int exitValue) {
+                                // do nothing
+                            }
+                        }, null);
             }
         }
         if (comparator != null) {

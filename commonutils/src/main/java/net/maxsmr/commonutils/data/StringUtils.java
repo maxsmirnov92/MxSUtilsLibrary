@@ -52,11 +52,11 @@ public class StringUtils {
     }
 
     public static boolean isNoData(CharSequence s, @NotNull Context ctx) {
-        return isEmpty(s) || ctx.getString(R.string.no_data).equalsIgnoreCase(s.toString());
+        return isEmpty(s) || ctx.getString(R.string.empty_data).equalsIgnoreCase(s.toString());
     }
 
     public static String getText(@NotNull Context context, String text) {
-        return isEmpty(text)? context.getString(R.string.no_data) : text;
+        return isEmpty(text)? context.getString(R.string.empty_data) : text;
     }
 
     @NotNull
@@ -167,7 +167,7 @@ public class StringUtils {
     }
 
     public static String getStubValueWithAppend(@Nullable String value, @Nullable String appendWhat, Context ctx) {
-        return !isEmpty(value) ? (!isEmpty(appendWhat) ? value + " " + appendWhat : value) : ctx.getString(R.string.no_data);
+        return !isEmpty(value) ? (!isEmpty(appendWhat) ? value + " " + appendWhat : value) : ctx.getString(R.string.empty_data);
     }
 
     public static class CharacterMap {

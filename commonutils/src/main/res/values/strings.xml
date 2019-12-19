@@ -1,6 +1,5 @@
 <resources>
-    <string name="app_name">Common Utils</string>
-    <string name="no_data">No data</string>
+    <string name="empty_data">No data</string>
 
     <string name="time_suffix_nanos">ns</string>
     <string name="time_suffix_micros">micros</string>

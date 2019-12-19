@@ -8,7 +8,7 @@ import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
 
 import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -18,6 +18,8 @@ import java.math.BigInteger;
 import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import static org.junit.Assert.assertNotNull;
 
 @RunWith(AndroidJUnit4.class)
 public class FileHelperTest extends LoggerTest {
@@ -37,8 +39,11 @@ public class FileHelperTest extends LoggerTest {
     public void prepare() {
         super.prepare();
         context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().getContext();
-        sourceDir = new File(context.getFilesDir(), SOURCE_NAME);
-        destinationDir = new File(context.getFilesDir(), DEST_NAME);
+        FileHelper.createNewDir("/data/data/" + context.getPackageName() + "/files");
+        final File filesDir = context.getFilesDir();
+        assertNotNull(filesDir);
+        sourceDir = new File(filesDir, SOURCE_NAME);
+        destinationDir = new File(filesDir, DEST_NAME);
         FileHelper.delete(destinationDir, true, null, null, new FileHelper.IDeleteNotifier() {
             @Override
             public boolean onProcessing(@NotNull File current, @NotNull Set<File> deleted, int currentLevel) {
@@ -79,6 +84,13 @@ public class FileHelperTest extends LoggerTest {
     @Test
     public void test() {
 
+    }
+
+    @Test
+    public void testGetExternalFilesDir() {
+        Set<File> result = FileHelper.getFilteredExternalFilesDirs(context, false, true, true);
+        System.out.println("filteredExternalFilesDirs: " + result);
+        Assert.assertFalse(result.isEmpty());
     }
 
     @Test
@@ -183,7 +195,10 @@ public class FileHelperTest extends LoggerTest {
 
     @Test
     public void testCopy() {
-        FileHelper.copyFilesWithBuffering(sourceDir, destinationDir, null,
+        FileHelper.copyFilesWithBuffering2(
+                sourceDir,
+                destinationDir,
+                null,
                 new FileHelper.ISingleCopyNotifier() {
                     @Override
                     public long notifyInterval() {
@@ -195,38 +210,47 @@ public class FileHelperTest extends LoggerTest {
                         return true;
                     }
                 },
-                new FileHelper.IMultipleCopyNotifier() {
+                new FileHelper.IMultipleCopyNotifier2() {
+
                     @Override
-                    public boolean onCalculatingSize(@NotNull File current, @NotNull Set<File> collected, int currentLevel) {
+                    public boolean onCalculatingSize(File current, Set<File> collected) {
                         return true;
                     }
 
                     @Override
-                    public boolean onProcessing(@NotNull File currentFile, @NotNull File destDir, @NotNull Set<File> copied, long filesTotal, int currentLevel) {
+                    public boolean onProcessing(File currentFile, File destDir, Set<File> copied, long filesProcessed, long filesTotal) {
                         return true;
                     }
 
                     @Override
-                    public boolean confirmCopy(@NotNull File currentFile, @NotNull File destDir, int currentLevel) {
+                    public boolean confirmCopy(File currentFile, File destDir) {
                         return true;
                     }
 
                     @Override
-                    public File onBeforeCopy(@NotNull File currentFile, @NotNull File destDir, int currentLevel) {
+                    public File onBeforeCopy(File currentFile, File destDir) {
                         return null;
                     }
 
                     @Override
-                    public boolean onExists(@NotNull File destFile, int currentLevel) {
+                    public boolean onExists(File destFile) {
                         return true;
                     }
 
                     @Override
-                    public void onFailed(@Nullable File currentFile, @NotNull File destFile, int currentLevel) {
+                    public void onSucceeded(File currentFile, File resultFile) {
 
                     }
 
-                }, true, FileHelper.DEPTH_UNLIMITED);
+                    @Override
+                    public void onFailed(File currentFile, File destDir) {
+
+                    }
+
+                },
+                true,
+                FileHelper.DEPTH_UNLIMITED,
+                Collections.emptyList());
     }
 
     //    @Test
