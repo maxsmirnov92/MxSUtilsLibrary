@@ -5,10 +5,19 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.preference.PreferenceManager.getDefaultSharedPreferences
 import net.maxsmr.commonutils.android.prefs.PreferencesHolder.PrefType.*
+import net.maxsmr.commonutils.data.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(PreferencesHolder::class.java)
+
+const val EMPTY_BOOLEAN_SETTING = false
+const val EMPTY_INT_SETTING = -1
+const val EMPTY_LONG_SETTING = -1L
+const val EMPTY_FLOAT_SETTING = -1f
+const val EMPTY_DOUBLE_SETTING = -1.0
+val EMPTY_SET_SETTING = HashSet<String>()
+val EMPTY_STRING_SETTING = EMPTY_STRING
 
 /**
  * Holder for storing mapping with editors and prefs;
@@ -28,13 +37,13 @@ object PreferencesHolder {
             defaultValue: V? = null
     ): V? = try {
         when (type) {
-            STRING -> sp.getString(key, defaultValue as String?) as V
-            INT -> sp.getInt(key, if (defaultValue != null) defaultValue as Int else 0) as V
-            LONG -> sp.getLong(key, if (defaultValue != null) defaultValue as Long else 0) as V
-            FLOAT -> sp.getFloat(key, if (defaultValue != null) defaultValue as Float else 0f) as V
-            DOUBLE -> Double.fromBits(sp.getLong(key, if (defaultValue != null) (defaultValue as Double).toBits() else 0)) as V
-            BOOLEAN -> sp.getBoolean(key, if (defaultValue != null) defaultValue as Boolean else false) as V
-            STRING_SET -> sp.getStringSet(key, if (defaultValue != null) defaultValue as Set<String>? else null) as V
+            STRING -> sp.getString(key, if (defaultValue != null) defaultValue as String? else EMPTY_STRING_SETTING) as V
+            INT -> sp.getInt(key, if (defaultValue != null) defaultValue as Int else EMPTY_INT_SETTING) as V
+            LONG -> sp.getLong(key, if (defaultValue != null) defaultValue as Long else EMPTY_LONG_SETTING) as V
+            FLOAT -> sp.getFloat(key, if (defaultValue != null) defaultValue as Float else EMPTY_FLOAT_SETTING) as V
+            DOUBLE -> Double.fromBits(sp.getLong(key, if (defaultValue != null) (defaultValue as Double).toBits() else EMPTY_LONG_SETTING)) as V
+            BOOLEAN -> sp.getBoolean(key, if (defaultValue != null) defaultValue as Boolean else EMPTY_BOOLEAN_SETTING) as V
+            STRING_SET -> sp.getStringSet(key, if (defaultValue != null) defaultValue as Set<String>? else EMPTY_SET_SETTING) as V
         }
     } catch (e: ClassCastException) {
         logger.e("A RuntimeException occurred during get value")

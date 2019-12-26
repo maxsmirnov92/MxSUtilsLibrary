@@ -1,10 +1,10 @@
 package net.maxsmr.commonutils.android.processmanager.shell.base;
 
 import android.content.Context;
-import androidx.core.util.Pair;
-import android.text.TextUtils;
+import net.maxsmr.commonutils.data.Pair;
 
 import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.data.StringUtils;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -25,7 +25,7 @@ public abstract class AbstractTopProcessManager extends AbstractShellProcessMana
     protected int getOutputHeaderIndex(@NotNull List<String> output) {
         // in 'top' header is usually not located in 0 index
         Pair<Integer, String> headerIndex = Predicate.Methods.findWithIndex(output, element -> {
-            if (!TextUtils.isEmpty(element)) {
+            if (!StringUtils.isEmpty(element)) {
                 element = element.trim();
                 return element.toLowerCase().contains(Column.PID.name().toLowerCase()); // try to find by PID string
             }

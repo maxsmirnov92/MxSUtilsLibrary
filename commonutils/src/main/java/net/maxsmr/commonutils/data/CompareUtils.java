@@ -1,7 +1,6 @@
 package net.maxsmr.commonutils.data;
 
 import android.os.Bundle;
-import android.text.TextUtils;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -190,7 +189,7 @@ public final class CompareUtils {
             }
         }
         if (!match && (CompareUtils.MatchStringOption.contains(AUTO, matchFlags) || CompareUtils.MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags))) {
-            if (!TextUtils.isEmpty(one)) {
+            if (!StringUtils.isEmpty(one)) {
                 final boolean isIgnoreCase = CompareUtils.MatchStringOption.contains(AUTO_IGNORE_CASE, matchFlags);
                 one = isIgnoreCase ? one.toLowerCase().trim() : one;
                 another = isIgnoreCase ? another.toLowerCase().trim() : another;
@@ -198,7 +197,7 @@ public final class CompareUtils {
                     match = true;
                 } else {
                     final String[] parts = one.split("[" + (separators != null && separators.length > 0 ?
-                            TextUtils.join(EMPTY_STRING, separators) : " ") + "]+");
+                            StringUtils.join(EMPTY_STRING, separators) : " ") + "]+");
                     if (parts.length > 0) {
                         for (String word : parts) {
                             if (isIgnoreCase) {

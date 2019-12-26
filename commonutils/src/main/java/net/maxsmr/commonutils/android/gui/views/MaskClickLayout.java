@@ -10,7 +10,6 @@ import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
-import android.util.Pair;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -23,6 +22,7 @@ import androidx.annotation.DrawableRes;
 import net.maxsmr.commonutils.android.gui.GuiUtils;
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.data.Pair;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 
 import org.jetbrains.annotations.NotNull;
@@ -463,7 +463,6 @@ public class MaskClickLayout extends FrameLayout {
         LayerDrawable masksDrawable = new LayerDrawable(drawables.toArray(new Drawable[drawables.size()]));
         masksImageView.setImageDrawable(masksDrawable);
     }
-
 
 
     public void setBackgroundVisibility(boolean visibility) {

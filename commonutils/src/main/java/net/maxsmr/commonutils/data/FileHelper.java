@@ -12,11 +12,10 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
-import android.text.TextUtils;
 
 import androidx.annotation.RawRes;
 import androidx.collection.ArraySet;
-import androidx.core.util.Pair;
+import net.maxsmr.commonutils.data.Pair;
 import androidx.exifinterface.media.ExifInterface;
 
 import net.maxsmr.commonutils.data.sort.BaseOptionableComparator;
@@ -177,7 +176,7 @@ public final class FileHelper {
                         }
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
                                 && (!excludeNotRemovable || Environment.isExternalStorageRemovable(d))
-                                || !TextUtils.isEmpty(rawSecondaryStorage) && rawSecondaryStorage.contains(path)) {
+                                || !StringUtils.isEmpty(rawSecondaryStorage) && rawSecondaryStorage.contains(path)) {
                             result.add(new File(secondaryPath));
                         }
                     }
@@ -185,7 +184,7 @@ public final class FileHelper {
             }
         } else {
             // if KITKAT or earlier - use splitted "SECONDARY_STORAGE" environment value as external paths
-            if (!TextUtils.isEmpty(rawSecondaryStorage)) {
+            if (!StringUtils.isEmpty(rawSecondaryStorage)) {
                 final String[] rawSecondaryStoragePaths = rawSecondaryStorage.split(File.separator);
                 for (String secondaryPath : rawSecondaryStoragePaths) {
                     if (includePrimaryExternalStorage
@@ -301,11 +300,11 @@ public final class FileHelper {
 
     public static boolean isFileExists(String fileName, String parentPath) {
 
-        if (TextUtils.isEmpty(fileName) || fileName.contains("/")) {
+        if (StringUtils.isEmpty(fileName) || fileName.contains("/")) {
             return false;
         }
 
-        if (TextUtils.isEmpty(parentPath)) {
+        if (StringUtils.isEmpty(parentPath)) {
             return false;
         }
 
@@ -318,7 +317,7 @@ public final class FileHelper {
     }
 
     public static boolean isFileExists(String filePath) {
-        if (!TextUtils.isEmpty(filePath)) {
+        if (!StringUtils.isEmpty(filePath)) {
             File f = new File(filePath);
             return (f.exists() && f.isFile());
         }
@@ -394,7 +393,7 @@ public final class FileHelper {
     }
 
     public static boolean checkFileNoThrow(String file, boolean createIfNotExists) {
-        return !TextUtils.isEmpty(file) && checkFileNoThrow(new File(file), createIfNotExists);
+        return !StringUtils.isEmpty(file) && checkFileNoThrow(new File(file), createIfNotExists);
     }
 
     public static void checkDir(String dirPath) {
@@ -441,7 +440,7 @@ public final class FileHelper {
 
     public static File checkPathNoThrow(String parent, String fileName, boolean createIfNotExists) {
         if (checkDirNoThrow(parent, createIfNotExists)) {
-            if (!TextUtils.isEmpty(fileName)) {
+            if (!StringUtils.isEmpty(fileName)) {
                 File f = new File(parent, fileName);
                 if (checkFileNoThrow(f, createIfNotExists)) {
                     return f;
@@ -493,11 +492,11 @@ public final class FileHelper {
     @Nullable
     public static File createNewFile(String fileName, String parentPath, boolean recreate) {
 
-        if (TextUtils.isEmpty(fileName) || fileName.contains(File.separator)) {
+        if (StringUtils.isEmpty(fileName) || fileName.contains(File.separator)) {
             return null;
         }
 
-        if (TextUtils.isEmpty(parentPath)) {
+        if (StringUtils.isEmpty(parentPath)) {
             return null;
         }
 
@@ -543,7 +542,7 @@ public final class FileHelper {
     @Nullable
     public static File createNewDir(String dirPath) {
 
-        if (TextUtils.isEmpty(dirPath)) {
+        if (StringUtils.isEmpty(dirPath)) {
             logger.e("path is empty");
             return null;
         }
@@ -583,7 +582,7 @@ public final class FileHelper {
             return null;
         }
 
-        if (TextUtils.isEmpty(newFileName)) {
+        if (StringUtils.isEmpty(newFileName)) {
             logger.e("File name for new file is not specified");
             return null;
         }
@@ -706,7 +705,7 @@ public final class FileHelper {
     @Nullable
     public static String readStringFromFile(File file) {
         List<String> strings = readStringsFromFile(file);
-        return !strings.isEmpty() ? TextUtils.join(NEXT_LINE, strings) : null;
+        return !strings.isEmpty() ? StringUtils.join(NEXT_LINE, strings) : null;
     }
 
     /**
@@ -1056,7 +1055,7 @@ public final class FileHelper {
      * @return новое имя
      */
     public static String removeExtension(String fileName) {
-        if (!TextUtils.isEmpty(fileName)) {
+        if (!StringUtils.isEmpty(fileName)) {
             int startIndex = fileName.lastIndexOf('.');
             if (startIndex >= 0) {
                 fileName = StringUtils.replace(fileName, startIndex, fileName.length(), EMPTY_STRING);
@@ -1068,7 +1067,7 @@ public final class FileHelper {
 
     public static File appendPostfix(@Nullable File file, @Nullable String postfix, boolean checkExists) {
         File result = file;
-        if (!TextUtils.isEmpty(postfix)) {
+        if (!StringUtils.isEmpty(postfix)) {
             if (file != null) {
                 do {
                     String name = result.getName();
@@ -1713,7 +1712,7 @@ public final class FileHelper {
         if (uri != null) {
             result = true;
             final String scheme = uri.getScheme();
-            if (!TextUtils.isEmpty(scheme)) {
+            if (!StringUtils.isEmpty(scheme)) {
                 result = scheme.equalsIgnoreCase(ContentResolver.SCHEME_FILE);
             }
         }
@@ -1829,7 +1828,7 @@ public final class FileHelper {
             return null;
         }
 
-        String targetName = TextUtils.isEmpty(destName) ? sourceFile.getName() : destName;
+        String targetName = StringUtils.isEmpty(destName) ? sourceFile.getName() : destName;
 
         File destFile = createNewFile(targetName, destDir, rewrite);
 
@@ -1868,9 +1867,9 @@ public final class FileHelper {
             return null;
         }
 
-        String targetName = TextUtils.isEmpty(destName) ? sourceFile.getName() : destName;
+        String targetName = StringUtils.isEmpty(destName) ? sourceFile.getName() : destName;
 
-        File destFile = destDir != null && !TextUtils.isEmpty(targetName) ? new File(destDir, targetName) : null;
+        File destFile = destDir != null && !StringUtils.isEmpty(targetName) ? new File(destDir, targetName) : null;
 
         if (destFile == null || destFile.equals(sourceFile)) {
             logger.e("Incorrect destination file: " + destDir + " (source file: " + sourceFile + ")");
@@ -2169,7 +2168,7 @@ public final class FileHelper {
                 if (part.startsWith(fromFile.getAbsolutePath())) {
                     part = part.substring(fromFile.getAbsolutePath().length(), part.length());
                 }
-                if (!TextUtils.isEmpty(part)) {
+                if (!StringUtils.isEmpty(part)) {
                     currentDestDir = new File(destDir, part);
                 }
             }
@@ -2560,7 +2559,7 @@ public final class FileHelper {
 
                             @Override
                             public void shellOut(@NotNull StreamType from, @NotNull String shellLine) {
-                                if (from == StreamType.OUT && !TextUtils.isEmpty(shellLine)) {
+                                if (from == StreamType.OUT && !StringUtils.isEmpty(shellLine)) {
                                     File current = new File(dir, shellLine);
                                     if (notifier != null) {
                                         notifier.onProcessing(current, collected, 0);
@@ -2609,7 +2608,7 @@ public final class FileHelper {
 
                         @Override
                         public void shellOut(@NotNull ShellCallback.StreamType from, @NotNull String shellLine) {
-                            if (from == StreamType.OUT && !TextUtils.isEmpty(shellLine)) {
+                            if (from == StreamType.OUT && !StringUtils.isEmpty(shellLine)) {
                                 long size = 0;
                                 String[] parts = shellLine.split("\\t");
                                 if (parts.length > 1) {

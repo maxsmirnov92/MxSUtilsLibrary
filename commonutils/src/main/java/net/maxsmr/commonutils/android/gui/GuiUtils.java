@@ -1,6 +1,5 @@
 package net.maxsmr.commonutils.android.gui;
 
-
 import android.app.Activity;
 import android.content.ClipData;
 import android.content.ClipboardManager;
@@ -8,7 +7,6 @@ import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.Configuration;
 import android.content.res.Resources;
-import android.content.res.TypedArray;
 import android.graphics.Point;
 import android.graphics.PorterDuff;
 import android.graphics.Rect;
@@ -17,10 +15,8 @@ import android.os.Build;
 import android.text.Editable;
 import android.text.InputFilter;
 import android.text.Spanned;
-import android.text.TextUtils;
 import android.text.TextWatcher;
 import android.util.DisplayMetrics;
-import android.util.Pair;
 import android.view.Display;
 import android.view.KeyEvent;
 import android.view.Surface;
@@ -38,7 +34,6 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.annotation.ColorInt;
-import androidx.annotation.IdRes;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.coordinatorlayout.widget.CoordinatorLayout;
 
@@ -47,6 +42,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior;
 import com.google.android.material.bottomsheet.BottomSheetDialog;
 import com.google.android.material.textfield.TextInputLayout;
 
+import net.maxsmr.commonutils.data.Pair;
 import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -394,7 +390,7 @@ public final class GuiUtils {
     public static void setEditTextHintByError(@NotNull TextInputLayout on, @Nullable String hint) {
         EditText et = on.getEditText();
         if (et != null) {
-            et.setHint(TextUtils.isEmpty(on.getError()) ? null : hint);
+            et.setHint(StringUtils.isEmpty(on.getError()) ? null : hint);
         }
     }
 
@@ -420,14 +416,14 @@ public final class GuiUtils {
     }
 
     public static void clearError(boolean force, @NotNull TextInputLayout on) {
-        if (force || !TextUtils.isEmpty(on.getError())) {
+        if (force || !StringUtils.isEmpty(on.getError())) {
             on.setError(null);
             on.refreshDrawableState();
         }
     }
 
     public static void clearError(boolean force, @NotNull TextInputLayout on, EditText editText, @ColorInt int color) {
-        if (force || !TextUtils.isEmpty(on.getError())) {
+        if (force || !StringUtils.isEmpty(on.getError())) {
             on.setError(null);
             editText.getBackground().setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
             on.refreshDrawableState();
@@ -601,7 +597,7 @@ public final class GuiUtils {
     }
 
     @NotNull
-    public static androidx.core.util.Pair<Integer, Integer> calcAspectRatioFor(int width, int height) {
+    public static Pair<Integer, Integer> calcAspectRatioFor(int width, int height) {
         double aspectRatio = (double) width / (double) height;
         int dividend = width > height ? width : height;
         int divider = width > height ? height : width;
@@ -619,11 +615,11 @@ public final class GuiUtils {
                 scale++;
             }
         }
-        androidx.core.util.Pair<Integer, Integer> result;
+        Pair<Integer, Integer> result;
         if (width > height) {
-            result = new androidx.core.util.Pair<>(dividend, divider);
+            result = new net.maxsmr.commonutils.data.Pair<>(dividend, divider);
         } else {
-            result = new androidx.core.util.Pair<>(divider, dividend);
+            result = new net.maxsmr.commonutils.data.Pair<>(divider, dividend);
         }
         return result;
     }
@@ -921,5 +917,4 @@ public final class GuiUtils {
             return false;
         }
     }
-
 }

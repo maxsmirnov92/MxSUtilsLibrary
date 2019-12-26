@@ -10,6 +10,8 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.NetworkHelper;
 import net.maxsmr.networkutils.NetworkType;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
+import net.maxsmr.tasksutils.runnable.RunnableInfoRunnable;
+import net.maxsmr.tasksutils.storage.ids.IdHolder;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnableExecutor;
@@ -21,7 +23,7 @@ import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
 
 import static net.maxsmr.commonutils.shell.RootShellCommandsKt.reboot;
-
+import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 
 public class NetworkWatcher {
 
@@ -33,7 +35,7 @@ public class NetworkWatcher {
 
     public static void initInstance(Context context) {
         synchronized (NetworkWatcher.class) {
-        if (sInstance == null) {
+            if (sInstance == null) {
                 logger.d("initInstance()");
                 sInstance = new NetworkWatcher(context);
             }
@@ -65,6 +67,8 @@ public class NetworkWatcher {
 
     public final static int DEFAULT_AIRPLANE_MODE_POST_WAIT = 60000;
 
+    private final IdHolder taskIdHolder = new IdHolder(1);
+
     private final HostPingObserbable hostPingListeners = new HostPingObserbable();
 
     private final RebootObservable rebootListeners = new RebootObservable();
@@ -73,7 +77,7 @@ public class NetworkWatcher {
             TaskRunnableExecutor.DEFAULT_KEEP_ALIVE_TIME, TimeUnit.SECONDS, "RestoreNetworkTask", null,
             null, null);
 
-    private final ScheduledThreadPoolExecutorManager hostPingExecutor = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, "HostPingTask");
+    private final ScheduledThreadPoolExecutorManager hostPingExecutor = new ScheduledThreadPoolExecutorManager("HostPingTask");
 
     private HostPingRunnable hostPingRunnable;
 
@@ -217,9 +221,15 @@ public class NetworkWatcher {
 
         stopRestoreNetworkRunnable();
 
-        hostPingExecutor.addRunnableTask(hostPingRunnable = new HostPingRunnable(pingAddress, pingCount, timeout >= 0 ? timeout
-                : HostPingRunnable.DEFAULT_TIMEOUT));
-        hostPingExecutor.restart(period > 0 ? period : DEFAULT_HOST_PING_PERIOD);
+        hostPingExecutor.addRunnableTask(
+                hostPingRunnable = new HostPingRunnable(taskIdHolder.getAndIncrement(),
+                        pingAddress,
+                        pingCount,
+                        timeout >= 0 ? timeout
+                                : HostPingRunnable.DEFAULT_TIMEOUT),
+                new ScheduledThreadPoolExecutorManager.RunOptions(0, period > 0 ? period : DEFAULT_HOST_PING_PERIOD, FIXED_DELAY)
+        );
+        hostPingExecutor.restart(1);
     }
 
     public synchronized void stopHostPingTask() {
@@ -286,7 +296,7 @@ public class NetworkWatcher {
         NONE, TOGGLE_AIRPLANE_MODE, REBOOT_PHONE
     }
 
-    public class HostPingRunnable implements Runnable {
+    public class HostPingRunnable extends RunnableInfoRunnable<RunnableInfo> {
 
         public final static String DEFAULT_PING_IP_ADDRESS = "8.8.8.8";
 
@@ -307,6 +317,13 @@ public class NetworkWatcher {
 
         @NotNull
         private PingState lastHostPingState = PingState.NONE;
+
+        HostPingRunnable(int id, String pingAddress, int pingCount, long timeout) {
+            super(new RunnableInfo(id));
+            this.pingAddress = pingAddress;
+            this.pingCount = pingCount < 1 ? DEFAULT_PING_COUNT : pingCount;
+            this.timeout = timeout < 0 ? DEFAULT_TIMEOUT : timeout;
+        }
 
         @NotNull
         public PingState getLastHostPingState() {
@@ -333,11 +350,6 @@ public class NetworkWatcher {
             }
         }
 
-        private HostPingRunnable(String pingAddress, int pingCount, long timeout) {
-            this.pingAddress = pingAddress;
-            this.pingCount = pingCount < 1 ? DEFAULT_PING_COUNT : pingCount;
-            this.timeout = timeout < 0 ? DEFAULT_TIMEOUT : timeout;
-        }
 
         @Override
         public void run() {
@@ -380,7 +392,7 @@ public class NetworkWatcher {
                         + preferableNetworkType);
 
                 final long currentTime = System.currentTimeMillis();
-                final long lastActiveNetworkTypeTime = currentTime > lastActiveNetworkTypeStartTime? currentTime - lastActiveNetworkTypeStartTime : 0;
+                final long lastActiveNetworkTypeTime = currentTime > lastActiveNetworkTypeStartTime ? currentTime - lastActiveNetworkTypeStartTime : 0;
 
                 logger.i("last active network type time: " + TimeUnit.MILLISECONDS.toSeconds(lastActiveNetworkTypeTime) + " s");
 

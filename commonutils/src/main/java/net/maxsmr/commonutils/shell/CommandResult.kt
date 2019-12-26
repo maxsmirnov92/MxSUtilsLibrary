@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.shell
 
-import android.text.TextUtils
 import net.maxsmr.commonutils.data.NEXT_LINE
+import net.maxsmr.commonutils.data.StringUtils
 import java.util.*
 
 const val PROCESS_EXIT_CODE_SUCCESS = 0
@@ -31,7 +31,7 @@ class CommandResult @JvmOverloads constructor(
 
     constructor(from: CommandResult) : this(from.targetExitCode, from.exitCode, from.stdOutLines, from.stdErrLines)
 
-    fun getStdOut(): String = TextUtils.join(NEXT_LINE, stdOutLines)
+    fun getStdOut(): String = StringUtils.join(NEXT_LINE, stdOutLines)
 
     fun getStdOutLines(): List<String> {
         return ArrayList(stdOutLines)
@@ -44,7 +44,7 @@ class CommandResult @JvmOverloads constructor(
         }
     }
 
-    fun getStdErr(): String = TextUtils.join(NEXT_LINE, stdErrLines)
+    fun getStdErr(): String = StringUtils.join(NEXT_LINE, stdErrLines)
 
     fun getStdErrLines(): List<String> {
         return ArrayList(stdErrLines)

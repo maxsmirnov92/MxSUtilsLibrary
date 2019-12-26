@@ -8,7 +8,7 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.util.Pair;
+import net.maxsmr.commonutils.data.Pair;
 
 import com.google.android.material.snackbar.Snackbar;
 

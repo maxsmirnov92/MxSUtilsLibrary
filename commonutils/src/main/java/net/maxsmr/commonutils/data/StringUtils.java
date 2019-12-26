@@ -1,14 +1,12 @@
 package net.maxsmr.commonutils.data;
 
-import android.content.Context;
-import android.text.TextUtils;
-
 import net.maxsmr.commonutils.R;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
@@ -48,21 +46,60 @@ public class StringUtils {
     }
 
     public static boolean isEmpty(@Nullable CharSequence s) {
-        return TextUtils.isEmpty(s) || "null".equalsIgnoreCase(s.toString());
+        return isEmpty(s, false);
+    }
+    
+    public static boolean isEmpty(@Nullable CharSequence s, boolean shouldCheckNullString) {
+        return (s == null || s.equals(EMPTY_STRING)) || shouldCheckNullString && "null".equalsIgnoreCase(s.toString());
     }
 
-    public static boolean isNoData(CharSequence s, @NotNull Context ctx) {
-        return isEmpty(s) || ctx.getString(R.string.empty_data).equalsIgnoreCase(s.toString());
+    public static boolean isEmptyData(CharSequence s, @NotNull StringsProvider stringsProvider) {
+        return isEmpty(s) || stringsProvider.getString(R.string.empty_data).equalsIgnoreCase(s.toString());
     }
 
-    public static String getText(@NotNull Context context, String text) {
-        return isEmpty(text)? context.getString(R.string.empty_data) : text;
+    // Copied from TextUtils
+    public static String join(@NotNull CharSequence delimiter, @NotNull Object[] tokens) {
+        final int length = tokens.length;
+        if (length == 0) {
+            return "";
+        }
+        final StringBuilder sb = new StringBuilder();
+        sb.append(tokens[0]);
+        for (int i = 1; i < length; i++) {
+            sb.append(delimiter);
+            sb.append(tokens[i]);
+        }
+        return sb.toString();
+    }
+
+    // Copied from TextUtils
+    public static String join(@NotNull CharSequence delimiter, @NotNull Iterable tokens) {
+        final Iterator<?> it = tokens.iterator();
+        if (!it.hasNext()) {
+            return "";
+        }
+        final StringBuilder sb = new StringBuilder();
+        sb.append(it.next());
+        while (it.hasNext()) {
+            sb.append(delimiter);
+            sb.append(it.next());
+        }
+        return sb.toString();
+    }
+
+    // Copied from TextUtils
+    public static String[] split(String text, String expression) {
+        if (text.length() == 0) {
+            return EMPTY_STRING_ARRAY;
+        } else {
+            return text.split(expression, -1);
+        }
     }
 
     @NotNull
     public static String changeCaseFirstLatter(@Nullable CharSequence s, boolean upper) {
         String result = EMPTY_STRING;
-        if (!TextUtils.isEmpty(s)) {
+        if (!isEmpty(s)) {
             result = s.toString();
             if (s.length() == 1) {
                 result = upper? result.toUpperCase(Locale.getDefault()) : result.toLowerCase(Locale.getDefault());
@@ -154,20 +191,20 @@ public class StringUtils {
         return result;
     }
 
-    public static String getStubValue(@Nullable String value, Context ctx) {
-        return getStubValueWithAppend(value, null, ctx);
+    public static String getStubValue(@Nullable String value, StringsProvider stringsProvider) {
+        return getStubValueWithAppend(value, null, stringsProvider);
     }
 
-    public static String getStubValue(int value, Context ctx) {
-        return getStubValueWithAppend(value, null, ctx);
+    public static String getStubValue(int value, StringsProvider stringsProvider) {
+        return getStubValueWithAppend(value, null, stringsProvider);
     }
 
-    public static String getStubValueWithAppend(int value, @Nullable String appendWhat, Context ctx) {
-        return getStubValueWithAppend(value != 0 ? String.valueOf(value) : null, appendWhat, ctx);
+    public static String getStubValueWithAppend(int value, @Nullable String appendWhat, StringsProvider stringsProvider) {
+        return getStubValueWithAppend(value != 0 ? String.valueOf(value) : null, appendWhat, stringsProvider);
     }
 
-    public static String getStubValueWithAppend(@Nullable String value, @Nullable String appendWhat, Context ctx) {
-        return !isEmpty(value) ? (!isEmpty(appendWhat) ? value + " " + appendWhat : value) : ctx.getString(R.string.empty_data);
+    public static String getStubValueWithAppend(@Nullable String value, @Nullable String appendWhat, StringsProvider stringsProvider) {
+        return !isEmpty(value) ? (!isEmpty(appendWhat) ? value + " " + appendWhat : value) : stringsProvider.getString(R.string.empty_data);
     }
 
     public static class CharacterMap {
@@ -276,7 +313,7 @@ public class StringUtils {
     @Nullable
     public static String removeChars(@Nullable String text, String... characters) {
         if (characters != null) {
-            if (!TextUtils.isEmpty(text)) {
+            if (!isEmpty(text)) {
                 for (String c : characters) {
                     text = text.replace(c, EMPTY_STRING);
                 }
@@ -288,7 +325,7 @@ public class StringUtils {
     @NotNull
     public static String appendOrReplaceChar(CharSequence source, Character what, String to, boolean ignoreCase, boolean appendOrReplace) {
 
-        if (TextUtils.isEmpty(source) || TextUtils.isEmpty(to)) {
+        if (isEmpty(source) || isEmpty(to)) {
             return EMPTY_STRING;
         }
 
@@ -320,4 +357,8 @@ public class StringUtils {
         LEFT_RIGHT, RIGHT_LEFT
     }
 
+    public interface StringsProvider {
+
+        String getString(int resId);
+    }
 }

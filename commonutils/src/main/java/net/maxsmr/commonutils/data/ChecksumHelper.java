@@ -1,10 +1,9 @@
 package net.maxsmr.commonutils.data;
 
-import org.jetbrains.annotations.Nullable;
-import android.text.TextUtils;
-
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.UnsupportedEncodingException;
@@ -55,19 +54,16 @@ public final class ChecksumHelper {
 
     @Nullable
     public static String md5Hash(String st, String charsetName) {
-        charsetName = TextUtils.isEmpty(charsetName)? "UTF-8" : charsetName;
+        charsetName = StringUtils.isEmpty(charsetName)? "UTF-8" : charsetName;
         try {
-            return !TextUtils.isEmpty(st)? md5Hash(st.getBytes(charsetName)) : null;
+            return !StringUtils.isEmpty(st)? md5Hash(st.getBytes(charsetName)) : null;
         } catch (UnsupportedEncodingException e) {
             logger.e("a UnsupportedEncodingException occurred during getBytes()", e);
             return null;
         }
     }
 
-
     public static String md5Hash(File file) {
         return FileHelper.isFileCorrect(file)? md5Hash(FileHelper.readBytesFromFile(file)) : null;
     }
-
-
 }

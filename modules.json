@@ -2,7 +2,7 @@
   {
     "id": "commonutils",
     "type": "lib",
-    "versionName": "1.0.8.1",
+    "versionName": "1.0.8.2",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
@@ -11,7 +11,7 @@
   {
     "id": "customcontentprovider",
     "type": "lib",
-    "versionName": "1.0.3",
+    "versionName": "1.0.3.1",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
@@ -20,7 +20,7 @@
   {
     "id": "tasksutils",
     "type": "lib",
-    "versionName": "1.0.7.4",
+    "versionName": "1.0.7.5",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
@@ -29,7 +29,7 @@
   {
     "id": "networkutils",
     "type": "lib",
-    "versionName": "1.0.9.0",
+    "versionName": "1.0.9.1",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
@@ -38,7 +38,7 @@
   {
     "id": "devicewatchers",
     "type": "lib",
-    "versionName": "1.0.8.4",
+    "versionName": "1.0.8.5",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,

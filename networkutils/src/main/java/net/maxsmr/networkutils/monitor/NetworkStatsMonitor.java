@@ -5,14 +5,20 @@ import android.net.TrafficStats;
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+import net.maxsmr.networkutils.loadutil.managers.base.BaseNetworkLoadManager;
 import net.maxsmr.networkutils.monitor.model.NetworkTrafficStats;
 import net.maxsmr.networkutils.monitor.model.TrafficDirection;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
+import net.maxsmr.tasksutils.runnable.RunnableInfoRunnable;
+import net.maxsmr.tasksutils.storage.ids.IdHolder;
+import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.TimeUnit;
+
+import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 
 public final class NetworkStatsMonitor {
 
@@ -20,15 +26,16 @@ public final class NetworkStatsMonitor {
 
     public final static long DEFAULT_NETWORK_STATS_MONITOR_INTERVAL = 3000;
 
-    private final ScheduledThreadPoolExecutorManager manager = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, NetworkStatsMonitor.class.getSimpleName());
+    private final ScheduledThreadPoolExecutorManager manager = new ScheduledThreadPoolExecutorManager("NetworkStatsMonitor");
 
     private final NetworkStatsObservable networkStatsListeners = new NetworkStatsObservable();
 
     @Nullable
     private NetworkTrafficStats lastNetworkStats;
 
-    public NetworkStatsMonitor() {
-        manager.addRunnableTask(new NetworkStatsUpdateRunnable());
+    public NetworkStatsMonitor(long interval) {
+        manager.addRunnableTask(new NetworkStatsUpdateRunnable(1),
+                new ScheduledThreadPoolExecutorManager.RunOptions(0, interval, FIXED_DELAY));
     }
 
     public void addNetworkStatsListener(@NotNull NetworkStatsListener listener) {
@@ -44,17 +51,25 @@ public final class NetworkStatsMonitor {
         return lastNetworkStats;
     }
 
-    public synchronized void start(long interval) {
-        manager.start(interval);
+    public synchronized void start() {
+        manager.start(1);
+    }
+
+    public synchronized void restart() {
+        manager.restart(1);
     }
 
     public synchronized void stop() {
         manager.stop();
     }
 
-    private class NetworkStatsUpdateRunnable implements Runnable {
+    private class NetworkStatsUpdateRunnable extends RunnableInfoRunnable<RunnableInfo> {
 
         private long lastUpdateTime;
+
+        protected NetworkStatsUpdateRunnable(int id) {
+            super(new RunnableInfo(id));
+        }
 
         @Override
         public void run() {

@@ -2,8 +2,7 @@ package net.maxsmr.commonutils.android.processmanager.shell.base;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
-import androidx.core.util.Pair;
-import android.text.TextUtils;
+import net.maxsmr.commonutils.data.Pair;
 
 import net.maxsmr.commonutils.android.AppUtils;
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
@@ -192,7 +191,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
         final Map<Column, Integer> indexMap = new LinkedHashMap<>();
         final Pair<Map<Column, Integer>, List<String>> result = new Pair<>(indexMap, columnNamesList);
 
-        if (TextUtils.isEmpty(headerLine)) {
+        if (StringUtils.isEmpty(headerLine)) {
             logger.e("Cannot parse output header line " + headerIndex + ": empty");
             return result;
         }
@@ -208,7 +207,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
         final String[] columnNames = headerLine.split("\\s+");
 
         for (String name : columnNames) {
-            if (!TextUtils.isEmpty(name)) {
+            if (!StringUtils.isEmpty(name)) {
                 String[] parts = name.split("\\d");
                 // remove trash, containing digits
                 if (parts.length <= 1) {
@@ -216,10 +215,10 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
                     if (bracketIndex > 0) {
                         final String namePartOne = name.substring(0, bracketIndex);
                         final String namePartTwo = name.substring(bracketIndex);
-                        if (!TextUtils.isEmpty(namePartOne)) {
+                        if (!StringUtils.isEmpty(namePartOne)) {
                             columnNamesList.add(namePartOne);
                         }
-                        if (!TextUtils.isEmpty(namePartTwo)) {
+                        if (!StringUtils.isEmpty(namePartTwo)) {
                             columnNamesList.add(namePartTwo);
                         }
                     } else {
@@ -242,7 +241,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
             }
 
             for (final String columnName : names) {
-                if (TextUtils.isEmpty(columnName)) {
+                if (StringUtils.isEmpty(columnName)) {
                     throw new IllegalArgumentException("Cannot parse output header line " + headerIndex + ": name is not specified for column " + column);
                 }
                 Pair<Integer, String> indexPair = Predicate.Methods.findWithIndex(columnNamesList, element -> {
@@ -267,7 +266,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
             throw new IllegalArgumentException("Incorrect line index: " + lineIndex);
         }
 
-        if (TextUtils.isEmpty(line)) {
+        if (StringUtils.isEmpty(line)) {
             logger.e("Cannot parse output line " + lineIndex + ": empty");
             return null;
         }
@@ -299,7 +298,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
             processName = processNameParts[0];
         }
 
-        final boolean isPackageValid = !TextUtils.isEmpty(processName)
+        final boolean isPackageValid = !StringUtils.isEmpty(processName)
                 && PACKAGE_PATTERN.matcher(processName.toLowerCase(Locale.getDefault())).matches()
                 && isPackageInstalled(processName);
 

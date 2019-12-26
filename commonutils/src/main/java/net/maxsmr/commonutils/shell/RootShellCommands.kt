@@ -2,13 +2,10 @@ package net.maxsmr.commonutils.shell
 
 import android.content.Context
 import android.os.Build
-import android.text.TextUtils
+
 import net.maxsmr.commonutils.android.AppUtils
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager
-import net.maxsmr.commonutils.data.CompareUtils
-import net.maxsmr.commonutils.data.EMPTY_STRING
-import net.maxsmr.commonutils.data.FileHelper
-import net.maxsmr.commonutils.data.Predicate
+import net.maxsmr.commonutils.data.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.io.File
@@ -120,7 +117,7 @@ val installedPackages: List<String>
         }
         val packages = ArrayList<String>()
         for (out in commandResult.getStdOutLines()) {
-            if (!TextUtils.isEmpty(out)) {
+            if (!StringUtils.isEmpty(out)) {
                 packages.add(out.replaceFirst("package:".toRegex(), ""))
             }
         }
@@ -205,7 +202,7 @@ fun installApkUntilSuccess(
  */
 fun uninstallPackage(packageName: String): Boolean {
 
-    if (TextUtils.isEmpty(packageName)) {
+    if (StringUtils.isEmpty(packageName)) {
         logger.e("Cannot uninstall app: package name is empty")
         return false
     }
@@ -318,13 +315,13 @@ fun isInstallOrUninstallSuccess(commandResult: CommandResult): Boolean {
 
 private fun isInstallOrUninstallSuccess(std: List<String>): Boolean {
     return Predicate.Methods.contains(std) { s ->
-        !TextUtils.isEmpty(s) && s.toLowerCase(Locale.getDefault()).startsWith("success")
+        !StringUtils.isEmpty(s) && s.toLowerCase(Locale.getDefault()).startsWith("success")
     }
 }
 
 fun getInstallFailErrString(commandResult: CommandResult): String {
     var failure = getInstallFailErrString(commandResult.getStdErrLines())
-    if (TextUtils.isEmpty(failure)) {
+    if (StringUtils.isEmpty(failure)) {
         failure = getInstallFailErrString(commandResult.getStdOutLines())
     }
     return failure
@@ -332,6 +329,6 @@ fun getInstallFailErrString(commandResult: CommandResult): String {
 
 private fun getInstallFailErrString(std: List<String>): String {
     return Predicate.Methods.find(std) { s ->
-        !TextUtils.isEmpty(s) && s.toLowerCase(Locale.getDefault()).startsWith("failure")
+        !StringUtils.isEmpty(s) && s.toLowerCase(Locale.getDefault()).startsWith("failure")
     } ?: EMPTY_STRING
 }

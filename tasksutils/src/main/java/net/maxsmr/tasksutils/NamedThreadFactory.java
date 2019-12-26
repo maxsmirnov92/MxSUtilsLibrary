@@ -1,8 +1,8 @@
 package net.maxsmr.tasksutils;
 
 import org.jetbrains.annotations.NotNull;
-import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
 
 import java.util.concurrent.ThreadFactory;
@@ -15,7 +15,7 @@ public class NamedThreadFactory implements ThreadFactory {
     public final String threadName;
 
     public NamedThreadFactory(String threadName) {
-        if (TextUtils.isEmpty(threadName)) {
+        if (StringUtils.isEmpty(threadName)) {
             throw new IllegalArgumentException("threadName can't be empty");
         }
         this.threadName = threadName;
@@ -25,5 +25,4 @@ public class NamedThreadFactory implements ThreadFactory {
     public Thread newThread(@NotNull Runnable r) {
         return new Thread(r, r instanceof TaskRunnable? threadName + " :: " + ((TaskRunnable) r).rInfo.id : threadName + " :: " + threadId.getAndIncrement());
     }
-
 }

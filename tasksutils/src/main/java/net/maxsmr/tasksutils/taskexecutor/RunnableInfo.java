@@ -1,9 +1,7 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
-import android.os.AsyncTask;
-import android.text.TextUtils;
-
 import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.data.model.SerializationUtils;
 
 import org.jetbrains.annotations.NotNull;
@@ -17,9 +15,9 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static android.os.AsyncTask.Status.FINISHED;
-import static android.os.AsyncTask.Status.PENDING;
-import static android.os.AsyncTask.Status.RUNNING;
+import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.FINISHED;
+import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.PENDING;
+import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.RUNNING;
 
 public class RunnableInfo implements Serializable {
 
@@ -30,7 +28,7 @@ public class RunnableInfo implements Serializable {
     public final int id;
     public final String name;
 
-    AsyncTask.Status status = PENDING;
+    Status status = PENDING;
 
     private boolean isCancelled = false;
 
@@ -44,11 +42,11 @@ public class RunnableInfo implements Serializable {
             throw new IllegalArgumentException("incorrect runnable id: " + id);
 
         this.id = id;
-        this.name = !TextUtils.isEmpty(name)? name : getClass().getSimpleName();
+        this.name = !StringUtils.isEmpty(name)? name : getClass().getSimpleName();
     }
 
     @NotNull
-    public synchronized AsyncTask.Status getStatus() {
+    public synchronized Status getStatus() {
         if (status == null) {
             status = PENDING;
         }
@@ -182,5 +180,10 @@ public class RunnableInfo implements Serializable {
         }
     }
 
+    public enum Status {
 
+        PENDING,
+        RUNNING,
+        FINISHED,
+    }
 }

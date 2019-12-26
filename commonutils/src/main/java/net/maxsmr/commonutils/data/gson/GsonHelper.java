@@ -1,7 +1,5 @@
 package net.maxsmr.commonutils.data.gson;
 
-import android.text.TextUtils;
-
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -10,6 +8,7 @@ import com.google.gson.JsonParser;
 import com.google.gson.JsonPrimitive;
 import com.google.gson.reflect.TypeToken;
 
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -193,7 +192,7 @@ public class GsonHelper {
     public static <J extends JsonElement> J asJsonElement(@Nullable String string, @NotNull Class<J> clazz) {
         JsonParser parser = new JsonParser();
         JsonElement element = null;
-        if (!TextUtils.isEmpty(string)) {
+        if (!StringUtils.isEmpty(string)) {
             try {
                 element = parser.parse(string);
             } catch (JsonParseException e) {

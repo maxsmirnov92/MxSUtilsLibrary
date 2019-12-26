@@ -6,11 +6,12 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import org.jetbrains.annotations.NotNull;
-import android.text.TextUtils;
+;
 import android.util.AttributeSet;
 
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.CompareUtils;
+import net.maxsmr.commonutils.data.StringUtils;
 
 import java.io.Serializable;
 
@@ -155,7 +156,7 @@ public class TypewriterFontTextView extends FontTextView {
 
             stopAnimateText();
 
-            if (TextUtils.isEmpty(mScheduledText)) {
+            if (StringUtils.isEmpty(mScheduledText)) {
                 return;
             }
 

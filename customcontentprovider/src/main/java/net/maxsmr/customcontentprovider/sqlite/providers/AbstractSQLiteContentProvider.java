@@ -8,7 +8,6 @@ import android.database.sqlite.SQLiteException;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.BaseColumns;
-import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.StringUtils;
@@ -123,12 +122,12 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
         if (matchResult == UriMatch.MATCH_ALL) {
 
-            if (TextUtils.isEmpty(orderBy))
+            if (StringUtils.isEmpty(orderBy))
                 orderBy = BaseColumns._ID + " " + ASC;
 
         } else if (matchResult == UriMatch.MATCH_ID) {
 
-            if (TextUtils.isEmpty(where)) {
+            if (StringUtils.isEmpty(where)) {
                 where = BaseColumns._ID + "=?";
             } else {
                 where += " AND " + BaseColumns._ID + "=?";
@@ -214,7 +213,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
         if (matchResult == UriMatch.MATCH_ID) {
 
-            if (TextUtils.isEmpty(where)) {
+            if (StringUtils.isEmpty(where)) {
                 where = BaseColumns._ID + "=?";
             } else {
                 where += " AND " + BaseColumns._ID + "=?";
@@ -266,7 +265,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
         if (matchResult == UriMatch.MATCH_ID) {
 
-            if (TextUtils.isEmpty(where)) {
+            if (StringUtils.isEmpty(where)) {
                 where = BaseColumns._ID + "=?";
             } else {
                 where += " AND " + BaseColumns._ID + "=?";
@@ -319,7 +318,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
     protected void checkFields() throws RuntimeException {
 
-        if (TextUtils.isEmpty(databaseName))
+        if (StringUtils.isEmpty(databaseName))
             throw new RuntimeException("databaseName is empty");
 
         FileHelper.checkDir(databasePath);

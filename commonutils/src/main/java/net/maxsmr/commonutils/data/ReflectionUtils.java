@@ -1,7 +1,5 @@
 package net.maxsmr.commonutils.data;
 
-import android.text.TextUtils;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -15,7 +13,7 @@ public class ReflectionUtils {
      * CAUTION: Do not use this for overloaded methods!
      */
     public static Method findMethod(@NotNull Class<?> clazz, String methodName) throws NoSuchMethodException {
-        if (TextUtils.isEmpty(methodName)) {
+        if (StringUtils.isEmpty(methodName)) {
             throw new IllegalArgumentException("Nethod name is empty");
         }
         for (Method method : clazz.getMethods()) {
@@ -34,7 +32,7 @@ public class ReflectionUtils {
      */
     @SuppressWarnings("unchecked")
     public static <T, O> T getFieldValue(@NotNull Class<O> classOfO, @Nullable O callObject, String fieldName) throws RuntimeException, NoSuchFieldException {
-        if (TextUtils.isEmpty(fieldName)) {
+        if (StringUtils.isEmpty(fieldName)) {
             throw new IllegalArgumentException("Field name is empty");
         }
         final Field targetField = classOfO.getDeclaredField(fieldName);

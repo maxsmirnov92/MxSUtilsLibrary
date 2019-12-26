@@ -2,9 +2,9 @@ package net.maxsmr.networkutils.loadutil.managers;
 
 import android.net.Uri;
 import android.os.Handler;
-import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.loadutil.managers.base.BaseNetworkLoadManager;
@@ -156,7 +156,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
 
         protected boolean checkArgs() {
-            if (TextUtils.isEmpty(rInfo.contentType.value)) {
+            if (StringUtils.isEmpty(rInfo.contentType.value)) {
                 throw new IllegalArgumentException("content type might not be empty");
             }
             if (rInfo.requestMethod == LoadRunnableInfo.RequestMethod.GET
@@ -313,7 +313,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     if (rInfo.settings.logRequestData) {
                         String query = url.getQuery();
                         logger.d("URL: " + rInfo.url);
-                        logger.d(rInfo.requestMethod.toString() + " " + url.getPath() + (!TextUtils.isEmpty(query) ? "?" + query : ""));
+                        logger.d(rInfo.requestMethod.toString() + " " + url.getPath() + (!StringUtils.isEmpty(query) ? "?" + query : ""));
                         logger.d("Host: " + url.getHost());
                     }
 
@@ -336,7 +336,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     }
 
                     for (LoadRunnableInfo.NameValuePair h : rInfo.getHeaders()) {
-                        if (!TextUtils.isEmpty(h.name)) {
+                        if (!StringUtils.isEmpty(h.name)) {
 //                        Utils.addHeaderField(requestStream, h.name, h.value, rInfo.settings.logRequestData);
                             connection.setRequestProperty(h.name, h.value);
                             if (rInfo.settings.logRequestData)
@@ -468,7 +468,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                             for (LoadRunnableInfo.NameValuePair f : rInfo.getFormFields()) {
 
-                                if (!TextUtils.isEmpty(f.name) && !TextUtils.isEmpty(f.value)) {
+                                if (!StringUtils.isEmpty(f.name) && !StringUtils.isEmpty(f.value)) {
                                     Utils.addFormFieldUrlEncoded(requestStream, f.name, f.value, rInfo.settings.logRequestData);
                                 } else {
                                     throw new RuntimeException("form field name or value might not be empty");
@@ -481,7 +481,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                         case MULTIPART_FORM_DATA:
 
                             for (LoadRunnableInfo.NameValuePair f : rInfo.getFormFields()) {
-                                if (!TextUtils.isEmpty(f.name) && !TextUtils.isEmpty(f.value)) {
+                                if (!StringUtils.isEmpty(f.name) && !StringUtils.isEmpty(f.value)) {
                                     Utils.addFormFieldMultipart(requestStream, f.name, f.value, rInfo.settings.uploadCharset, boundary, rInfo.settings.logRequestData);
                                 } else {
                                     throw new RuntimeException("form field name or value might not be empty");
@@ -506,7 +506,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     }
 
                     if (requestStream.size() > 0) {
-                        if (!TextUtils.isEmpty(boundary)) {
+                        if (!StringUtils.isEmpty(boundary)) {
                             Utils.addCloseLineMultipart(requestStream, boundary, rInfo.settings.logRequestData);
                         } else {
                             requestStream.writeBytes(LINE_FEED);
@@ -549,8 +549,8 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                         if (headerFields != null) {
                             for (Map.Entry<String, List<String>> e : headerFields.entrySet()) {
                                 List<String> parts = e.getValue();
-                                if (!TextUtils.isEmpty(e.getKey())) {
-                                    lastResponse.headers.add(new LoadRunnableInfo.NameValuePair(e.getKey(), TextUtils.join(LINE_FEED, parts)));
+                                if (!StringUtils.isEmpty(e.getKey())) {
+                                    lastResponse.headers.add(new LoadRunnableInfo.NameValuePair(e.getKey(), StringUtils.join(LINE_FEED, parts)));
                                 }
                             }
                         }
@@ -820,7 +820,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                             if (FileHelper.checkDirNoThrow(downloadDirectory.getAbsolutePath())) {
 
                                 String headerFileName = Utils.extractFileNameFromHeaders(lastResponse.headers);
-                                if (TextUtils.isEmpty(headerFileName)) {
+                                if (StringUtils.isEmpty(headerFileName)) {
                                     headerFileName = Uri.parse(rInfo.getUrlString()).getLastPathSegment();
                                 }
                                 lastDownloadFile = FileHelper.createNewFile(headerFileName, downloadDirectory.getAbsolutePath());
@@ -880,7 +880,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                         while (lastDownloadFile.exists()) {
                                             String newName = lastDownloadFile.getName();
                                             String ext = FileHelper.getFileExtension(newName);
-                                            if (!TextUtils.isEmpty(ext)) {
+                                            if (!StringUtils.isEmpty(ext)) {
                                                 newName = FileHelper.removeExtension(newName) + " (" + it + ")." + ext;
                                             } else {
                                                 newName += " (" + it + ")";
@@ -1073,7 +1073,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
          * @param fieldName optional; if empty - name[] will be inserted
          */
         static void addFilePartsArray(@NotNull DataOutputStream requestStream, @Nullable String fieldName, Set<File> uploadFiles, boolean ignoreIncorrect, @Nullable IWriteNotifier notifier, String boundary, boolean log) throws RuntimeException, IOException {
-            addFileParts(requestStream, TextUtils.isEmpty(fieldName) ? "name[]" : fieldName + "[]", uploadFiles, ignoreIncorrect, notifier, boundary, log);
+            addFileParts(requestStream, StringUtils.isEmpty(fieldName) ? "name[]" : fieldName + "[]", uploadFiles, ignoreIncorrect, notifier, boundary, log);
         }
 
         static void addCloseLineMultipart(@NotNull DataOutputStream requestStream, String boundary, boolean log) throws IOException {
@@ -1222,11 +1222,11 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
         static String extractFileNameFromHeaders(Set<LoadRunnableInfo.NameValuePair> headers) {
             for (LoadRunnableInfo.NameValuePair pair : headers) {
                 if (pair.name.equalsIgnoreCase("Content-Disposition")) {
-                    if (!TextUtils.isEmpty(pair.value)) {
+                    if (!StringUtils.isEmpty(pair.value)) {
                         String[] parts = pair.value.split(";");
                         if (parts.length > 1) {
                             for (String part : parts) {
-                                if (!TextUtils.isEmpty(part) && part.contains("=")) {
+                                if (!StringUtils.isEmpty(part) && part.contains("=")) {
                                     String[] subparts = part.split("=");
                                     if (subparts.length == 2) {
                                         if (subparts[0].equalsIgnoreCase("filename")) {

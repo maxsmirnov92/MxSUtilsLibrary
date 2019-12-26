@@ -1,12 +1,11 @@
 package net.maxsmr.networkutils.loadutil.managers;
 
-import android.text.TextUtils;
-
-import androidx.core.util.Pair;
+import net.maxsmr.commonutils.data.Pair;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.StreamUtils;
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.NetworkHelper;
@@ -350,7 +349,7 @@ public class FtpConnectionManager {
     public synchronized Pair<InputStream, Long> retrieveFtpFileData(String workingDir, String fileName, FileType fileType) {
         logger.d("retrieveFtpFileData(), workingDir=" + workingDir + ", fileName=" + fileName + ", fileType=" + fileType);
 
-        if (TextUtils.isEmpty(workingDir) || TextUtils.isEmpty(fileName)) {
+        if (StringUtils.isEmpty(workingDir) || StringUtils.isEmpty(fileName)) {
             logger.e("incorrect remote working directory name or remote file name");
             return null;
         }
@@ -695,7 +694,7 @@ public class FtpConnectionManager {
     public synchronized boolean isFtpFileExists(String workingDir, String fileName) {
         logger.d("isFtpFileExists(), workingDir=" + workingDir + ", fileName=" + fileName);
 
-        if (TextUtils.isEmpty(workingDir) || TextUtils.isEmpty(fileName)) {
+        if (StringUtils.isEmpty(workingDir) || StringUtils.isEmpty(fileName)) {
             logger.e("incorrect remote working directory name or remote file name");
             return false;
         }
@@ -797,7 +796,7 @@ public class FtpConnectionManager {
 
             if (dstFtpFileNames != null && dstFtpFileNames.length > 0) {
                 for (String ftpFileName : dstFtpFileNames) {
-                    if (!TextUtils.isEmpty(ftpFileName)) {
+                    if (!StringUtils.isEmpty(ftpFileName)) {
                         if (ftpFileName.equalsIgnoreCase(encodedDstFileName)) {
                             logger.w("ftp file with name " + encodedDstFileName + " already exists");
                             if (!overwriteExisting) {

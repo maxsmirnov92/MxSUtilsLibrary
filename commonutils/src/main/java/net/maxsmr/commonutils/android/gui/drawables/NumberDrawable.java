@@ -6,12 +6,13 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
-import android.graphics.drawable.BitmapDrawable;import android.text.TextUtils;
+import android.graphics.drawable.BitmapDrawable;;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 
 public class NumberDrawable extends BitmapDrawable {
@@ -69,7 +70,7 @@ public class NumberDrawable extends BitmapDrawable {
     }
 
     public void setFontByAlias(String alias) {
-        if (!TextUtils.isEmpty(alias)) {
+        if (!StringUtils.isEmpty(alias)) {
             Typeface font = FontsHolder.getInstance().getFont(alias);
             if (!mFont.equals(font)) {
                 if (font != null) {

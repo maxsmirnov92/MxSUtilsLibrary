@@ -3,9 +3,7 @@ package net.maxsmr.commonutils.shell
 import net.maxsmr.commonutils.data.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import java.util.*
 import java.util.concurrent.atomic.AtomicInteger
-import kotlin.collections.ArrayList
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(ShellWrapper::class.java)
 
@@ -29,7 +27,7 @@ class ShellWrapper(
 
     fun getCommandsMap(): Map<Int, CommandInfo> {
 
-        check(!isDisposed) { ShellWrapper::class.java.simpleName + " is disposed" }
+        checkDisposed()
 
         val result = mutableMapOf<Int, CommandInfo>()
         synchronized(commandsMap) {
@@ -44,13 +42,13 @@ class ShellWrapper(
 
     private fun clearCommandsMap() {
 
-        check(!isDisposed) { ShellWrapper::class.java.simpleName + " is disposed" }
+        checkDisposed()
 
         synchronized(commandsMap) {
             for (v in commandsMap.values) {
                 if (v != null) {
                     v.result = null
-                    v.startedThreads = LinkedHashMap()
+                    v.startedThreads = mutableMapOf()
                 }
             }
             commandsMap.clear()
@@ -63,13 +61,13 @@ class ShellWrapper(
         isDisposed = true
     }
 
-    fun executeCommand(command: String, useSU: Boolean): CommandResult =
+    fun executeCommand(command: String, useSU: Boolean = false): CommandResult =
             executeCommand(mutableListOf(command), useSU)
 
-    fun executeCommand(commands: List<String>, useSU: Boolean): CommandResult {
+    fun executeCommand(commands: List<String>, useSU: Boolean = false): CommandResult {
         logger.d("Execute commands: \"$commands\", useSU: $useSU")
 
-        check(!isDisposed) { ShellWrapper::class.java.simpleName + " is disposed" }
+        checkDisposed()
 
         require(commands.isNotEmpty()) { "Nothing to execute" }
 
@@ -133,6 +131,10 @@ class ShellWrapper(
         }
 
         return result
+    }
+
+    private fun checkDisposed() {
+        check(!isDisposed) { ShellWrapper::class.java.simpleName + " is disposed" }
     }
 
     class CommandInfo {

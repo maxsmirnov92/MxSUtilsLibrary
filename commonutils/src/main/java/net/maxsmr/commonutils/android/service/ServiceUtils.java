@@ -8,11 +8,11 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.text.TextUtils;
 
 import net.maxsmr.commonutils.android.SdkUtils;
 import net.maxsmr.commonutils.android.hardware.DeviceUtils;
 import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -183,7 +183,7 @@ public final class ServiceUtils {
 
     @NotNull
     private static Intent createServiceIntent(String packageName, @NotNull Class<? extends Service> serviceClass, @Nullable Intent args)  {
-        if (TextUtils.isEmpty(packageName)) {
+        if (StringUtils.isEmpty(packageName)) {
             throw new IllegalArgumentException("Empty package name: " + packageName);
         }
         final ComponentName componentName = new ComponentName(packageName, serviceClass.getName());

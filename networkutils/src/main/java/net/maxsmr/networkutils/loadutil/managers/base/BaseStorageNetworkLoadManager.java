@@ -6,6 +6,7 @@ import net.maxsmr.networkutils.loadutil.managers.LoadListener;
 import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
+import net.maxsmr.tasksutils.runnable.RunnableInfoRunnable;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.storage.sync.collection.QueueSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
@@ -15,6 +16,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.List;
 
+import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 import static net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage.MAX_SIZE_UNLIMITED;
 
 @Deprecated
@@ -40,7 +42,7 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
     @NotNull
     protected final QueueSyncStorage<LI> uploadStorage;
 
-    private final ScheduledThreadPoolExecutorManager uploadListSynchronizer = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, getClass().getSimpleName() + "Synchronizer");
+    private final ScheduledThreadPoolExecutorManager uploadListSynchronizer = new ScheduledThreadPoolExecutorManager(getClass().getSimpleName() + "_Synchronizer");
 
     public BaseStorageNetworkLoadManager(@NotNull NetworkLoadManager<B, LI> loadManager, @NotNull Class<LI> clazzInstance, String path) {
         logger.d("BaseStorageNetworkLoadManager(), loadManager=" + loadManager + ", clazzInstance=" + clazzInstance + ", path=" + path);
@@ -109,8 +111,9 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
     public final void restartUploadSynchronizer() {
         checkReleased();
         logger.d("synchronize interval: " + synchronizeInterval);
-        uploadListSynchronizer.addRunnableTask(new SynchronizeUploadListRunnable());
-        uploadListSynchronizer.restart(synchronizeInterval);
+        uploadListSynchronizer.removeAllRunnableTasks();
+        uploadListSynchronizer.addRunnableTask(new SynchronizeUploadListRunnable(1), new ScheduledThreadPoolExecutorManager.RunOptions(0, synchronizeInterval, FIXED_DELAY));
+        uploadListSynchronizer.restart(1);
     }
 
     public final void startUploadSynchronizer() {
@@ -235,7 +238,11 @@ public abstract class BaseStorageNetworkLoadManager<B extends LoadRunnableInfo.B
         return false;
     }
 
-    private class SynchronizeUploadListRunnable implements Runnable {
+    private class SynchronizeUploadListRunnable extends RunnableInfoRunnable<RunnableInfo> {
+
+        protected SynchronizeUploadListRunnable(int id) {
+            super(new RunnableInfo(1));
+        }
 
         @Override
         public void run() {

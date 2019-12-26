@@ -6,8 +6,8 @@ import android.content.pm.PackageManager;
 import android.content.pm.Signature;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -165,6 +165,7 @@ public final class SignatureUtils {
             }
 
             @Override
+            @NotNull
             public String toString() {
                 return "SignatureInfo{" +
                         "subjectDN='" + subjectDN + '\'' +
@@ -175,7 +176,7 @@ public final class SignatureUtils {
             }
 
             public static boolean containsDebug(SignatureInfo info) {
-                return info != null && !TextUtils.isEmpty(info.subjectDN) && info.subjectDN.contains("Debug");
+                return info != null && !StringUtils.isEmpty(info.subjectDN) && info.subjectDN.contains("Debug");
             }
         }
     }

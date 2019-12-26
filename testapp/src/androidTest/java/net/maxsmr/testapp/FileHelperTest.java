@@ -1,8 +1,10 @@
 package net.maxsmr.testapp;
 
+import android.Manifest;
 import android.content.Context;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
+import androidx.test.rule.GrantPermissionRule;
 
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
@@ -10,6 +12,7 @@ import net.maxsmr.commonutils.data.FileHelper;
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -23,6 +26,11 @@ import static org.junit.Assert.assertNotNull;
 
 @RunWith(AndroidJUnit4.class)
 public class FileHelperTest extends LoggerTest {
+
+    @Rule
+    public GrantPermissionRule readPermissionRule = GrantPermissionRule.grant(Manifest.permission.READ_EXTERNAL_STORAGE);
+    @Rule
+    public GrantPermissionRule writePermissionRule = GrantPermissionRule.grant(Manifest.permission.WRITE_EXTERNAL_STORAGE);
 
     private Context context;
 
@@ -44,40 +52,8 @@ public class FileHelperTest extends LoggerTest {
         assertNotNull(filesDir);
         sourceDir = new File(filesDir, SOURCE_NAME);
         destinationDir = new File(filesDir, DEST_NAME);
-        FileHelper.delete(destinationDir, true, null, null, new FileHelper.IDeleteNotifier() {
-            @Override
-            public boolean onProcessing(@NotNull File current, @NotNull Set<File> deleted, int currentLevel) {
-                return true;
-            }
-
-            @Override
-            public boolean confirmDeleteFile(File file) {
-                return true;
-            }
-
-            @Override
-            public boolean confirmDeleteFolder(File folder) {
-                return true;
-            }
-
-            @Override
-            public void onDeleteFileFailed(File file) {
-
-            }
-
-            @Override
-            public void onDeleteFolderFailed(File folder) {
-
-            }
-        }, FileHelper.DEPTH_UNLIMITED);
-        for (int i = 0; i < 5; i++) {
-            File innerFile1 = FileHelper.createNewFile(String.valueOf(i + 20), new File(sourceDir.getAbsolutePath(), sourceDir.getName() + i).getAbsolutePath());
-            File innerFile2 = FileHelper.createNewFile(String.valueOf(i + 30), innerFile1.getParent() + File.separator + "1");
-            FileHelper.createNewFile(String.valueOf(i + 40), innerFile2.getParent() + File.separator + "2");
-            File newFile = FileHelper.createNewFile(String.valueOf(i), sourceDir.getAbsolutePath());
-            FileHelper.writeBytesToFile(newFile, BigInteger.valueOf(i).toByteArray(), false);
-            FileHelper.createNewDir(sourceDir.getAbsolutePath() + File.separator + sourceDir.getName() + i + "_empty");
-        }
+//        deleteFromDest()
+//        createTestFiles()
     }
 
     @Override
@@ -284,5 +260,43 @@ public class FileHelperTest extends LoggerTest {
         System.out.println("result=" + result);
     }
 
+    private void deleteFromDest() {
+        FileHelper.delete(destinationDir, true, null, null, new FileHelper.IDeleteNotifier() {
+            @Override
+            public boolean onProcessing(@NotNull File current, @NotNull Set<File> deleted, int currentLevel) {
+                return true;
+            }
 
+            @Override
+            public boolean confirmDeleteFile(File file) {
+                return true;
+            }
+
+            @Override
+            public boolean confirmDeleteFolder(File folder) {
+                return true;
+            }
+
+            @Override
+            public void onDeleteFileFailed(File file) {
+
+            }
+
+            @Override
+            public void onDeleteFolderFailed(File folder) {
+
+            }
+        }, FileHelper.DEPTH_UNLIMITED);
+    }
+
+    private void createTestFiles() {
+        for (int i = 0; i < 5; i++) {
+            File innerFile1 = FileHelper.createNewFile(String.valueOf(i + 20), new File(sourceDir.getAbsolutePath(), sourceDir.getName() + i).getAbsolutePath());
+            File innerFile2 = FileHelper.createNewFile(String.valueOf(i + 30), innerFile1.getParent() + File.separator + "1");
+            FileHelper.createNewFile(String.valueOf(i + 40), innerFile2.getParent() + File.separator + "2");
+            File newFile = FileHelper.createNewFile(String.valueOf(i), sourceDir.getAbsolutePath());
+            FileHelper.writeBytesToFile(newFile, BigInteger.valueOf(i).toByteArray(), false);
+            FileHelper.createNewDir(sourceDir.getAbsolutePath() + File.separator + sourceDir.getName() + i + "_empty");
+        }
+    }
 }

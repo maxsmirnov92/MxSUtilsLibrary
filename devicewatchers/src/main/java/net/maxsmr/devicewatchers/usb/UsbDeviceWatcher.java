@@ -1,8 +1,7 @@
 package net.maxsmr.devicewatchers.usb;
 
-import android.text.TextUtils;
-
 import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
@@ -19,7 +18,7 @@ import java.util.List;
 
 import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
-
+import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 
 public class UsbDeviceWatcher {
 
@@ -33,9 +32,9 @@ public class UsbDeviceWatcher {
 
     private final DevicesFlagsObservable flagsListeners = new DevicesFlagsObservable();
 
-    private final ScheduledThreadPoolExecutorManager deviceListWatcher = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, UsbDeviceWatcher.class.getSimpleName());
+    private final ScheduledThreadPoolExecutorManager deviceListWatcher = new ScheduledThreadPoolExecutorManager("UsbDeviceWatcher");
 
-    private final ScheduledThreadPoolExecutorManager deviceFinder = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, "UsbDeviceFinder");
+    private final ScheduledThreadPoolExecutorManager deviceFinder = new ScheduledThreadPoolExecutorManager("UsbDeviceFinder");
 
     private DeviceWatcherRunnable deviceListRunnable;
 
@@ -82,23 +81,22 @@ public class UsbDeviceWatcher {
         }
     }
 
-    public void restartDeviceListWatcher(int interval, DeviceInfo... devicesToWatch) {
+    public void restartDeviceListWatcher(long interval, DeviceInfo... devicesToWatch) {
         List<DeviceInfo> deviceInfos = devicesToWatch != null ? Arrays.asList(devicesToWatch) : null;
-        logger.d("restartDeviceWatcher(), interval=" + interval + ", devicesToWatch=" + deviceInfos);
+        logger.d("restartDeviceWatcher, interval=" + interval + ", devicesToWatch=" + deviceInfos);
         if (interval <= 0) {
             throw new IllegalArgumentException("incorrect interval: " + interval);
         }
-        stopDeviceListWatcher();
-        deviceListWatcher.addRunnableTask(deviceListRunnable = new DeviceWatcherRunnable(deviceInfos));
-        deviceListWatcher.restart(interval);
+        deviceListWatcher.removeAllRunnableTasks();
+        deviceListWatcher.addRunnableTask(deviceListRunnable = new DeviceWatcherRunnable(deviceInfos), new ScheduledThreadPoolExecutorManager.RunOptions(0, interval, FIXED_DELAY));
+        deviceListWatcher.restart(1);
     }
 
-    public void startDeviceWatcher(int interval, DeviceInfo... devicesToWatch) {
+    public void startDeviceWatcher(long interval, DeviceInfo... devicesToWatch) {
         if (!isDeviceListWatcherRunning()) {
             restartDeviceListWatcher(interval, devicesToWatch);
         }
     }
-
 
     public void addDevicesFlagsListener(@NotNull DevicesFlagsListener l) {
         flagsListeners.registerObserver(l);
@@ -120,25 +118,26 @@ public class UsbDeviceWatcher {
         }
     }
 
-    public void restartDeviceFinderWatcher(int evFlagsMask, boolean match) {
-        stopDeviceFinder();
-        deviceFinder.addRunnableTask(deviceFinderRunnable = new DeviceFinderRunnable(evFlagsMask, match));
-        deviceFinder.restart(DEFAULT_WATCH_INTERVAL);
+    public void restartDeviceFinderWatcher(int evFlagsMask, boolean match, long interval) {
+        logger.d("restartDeviceFinder, evFlagsMask=" + evFlagsMask + ", match=" + match + ", interval=" + interval);
+        if (interval <= 0) {
+            throw new IllegalArgumentException("incorrect interval: " + interval);
+        }
+        deviceFinder.removeAllRunnableTasks();
+        deviceFinder.addRunnableTask(deviceFinderRunnable = new DeviceFinderRunnable(evFlagsMask, match), new ScheduledThreadPoolExecutorManager.RunOptions(0, interval, FIXED_DELAY));
+        deviceFinder.restart(1);
     }
 
-    public void startDeviceFinder(int evFlagsMask, boolean match) {
-        logger.d("startDeviceFinder(), evFlagsMask=" + evFlagsMask + ", match=" + match);
+    public void startDeviceFinder(int evFlagsMask, boolean match, long interval) {
         if (!isDeviceFinderRunning()) {
-            restartDeviceFinderWatcher(evFlagsMask, match);
+            restartDeviceFinderWatcher(evFlagsMask, match, interval);
         }
     }
 
     public boolean isDeviceAttached(@Nullable DeviceInfo info) {
-
         if (!isDeviceListWatcherRunning()) {
             throw new IllegalStateException(DeviceWatcherRunnable.class.getName() + " is not running");
         }
-
         return deviceListRunnable.contains(info);
     }
 
@@ -265,7 +264,7 @@ public class UsbDeviceWatcher {
                 final int idLength = 9;
 
                 for (String str : output) {
-                    if (!TextUtils.isEmpty(str)) {
+                    if (!StringUtils.isEmpty(str)) {
 
                         int busStartIndex = str.contains("Bus") ? +str.indexOf("Bus") + "Bus".length() + 1 : -1;
                         int busEndIndex = busStartIndex + busLength;
@@ -295,7 +294,7 @@ public class UsbDeviceWatcher {
                         int vendorID = 0;
                         int productID = 0;
 
-                        if (!TextUtils.isEmpty(id)) {
+                        if (!StringUtils.isEmpty(id)) {
                             String[] parts = id.split(":");
                             if (parts.length == 2) {
                                 try {
@@ -382,7 +381,7 @@ public class UsbDeviceWatcher {
             List<Integer> evFlagsList = new ArrayList<>();
             if (!output.isEmpty()) {
                 for (String str : output) {
-                    if (!TextUtils.isEmpty(str)) {
+                    if (!StringUtils.isEmpty(str)) {
                         int evStartIndex = str.contains("EV=") ? str.indexOf("EV=") + "EV=".length() : -1;
                         int evEndIndex = str.length();
                         if (evStartIndex >= 0 && evStartIndex < evEndIndex) {

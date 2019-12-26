@@ -1,11 +1,10 @@
 package net.maxsmr.commonutils.data.gson.exclusion;
 
-import android.text.TextUtils;
-
 import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 
 import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.data.StringUtils;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -39,7 +38,7 @@ public class FieldsExclusionStrategy implements ExclusionStrategy {
             return true;
         }
         Class<?> clazz = f.getDeclaringClass();
-        return clazz == null || (TextUtils.isEmpty(f.getName()) || Predicate.Methods.contains(fieldNamesToCheck, element -> element != null && element.equals(f.getName()))) ||
+        return clazz == null || (StringUtils.isEmpty(f.getName()) || Predicate.Methods.contains(fieldNamesToCheck, element -> element != null && element.equals(f.getName()))) ||
                 (classesToCheck != null && Predicate.Methods.contains(classesToCheck, clazz::equals));
     }
 

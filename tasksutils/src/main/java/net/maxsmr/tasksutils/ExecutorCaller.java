@@ -51,5 +51,4 @@ public class ExecutorCaller {
     public <T> T getCallResult(@NotNull Callable<T> c, @Nullable Runnable callFinally) {
         return getCallResult(DEFAULT_EXECUTOR_CALL_TIMEOUT, c, callFinally);
     }
-
 }

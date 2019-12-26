@@ -1,7 +1,5 @@
 package net.maxsmr.commonutils.data;
 
-import android.text.TextUtils;
-
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -168,7 +166,7 @@ public final class StreamUtils {
             String charsetName
     ) {
         Collection<String> strings = readStringsFromInputStream(is, count, closeInput, charsetName);
-        return !strings.isEmpty() ? TextUtils.join(NEXT_LINE, strings) : null;
+        return !strings.isEmpty() ? StringUtils.join(NEXT_LINE, strings) : null;
     }
 
     /**
@@ -193,7 +191,7 @@ public final class StreamUtils {
             boolean closeInput,
             String charsetName
     ) {
-        if (TextUtils.isEmpty(charsetName)) {
+        if (StringUtils.isEmpty(charsetName)) {
             charsetName = "UTF-8";
         }
         if (is != null) {

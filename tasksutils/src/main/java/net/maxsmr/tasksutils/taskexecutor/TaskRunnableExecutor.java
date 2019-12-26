@@ -1,16 +1,15 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
-import android.os.AsyncTask;
 import android.os.Handler;
 
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.NamedThreadFactory;
+import net.maxsmr.tasksutils.runnable.WrappedTaskRunnable;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable.ITaskRestorer;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable.ITaskResultValidator;
-import net.maxsmr.tasksutils.taskexecutor.TaskRunnable.WrappedTaskRunnable;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -29,6 +28,8 @@ import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+
+import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.PENDING;
 
 public class TaskRunnableExecutor<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> {
 
@@ -185,7 +186,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, ProgressInfo, Result, 
     }
 
     public boolean isTasksLimitExceeded() {
-        return queuedTasksLimit != TASKS_NO_LIMIT && getWaitingTasksCount() >= queuedTasksLimit;
+        return queuedTasksLimit > 0 && getWaitingTasksCount() >= queuedTasksLimit;
     }
 
     public int getActiveThreadsCount() {
@@ -461,7 +462,7 @@ public class TaskRunnableExecutor<I extends RunnableInfo, ProgressInfo, Result, 
                 throw new RuntimeException("can't add task " + command + ": already added");
             }
 
-            command.rInfo.status = AsyncTask.Status.PENDING;
+            command.rInfo.status = PENDING;
 
             if (syncStorage != null) {
                 syncStorage.addLast(command.rInfo);

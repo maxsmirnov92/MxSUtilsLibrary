@@ -1,22 +1,22 @@
 package net.maxsmr.tasksutils;
 
-import android.os.Handler;
-import android.os.Looper;
-
+import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+import net.maxsmr.tasksutils.runnable.RunnableInfoRunnable;
+import net.maxsmr.tasksutils.runnable.WrappedRunnable;
+import net.maxsmr.tasksutils.runnable.WrappedRunnable.ExceptionHandler;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-
 
 public class ScheduledThreadPoolExecutorManager {
 
@@ -24,12 +24,9 @@ public class ScheduledThreadPoolExecutorManager {
 
     private final Object lock = new Object();
 
-    private final List<Runnable> runnableList = new ArrayList<>();
+    private final Map<RunnableInfoRunnable<?>, RunOptions> runnablesMap = new LinkedHashMap<>();
 
-    private final List<ScheduledFuture<?>> currentScheduledFutures = new ArrayList<>();
-
-    @NotNull
-    private final ScheduleMode scheduleMode;
+    private final Map<RunnableInfoRunnable<?>, ScheduledFuture<?>> currentScheduledFutures = new LinkedHashMap<>();
 
     private final String poolName;
 
@@ -38,18 +35,13 @@ public class ScheduledThreadPoolExecutorManager {
 
     private ScheduledThreadPoolExecutor executor;
 
-    private long initialDelayMs = 0;
-
-    private long intervalMs = 0;
-
     private int workersCount = 1;
 
-    public ScheduledThreadPoolExecutorManager(@NotNull ScheduleMode scheduleMode, String poolName) {
-        this(scheduleMode, poolName, new ExceptionHandler.DefaultExceptionHandler());
+    public ScheduledThreadPoolExecutorManager(String poolName) {
+        this(poolName, ExceptionHandler.STUB);
     }
 
-    public ScheduledThreadPoolExecutorManager(@NotNull ScheduleMode scheduleMode, String poolName, @Nullable ExceptionHandler exceptionHandler) {
-        this.scheduleMode = scheduleMode;
+    public ScheduledThreadPoolExecutorManager(String poolName, @Nullable ExceptionHandler exceptionHandler) {
         this.poolName = poolName;
         this.setExceptionHandler(exceptionHandler);
     }
@@ -60,61 +52,61 @@ public class ScheduledThreadPoolExecutorManager {
         }
     }
 
-    public List<Runnable> getRunnableTasks() {
+    public Map<Runnable, RunOptions> getRunnableTasks() {
         synchronized (lock) {
-            return Collections.unmodifiableList(runnableList);
+            return new LinkedHashMap<>(runnablesMap);
         }
     }
 
-    public void addRunnableTasks(Collection<Runnable> runnables) {
+    public void addRunnableTasks(Map<RunnableInfoRunnable<?>, RunOptions> runnables) {
         if (runnables != null) {
-            for (Runnable r : runnables) {
-                addRunnableTask(r);
+            for (Map.Entry<RunnableInfoRunnable<?>, RunOptions> r : runnables.entrySet()) {
+                addRunnableTask(r.getKey(), r.getValue());
             }
         }
     }
 
-    public void addRunnableTask(@NotNull Runnable runnable) throws NullPointerException {
-
+    public void addRunnableTask(@NotNull RunnableInfoRunnable runnable, @NotNull RunOptions options) throws NullPointerException {
         synchronized (lock) {
-
-            runnableList.add(runnable);
-
-            if (isRunning()) {
-                restart(initialDelayMs, intervalMs, workersCount);
-            }
-
-        }
-    }
-
-    public void removeRunnableTask(Runnable runnable) {
-
-        synchronized (lock) {
-
-            if (runnableList.contains(runnable)) {
-                runnableList.remove(runnable);
+            if (!Predicate.Methods.contains(runnablesMap.keySet(), element -> element.rInfo.id == runnable.rInfo.id)) {
+                runnablesMap.put(runnable, options);
                 if (isRunning()) {
-                    restart(initialDelayMs, intervalMs, workersCount);
+                    scheduleRunnableTask(runnable, options);
                 }
+//            if (isRunning()) {
+//                restart(workersCount);
+//            }
             }
+        }
+    }
 
+    public void removeRunnableTask(RunnableInfoRunnable runnable) {
+        synchronized (lock) {
+            if (Predicate.Methods.contains(runnablesMap.keySet(), element -> element.rInfo.id == runnable.rInfo.id)) {
+                runnablesMap.remove(runnable);
+                final ScheduledFuture<?> future = currentScheduledFutures.get(runnable);
+                if (future != null) {
+                    future.cancel(true);
+                }
+//                if (isRunning()) {
+//                    restart(workersCount);
+//                }
+            }
         }
     }
 
     public void removeAllRunnableTasks() {
         synchronized (lock) {
-
             if (isRunning()) {
                 stop();
             }
-
-            runnableList.clear();
+            runnablesMap.clear();
         }
     }
 
     public List<ScheduledFuture<?>> getCurrentScheduledFutures() {
         synchronized (lock) {
-            return Collections.unmodifiableList(currentScheduledFutures);
+            return new ArrayList<>(currentScheduledFutures.values());
         }
     }
 
@@ -124,61 +116,36 @@ public class ScheduledThreadPoolExecutorManager {
         }
     }
 
-    public long getInitialDelayMs() {
-        return initialDelayMs;
-    }
-
-    public long getIntervalMs() {
-        return intervalMs;
-    }
-
     public int getWorkersCount() {
         return workersCount;
     }
 
-    public void start(long intervalMs) {
-        start(0, intervalMs, 1);
+    public void start() {
+        start(1);
     }
 
-    public void start(long delayMs, long intervalMs, int workersCount) {
+    public void start(int workersCount) {
         if (!isRunning()) {
-            restart(delayMs, intervalMs, workersCount);
+            restart(workersCount);
         }
     }
 
-    public void restart(long intervalMs) {
-        restart(0, intervalMs, 1);
+    public void restart() {
+        restart(1);
     }
 
-    public void restart(long delayMs, long intervalMs, int workersCount) {
-
+    public void restart(int workersCount) {
         synchronized (lock) {
-
-            if (intervalMs <= 0)
-                throw new IllegalArgumentException("can't start executor: incorrect intervalMs: " + intervalMs);
-
-            if (delayMs < 0)
-                throw new IllegalArgumentException("can't start executor: incorrect initialDelayMs: " + delayMs);
 
             if (workersCount < 1)
                 throw new IllegalArgumentException("can't start executor: incorrect workersCount: " + workersCount);
-
-            if (runnableList.isEmpty())
-                throw new RuntimeException("no runnables to schedule");
 
             stop();
 
             executor = new ScheduledThreadPoolExecutor(workersCount, new NamedThreadFactory(poolName));
 
-            for (Runnable runnable : runnableList) {
-                switch (scheduleMode) {
-                    case FIXED_RATE:
-                        currentScheduledFutures.add(executor.scheduleAtFixedRate(new WrappedRunnable(runnable), this.initialDelayMs = delayMs, this.intervalMs = intervalMs, TimeUnit.MILLISECONDS));
-                        break;
-                    case FIXED_DELAY:
-                        currentScheduledFutures.add(executor.scheduleWithFixedDelay(new WrappedRunnable(runnable), this.initialDelayMs = delayMs, this.intervalMs = intervalMs, TimeUnit.MILLISECONDS));
-                        break;
-                }
+            for (Map.Entry<RunnableInfoRunnable<?>, RunOptions> e : runnablesMap.entrySet()) {
+                scheduleRunnableTask(e.getKey(), e.getValue());
             }
         }
     }
@@ -215,7 +182,7 @@ public class ScheduledThreadPoolExecutorManager {
             }
             executor = null;
 
-            for (ScheduledFuture<?> future : currentScheduledFutures) {
+            for (ScheduledFuture<?> future : currentScheduledFutures.values()) {
                 if (future != null) {
                     future.cancel(true);
                 }
@@ -225,27 +192,22 @@ public class ScheduledThreadPoolExecutorManager {
         }
     }
 
-    final class WrappedRunnable implements Runnable {
+    @SuppressWarnings("unchecked")
+    private void scheduleRunnableTask(RunnableInfoRunnable<?> runnable, RunOptions options) {
 
-        @NotNull
-        final Runnable command;
+        if (options.intervalMs <= 0)
+            throw new IllegalArgumentException("can't start executor: incorrect intervalMs: " + options.intervalMs);
 
-        WrappedRunnable(@NotNull Runnable command) {
-            this.command = command;
-        }
+        if (options.initialDelayMs < 0)
+            throw new IllegalArgumentException("can't start executor: incorrect initialDelayMs: " + options.initialDelayMs);
 
-        @Override
-        public void run() {
-            try {
-                command.run();
-            } catch (Throwable e) {
-                logger.e("An Exception occurred during run(): " + e.getMessage(), e);
-                synchronized (lock) {
-                    if (exceptionHandler != null) {
-                        exceptionHandler.onRunnableCrash(e);
-                    }
-                }
-            }
+        switch (options.scheduleMode) {
+            case FIXED_RATE:
+                currentScheduledFutures.put(runnable, executor.scheduleAtFixedRate(new WrappedRunnable(runnable, exceptionHandler), options.initialDelayMs, options.intervalMs, TimeUnit.MILLISECONDS));
+                break;
+            case FIXED_DELAY:
+                currentScheduledFutures.put(runnable, executor.scheduleWithFixedDelay(new WrappedRunnable(runnable, exceptionHandler), options.initialDelayMs, options.intervalMs, TimeUnit.MILLISECONDS));
+                break;
         }
     }
 
@@ -253,24 +215,34 @@ public class ScheduledThreadPoolExecutorManager {
         FIXED_RATE, FIXED_DELAY
     }
 
-    public interface ExceptionHandler {
+    public static class RunOptions {
 
-        void onRunnableCrash(Throwable e);
+        public final long initialDelayMs;
 
-        class DefaultExceptionHandler implements ExceptionHandler {
+        public final long intervalMs;
 
-            private final Handler handler = new Handler(Looper.getMainLooper());
+        @NotNull
+        public final ScheduleMode scheduleMode;
 
-            @Override
-            public void onRunnableCrash(final Throwable e) {
-                handler.post(new Runnable() {
-                    @Override
-                    public void run() {
-                        throw new RuntimeException(e);
-                    }
-                });
-            }
+        public RunOptions(
+                long initialDelayMs,
+                long intervalMs,
+                @NotNull
+                ScheduleMode scheduleMode
+        ) {
+            this.initialDelayMs = initialDelayMs;
+            this.intervalMs = intervalMs;
+            this.scheduleMode = scheduleMode;
+        }
+
+        @Override
+        @NotNull
+        public String toString() {
+            return "RunOptions{" +
+                    "initialDelayMs=" + initialDelayMs +
+                    ", intervalMs=" + intervalMs +
+                    ", scheduleMode=" + scheduleMode +
+                    '}';
         }
     }
-
 }

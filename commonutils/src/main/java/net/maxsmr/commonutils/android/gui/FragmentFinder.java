@@ -1,7 +1,6 @@
 package net.maxsmr.commonutils.android.gui;
 
-
-import androidx.core.util.Pair;
+import net.maxsmr.commonutils.data.Pair;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 

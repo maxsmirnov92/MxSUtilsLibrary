@@ -2,7 +2,7 @@ package net.maxsmr.commonutils.android.hardware;
 
 import android.content.Context;
 import org.jetbrains.annotations.NotNull;
-import android.util.Pair;
+import net.maxsmr.commonutils.data.Pair;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;

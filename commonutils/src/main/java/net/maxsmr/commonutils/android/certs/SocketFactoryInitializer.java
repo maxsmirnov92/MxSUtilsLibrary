@@ -3,7 +3,7 @@ package net.maxsmr.commonutils.android.certs;
 import android.content.Context;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import android.util.Pair;
+import net.maxsmr.commonutils.data.Pair;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;

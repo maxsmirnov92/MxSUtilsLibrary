@@ -3,18 +3,11 @@ package net.maxsmr.commonutils.android.prefs
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
-import android.text.TextUtils
+
 import net.maxsmr.commonutils.android.prefs.PreferencesHolder.PrefType
 import net.maxsmr.commonutils.data.EMPTY_STRING
 import net.maxsmr.commonutils.data.Observable
-
-const val EMPTY_BOOLEAN_SETTING = false
-const val EMPTY_INT_SETTING = -1
-const val EMPTY_LONG_SETTING = -1L
-const val EMPTY_FLOAT_SETTING = -1f
-const val EMPTY_DOUBLE_SETTING = -1.0
-val EMPTY_SET_SETTING = HashSet<String>()
-val EMPTY_STRING_SETTING = EMPTY_STRING
+import net.maxsmr.commonutils.data.StringUtils
 
 class PreferencesManager @JvmOverloads constructor(
         private val context: Context,
@@ -25,7 +18,7 @@ class PreferencesManager @JvmOverloads constructor(
     private val preferences: SharedPreferences =
             PreferencesHolder.getSharedPreferences(context, preferencesName, mode)
     private val preferencesName: String =
-            if (!TextUtils.isEmpty(preferencesName)) preferencesName else context.packageName + "_preferences"
+            if (!StringUtils.isEmpty(preferencesName)) preferencesName else context.packageName + "_preferences"
 
     private val changeObservable = ChangeObservable()
 

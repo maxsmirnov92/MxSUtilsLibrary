@@ -4,7 +4,7 @@ import android.os.Handler;
 import android.os.Looper;
 
 import androidx.annotation.CallSuper;
-import androidx.core.util.Pair;
+import net.maxsmr.commonutils.data.Pair;
 
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.logger.BaseLogger;

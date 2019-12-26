@@ -11,6 +11,7 @@ import android.net.Uri;
 import android.provider.BaseColumns;
 import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -34,7 +35,7 @@ public final class ProviderUtils {
     }
 
     public static boolean isCorrectUri(@Nullable Uri uri) {
-        return uri != null && !TextUtils.isEmpty(uri.getScheme()) && uri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_CONTENT);
+        return uri != null && !StringUtils.isEmpty(uri.getScheme()) && uri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_CONTENT);
     }
 
     @Nullable
@@ -44,7 +45,7 @@ public final class ProviderUtils {
 
     @Nullable
     public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NotNull Context context, @Nullable String packageName, @NotNull Class<P> providerClass, int flags) {
-        if (!TextUtils.isEmpty(packageName)) {
+        if (!StringUtils.isEmpty(packageName)) {
             try {
                 return context.getPackageManager().getProviderInfo(new ComponentName(packageName, providerClass.getName()), flags);
             } catch (PackageManager.NameNotFoundException e) {
@@ -114,7 +115,7 @@ public final class ProviderUtils {
     @Nullable
     public static <V> V getDataFromCursor(@Nullable Cursor c, @Nullable String columnName, @NotNull Class<V> dataClass) {
         if (c != null && !c.isClosed() && c.getCount() > 0) {
-            if (!TextUtils.isEmpty(columnName)) {
+            if (!StringUtils.isEmpty(columnName)) {
                 columnName = columnName.toLowerCase(Locale.getDefault());
                 if (c.getPosition() == -1) {
                     c.moveToFirst();

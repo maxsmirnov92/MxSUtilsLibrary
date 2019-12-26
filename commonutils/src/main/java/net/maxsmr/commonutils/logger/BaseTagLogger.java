@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.logger;
 
-import android.text.TextUtils;
+import net.maxsmr.commonutils.data.StringUtils;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -11,7 +11,7 @@ public abstract class BaseTagLogger extends BaseLogger {
     protected final String tag;
 
     protected BaseTagLogger(@Nullable String tag) {
-        if (TextUtils.isEmpty(tag)) {
+        if (StringUtils.isEmpty(tag)) {
             throw new IllegalArgumentException("log tag is empty");
         }
         this.tag = tag;
@@ -113,5 +113,4 @@ public abstract class BaseTagLogger extends BaseLogger {
 
         }
     }
-
 }

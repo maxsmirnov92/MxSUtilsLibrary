@@ -10,9 +10,9 @@ import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.MediaStore;
-import android.text.TextUtils;
 
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -46,7 +46,7 @@ public final class MetadataRetriever {
             retriever = new MediaMetadataRetriever();
 
             try {
-                if (TextUtils.isEmpty(resourceUri.getScheme()) || resourceUri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_FILE)) {
+                if (StringUtils.isEmpty(resourceUri.getScheme()) || resourceUri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_FILE)) {
                     retriever.setDataSource(resourceUri.getPath());
                 } else {
                     if (context == null && (headers == null)) {
@@ -140,7 +140,7 @@ public final class MetadataRetriever {
 
     @Nullable
     public static <M> M extractMetadataField(@Nullable String filePath, int keyCode, @NotNull Class<M> clazz, @Nullable M defaultValue) {
-        return !TextUtils.isEmpty(filePath) ? extractMetadataField(null, Uri.parse(filePath), null, keyCode, clazz, defaultValue) : null;
+        return !StringUtils.isEmpty(filePath) ? extractMetadataField(null, Uri.parse(filePath), null, keyCode, clazz, defaultValue) : null;
     }
 
     @Nullable
@@ -150,7 +150,7 @@ public final class MetadataRetriever {
 
     @Nullable
     public static <M> M extractMetadataField(@Nullable String url, @Nullable Map<String, String> headers, int keyCode, @NotNull Class<M> clazz, @Nullable M defaultValue) {
-        return !TextUtils.isEmpty(url) ? extractMetadataField(null, Uri.parse(url), headers, keyCode, clazz, defaultValue) : null;
+        return !StringUtils.isEmpty(url) ? extractMetadataField(null, Uri.parse(url), headers, keyCode, clazz, defaultValue) : null;
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -189,12 +189,12 @@ public final class MetadataRetriever {
 
     @NotNull
     public static MediaMetadata extractMetadata(@Nullable String filePath) {
-        return !TextUtils.isEmpty(filePath) ? extractMetadata(null, Uri.parse(filePath), null) : new MediaMetadata();
+        return !StringUtils.isEmpty(filePath) ? extractMetadata(null, Uri.parse(filePath), null) : new MediaMetadata();
     }
 
     @NotNull
     public static MediaMetadata extractMetadata(@Nullable String url, @Nullable Map<String, String> headers) {
-        return !TextUtils.isEmpty(url) ? extractMetadata(null, Uri.parse(url), headers) : new MediaMetadata();
+        return !StringUtils.isEmpty(url) ? extractMetadata(null, Uri.parse(url), headers) : new MediaMetadata();
     }
 
     @SuppressWarnings("ConstantConditions")
@@ -261,7 +261,7 @@ public final class MetadataRetriever {
     @Nullable
     public static <M> M extractMetadataField(@NotNull MediaMetadataRetriever retriever, int keyCode, @NotNull Class<M> clazz, @Nullable M defaultValue) {
         final String value = retriever.extractMetadata(keyCode);
-        final boolean isEmpty = TextUtils.isEmpty(value);
+        final boolean isEmpty = StringUtils.isEmpty(value);
         try {
             if (clazz.isAssignableFrom(String.class)) {
                 return !isEmpty ? (M) value : defaultValue;
@@ -327,7 +327,7 @@ public final class MetadataRetriever {
 
     @Nullable
     public static Bitmap getMediaFileCoverArt(@NotNull Context context, @Nullable String filePath) {
-        return !TextUtils.isEmpty(filePath) ? getMediaFileCoverArt(context, new Uri.Builder().scheme(ContentResolver.SCHEME_FILE).appendEncodedPath(filePath).toString()) : null;
+        return !StringUtils.isEmpty(filePath) ? getMediaFileCoverArt(context, new Uri.Builder().scheme(ContentResolver.SCHEME_FILE).appendEncodedPath(filePath).toString()) : null;
     }
 
     @Nullable
@@ -337,7 +337,7 @@ public final class MetadataRetriever {
             return null;
         }
 
-        if (!TextUtils.isEmpty(resourceUri.getScheme()) && !ContentResolver.SCHEME_FILE.equalsIgnoreCase(resourceUri.getScheme())) {
+        if (!StringUtils.isEmpty(resourceUri.getScheme()) && !ContentResolver.SCHEME_FILE.equalsIgnoreCase(resourceUri.getScheme())) {
             throw new IllegalArgumentException("incorrect uri scheme: " + resourceUri.getScheme() + ", must be " + ContentResolver.SCHEME_FILE);
         }
 
@@ -354,11 +354,11 @@ public final class MetadataRetriever {
     }
 
     public static long extractMediaDuration(@Nullable String filePath) {
-        return !TextUtils.isEmpty(filePath) ? extractMediaDuration(null, Uri.parse(filePath), null) : 0;
+        return !StringUtils.isEmpty(filePath) ? extractMediaDuration(null, Uri.parse(filePath), null) : 0;
     }
 
     public static long extractMediaDuration(@Nullable String uri, @Nullable Map<String, String> headers) {
-        return !TextUtils.isEmpty(uri) ? extractMediaDuration(null, Uri.parse(uri), headers) : 0;
+        return !StringUtils.isEmpty(uri) ? extractMediaDuration(null, Uri.parse(uri), headers) : 0;
     }
 
     public static long extractMediaDuration(@Nullable Context context, @Nullable Uri resourceUri, @Nullable Map<String, String> headers) {
@@ -394,12 +394,12 @@ public final class MetadataRetriever {
 
     @Nullable
     public static Bitmap extractFrameAtPosition(@Nullable String filePath, long positionMs) {
-        return !TextUtils.isEmpty(filePath) ? extractFrameAtPosition(null, Uri.parse(filePath), null, positionMs) : null;
+        return !StringUtils.isEmpty(filePath) ? extractFrameAtPosition(null, Uri.parse(filePath), null, positionMs) : null;
     }
 
     @Nullable
     public static Bitmap extractFrameAtPosition(@Nullable String uri, @Nullable Map<String, String> headers, long positionMs) {
-        return !TextUtils.isEmpty(uri) ? extractFrameAtPosition(null, Uri.parse(uri), headers, positionMs) : null;
+        return !StringUtils.isEmpty(uri) ? extractFrameAtPosition(null, Uri.parse(uri), headers, positionMs) : null;
     }
 
     @Nullable
@@ -441,12 +441,12 @@ public final class MetadataRetriever {
 
     @NotNull
     public static Map<Long, Bitmap> extractFrames(@Nullable String filePath, int framesCount) {
-        return !TextUtils.isEmpty(filePath) ? extractFrames(null, Uri.parse(filePath), null, framesCount) : Collections.<Long, Bitmap>emptyMap();
+        return !StringUtils.isEmpty(filePath) ? extractFrames(null, Uri.parse(filePath), null, framesCount) : Collections.<Long, Bitmap>emptyMap();
     }
 
     @NotNull
     public static Map<Long, Bitmap> extractFrames(@Nullable String uri, @Nullable Map<String, String> headers, int framesCount) {
-        return !TextUtils.isEmpty(uri) ? extractFrames(null, Uri.parse(uri), headers, framesCount) : Collections.<Long, Bitmap>emptyMap();
+        return !StringUtils.isEmpty(uri) ? extractFrames(null, Uri.parse(uri), headers, framesCount) : Collections.<Long, Bitmap>emptyMap();
     }
 
     @NotNull

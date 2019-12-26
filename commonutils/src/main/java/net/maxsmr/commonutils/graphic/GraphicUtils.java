@@ -33,7 +33,7 @@ import android.renderscript.Element;
 import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.renderscript.Type;
-import android.text.TextUtils;
+
 import android.util.TypedValue;
 
 import androidx.annotation.ColorInt;
@@ -45,6 +45,7 @@ import androidx.palette.graphics.Palette;
 import net.maxsmr.commonutils.android.gui.GuiUtils;
 import net.maxsmr.commonutils.android.media.MetadataRetriever;
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -127,7 +128,7 @@ public final class GraphicUtils {
             return bitmap;
         }
 
-        if (TextUtils.isEmpty(text)) {
+        if (StringUtils.isEmpty(text)) {
             logger.e("text is null or empty");
             return bitmap;
         }
@@ -169,7 +170,7 @@ public final class GraphicUtils {
             return fontSize;
         }
 
-        if (TextUtils.isEmpty(text)) {
+        if (StringUtils.isEmpty(text)) {
             logger.e("text is empty");
             return fontSize;
         }
@@ -234,7 +235,7 @@ public final class GraphicUtils {
 
         String ext = getFileExtByCompressFormat(format);
 
-        if (TextUtils.isEmpty(ext)) {
+        if (StringUtils.isEmpty(ext)) {
             logger.e("unknown format: " + format);
             ext = FileHelper.getFileExtension(file.getName());
         }
@@ -829,7 +830,7 @@ public final class GraphicUtils {
         if (isBitmapCorrect(sourceBitmap)) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
                 final String path = FileHelper.getPath(context, uri);
-                if (!TextUtils.isEmpty(path)) {
+                if (!StringUtils.isEmpty(path)) {
                     ExifInterface exif = null;
                     try {
                         exif = new ExifInterface(path);
@@ -987,7 +988,7 @@ public final class GraphicUtils {
         }
         if (attributes != null) {
             for (String attr : attributes) {
-                if (!TextUtils.isEmpty(attr)) {
+                if (!StringUtils.isEmpty(attr)) {
                     final String value = oldExif.getAttribute(attr);
                     if (value != null) {
                         newExif.setAttribute(attr, value);

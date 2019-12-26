@@ -6,8 +6,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.location.Location;
 import android.location.LocationManager;
-import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -21,7 +21,7 @@ public class LocationUtils {
     private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(LocationUtils.class);
 
     public static boolean isProviderEnabled(@NotNull Context context, @Nullable String provider) {
-        if (TextUtils.isEmpty(provider)) {
+        if (StringUtils.isEmpty(provider)) {
             return false;
         }
         final LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);

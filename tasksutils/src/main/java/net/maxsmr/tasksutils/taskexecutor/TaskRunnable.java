@@ -9,6 +9,7 @@ import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+import net.maxsmr.tasksutils.runnable.RunnableInfoRunnable;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -17,11 +18,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static android.os.AsyncTask.Status.FINISHED;
-import static android.os.AsyncTask.Status.PENDING;
-import static android.os.AsyncTask.Status.RUNNING;
+import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.FINISHED;
+import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.PENDING;
+import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.RUNNING;
 
-public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result> implements Runnable {
+
+public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result> extends RunnableInfoRunnable<I> {
 
     private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(TaskRunnable.class);
 
@@ -34,15 +36,12 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     @Nullable
     private Handler callbacksHandler = null;
 
-    @NotNull
-    public final I rInfo;
-
     private int retryCount = 0;
 
     private Result result;
 
-    public TaskRunnable(@NotNull I rInfo) {
-        this.rInfo = rInfo;
+    protected TaskRunnable(@NotNull I rInfo) {
+        super(rInfo);
     }
 
     @SuppressWarnings("unchecked")
@@ -90,7 +89,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     }
 
     @NotNull
-    public AsyncTask.Status getStatus() {
+    public RunnableInfo.Status getStatus() {
         synchronized (rInfo) {
             return rInfo.status;
         }
@@ -116,7 +115,7 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
     @Override
     public final void run() {
 
-        if (rInfo.status != AsyncTask.Status.PENDING) {
+        if (rInfo.status != PENDING) {
             switch (rInfo.status) {
                 case RUNNING:
                     throw new IllegalStateException("Cannot execute task:"
@@ -374,31 +373,6 @@ public abstract class TaskRunnable<I extends RunnableInfo, ProgressInfo, Result>
         }
     }
 
-    public static final class WrappedTaskRunnable<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> implements Runnable {
 
-        @NotNull
-        final T command;
-
-        public WrappedTaskRunnable(@NotNull T command) {
-            this.command = command;
-        }
-
-        @Override
-        public void run() {
-            try {
-                command.run();
-            } catch (Throwable e) {
-                logger.e("an Exception occurred during run(): " + e.getMessage(), e);
-                throw new RuntimeException("an Exception occurred during run()", e);
-            }
-        }
-
-        @Override
-        public String toString() {
-            return "WrappedTaskRunnable{" +
-                    "command=" + command +
-                    '}';
-        }
-    }
 
 }

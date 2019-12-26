@@ -2,13 +2,15 @@ package net.maxsmr.commonutils.android.gui.fonts;
 
 import android.content.Context;
 import android.graphics.Typeface;
-import android.text.TextUtils;
+;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ListView;
 import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
+
+import net.maxsmr.commonutils.data.StringUtils;
 
 import org.jetbrains.annotations.Nullable;
 
@@ -51,7 +53,7 @@ public final class FontsHolder {
 
     public Typeface loadFont(File file, String alias) {
         Typeface tf = null;
-        if (!TextUtils.isEmpty(alias)) {
+        if (!StringUtils.isEmpty(alias)) {
             if ((tf = loadedFonts.get(alias)) != null) return tf;
             tf = Typeface.createFromFile(file);
             loadedFonts.put(alias, tf);
@@ -79,7 +81,7 @@ public final class FontsHolder {
                 if (withViewTag) {
                     if (view.getTag() != null) {
                         alias = view.getTag().toString();
-                        if (TextUtils.isEmpty(alias)) {
+                        if (StringUtils.isEmpty(alias)) {
                             alias = tag;
                         }
                     }

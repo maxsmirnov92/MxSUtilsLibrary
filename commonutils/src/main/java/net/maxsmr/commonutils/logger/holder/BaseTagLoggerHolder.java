@@ -1,7 +1,8 @@
 package net.maxsmr.commonutils.logger.holder;
 
 import org.jetbrains.annotations.NotNull;
-import android.text.TextUtils;
+
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseTagLogger;
 
 import java.util.Collections;
@@ -19,7 +20,7 @@ public abstract class BaseTagLoggerHolder extends BaseLoggerHolder {
 
     public BaseTagLoggerHolder(String logTag, boolean isNullInstancesAllowed) {
         super(isNullInstancesAllowed);
-        if (TextUtils.isEmpty(logTag)) {
+        if (StringUtils.isEmpty(logTag)) {
             throw new IllegalArgumentException("log tag is empty");
         }
         this.logTag = logTag;

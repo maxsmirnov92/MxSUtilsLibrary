@@ -5,11 +5,12 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.text.TextUtils;
 
 import androidx.annotation.CallSuper;
 import androidx.annotation.MainThread;
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
+
+import net.maxsmr.commonutils.data.StringUtils;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -42,7 +43,7 @@ public class ServiceBroadcastReceiver extends BroadcastReceiver {
     @CallSuper
     public void onReceive(Context context, Intent intent) {
         String name = intent.getStringExtra(EXTRA_SERVICE_NAME);
-        if (!TextUtils.isEmpty(name)) {
+        if (!StringUtils.isEmpty(name)) {
             boolean contains = true;
             if (!serviceClasses.isEmpty()) {
                 contains = false;
@@ -95,7 +96,7 @@ public class ServiceBroadcastReceiver extends BroadcastReceiver {
     }
 
     private static <S extends Service> void sendBroadcast(@NotNull S service, String action) {
-        if (TextUtils.isEmpty(action)) {
+        if (StringUtils.isEmpty(action)) {
             throw new IllegalArgumentException("empty action");
         }
         LocalBroadcastManager.getInstance(service).sendBroadcast(new Intent(action).putExtra(EXTRA_SERVICE_NAME, service.getClass().getName()));

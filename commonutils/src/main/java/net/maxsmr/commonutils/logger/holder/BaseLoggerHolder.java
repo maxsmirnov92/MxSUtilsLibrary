@@ -1,10 +1,10 @@
 package net.maxsmr.commonutils.logger.holder;
 
-import android.text.TextUtils;
-
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.Collections;
 import java.util.LinkedHashMap;
@@ -66,7 +66,7 @@ public abstract class BaseLoggerHolder {
      * */
     @SuppressWarnings("unchecked")
     public <L extends BaseLogger> L getLogger(String className) {
-        if (TextUtils.isEmpty(className)) {
+        if (StringUtils.isEmpty(className)) {
             throw new IllegalArgumentException("className is empty");
         }
         synchronized (loggersMap) {
@@ -89,6 +89,6 @@ public abstract class BaseLoggerHolder {
         }
     }
 
+    @Nullable
     protected abstract BaseLogger createLogger(@NotNull String className);
-
 }

@@ -1,15 +1,15 @@
 package net.maxsmr.devicewatchers.storage;
 
-
-import android.text.TextUtils;
-
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.data.Units;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
+import net.maxsmr.tasksutils.runnable.RunnableInfoRunnable;
+import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -23,6 +23,7 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 
 public final class StorageStateWatcher {
 
@@ -32,7 +33,7 @@ public final class StorageStateWatcher {
 
     public static final int DEFAULT_WATCH_INTERVAL = 20000;
 
-    private final ScheduledThreadPoolExecutorManager executor = new ScheduledThreadPoolExecutorManager(ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY, StorageStateWatcher.class.getSimpleName());
+    private final ScheduledThreadPoolExecutorManager executor = new ScheduledThreadPoolExecutorManager("StorageStateWatcher");
 
     @NotNull
     private final StorageWatchSettings settings;
@@ -80,7 +81,6 @@ public final class StorageStateWatcher {
     }
 
 
-
     public boolean isEnabled() {
         synchronized (executor) { // нельзя чтобы треды, запущенные из executor'а вставали на синхронизированные области одновременно, будет deadlock
             return isEnabled;
@@ -99,31 +99,31 @@ public final class StorageStateWatcher {
 
     public void stop() {
         logger.d("stop()");
-        if (isRunning()) {
-            executor.removeAllRunnableTasks();
-        }
+        executor.stop();
     }
 
     public void restart(long interval) {
-        if (interval <= 0) {
-            throw new IllegalArgumentException("incorrect interval: " + interval);
-        }
-        stop();
-        executor.addRunnableTask(new StorageStateWatcherRunnable());
-        executor.restart(interval);
+        logger.d("restart()");
+        executor.removeAllRunnableTasks();
+        executor.addRunnableTask(new StorageStateWatcherRunnable(), new ScheduledThreadPoolExecutorManager.RunOptions(0, interval, FIXED_DELAY));
+        executor.restart(1);
     }
 
     public void start(long interval) {
-        logger.d("start(), interval=" + interval);
+        logger.d("start()");
         if (!isRunning()) {
             restart(interval);
         }
     }
 
-    private class StorageStateWatcherRunnable implements Runnable {
+    private class StorageStateWatcherRunnable extends RunnableInfoRunnable<RunnableInfo> {
 
         @NotNull
         private final Map<StorageWatchSettings.DeleteOptionPair, Set<File>> mapping = new HashMap<>();
+
+        StorageStateWatcherRunnable() {
+            super(new RunnableInfo(1));
+        }
 
         @Override
         public void run() {
@@ -217,7 +217,7 @@ public final class StorageStateWatcher {
                             }
 
                             String deletePath = entry.getKey(); // settings.targetPath + File.separator +
-                            if (TextUtils.isEmpty(deletePath)) {
+                            if (StringUtils.isEmpty(deletePath)) {
                                 throw new RuntimeException("deletePath is empty");
                             }
                             if (FileHelper.isDirExists(deletePath)) {

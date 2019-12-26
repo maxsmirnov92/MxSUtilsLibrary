@@ -7,11 +7,12 @@ import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.telephony.TelephonyManager;
-import android.text.TextUtils;
+
 import android.util.Patterns;
 
 import androidx.core.content.ContextCompat;
 
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
@@ -138,19 +139,19 @@ public final class NetworkHelper {
     }
 
     public static boolean isIpAddress(String ipAddress) {
-        return !TextUtils.isEmpty(ipAddress) && Patterns.IP_ADDRESS.matcher(ipAddress).matches();
+        return !StringUtils.isEmpty(ipAddress) && Patterns.IP_ADDRESS.matcher(ipAddress).matches();
     }
 
     public static boolean isIpv4Address(String ipAddress) {
-        return !TextUtils.isEmpty(ipAddress) && IPV4_PATTERN.matcher(ipAddress).matches();
+        return !StringUtils.isEmpty(ipAddress) && IPV4_PATTERN.matcher(ipAddress).matches();
     }
 
     public static boolean isIpv6Address(String ipAddress) {
-        return !TextUtils.isEmpty(ipAddress) && IPV6_PATTERN.matcher(ipAddress).matches();
+        return !StringUtils.isEmpty(ipAddress) && IPV6_PATTERN.matcher(ipAddress).matches();
     }
 
     public static boolean isDomain(String domain) {
-        return !TextUtils.isEmpty(domain) && Patterns.DOMAIN_NAME.matcher(domain).matches();
+        return !StringUtils.isEmpty(domain) && Patterns.DOMAIN_NAME.matcher(domain).matches();
     }
 
     @Nullable
@@ -302,7 +303,7 @@ public final class NetworkHelper {
 
         String resultString = result.getStdOut();
 
-        if (!result.isSuccessful() || TextUtils.isEmpty(resultString)) {
+        if (!result.isSuccessful() || StringUtils.isEmpty(resultString)) {
             logger.e("ping failed: " + result);
             return -1;
         }

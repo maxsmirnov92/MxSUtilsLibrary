@@ -8,10 +8,10 @@ import android.location.LocationListener;
 import android.location.LocationManager;
 import android.location.LocationProvider;
 import android.os.Bundle;
-import android.text.TextUtils;
 
 import net.maxsmr.commonutils.android.location.info.TrackingStatus;
 import net.maxsmr.commonutils.data.CompareUtils;
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -275,7 +275,7 @@ public final class LocationWatcher {
     }
 
     public static boolean isProviderEnabled(@NotNull Context context, @Nullable String provider) {
-        if (TextUtils.isEmpty(provider)) {
+        if (StringUtils.isEmpty(provider)) {
             return false;
         }
         final LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);

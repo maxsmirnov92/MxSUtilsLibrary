@@ -7,8 +7,8 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.BaseColumns;
-import android.text.TextUtils;
 
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation;
@@ -110,7 +110,7 @@ public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteConten
                 String columnName = column.getKey();
                 Class<?> columnType = column.getValue();
 
-                if (TextUtils.isEmpty(columnName)) {
+                if (StringUtils.isEmpty(columnName)) {
                     throw new RuntimeException("one of specified column names is null or empty");
                 }
 

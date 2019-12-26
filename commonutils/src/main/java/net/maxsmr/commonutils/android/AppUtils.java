@@ -9,13 +9,13 @@ import android.content.pm.PackageManager;
 import android.content.pm.ResolveInfo;
 import android.os.Build;
 import android.os.StrictMode;
-import android.text.TextUtils;
 
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
 import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
 import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.ReflectionUtils;
+import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -46,7 +46,11 @@ public final class AppUtils {
     }
 
     @Nullable
-    public static ApplicationInfo getApplicationInfo(@NotNull Context context, String packageName, int flags) {
+    public static ApplicationInfo getApplicationInfo(
+            @NotNull Context context,
+            String packageName,
+            int flags
+    ) {
         PackageManager packageManager = context.getPackageManager();
         try {
             return packageManager.getApplicationInfo(packageName, flags);
@@ -61,12 +65,17 @@ public final class AppUtils {
     }
 
     @Nullable
-    public static PackageInfo getPackageInfo(@NotNull Context context, String packageName, int flags) {
+    public static PackageInfo getPackageInfo(
+            @NotNull Context context,
+            String packageName,
+            int flags
+    ) {
         PackageManager packageManager = context.getPackageManager();
-        if (!TextUtils.isEmpty(packageName)) {
+        if (!StringUtils.isEmpty(packageName)) {
             try {
                 return packageManager.getPackageInfo(packageName, flags);
             } catch (PackageManager.NameNotFoundException e) {
+                // ignored
             }
         }
         return null;
@@ -78,7 +87,11 @@ public final class AppUtils {
     }
 
     @Nullable
-    public static PackageInfo getArchivePackageInfo(@NotNull Context context, File apkFile, int flags) {
+    public static PackageInfo getArchivePackageInfo(
+            @NotNull Context context,
+            File apkFile,
+            int flags
+    ) {
         if (FileHelper.isFileCorrect(apkFile)) {
             PackageManager packageManager = context.getPackageManager();
             return packageManager.getPackageArchiveInfo(apkFile.getAbsolutePath(), flags);
@@ -89,7 +102,7 @@ public final class AppUtils {
     @Nullable
     public static Intent getLaunchIntentForPackage(@NotNull Context context, String packageName) {
         PackageManager packageManager = context.getPackageManager();
-        if (!TextUtils.isEmpty(packageName)) {
+        if (!StringUtils.isEmpty(packageName)) {
             try {
                 return packageManager.getLaunchIntentForPackage(packageName);
             } catch (Exception e) {
@@ -122,7 +135,9 @@ public final class AppUtils {
         context.startActivity(activityIntent);
     }
 
-    /** try to disable throwing exception when sharing file:// scheme instead of {@linkplain androidx.core.content.FileProvider} */
+    /**
+     * try to disable throwing exception when sharing file:// scheme instead of {@linkplain androidx.core.content.FileProvider}
+     */
     public static boolean disableFileUriStrictMode() {
         boolean result = true;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
@@ -201,12 +216,15 @@ public final class AppUtils {
     /**
      * Check if app requires update
      */
-    public static boolean requiresUpdate(@NotNull Context context, String packageName, int build) {
+    public static boolean requiresUpdate(
+            @NotNull Context context,
+            String packageName,
+            int build
+    ) {
         int currentVersionCode = getAppVersionCode(context, packageName);
         logger.i("Package: " + packageName + ", current: " + currentVersionCode + ", new: " + build);
         return currentVersionCode > 0 && build > 0 && currentVersionCode != build || (currentVersionCode <= 0 || build <= 0);
     }
-
 
     /**
      * Get application title by package name
@@ -247,7 +265,7 @@ public final class AppUtils {
             throw new RuntimeException(ActivityManager.class.getSimpleName() + " is null");
         }
         Boolean isInBackground = null;
-        if (!TextUtils.isEmpty(packageName)) {
+        if (!StringUtils.isEmpty(packageName)) {
             List<ActivityManager.RunningAppProcessInfo> runningProcesses = am.getRunningAppProcesses();
             if (runningProcesses != null) {
                 for (ActivityManager.RunningAppProcessInfo processInfo : runningProcesses) {
@@ -263,10 +281,13 @@ public final class AppUtils {
     /**
      * @return null if not found
      */
-    public static Boolean isAppInBackground(String packageName,
-                                            @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+    public static Boolean isAppInBackground(
+            String packageName,
+            @NotNull AbstractProcessManager manager,
+            boolean includeSystemPackages
+    ) {
         Boolean isInBackground = null;
-        if (!TextUtils.isEmpty(packageName)) {
+        if (!StringUtils.isEmpty(packageName)) {
             for (ProcessInfo info : manager.getProcesses(includeSystemPackages)) {
                 if (CompareUtils.stringsEqual(info.packageName, packageName, false)) {
                     isInBackground = info.isForeground != null && !info.isForeground;
@@ -279,16 +300,23 @@ public final class AppUtils {
 
 
     @NotNull
-    public static Set<Integer> getPidsByName(@Nullable String packageName,
-                                             @NotNull AbstractProcessManager manager, boolean includeSystemPackages) {
+    public static Set<Integer> getPidsByName(
+            @Nullable String packageName,
+            @NotNull AbstractProcessManager manager,
+            boolean includeSystemPackages
+    ) {
         return getPidsByName(packageName, manager, includeSystemPackages, CompareUtils.MatchStringOption.EQUALS.flag);
     }
 
     @NotNull
-    public static Set<Integer> getPidsByName(@Nullable String packageName,
-                                             @NotNull AbstractProcessManager manager, boolean includeSystemPackages, int matchFlags) {
+    public static Set<Integer> getPidsByName(
+            @Nullable String packageName,
+            @NotNull AbstractProcessManager manager,
+            boolean includeSystemPackages,
+            int matchFlags
+    ) {
         Set<Integer> pids = new LinkedHashSet<>();
-        if (!TextUtils.isEmpty(packageName)) {
+        if (!StringUtils.isEmpty(packageName)) {
             final List<ProcessInfo> runningProcesses = manager.getProcesses(includeSystemPackages);
             for (ProcessInfo process : runningProcesses) {
                 if (CompareUtils.stringsMatch(packageName, process.packageName, matchFlags)) {
@@ -298,5 +326,4 @@ public final class AppUtils {
         }
         return pids;
     }
-
 }
