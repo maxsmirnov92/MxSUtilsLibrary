@@ -8,6 +8,7 @@ import net.maxsmr.commonutils.shell.ShellCallback.StreamType
 import java.io.*
 import java.util.*
 import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("ShellUtils")
@@ -111,10 +112,12 @@ fun execProcess(
         cmd: String,
         workingDir: String = EMPTY_STRING,
         configurator: IProcessBuilderConfigurator? = null,
-        targetExitCode: Int?,
-        sc: ShellCallback?,
-        tc: ThreadsCallback?
-) = execProcess(listOf(cmd), workingDir, configurator, targetExitCode, sc, tc)
+        targetExitCode: Int? = DEFAULT_TARGET_CODE,
+        sc: ShellCallback? = null,
+        tc: ThreadsCallback? = null,
+        execTimeout: Long = 0,
+        execTimeoutUnit: TimeUnit = TimeUnit.SECONDS
+) = execProcess(listOf(cmd), workingDir, configurator, targetExitCode, sc, tc, execTimeout, execTimeoutUnit)
 
 /**
  * @return result code; -1 if start failed or interrupted
@@ -123,9 +126,11 @@ fun execProcess(
         cmds: List<String>,
         workingDir: String = EMPTY_STRING,
         configurator: IProcessBuilderConfigurator? = null,
-        targetExitCode: Int?,
-        sc: ShellCallback?,
-        tc: ThreadsCallback?
+        targetExitCode: Int? = DEFAULT_TARGET_CODE,
+        sc: ShellCallback? = null,
+        tc: ThreadsCallback? = null,
+        execTimeout: Long = 0,
+        execTimeoutUnit: TimeUnit = TimeUnit.SECONDS
 ): CommandResult {
     logger.d("execProcess(), cmds=$cmds, workingDir=$workingDir, configurator=$configurator, targetExitCode=$targetExitCode, sc=$sc, tc=$tc")
 
@@ -139,7 +144,11 @@ fun execProcess(
 
     if (wrappedCallback.wasStarted && !wrappedCallback.isFinished) {
         try {
-            latch.await()
+            if (execTimeout > 0) {
+                latch.await(execTimeout, execTimeoutUnit)
+            } else {
+                latch.await()
+            }
         } catch (e: InterruptedException) {
             logger.e("an InterruptedException occurred during await(): $e")
         }

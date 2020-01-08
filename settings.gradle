@@ -1,4 +1,4 @@
-include ':devicewatchers'
+include ':commonutils'
 // ':commonutils'
 // ':customcontentprovider'
 // ':tasksutils'

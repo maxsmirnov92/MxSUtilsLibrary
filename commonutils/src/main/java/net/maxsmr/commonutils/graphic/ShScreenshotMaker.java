@@ -1,9 +1,6 @@
 package net.maxsmr.commonutils.graphic;
 
 
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
-
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -11,11 +8,14 @@ import net.maxsmr.commonutils.shell.CmdThreadInfo;
 import net.maxsmr.commonutils.shell.ShellCallback;
 import net.maxsmr.commonutils.shell.ThreadsCallback;
 
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
+
 import java.io.File;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
@@ -96,7 +96,9 @@ public final class ShScreenshotMaker {
                 null,
                 null,
                 sc,
-                watcher
+                watcher,
+                0,
+                TimeUnit.SECONDS
         ).isSuccessful() ? destFile : null;
     }
 

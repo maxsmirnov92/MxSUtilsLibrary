@@ -25,9 +25,9 @@ allprojects {
 
     repositories {
         jcenter()
+        google()
         mavenCentral()
         maven { url 'https://dl.bintray.com/maxsmirnov92/maven' }
         maven { url 'https://dl.google.com/dl/android/maven2' }
-        google()
     }
 }

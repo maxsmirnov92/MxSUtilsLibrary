@@ -53,6 +53,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
@@ -1397,7 +1398,10 @@ public final class FileHelper {
                         public void processComplete(int exitValue) {
                         }
 
-                    }, null);
+                    },
+                    null,
+                    0,
+                    TimeUnit.SECONDS);
         }
 
         if (!foundFiles.isEmpty()) {
@@ -1781,7 +1785,9 @@ public final class FileHelper {
                         null,
                         null,
                         null,
-                        null
+                        null,
+                        0,
+                        TimeUnit.SECONDS
                 ).isSuccessful();
             }
         }
@@ -2584,7 +2590,10 @@ public final class FileHelper {
                             public void processComplete(int exitValue) {
                                 // do nothing
                             }
-                        }, null);
+                        },
+                        null,
+                        0,
+                        TimeUnit.SECONDS);
             }
         }
         if (comparator != null) {
@@ -2640,9 +2649,10 @@ public final class FileHelper {
                                 notifier.onNonSuccessExitCode(exitValue, current);
                             }
                         }
-                    }
-
-                    , null);
+                    },
+                    null,
+                    0,
+                    TimeUnit.SECONDS);
         }
 
         return Collections.unmodifiableMap(collectedMap);

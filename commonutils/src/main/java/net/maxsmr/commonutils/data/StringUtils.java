@@ -90,7 +90,7 @@ public class StringUtils {
     // Copied from TextUtils
     public static String[] split(String text, String expression) {
         if (text.length() == 0) {
-            return EMPTY_STRING_ARRAY;
+            return new String[]{};
         } else {
             return text.split(expression, -1);
         }

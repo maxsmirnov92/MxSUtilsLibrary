@@ -37,11 +37,11 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 import static android.os.Build.VERSION.SDK_INT;
 import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
-
 
 public final class DeviceUtils {
 
@@ -345,7 +345,7 @@ public final class DeviceUtils {
 
         dateFormat.setTimeZone(TimeZone.getDefault());
         String formatTime = dateFormat.format(new Date(timestamp));
-        execProcess(Arrays.asList("su", "-c", "date", "-s", formatTime), EMPTY_STRING, null, null, sc, null);
+        execProcess(Arrays.asList("su", "-c", "date", "-s", formatTime), EMPTY_STRING, null, null, sc, null, 0, TimeUnit.SECONDS);
     }
 
     public static boolean setAlarm(@NotNull Context context, @NotNull PendingIntent pIntent, long delayTime, boolean shouldWakeUp) {
