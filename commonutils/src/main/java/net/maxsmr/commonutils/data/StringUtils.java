@@ -6,6 +6,8 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
@@ -320,6 +322,56 @@ public class StringUtils {
             }
         }
         return text;
+    }
+
+    /**
+     * Убирает указанные символы с начала или конца строки
+     * @param shouldNotLeaveEmpty не оставлять пустым, если все символы были исключены
+     */
+    public static String removeChars(
+            String text,
+            boolean isFromStart,
+            boolean shouldNotLeaveEmpty,
+            Character... charsToExclude
+    ) {
+        final StringBuilder result = new StringBuilder();
+        final List<Character> charsToExcludeList;
+        boolean shouldAppendText = false;
+        if (charsToExclude != null) {
+            charsToExcludeList = Arrays.asList(charsToExclude);
+        } else {
+            charsToExcludeList = Collections.emptyList();
+        }
+        if (!charsToExcludeList.isEmpty()) {
+            boolean wasAppended = false;
+            if (isFromStart) {
+                for (int i = 0; i < text.length(); i++) {
+                    final char current = text.charAt(i);
+                    if (wasAppended || !charsToExcludeList.contains(current)) {
+                        result.append(current);
+                        wasAppended = true;
+                    }
+                }
+            } else {
+                for (int i = text.length() - 1; i >= 0; i--) {
+                    final char current = text.charAt(i);
+                    if (wasAppended || !charsToExcludeList.contains(current)) {
+                        result.append(current);
+                        wasAppended = true;
+                    }
+                }
+                result.reverse();
+            }
+        } else {
+            shouldAppendText = true;
+        }
+        if (shouldNotLeaveEmpty && result.length() == 0) {
+            shouldAppendText = true;
+        }
+        if (shouldAppendText) {
+            result.append(text);
+        }
+        return result.toString();
     }
 
     @NotNull

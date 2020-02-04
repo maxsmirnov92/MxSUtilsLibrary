@@ -348,78 +348,6 @@ public final class DeviceUtils {
         execProcess(Arrays.asList("su", "-c", "date", "-s", formatTime), EMPTY_STRING, null, null, sc, null, 0, TimeUnit.SECONDS);
     }
 
-    public static boolean setAlarm(@NotNull Context context, @NotNull PendingIntent pIntent, long delayTime, boolean shouldWakeUp) {
-        if (delayTime <= 0) {
-            logger.e("Incorrect delay time: " + delayTime);
-            return false;
-        }
-        return setAlarm(context, pIntent, System.currentTimeMillis() + delayTime, shouldWakeUp? AlarmType.RTC_WAKE_UP : AlarmType.RTC);
-    }
-
-    /** compat use of {@linkplain AlarmManager} */
-    public static boolean setAlarm(@NotNull Context context, @NotNull PendingIntent pIntent, long triggerTime, @NotNull AlarmType alarmType) {
-        logger.d("setAlarm(), pIntent=" + pIntent + ", triggerTime=" + triggerTime + ", alarmType=" + alarmType);
-
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-
-        if (alarmManager == null) {
-            throw new RuntimeException(AlarmManager.class.getSimpleName() + " is null");
-        }
-
-        final int alarmTypeInt;
-
-        switch (alarmType) {
-            case RTC:
-                alarmTypeInt = AlarmManager.RTC;
-                break;
-            case RTC_WAKE_UP:
-                alarmTypeInt = AlarmManager.RTC_WAKEUP;
-                break;
-            case ELAPSED_REALTIME:
-                alarmTypeInt = AlarmManager.ELAPSED_REALTIME;
-                break;
-            case ELAPSED_REALTIME_WAKE_UP:
-                alarmTypeInt = AlarmManager.ELAPSED_REALTIME_WAKEUP;
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown " + AlarmType.class.getSimpleName() + ": " + alarmType);
-        }
-
-        if (alarmType.isRTC()) {
-            long currentTime = System.currentTimeMillis();
-            if (triggerTime <= currentTime) {
-                logger.e("trigger time (" + triggerTime + ") <= current time (" + currentTime + ")");
-                return false;
-            }
-        } else {
-            long elapsedTime = SystemClock.elapsedRealtime();
-            if (triggerTime <= elapsedTime) {
-                logger.e("trigger time (" + triggerTime + ") <= elapsed time (" + elapsedTime + ")");
-                return false;
-            }
-        }
-
-        if (SDK_INT < Build.VERSION_CODES.KITKAT) {
-            alarmManager.set(alarmTypeInt, triggerTime, pIntent);
-        } else if (SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
-            alarmManager.setExact(alarmTypeInt, triggerTime, pIntent);
-        } else if (SDK_INT < Build.VERSION_CODES.M) {
-            alarmManager.setAlarmClock(new AlarmManager.AlarmClockInfo(triggerTime, null), pIntent);
-        } else {
-            alarmManager.setExactAndAllowWhileIdle(alarmTypeInt, triggerTime, pIntent);
-        }
-
-        return true;
-    }
-
-    public static void cancelAlarm(@NotNull Context context, @NotNull PendingIntent pendingIntent) {
-        AlarmManager alarmManager = (AlarmManager) context.getSystemService(Context.ALARM_SERVICE);
-        if (alarmManager == null) {
-            throw new RuntimeException(AlarmManager.class.getSimpleName() + " is null");
-        }
-        alarmManager.cancel(pendingIntent);
-    }
-
     /**
      * Get CPU ABI
      */
@@ -456,18 +384,6 @@ public final class DeviceUtils {
 
             default:
                 return Arch.UNKNOWN;
-        }
-    }
-
-    public enum AlarmType {
-        RTC, RTC_WAKE_UP, ELAPSED_REALTIME, ELAPSED_REALTIME_WAKE_UP;
-
-        public boolean isRTC() {
-            return this == RTC || this == RTC_WAKE_UP;
-        }
-
-        public boolean isElapsed() {
-            return this == ELAPSED_REALTIME || this == ELAPSED_REALTIME_WAKE_UP;
         }
     }
 

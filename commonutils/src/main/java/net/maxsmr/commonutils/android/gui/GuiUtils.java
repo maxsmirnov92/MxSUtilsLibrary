@@ -422,14 +422,6 @@ public final class GuiUtils {
         }
     }
 
-    public static void clearError(boolean force, @NotNull TextInputLayout on, EditText editText, @ColorInt int color) {
-        if (force || !StringUtils.isEmpty(on.getError())) {
-            on.setError(null);
-            editText.getBackground().setColorFilter(color, PorterDuff.Mode.SRC_ATOP);
-            on.refreshDrawableState();
-        }
-    }
-
     @NotNull
     public static Point getFixedViewSizeByDisplay(@NotNull Context context, @NotNull Point targetSize) {
         return getFixedViewSizeByDisplay(context, (float) targetSize.x / targetSize.y);

@@ -1,6 +1,6 @@
 apply from: "$rootDir/buildSrc/androidLib.gradle"
 
 dependencies {
-//    api project(':tasksutils')
-    api "net.maxsmr:tasksutils:${project.getModuleVersionNameByPath(":tasksutils")}"
+    api project(':tasksutils')
+//    api "net.maxsmr:tasksutils:${project.getModuleVersionNameByPath(":tasksutils")}"
 }
