@@ -256,9 +256,19 @@ public final class AppUtils {
                         (ApplicationInfo.FLAG_UPDATED_SYSTEM_APP | ApplicationInfo.FLAG_SYSTEM)) > 0;
     }
 
+    public static boolean isSelfAppInBackground(@NotNull Context context) {
+        final Boolean result = isAppInBackground(context, context.getPackageName());
+        if (result == null) {
+            return false;
+        } else {
+            return result;
+        }
+    }
+
     /**
      * @return null if not found
      */
+    @Nullable
     public static Boolean isAppInBackground(@NotNull Context context, String packageName) {
         ActivityManager am = (ActivityManager) context.getSystemService(Context.ACTIVITY_SERVICE);
         if (am == null) {

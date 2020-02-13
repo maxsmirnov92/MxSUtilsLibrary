@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils.android.service
 
+import android.annotation.SuppressLint
 import android.app.ActivityManager
 import android.app.PendingIntent
 import android.app.Service
@@ -10,10 +11,8 @@ import android.content.ServiceConnection
 import android.os.Build
 import android.text.TextUtils
 import android.util.Log
-import net.maxsmr.commonutils.android.AlarmType
+import net.maxsmr.commonutils.android.*
 import net.maxsmr.commonutils.android.analytics.AnalyticsHelper
-import net.maxsmr.commonutils.android.cancelAlarm
-import net.maxsmr.commonutils.android.setAlarm
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
@@ -22,13 +21,13 @@ private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("Servi
 fun <S : Service> isServiceRunning(context: Context, serviceClass: Class<S>): Boolean {
     val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager?
             ?: throw RuntimeException(ActivityManager::class.java.simpleName + " is null")
-    return manager.getRunningServices(Integer.MAX_VALUE).find { service -> serviceClass.name == service.service.getClassName() } != null
+    return manager.getRunningServices(Integer.MAX_VALUE).find { service -> serviceClass.name == service.service.className } != null
 }
 
 fun <S : Service> isServiceForeground(context: Context, serviceClass: Class<S>): Boolean {
     val manager = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager?
             ?: throw RuntimeException(ActivityManager::class.java.simpleName + " is null")
-    return manager.getRunningServices(Integer.MAX_VALUE).find { service -> serviceClass.name == service.service.getClassName() && service.foreground } != null
+    return manager.getRunningServices(Integer.MAX_VALUE).find { service -> serviceClass.name == service.service.className && service.foreground } != null
 }
 
 fun <S : Service> start(context: Context, serviceClass: Class<S>, args: Intent? = null): Boolean {
@@ -139,13 +138,21 @@ private fun <S : Service> stopNoCheck(context: Context, serviceClass: Class<S>) 
     context.stopService(service)
 }
 
-private fun <S : Service> startNoCheck(context: Context, serviceClass: Class<S>, args: Intent?) {
+/**
+ * @param shouldCheckSdk true if intended to start in foreground for 8+
+ */
+@SuppressLint("NewApi")
+private fun <S : Service> startNoCheck(context: Context, serviceClass: Class<S>, args: Intent?, shouldCheckSdk: Boolean = false) {
     val i = createServiceIntent(context.packageName, serviceClass, args)
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        // On Android 8+ can start only in foreground
+    val isOreo = SdkUtils.isAtLeastOreo()
+    if (shouldCheckSdk && isOreo) {
         context.startForegroundService(i)
     } else {
-        context.startService(i)
+        if (!isOreo || !AppUtils.isSelfAppInBackground(context)) {
+            context.startService(i)
+        } else {
+            logger.e("Cannot start service with intent $i: app is not in background")
+        }
     }
 }
 
