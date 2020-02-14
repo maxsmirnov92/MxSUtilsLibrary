@@ -2,8 +2,8 @@ package net.maxsmr.commonutils.shell
 
 import android.content.Context
 import android.os.Build
+import net.maxsmr.commonutils.android.getPidsByName
 
-import net.maxsmr.commonutils.android.AppUtils
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager
 import net.maxsmr.commonutils.data.*
 import net.maxsmr.commonutils.logger.BaseLogger
@@ -266,9 +266,9 @@ fun killProcessesByNameWithStatus(
         matchFlags: Int = CompareUtils.MatchStringOption.EQUALS.flag
 ): Map<Int, Boolean>? {
     val result = LinkedHashMap<Int, Boolean>()
-    val pids = AppUtils.getPidsByName(processName, manager, includeSystemPackages, matchFlags)
+    val pids = getPidsByName(processName, manager, includeSystemPackages, matchFlags)
     for (pid in pids) {
-        if (pid != null && pid > 0) {
+        if (pid > 0) {
             result[pid] = killProcessByPid(pid)
         }
     }

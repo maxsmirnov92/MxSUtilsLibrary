@@ -5,7 +5,6 @@ import android.content.Intent
 import android.net.Uri
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
-import net.maxsmr.commonutils.android.AppUtils.canHandleActivityIntent
 import net.maxsmr.commonutils.data.EMPTY_STRING
 import net.maxsmr.commonutils.data.FileHelper
 import java.io.File

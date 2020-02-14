@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import net.maxsmr.commonutils.data.Pair;
 
-import net.maxsmr.commonutils.android.AppUtils;
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
 import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
 import net.maxsmr.commonutils.data.CompareUtils;
@@ -26,6 +25,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static net.maxsmr.commonutils.android.AppUtilsKt.getApplicationInfo;
 import static net.maxsmr.commonutils.android.processmanager.model.ProcessInfo.ProcessState.S;
 import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
 import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
@@ -306,7 +306,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
             return null;
         }
 
-        final ApplicationInfo appInfo = AppUtils.getApplicationInfo(context, processName);
+        final ApplicationInfo appInfo = getApplicationInfo(context, processName, 0);
 
         if (appInfo == null) {
             return null;

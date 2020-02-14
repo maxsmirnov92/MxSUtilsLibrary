@@ -148,7 +148,7 @@ private fun <S : Service> startNoCheck(context: Context, serviceClass: Class<S>,
     if (shouldCheckSdk && isOreo) {
         context.startForegroundService(i)
     } else {
-        if (!isOreo || !AppUtils.isSelfAppInBackground(context)) {
+        if (!isOreo || !isSelfAppInBackground(context)) {
             context.startService(i)
         } else {
             logger.e("Cannot start service with intent $i: app is not in background")

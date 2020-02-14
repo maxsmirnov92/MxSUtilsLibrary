@@ -132,8 +132,12 @@ public final class CompareUtils {
      * @param separators  опциональные разделители для разбивки на подстроки в режиме [MatchStringOption.AUTO] или [MatchStringOption.AUTO_IGNORE_CASE]
      * @return true если соответствие найдено, false - в противном случае
      */
-    public static boolean stringsMatch(@Nullable CharSequence initialText, @Nullable CharSequence matchText, int matchFlags,
-                                       String... separators) {
+    public static boolean stringsMatch(
+            @Nullable CharSequence initialText,
+            @Nullable CharSequence matchText,
+            int matchFlags,
+            String... separators
+    ) {
 
         if (initialText == null) {
             initialText = EMPTY_STRING;

@@ -2,9 +2,7 @@ package net.maxsmr.commonutils.android.processmanager;
 
 import android.app.ActivityManager;
 import android.content.Context;
-import android.content.pm.ApplicationInfo;
 
-import net.maxsmr.commonutils.android.AppUtils;
 import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
 
 import org.jetbrains.annotations.NotNull;
@@ -12,6 +10,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+
+import static net.maxsmr.commonutils.android.AppUtilsKt.getApplicationLabel;
 
 /**
  *
@@ -64,16 +64,9 @@ public class DefaultProcessManager extends AbstractProcessManager {
             return null;
         }
 
-        ApplicationInfo info = AppUtils.getApplicationInfo(context, runningAppProcessInfo.processName);
-
-        if (info == null) {
-            logger.e("Cannot acquire " + ApplicationInfo.class.getSimpleName() + " for package '" + runningAppProcessInfo.processName);
-            return null;
-        }
-
         return new ProcessInfo(
                 runningAppProcessInfo.processName,
-                info.loadLabel(context.getPackageManager()),
+                getApplicationLabel(context, runningAppProcessInfo.processName),
                 runningAppProcessInfo.pid,
                 0,
                 String.valueOf(runningAppProcessInfo.uid),
