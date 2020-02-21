@@ -188,7 +188,7 @@ private fun <S : Service> startDelayNoCheck(
             createServiceIntent(context.packageName, serviceClass, args),
             flags
     )
-    return setAlarm(context, pendingIntent, System.currentTimeMillis() + delay, if (wakeUp) AlarmType.RTC_WAKE_UP else AlarmType.RTC)
+    return setAlarm(context, pendingIntent, delay, wakeUp)
 }
 
 private fun createServiceIntent(packageName: String, serviceClass: Class<out Service>, args: Intent?): Intent {

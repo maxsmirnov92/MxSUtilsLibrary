@@ -3,6 +3,7 @@ package net.maxsmr.commonutils.android.prefs
 import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
+import android.preference.PreferenceManager
 
 import net.maxsmr.commonutils.android.prefs.PreferencesHolder.PrefType
 import net.maxsmr.commonutils.data.EMPTY_STRING
@@ -16,7 +17,7 @@ class PreferencesManager @JvmOverloads constructor(
 ) {
 
     private val preferences: SharedPreferences =
-            PreferencesHolder.getSharedPreferences(context, preferencesName, mode)
+            getSharedPreferences(context, preferencesName, mode)
     private val preferencesName: String =
             if (!StringUtils.isEmpty(preferencesName)) preferencesName else context.packageName + "_preferences"
 
@@ -125,5 +126,19 @@ class PreferencesManager @JvmOverloads constructor(
                 }
             }
         }
+    }
+
+    companion object {
+
+        fun getSharedPreferences(
+                context: Context,
+                name: String,
+                mode: Int = Context.MODE_PRIVATE
+        ): SharedPreferences =
+                if (name.isEmpty()) {
+                    PreferenceManager.getDefaultSharedPreferences(context)
+                } else {
+                    context.getSharedPreferences(name, mode)
+                }
     }
 }

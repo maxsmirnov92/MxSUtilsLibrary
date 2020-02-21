@@ -26,7 +26,7 @@ val EMPTY_STRING_SETTING = EMPTY_STRING
 @Suppress("UNCHECKED_CAST")
 object PreferencesHolder {
 
-    val sharedPreferencesEditorMap = mutableMapOf<SharedPreferences, SharedPreferences.Editor>()
+    private val sharedPreferencesEditorMap = mutableMapOf<SharedPreferences, SharedPreferences.Editor>()
 
     fun hasKey(sp: SharedPreferences, key: String) = sp.contains(key)
 
@@ -110,16 +110,6 @@ object PreferencesHolder {
         return saveChanges(editor, async)
     }
 
-    fun getSharedPreferences(
-            context: Context,
-            name: String,
-            mode: Int = Context.MODE_PRIVATE
-    ): SharedPreferences =
-            if (name.isEmpty()) {
-                getDefaultSharedPreferences(context)
-            } else {
-                context.getSharedPreferences(name, mode)
-            }
 
     private fun getOrCreateEditor(sp: SharedPreferences): SharedPreferences.Editor =
             synchronized(sharedPreferencesEditorMap) {

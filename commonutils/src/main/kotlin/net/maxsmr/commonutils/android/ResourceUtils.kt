@@ -20,14 +20,14 @@ const val INVALID_COLOR = -1
 /**
  * проверить факт существования ресурса с указанным [resId]
  */
-fun Resources.isResourceExists(resId: Int) = getResourceNameNoThrow(resId) != null
+fun isResourceExists(resources: Resources, resId: Int) = getResourceNameNoThrow(resources, resId) != null
 
 /**
  * @return имя ресурса с указанным [resId], если таковой существует
  */
-fun Resources.getResourceNameNoThrow(resId: Int): String? =
+fun getResourceNameNoThrow(resources: Resources, resId: Int): String? =
         try {
-            getResourceName(resId)
+            resources.getResourceName(resId)
         } catch (ignore: Resources.NotFoundException) {
             null
         }
@@ -35,30 +35,39 @@ fun Resources.getResourceNameNoThrow(resId: Int): String? =
 /**
  * проверить факт существования ресурса с указанными именем и типом
  */
-fun Context.isResourceIdentifierExists(resName: String, type: String) =
-        getResourceIdentifier(resName, type) != 0
+fun isResourceIdentifierExists(
+        context: Context,
+        resName: String,
+        type: String
+) = getResourceIdentifier(context, resName, type) != 0
 
 /**
  * @return идентификатор ресурса с указанными именем и типом, если таковой существует
  */
-fun Context.getResourceIdentifier(resName: String, type: String) =
-        resources.getIdentifier(resName, type, packageName)
+fun getResourceIdentifier(
+        context: Context,
+        resName: String,
+        type: String
+) = context.resources.getIdentifier(resName, type, context.packageName)
 
 /**
  * Получить Id ресурса из [TypedArray] или null
  */
-fun TypedArray.getResourceIdOrNull(attributeValue: Int): Int? =
-        getResourceId(attributeValue, INVALID_ATTRIBUTE).also {
+fun getResourceIdOrNull(typedArray: TypedArray, attributeValue: Int): Int? =
+        typedArray.getResourceId(attributeValue, INVALID_ATTRIBUTE).also {
             if (it != INVALID_ATTRIBUTE) {
                 return it
             }
             return null
         }
 
-fun Resources.getColorFilteredDrawable(@DrawableRes icon: Int,
-                                       @ColorInt color: Int,
-                                       mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN): Drawable? {
-    ResourcesCompat.getDrawable(this, icon, null)?.let { drawable ->
+fun getColorFilteredDrawable(
+        resources: Resources,
+        @DrawableRes icon: Int,
+        @ColorInt color: Int,
+        mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
+): Drawable? {
+    ResourcesCompat.getDrawable(resources, icon, null)?.let { drawable ->
         drawable.setColor(ColorStateList.valueOf(color), mode)
         return drawable
     }
@@ -66,9 +75,9 @@ fun Resources.getColorFilteredDrawable(@DrawableRes icon: Int,
 }
 
 @ColorInt
-fun Context.getColorFromAttrs(attrs: IntArray): Int {
+fun getColorFromAttrs(context: Context, attrs: IntArray): Int {
     val typedValue = TypedValue()
-    val array = theme.obtainStyledAttributes(typedValue.data, attrs)
+    val array = context.theme.obtainStyledAttributes(typedValue.data, attrs)
     try {
         return array.getColor(0, 0)
     } finally {
@@ -89,8 +98,8 @@ fun getDimensionFromAttrs(context: Context, attrs: IntArray): Int {
 /**
  * Получение высоты ActionBar из аттрибутов
  */
-fun Context.getActionBarHeight(): Int {
-    val attrs = theme.obtainStyledAttributes(intArrayOf(R.attr.actionBarSize))
+fun getActionBarHeight(context: Context): Int {
+    val attrs = context.theme.obtainStyledAttributes(intArrayOf(R.attr.actionBarSize))
     val actionBarHeight = attrs.getDimension(0, 0f)
     try {
         return actionBarHeight.toInt()
