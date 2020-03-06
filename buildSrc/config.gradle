@@ -7,7 +7,7 @@ ext {
     sdkVersion = 28
     minSdkVersion = 17
 
-    gradlePluginVersion = '3.5.2'
+    gradlePluginVersion = '3.6.0'
     kotlinGradlePluginVersion = '1.3.50'
     kotlinVersion = '1.3.50'
     buildToolsVersion = '28.0.3'
