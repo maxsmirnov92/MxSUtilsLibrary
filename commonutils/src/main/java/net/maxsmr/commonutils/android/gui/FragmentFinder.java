@@ -1,15 +1,17 @@
 package net.maxsmr.commonutils.android.gui;
 
-import net.maxsmr.commonutils.data.Pair;
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
 
-import net.maxsmr.commonutils.data.CompareUtils;
+import net.maxsmr.commonutils.data.Pair;
 import net.maxsmr.commonutils.data.Predicate;
 
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Collection;
+
+import static net.maxsmr.commonutils.data.CompareUtilsKt.objectsEqual;
+import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
 
 public final class FragmentFinder {
 
@@ -40,7 +42,7 @@ public final class FragmentFinder {
 
     @Nullable
     public static Pair<Integer, Fragment> findFragmentByTag(@Nullable Collection<Fragment> fragments, String tag) {
-        return Predicate.Methods.findWithIndex(fragments, fragment ->   fragment != null && !fragment.isDetached() && CompareUtils.stringsEqual(fragment.getTag(), tag, false));
+        return Predicate.Methods.findWithIndex(fragments, fragment ->   fragment != null && !fragment.isDetached() && stringsEqual(fragment.getTag(), tag, false));
 
     }
 
@@ -78,7 +80,7 @@ public final class FragmentFinder {
     @Nullable
     @SuppressWarnings("unchecked")
     public static <F extends Fragment> Pair<Integer, F> findFragmentByInstance(@Nullable Collection<Fragment> fragments, @Nullable F targetFragment) {
-        Pair<Integer, Fragment> result = Predicate.Methods.findWithIndex(fragments, fragment -> fragment != null && !fragment.isDetached() && CompareUtils.objectsEqual(fragment, targetFragment));
+        Pair<Integer, Fragment> result = Predicate.Methods.findWithIndex(fragments, fragment -> fragment != null && !fragment.isDetached() && objectsEqual(fragment, targetFragment));
         if (result != null) {
             return new Pair<>(result.first, (F) result.second);
         }

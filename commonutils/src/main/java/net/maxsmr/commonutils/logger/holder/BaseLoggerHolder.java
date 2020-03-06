@@ -1,6 +1,5 @@
 package net.maxsmr.commonutils.logger.holder;
 
-import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 
 import org.jetbrains.annotations.NotNull;
@@ -9,6 +8,8 @@ import org.jetbrains.annotations.Nullable;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
+
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 
 public abstract class BaseLoggerHolder {
 
@@ -66,7 +67,7 @@ public abstract class BaseLoggerHolder {
      * */
     @SuppressWarnings("unchecked")
     public <L extends BaseLogger> L getLogger(String className) {
-        if (StringUtils.isEmpty(className)) {
+        if (isEmpty(className)) {
             throw new IllegalArgumentException("className is empty");
         }
         synchronized (loggersMap) {

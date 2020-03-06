@@ -5,15 +5,18 @@ import android.content.res.TypedArray;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
-import org.jetbrains.annotations.NotNull;
-;
 import android.util.AttributeSet;
 
 import net.maxsmr.commonutils.R;
-import net.maxsmr.commonutils.data.CompareUtils;
-import net.maxsmr.commonutils.data.StringUtils;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.io.Serializable;
+
+import static net.maxsmr.commonutils.data.CompareUtilsKt.objectsEqual;
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+
+;
 
 /**
  * @author msmirnov
@@ -91,7 +94,7 @@ public class TypewriterFontTextView extends FontTextView {
 
     public void setScheduledText(CharSequence scheduledText) {
         synchronized (mHandler) {
-            if (!CompareUtils.objectsEqual(mScheduledText, scheduledText)) {
+            if (!objectsEqual(mScheduledText, scheduledText)) {
                 boolean isStarted = mIsStarted;
                 if (isStarted) {
                     stopAnimateText();
@@ -156,7 +159,7 @@ public class TypewriterFontTextView extends FontTextView {
 
             stopAnimateText();
 
-            if (StringUtils.isEmpty(mScheduledText)) {
+            if (isEmpty(mScheduledText)) {
                 return;
             }
 
@@ -247,6 +250,7 @@ public class TypewriterFontTextView extends FontTextView {
         public void run() {
             synchronized (mHandler) {
                 if (mIndex <= mScheduledText.length()) {
+                    // do nothing
                 } else if (mIndex == mScheduledText.length() + 1 && mAnimateParams.mIsLooping) {
                     mIndex = 0;
                 } else {
@@ -301,6 +305,7 @@ public class TypewriterFontTextView extends FontTextView {
             mIsLooping = isLooping;
         }
 
+        @NotNull
         @Override
         public String toString() {
             return "AnimateParams{" +

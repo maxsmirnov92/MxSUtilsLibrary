@@ -2,11 +2,9 @@ package net.maxsmr.commonutils.android.certs;
 
 import android.content.Context;
 
-import net.maxsmr.commonutils.data.Pair;
-
 import androidx.annotation.RawRes;
 
-import net.maxsmr.commonutils.data.StringUtils;
+import net.maxsmr.commonutils.data.Pair;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -30,6 +28,8 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 
 import javax.net.ssl.TrustManagerFactory;
+
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 
 
 public final class CertificateHelper {
@@ -84,10 +84,10 @@ public final class CertificateHelper {
      */
     public static TrustManagerFactory getTrustManagerFactory(@Nullable String keyStoreType, @Nullable InputStream keyStoreInitStream, @Nullable String keyStoreInitStreamPassword, @NotNull Set<Pair<String, Certificate>> certificates) throws RuntimeException {
         try {
-            keyStoreType = StringUtils.isEmpty(keyStoreType) ? KeyStore.getDefaultType() : keyStoreType;
+            keyStoreType = isEmpty(keyStoreType) ? KeyStore.getDefaultType() : keyStoreType;
             logger.d("keyStoreType=" + keyStoreType);
             KeyStore keyStore = KeyStore.getInstance(keyStoreType);
-            keyStore.load(keyStoreInitStream, !StringUtils.isEmpty(keyStoreInitStreamPassword) ? keyStoreInitStreamPassword.toCharArray() : null);
+            keyStore.load(keyStoreInitStream, !isEmpty(keyStoreInitStreamPassword) ? keyStoreInitStreamPassword.toCharArray() : null);
 
             for (Pair<String, Certificate> certificate : certificates) {
                 if (certificate.second == null) {
@@ -117,14 +117,14 @@ public final class CertificateHelper {
     @NotNull
     public static Set<Pair<String, Certificate>> retrieveKeyStoreCertificates(String keystoreType, @Nullable InputStream keyStoreInitStream, @Nullable String keyStoreInitStreamPassword) throws RuntimeException {
 
-        if (StringUtils.isEmpty(keystoreType)) {
+        if (isEmpty(keystoreType)) {
             throw new IllegalArgumentException("keystoreType is null or empty");
         }
 
         Set<Pair<String, Certificate>> certificates = new LinkedHashSet<>();
         try {
             KeyStore ks = KeyStore.getInstance(keystoreType);
-            ks.load(keyStoreInitStream, !StringUtils.isEmpty(keyStoreInitStreamPassword) ? keyStoreInitStreamPassword.toCharArray() : null);
+            ks.load(keyStoreInitStream, !isEmpty(keyStoreInitStreamPassword) ? keyStoreInitStreamPassword.toCharArray() : null);
             Enumeration aliases = ks.aliases();
             while (aliases.hasMoreElements()) {
                 String alias = (String) aliases.nextElement();

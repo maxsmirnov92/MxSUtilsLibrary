@@ -13,6 +13,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+
 public final class ChecksumHelper {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(ChecksumHelper.class);
@@ -54,9 +56,9 @@ public final class ChecksumHelper {
 
     @Nullable
     public static String md5Hash(String st, String charsetName) {
-        charsetName = StringUtils.isEmpty(charsetName)? "UTF-8" : charsetName;
+        charsetName = isEmpty(charsetName)? "UTF-8" : charsetName;
         try {
-            return !StringUtils.isEmpty(st)? md5Hash(st.getBytes(charsetName)) : null;
+            return !isEmpty(st)? md5Hash(st.getBytes(charsetName)) : null;
         } catch (UnsupportedEncodingException e) {
             logger.e("a UnsupportedEncodingException occurred during getBytes()", e);
             return null;

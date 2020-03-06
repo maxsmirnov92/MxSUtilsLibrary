@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.android.analytics
 
-import net.maxsmr.commonutils.data.number.ComparePredicate
+import net.maxsmr.commonutils.data.CompareCondition
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
@@ -78,16 +78,16 @@ class AnalyticsHelper(
         fun shouldPerformAction(event: AnalyticsEvent, analyticsStateMap: MutableMap<AnalyticsEvent, Int>): Boolean
     }
 
-    open class CountableSentEventInstanceRule(val count: Int, private val predicate: ComparePredicate = ComparePredicate.EQUAL) : EventRule {
+    open class CountableSentEventInstanceRule(val count: Int, private val condition: CompareCondition = CompareCondition.EQUAL) : EventRule {
 
         override fun shouldPerformAction(event: AnalyticsEvent, analyticsStateMap: MutableMap<AnalyticsEvent, Int>) =
-                predicate.compare((analyticsStateMap[event] ?: 0), count)
+                condition.apply((analyticsStateMap[event] ?: 0), count)
     }
 
-    open class CountableSentEventTypeRule(val count: Int, private val predicate: ComparePredicate = ComparePredicate.EQUAL) : EventRule {
+    open class CountableSentEventTypeRule(val count: Int, private val condition: CompareCondition = CompareCondition.EQUAL) : EventRule {
 
         override fun shouldPerformAction(event: AnalyticsEvent, analyticsStateMap: MutableMap<AnalyticsEvent, Int>) =
-                predicate.compare(analyticsStateMap.getCountForType(event.javaClass), count)
+                condition.apply(analyticsStateMap.getCountForType(event.javaClass), count)
     }
 
     /**

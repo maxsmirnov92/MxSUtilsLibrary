@@ -1,6 +1,8 @@
 package net.maxsmr.commonutils.android
 
 import android.app.ActivityManager
+import android.content.ClipData
+import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.content.pm.ApplicationInfo
@@ -8,6 +10,8 @@ import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.StrictMode
+import android.util.DisplayMetrics
+import android.view.WindowManager
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager
 import net.maxsmr.commonutils.data.*
 import net.maxsmr.commonutils.logger.BaseLogger
@@ -74,7 +78,7 @@ fun getPackageInfo(
         flags: Int = 0
 ): PackageInfo? {
     val packageManager = context.packageManager
-    if (!StringUtils.isEmpty(packageName)) {
+    if (!isEmpty(packageName)) {
         try {
             return packageManager.getPackageInfo(packageName, flags)
         } catch (e: PackageManager.NameNotFoundException) {
@@ -99,7 +103,7 @@ fun getArchivePackageInfo(
 
 fun getLaunchIntentForPackage(context: Context, packageName: String): Intent? {
     val packageManager = context.packageManager
-    if (!StringUtils.isEmpty(packageName)) {
+    if (!isEmpty(packageName)) {
         try {
             return packageManager.getLaunchIntentForPackage(packageName)
         } catch (e: Exception) {
@@ -139,7 +143,7 @@ fun disableFileUriStrictMode(): Boolean {
         result = false
         var disableMethod: Method? = null
         try {
-            disableMethod = ReflectionUtils.findMethod(StrictMode::class.java, "disableDeathOnFileUriExposure")
+            disableMethod = ReflectionUtils.findMethod(StrictMode::class.java, "disableDeathOnFileUriExposure", false, true)
         } catch (e: NoSuchMethodException) {
             logger.e("Cannot disable \"death on file uri exposure\": " + e.message, e)
         }
@@ -239,7 +243,7 @@ fun isAppInBackground(context: Context, packageName: String): Boolean? {
     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager?
             ?: throw RuntimeException(ActivityManager::class.java.simpleName + " is null")
     var isInBackground: Boolean? = null
-    if (!StringUtils.isEmpty(packageName)) {
+    if (!isEmpty(packageName)) {
         val runningProcesses = am.runningAppProcesses
         if (runningProcesses != null) {
             for (processInfo in runningProcesses) {
@@ -269,9 +273,9 @@ fun isAppInBackground(
         includeSystemPackages: Boolean
 ): Boolean? {
     var isInBackground: Boolean? = null
-    if (!StringUtils.isEmpty(packageName)) {
+    if (!isEmpty(packageName)) {
         for (info in manager.getProcesses(includeSystemPackages)) {
-            if (CompareUtils.stringsEqual(info.packageName, packageName, false)) {
+            if (stringsEqual(info.packageName, packageName, false)) {
                 isInBackground = info.isForeground != null && !info.isForeground
                 break
             }
@@ -284,13 +288,13 @@ fun getPidsByName(
         packageName: String?,
         manager: AbstractProcessManager,
         includeSystemPackages: Boolean,
-        matchFlags: Int = CompareUtils.MatchStringOption.EQUALS.flag
+        matchFlags: Int = MatchStringOption.EQUALS.flag
 ): Set<Int> {
     val pids = LinkedHashSet<Int>()
-    if (!StringUtils.isEmpty(packageName)) {
+    if (!isEmpty(packageName)) {
         val runningProcesses = manager.getProcesses(includeSystemPackages)
         for (process in runningProcesses) {
-            if (CompareUtils.stringsMatch(packageName, process.packageName, matchFlags)) {
+            if (stringsMatch(packageName, process.packageName, matchFlags)) {
                 pids.add(process.pid)
             }
         }
@@ -331,4 +335,61 @@ fun isSystemApp(applicationInfo: ApplicationInfo?): Boolean? {
         return false;
     }
     return applicationInfo.flags and (ApplicationInfo.FLAG_UPDATED_SYSTEM_APP or ApplicationInfo.FLAG_SYSTEM) > 0
+}
+
+/**
+ * Задает локаль по умолчанию в рамках приложения.
+ *
+ * @param locale объект локали
+ */
+fun forceLocaleInApp(context: Context, locale: Locale?) {
+    Locale.setDefault(locale)
+    context.resources?.let {
+        val configuration = it.configuration
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
+            configuration.setLocale(locale)
+            context.createConfigurationContext(configuration)
+        } else {
+            configuration.locale = locale
+            it.updateConfiguration(configuration, it.displayMetrics)
+        }
+    }
+}
+
+fun copyToClipboard(context: Context, label: String?, text: String?) {
+    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?
+            ?: throw NullPointerException(ClipboardManager::class.java.simpleName + " is null")
+    val clip = ClipData.newPlainText(label, text)
+    clipboard.primaryClip = clip
+}
+
+fun getDisplayMetrics(context: Context): DisplayMetrics {
+    val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+            ?: throw java.lang.NullPointerException(WindowManager::class.java.simpleName + "")
+    val outMetrics = DisplayMetrics()
+    wm.defaultDisplay.getMetrics(outMetrics)
+    return outMetrics
+}
+
+fun getScreenType(context: Context): DeviceType {
+    val outMetrics = getDisplayMetrics(context)
+    val deviceType: DeviceType
+    val shortSize = Math.min(outMetrics.heightPixels, outMetrics.widthPixels)
+    val shortSizeDp = shortSize * DisplayMetrics.DENSITY_DEFAULT / outMetrics.densityDpi
+    deviceType = if (shortSizeDp < 600) { // 0-599dp: "phone" UI with a separate status & navigation bar
+        DeviceType.PHONE
+    } else if (shortSizeDp < 720) { // 600-719dp: "phone" UI with modifications for larger screens
+        DeviceType.HYBRID
+    } else { // 720dp: "tablet" UI with a single combined status & navigation bar
+        DeviceType.TABLET
+    }
+    return deviceType
+}
+
+fun isTabletUI(con: Context): Boolean {
+    return getScreenType(con) == DeviceType.TABLET
+}
+
+enum class DeviceType {
+    PHONE, HYBRID, TABLET
 }

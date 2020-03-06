@@ -10,14 +10,15 @@ import android.widget.TextView;
 
 import androidx.recyclerview.widget.RecyclerView;
 
-import net.maxsmr.commonutils.data.StringUtils;
-
 import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+
+@Deprecated
 public final class FontsHolder {
 
     private static FontsHolder mInstance;
@@ -53,7 +54,7 @@ public final class FontsHolder {
 
     public Typeface loadFont(File file, String alias) {
         Typeface tf = null;
-        if (!StringUtils.isEmpty(alias)) {
+        if (!isEmpty(alias)) {
             if ((tf = loadedFonts.get(alias)) != null) return tf;
             tf = Typeface.createFromFile(file);
             loadedFonts.put(alias, tf);
@@ -81,7 +82,7 @@ public final class FontsHolder {
                 if (withViewTag) {
                     if (view.getTag() != null) {
                         alias = view.getTag().toString();
-                        if (StringUtils.isEmpty(alias)) {
+                        if (isEmpty(alias)) {
                             alias = tag;
                         }
                     }

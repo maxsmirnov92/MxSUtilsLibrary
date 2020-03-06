@@ -8,7 +8,7 @@ import android.preference.PreferenceManager
 import net.maxsmr.commonutils.android.prefs.PreferencesHolder.PrefType
 import net.maxsmr.commonutils.data.EMPTY_STRING
 import net.maxsmr.commonutils.data.Observable
-import net.maxsmr.commonutils.data.StringUtils
+import net.maxsmr.commonutils.data.isEmpty
 
 class PreferencesManager @JvmOverloads constructor(
         private val context: Context,
@@ -19,7 +19,7 @@ class PreferencesManager @JvmOverloads constructor(
     private val preferences: SharedPreferences =
             getSharedPreferences(context, preferencesName, mode)
     private val preferencesName: String =
-            if (!StringUtils.isEmpty(preferencesName)) preferencesName else context.packageName + "_preferences"
+            if (!isEmpty(preferencesName)) preferencesName else context.packageName + "_preferences"
 
     private val changeObservable = ChangeObservable()
 

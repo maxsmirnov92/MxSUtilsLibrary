@@ -4,10 +4,10 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import net.maxsmr.commonutils.data.CompareUtils;
+
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Observable;
-import net.maxsmr.commonutils.data.StringUtils;
+
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -15,6 +15,9 @@ import org.jetbrains.annotations.Nullable;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
+
+import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 
 public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
 
@@ -38,7 +41,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
         db.beginTransactionNonExclusive();
         try {
             for (AbstractSQLiteTableProvider table : tableProviders) {
-                if (CompareUtils.stringsEqual(db.getPath(), table.getTableName(), false)) {
+                if (stringsEqual(db.getPath(), table.getTableName(), false)) {
                     table.onCreate(db);
                 }
             }
@@ -56,7 +59,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
         db.beginTransactionNonExclusive();
         try {
             for (AbstractSQLiteTableProvider table : tableProviders) {
-                if (CompareUtils.stringsEqual(db.getPath(), table.getTableName(), false)) {
+                if (stringsEqual(db.getPath(), table.getTableName(), false)) {
                     table.onUpgrade(db, oldVersion, newVersion);
                 }
             }
@@ -98,7 +101,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
             int databaseVersion,
             @NotNull Set<? extends AbstractSQLiteTableProvider> tableProviders) {
 
-        if (StringUtils.isEmpty(databaseName))
+        if (isEmpty(databaseName))
             throw new IllegalArgumentException("databaseName is not specified");
 
         if (tableProviders.isEmpty())
@@ -113,7 +116,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
 
         String targetName;
 
-        if (!StringUtils.isEmpty(databasePath)) {
+        if (!isEmpty(databasePath)) {
             targetName = FileHelper.checkPath(databasePath, databaseName).getAbsolutePath();
         } else {
             targetName = databaseName;

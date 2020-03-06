@@ -15,7 +15,6 @@ import android.provider.MediaStore;
 
 import androidx.annotation.RawRes;
 import androidx.collection.ArraySet;
-import net.maxsmr.commonutils.data.Pair;
 import androidx.exifinterface.media.ExifInterface;
 
 import net.maxsmr.commonutils.data.sort.BaseOptionableComparator;
@@ -58,12 +57,19 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import static net.maxsmr.commonutils.data.CompareUtilsKt.compareLongs;
+import static net.maxsmr.commonutils.data.CompareUtilsKt.compareStrings;
+import static net.maxsmr.commonutils.data.CompareUtilsKt.objectsEqual;
+import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsMatch;
 import static net.maxsmr.commonutils.data.StreamUtils.readBytesFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringsFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.revectorStream;
 import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
 import static net.maxsmr.commonutils.data.SymbolConstKt.NEXT_LINE;
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.TextUtilsKt.join;
+import static net.maxsmr.commonutils.data.TextUtilsKt.replaceRange;
 import static net.maxsmr.commonutils.data.Units.sizeToString;
 import static net.maxsmr.commonutils.shell.CommandResultKt.PROCESS_EXIT_CODE_SUCCESS;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
@@ -177,7 +183,7 @@ public final class FileHelper {
                         }
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP
                                 && (!excludeNotRemovable || Environment.isExternalStorageRemovable(d))
-                                || !StringUtils.isEmpty(rawSecondaryStorage) && rawSecondaryStorage.contains(path)) {
+                                || !isEmpty(rawSecondaryStorage) && rawSecondaryStorage.contains(path)) {
                             result.add(new File(secondaryPath));
                         }
                     }
@@ -185,7 +191,7 @@ public final class FileHelper {
             }
         } else {
             // if KITKAT or earlier - use splitted "SECONDARY_STORAGE" environment value as external paths
-            if (!StringUtils.isEmpty(rawSecondaryStorage)) {
+            if (!isEmpty(rawSecondaryStorage)) {
                 final String[] rawSecondaryStoragePaths = rawSecondaryStorage.split(File.separator);
                 for (String secondaryPath : rawSecondaryStoragePaths) {
                     if (includePrimaryExternalStorage
@@ -301,11 +307,11 @@ public final class FileHelper {
 
     public static boolean isFileExists(String fileName, String parentPath) {
 
-        if (StringUtils.isEmpty(fileName) || fileName.contains("/")) {
+        if (isEmpty(fileName) || fileName.contains("/")) {
             return false;
         }
 
-        if (StringUtils.isEmpty(parentPath)) {
+        if (isEmpty(parentPath)) {
             return false;
         }
 
@@ -318,7 +324,7 @@ public final class FileHelper {
     }
 
     public static boolean isFileExists(String filePath) {
-        if (!StringUtils.isEmpty(filePath)) {
+        if (!isEmpty(filePath)) {
             File f = new File(filePath);
             return (f.exists() && f.isFile());
         }
@@ -394,7 +400,7 @@ public final class FileHelper {
     }
 
     public static boolean checkFileNoThrow(String file, boolean createIfNotExists) {
-        return !StringUtils.isEmpty(file) && checkFileNoThrow(new File(file), createIfNotExists);
+        return !isEmpty(file) && checkFileNoThrow(new File(file), createIfNotExists);
     }
 
     public static void checkDir(String dirPath) {
@@ -441,7 +447,7 @@ public final class FileHelper {
 
     public static File checkPathNoThrow(String parent, String fileName, boolean createIfNotExists) {
         if (checkDirNoThrow(parent, createIfNotExists)) {
-            if (!StringUtils.isEmpty(fileName)) {
+            if (!isEmpty(fileName)) {
                 File f = new File(parent, fileName);
                 if (checkFileNoThrow(f, createIfNotExists)) {
                     return f;
@@ -493,11 +499,11 @@ public final class FileHelper {
     @Nullable
     public static File createNewFile(String fileName, String parentPath, boolean recreate) {
 
-        if (StringUtils.isEmpty(fileName) || fileName.contains(File.separator)) {
+        if (isEmpty(fileName) || fileName.contains(File.separator)) {
             return null;
         }
 
-        if (StringUtils.isEmpty(parentPath)) {
+        if (isEmpty(parentPath)) {
             return null;
         }
 
@@ -543,7 +549,7 @@ public final class FileHelper {
     @Nullable
     public static File createNewDir(String dirPath) {
 
-        if (StringUtils.isEmpty(dirPath)) {
+        if (isEmpty(dirPath)) {
             logger.e("path is empty");
             return null;
         }
@@ -562,7 +568,7 @@ public final class FileHelper {
     @Nullable
     public static File moveFile(File sourceFile, File destFile, boolean deleteIfExists, boolean deleteEmptyDirs,
                                 boolean preserveFileDate, @Nullable ISingleCopyNotifier notifier) {
-        if (CompareUtils.objectsEqual(sourceFile, destFile)) {
+        if (objectsEqual(sourceFile, destFile)) {
             return null;
         }
         File targetFile = renameFile(sourceFile, destFile.getParent(), destFile.getName(), deleteIfExists, deleteEmptyDirs);
@@ -583,7 +589,7 @@ public final class FileHelper {
             return null;
         }
 
-        if (StringUtils.isEmpty(newFileName)) {
+        if (isEmpty(newFileName)) {
             logger.e("File name for new file is not specified");
             return null;
         }
@@ -594,7 +600,7 @@ public final class FileHelper {
         if (newDir != null) {
             newFile = new File(newDir, newFileName);
 
-            if (!CompareUtils.objectsEqual(newFile, sourceFile)) {
+            if (!objectsEqual(newFile, sourceFile)) {
 
                 if (isFileExists(newFile)) {
                     logger.d("Target file " + newFile + " already exists");
@@ -706,7 +712,7 @@ public final class FileHelper {
     @Nullable
     public static String readStringFromFile(File file) {
         List<String> strings = readStringsFromFile(file);
-        return !strings.isEmpty() ? StringUtils.join(NEXT_LINE, strings) : null;
+        return !strings.isEmpty() ? join(NEXT_LINE, strings) : null;
     }
 
     /**
@@ -1056,10 +1062,10 @@ public final class FileHelper {
      * @return новое имя
      */
     public static String removeExtension(String fileName) {
-        if (!StringUtils.isEmpty(fileName)) {
+        if (!isEmpty(fileName)) {
             int startIndex = fileName.lastIndexOf('.');
             if (startIndex >= 0) {
-                fileName = StringUtils.replace(fileName, startIndex, fileName.length(), EMPTY_STRING);
+                fileName = replaceRange(fileName, startIndex, fileName.length(), EMPTY_STRING);
             }
             return fileName;
         }
@@ -1068,7 +1074,7 @@ public final class FileHelper {
 
     public static File appendPostfix(@Nullable File file, @Nullable String postfix, boolean checkExists) {
         File result = file;
-        if (!StringUtils.isEmpty(postfix)) {
+        if (!isEmpty(postfix)) {
             if (file != null) {
                 do {
                     String name = result.getName();
@@ -1284,7 +1290,7 @@ public final class FileHelper {
 
             if (isCorrect) {
                 if (searchFile.isFile() ? mode == GetMode.FILES : mode == GetMode.FOLDERS || mode == GetMode.ALL) {
-                    if (CompareUtils.stringsMatch(searchFile.getName(), name, searchFlags)) {
+                    if (stringsMatch(searchFile.getName(), name, searchFlags)) {
                         if (notifier == null || (searchFile.isFile() ? notifier.onGetFile(searchFile) : notifier.onGetFolder(searchFile))) {
                             result.add(searchFile);
                             foundFiles.add(searchFile);
@@ -1716,7 +1722,7 @@ public final class FileHelper {
         if (uri != null) {
             result = true;
             final String scheme = uri.getScheme();
-            if (!StringUtils.isEmpty(scheme)) {
+            if (!isEmpty(scheme)) {
                 result = scheme.equalsIgnoreCase(ContentResolver.SCHEME_FILE);
             }
         }
@@ -1834,7 +1840,7 @@ public final class FileHelper {
             return null;
         }
 
-        String targetName = StringUtils.isEmpty(destName) ? sourceFile.getName() : destName;
+        String targetName = isEmpty(destName) ? sourceFile.getName() : destName;
 
         File destFile = createNewFile(targetName, destDir, rewrite);
 
@@ -1873,9 +1879,9 @@ public final class FileHelper {
             return null;
         }
 
-        String targetName = StringUtils.isEmpty(destName) ? sourceFile.getName() : destName;
+        String targetName = isEmpty(destName) ? sourceFile.getName() : destName;
 
-        File destFile = destDir != null && !StringUtils.isEmpty(targetName) ? new File(destDir, targetName) : null;
+        File destFile = destDir != null && !isEmpty(targetName) ? new File(destDir, targetName) : null;
 
         if (destFile == null || destFile.equals(sourceFile)) {
             logger.e("Incorrect destination file: " + destDir + " (source file: " + sourceFile + ")");
@@ -2174,7 +2180,7 @@ public final class FileHelper {
                 if (part.startsWith(fromFile.getAbsolutePath())) {
                     part = part.substring(fromFile.getAbsolutePath().length(), part.length());
                 }
-                if (!StringUtils.isEmpty(part)) {
+                if (!isEmpty(part)) {
                     currentDestDir = new File(destDir, part);
                 }
             }
@@ -2532,13 +2538,13 @@ public final class FileHelper {
 
             switch (option) {
                 case NAME:
-                    result = CompareUtils.compareStrings(lhs != null ? lhs.getAbsolutePath() : null, rhs != null ? rhs.getAbsolutePath() : null, ascending, true);
+                    result = compareStrings(lhs != null ? lhs.getAbsolutePath() : null, rhs != null ? rhs.getAbsolutePath() : null, ascending, true);
                     break;
                 case SIZE:
-                    result = CompareUtils.compareLongs(lhs != null ? lhs.length() : null, rhs != null ? rhs.length() : null, ascending);
+                    result = compareLongs(lhs != null ? lhs.length() : null, rhs != null ? rhs.length() : null, ascending);
                     break;
                 case LAST_MODIFIED:
-                    result = CompareUtils.compareLongs(lhs != null ? lhs.lastModified() : null, rhs != null ? rhs.lastModified() : null, ascending);
+                    result = compareLongs(lhs != null ? lhs.lastModified() : null, rhs != null ? rhs.lastModified() : null, ascending);
                     break;
             }
 
@@ -2565,7 +2571,7 @@ public final class FileHelper {
 
                             @Override
                             public void shellOut(@NotNull StreamType from, @NotNull String shellLine) {
-                                if (from == StreamType.OUT && !StringUtils.isEmpty(shellLine)) {
+                                if (from == StreamType.OUT && !isEmpty(shellLine)) {
                                     File current = new File(dir, shellLine);
                                     if (notifier != null) {
                                         notifier.onProcessing(current, collected, 0);
@@ -2617,7 +2623,7 @@ public final class FileHelper {
 
                         @Override
                         public void shellOut(@NotNull ShellCallback.StreamType from, @NotNull String shellLine) {
-                            if (from == StreamType.OUT && !StringUtils.isEmpty(shellLine)) {
+                            if (from == StreamType.OUT && !isEmpty(shellLine)) {
                                 long size = 0;
                                 String[] parts = shellLine.split("\\t");
                                 if (parts.length > 1) {

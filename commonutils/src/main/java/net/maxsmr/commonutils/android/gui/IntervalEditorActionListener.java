@@ -6,7 +6,7 @@ import android.widget.TextView;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static net.maxsmr.commonutils.android.gui.GuiUtils.isEnterKeyPressed;
+import static net.maxsmr.commonutils.android.gui.GuiUtilsKt.isEnterKeyPressed;
 
 /**
  * {@linkplain TextView.OnEditorActionListener}, позволяющий реагировать на onEditorAction,

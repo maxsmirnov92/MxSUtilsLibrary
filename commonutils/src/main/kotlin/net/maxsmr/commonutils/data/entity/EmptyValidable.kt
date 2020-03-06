@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.data
+package net.maxsmr.commonutils.data.entity
 
 interface EmptyValidable : Validable {
 

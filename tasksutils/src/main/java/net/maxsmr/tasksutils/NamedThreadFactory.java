@@ -1,12 +1,13 @@
 package net.maxsmr.tasksutils;
 
-import org.jetbrains.annotations.NotNull;
-
-import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.tasksutils.taskexecutor.TaskRunnable;
+
+import org.jetbrains.annotations.NotNull;
 
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 
 public class NamedThreadFactory implements ThreadFactory {
 
@@ -15,7 +16,7 @@ public class NamedThreadFactory implements ThreadFactory {
     public final String threadName;
 
     public NamedThreadFactory(String threadName) {
-        if (StringUtils.isEmpty(threadName)) {
+        if (isEmpty(threadName)) {
             throw new IllegalArgumentException("threadName can't be empty");
         }
         this.threadName = threadName;

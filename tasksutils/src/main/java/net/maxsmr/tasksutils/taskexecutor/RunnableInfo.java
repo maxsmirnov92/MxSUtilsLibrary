@@ -1,7 +1,6 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
 import net.maxsmr.commonutils.data.Predicate;
-import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.data.model.SerializationUtils;
 
 import org.jetbrains.annotations.NotNull;
@@ -15,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.FINISHED;
 import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.PENDING;
 import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.RUNNING;
@@ -42,7 +42,7 @@ public class RunnableInfo implements Serializable {
             throw new IllegalArgumentException("incorrect runnable id: " + id);
 
         this.id = id;
-        this.name = !StringUtils.isEmpty(name)? name : getClass().getSimpleName();
+        this.name = !isEmpty(name)? name : getClass().getSimpleName();
     }
 
     @NotNull

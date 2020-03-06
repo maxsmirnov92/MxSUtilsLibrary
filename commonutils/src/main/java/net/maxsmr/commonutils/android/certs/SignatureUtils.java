@@ -4,12 +4,12 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
-import org.jetbrains.annotations.NotNull;
-import org.jetbrains.annotations.Nullable;
 
-import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.io.ByteArrayInputStream;
 import java.io.File;
@@ -21,6 +21,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 
 public final class SignatureUtils {
 
@@ -111,6 +112,7 @@ public final class SignatureUtils {
         }
 
         @Override
+        @NotNull
         public String toString() {
             return "PackageSignatureInfo{" +
                     "packageName='" + packageName + '\'' +
@@ -176,7 +178,7 @@ public final class SignatureUtils {
             }
 
             public static boolean containsDebug(SignatureInfo info) {
-                return info != null && !StringUtils.isEmpty(info.subjectDN) && info.subjectDN.contains("Debug");
+                return info != null && !isEmpty(info.subjectDN) && info.subjectDN.contains("Debug");
             }
         }
     }

@@ -8,7 +8,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.BaseColumns;
 
-import net.maxsmr.commonutils.data.StringUtils;
+
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation;
@@ -20,6 +20,8 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
+
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 
 public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteContentProvider> implements ISQLiteOperation {
 
@@ -110,7 +112,7 @@ public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteConten
                 String columnName = column.getKey();
                 Class<?> columnType = column.getValue();
 
-                if (StringUtils.isEmpty(columnName)) {
+                if (isEmpty(columnName)) {
                     throw new RuntimeException("one of specified column names is null or empty");
                 }
 

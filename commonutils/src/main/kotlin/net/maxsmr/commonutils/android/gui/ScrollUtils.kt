@@ -17,6 +17,7 @@ import com.google.android.material.appbar.AppBarLayout
 import net.maxsmr.commonutils.android.gui.RecyclerScrollState.*
 import net.maxsmr.commonutils.android.gui.ScrollState.*
 import net.maxsmr.commonutils.android.gui.ScrollState.UNKNOWN
+
 const val SCROLL_ANIMATION_DURATION = 400L
 const val ALL_STATES = 10 // Все состояния
 
@@ -24,25 +25,30 @@ const val ALL_STATES = 10 // Все состояния
  * Запрашиваем проскрол для отображения вью
  * @return Whether any parent scrolled.
  */
-fun View.requestScrollOnScreen() =
-        this.post {
-            val rect = Rect(0, 0, width, height)
-            requestRectangleOnScreen(rect, false)
+fun requestScrollOnScreen(view: View) =
+        view.post {
+            val rect = Rect(0, 0, view.width, view.height)
+            view.requestRectangleOnScreen(rect, false)
         }
 
 /**
  * Определяет возможность скролла у [RecyclerView] с [LinearLayoutManager]
  * @param isFromStart смотреть от начала
  */
-fun RecyclerView.isScrollable(isFromStart: Boolean = false): Boolean? {
-    val layoutManager = layoutManager as? LinearLayoutManager ?: return null
-    val adapter = adapter ?: return null;
+fun isScrollable(view: RecyclerView, isFromStart: Boolean = false): Boolean? {
+    val layoutManager = view.layoutManager as? LinearLayoutManager ?: return null
+    val adapter = view.adapter ?: return null
     return layoutManager.findLastCompletelyVisibleItemPosition() < adapter.itemCount - 1
             && (isFromStart.not() || layoutManager.findFirstCompletelyVisibleItemPosition() == 0)
 }
 
-fun RecyclerView.setOnScrollChangesListener(layoutManager: LinearLayoutManager, controlState: Int = ALL_STATES, listener: ((RecyclerScrollState) -> Unit)) {
-    addOnScrollListener(object : RecyclerView.OnScrollListener() {
+fun setOnScrollChangesListener(
+        view: RecyclerView,
+        layoutManager: LinearLayoutManager,
+        controlState: Int = ALL_STATES,
+        listener: ((RecyclerScrollState) -> Unit)
+) {
+    view.addOnScrollListener(object : RecyclerView.OnScrollListener() {
 
         var previousFirstVisiblePosition: Int? = null
 
@@ -69,44 +75,54 @@ fun RecyclerView.setOnScrollChangesListener(layoutManager: LinearLayoutManager, 
 }
 
 @TargetApi(Build.VERSION_CODES.M)
-fun ScrollView.setOnScrollChangesListener(listener: ((ScrollState) -> Unit)) {
-    setOnScrollChangeListener { _, scrollX, scrollY, oldScrollX, oldScrollY ->
-        listener.invoke(detectScrollChangesByParams(this, scrollX, scrollY, oldScrollX, oldScrollY))
+fun setOnScrollChangesListener(view: ScrollView, listener: ((ScrollState) -> Unit)) {
+    view.setOnScrollChangeListener { _, scrollX, scrollY, oldScrollX, oldScrollY ->
+        listener.invoke(detectScrollChangesByParams(view, scrollX, scrollY, oldScrollX, oldScrollY))
     }
 }
 
 @TargetApi(Build.VERSION_CODES.M)
-fun NestedScrollView.setOnScrollChangesListener(listener: ((ScrollState) -> Unit)) {
-    setOnScrollChangeListener { _, scrollX, scrollY, oldScrollX, oldScrollY ->
-        listener.invoke(detectScrollChangesByParams(this, scrollX, scrollY, oldScrollX, oldScrollY))
+fun setOnScrollChangesListener(view: NestedScrollView, listener: ((ScrollState) -> Unit)) {
+    view.setOnScrollChangeListener { _, scrollX, scrollY, oldScrollX, oldScrollY ->
+        listener.invoke(detectScrollChangesByParams(view, scrollX, scrollY, oldScrollX, oldScrollY))
     }
 }
 
 /**
  * Скролл в указанную позицию (x, y) [ScrollView]
  */
-fun ScrollView.scrollTo(activity: Activity?, x: Int, y: Int, smoothScroll: Boolean = true) {
+fun scrollTo(
+        view: ScrollView,
+        activity: Activity?,
+        x: Int,
+        y: Int,
+        smoothScroll: Boolean = true
+) {
     // если не очистить текущий фокус,
     // может не сработать
-    GuiUtils.clearFocus(activity)
-    fullScroll(View.FOCUS_DOWN)
+    clearFocus(activity)
+    view.fullScroll(View.FOCUS_DOWN)
     if (smoothScroll) {
-        smoothScrollTo(x, y)
+        view.smoothScrollTo(x, y)
     } else {
-        scrollTo(x, y)
+        view.scrollTo(x, y)
     }
-    parent.requestChildFocus(this, this)
+    view.parent.requestChildFocus(view, view)
 }
 
 /**
  * Скролл в указанную позицию [RecyclerView]
  */
-fun RecyclerView.scrollTo(position: Int, smoothScroll: Boolean = true) {
+fun scrollTo(
+        view: RecyclerView,
+        position: Int,
+        smoothScroll: Boolean = true
+) {
     if (position != RecyclerView.NO_POSITION) {
         if (smoothScroll) {
-            smoothScrollToPosition(position)
+            view.smoothScrollToPosition(position)
         } else {
-            scrollToPosition(position)
+            view.scrollToPosition(position)
         }
     }
 }
@@ -115,13 +131,13 @@ fun RecyclerView.scrollTo(position: Int, smoothScroll: Boolean = true) {
  * При неполностью раскрытом состоянии [AppBarLayout]
  * прокрутить на указанный [offset] с анимацией или без
  */
-fun AppBarLayout.scrollByOffset(offset: Int, animationDuration: Long = SCROLL_ANIMATION_DURATION) {
-    val params = layoutParams as CoordinatorLayout.LayoutParams
+fun scrollByOffset(layout: AppBarLayout, offset: Int, animationDuration: Long = SCROLL_ANIMATION_DURATION) {
+    val params = layout.layoutParams as CoordinatorLayout.LayoutParams
     val behavior = params.behavior as AppBarLayout.Behavior?
     behavior?.let {
         val offsetLambda: ((Int) -> Unit) = { offset ->
             behavior.topAndBottomOffset = offset
-            requestLayout()
+            layout.requestLayout()
         }
         if (animationDuration > 0) {
             val valueAnimator = ValueAnimator.ofInt()

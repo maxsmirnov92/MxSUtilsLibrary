@@ -5,7 +5,7 @@ package net.maxsmr.commonutils.data.gson
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import net.maxsmr.commonutils.data.EMPTY_STRING
-import net.maxsmr.commonutils.data.StringUtils
+import net.maxsmr.commonutils.data.isEmpty
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.lang.reflect.Type
@@ -93,7 +93,7 @@ fun <P : Number?> getPrimitiveNumber(obj: Any?, clazz: Class<P>): P? {
     return if (obj != null && clazz.isInstance(obj)) obj as P else null
 }
 
-fun <P : Number?> getPrimitiveNumber(element: JsonElement?, clazz: Class<P>): P? {
+fun <P : Number?> getPrimitiveNumber(element: JsonElement?): P? {
     if (element !is JsonPrimitive) {
         return null
     }
@@ -154,7 +154,7 @@ fun <J : JsonElement?> asJsonElement(
         clazz: Class<J>
 ): J? {
     var element: JsonElement? = null
-    if (!StringUtils.isEmpty(string)) {
+    if (!isEmpty(string)) {
         try {
             element = parser.parse(string)
         } catch (e: JsonParseException) {
@@ -163,5 +163,7 @@ fun <J : JsonElement?> asJsonElement(
     }
     return if (element != null && clazz.isInstance(element)) {
         element as J
-    } else null
+    } else {
+        null
+    }
 }

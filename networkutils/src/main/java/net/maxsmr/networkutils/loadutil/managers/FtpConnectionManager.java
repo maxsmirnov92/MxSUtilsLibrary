@@ -2,10 +2,10 @@ package net.maxsmr.networkutils.loadutil.managers;
 
 import net.maxsmr.commonutils.data.Pair;
 
-import net.maxsmr.commonutils.data.CompareUtils;
+
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.StreamUtils;
-import net.maxsmr.commonutils.data.StringUtils;
+
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.NetworkHelper;
@@ -27,6 +27,8 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
 
+import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.data.number.MathUtils.safeLongToInt;
 
 public class FtpConnectionManager {
@@ -139,8 +141,8 @@ public class FtpConnectionManager {
             user = "anonymous";
         }
 
-        if (!CompareUtils.stringsEqual(this.user, user, false)
-                || !CompareUtils.stringsEqual(this.password, password, false)) {
+        if (!stringsEqual(this.user, user, false)
+                || !stringsEqual(this.password, password, false)) {
 
             this.user = user;
             this.password = password;
@@ -349,7 +351,7 @@ public class FtpConnectionManager {
     public synchronized Pair<InputStream, Long> retrieveFtpFileData(String workingDir, String fileName, FileType fileType) {
         logger.d("retrieveFtpFileData(), workingDir=" + workingDir + ", fileName=" + fileName + ", fileType=" + fileType);
 
-        if (StringUtils.isEmpty(workingDir) || StringUtils.isEmpty(fileName)) {
+        if (isEmpty(workingDir) || isEmpty(fileName)) {
             logger.e("incorrect remote working directory name or remote file name");
             return null;
         }
@@ -364,7 +366,7 @@ public class FtpConnectionManager {
             final String encodedWorkingDir = new String(workingDir.getBytes("UTF-8"), "ISO-8859-1");
             final String currentWorkingDir = ftpClient.printWorkingDirectory();
 
-            if (!CompareUtils.stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
+            if (!stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
                 if (!ftpClient.changeWorkingDirectory(encodedWorkingDir)) {
                     logger.e("can't change working dir");
 
@@ -395,7 +397,7 @@ public class FtpConnectionManager {
 
             for (FTPFile ftpFile : ftpFiles) {
 
-                if (ftpFile.isFile() && ftpFile.getSize() > 0 && CompareUtils.stringsEqual(ftpFile.getName(), encodedFileName, false)) {
+                if (ftpFile.isFile() && ftpFile.getSize() > 0 && stringsEqual(ftpFile.getName(), encodedFileName, false)) {
 
                     logger.d("starting retrieving stream...");
 
@@ -570,7 +572,7 @@ public class FtpConnectionManager {
             final String encodedWorkingDir = new String(workingDir.getBytes("UTF-8"), "ISO-8859-1");
             final String currentWorkingDir = ftpClient.printWorkingDirectory();
 
-            if (!CompareUtils.stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
+            if (!stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
                 if (!ftpClient.changeWorkingDirectory(encodedWorkingDir)) {
                     logger.e("can't change working dir");
 
@@ -694,7 +696,7 @@ public class FtpConnectionManager {
     public synchronized boolean isFtpFileExists(String workingDir, String fileName) {
         logger.d("isFtpFileExists(), workingDir=" + workingDir + ", fileName=" + fileName);
 
-        if (StringUtils.isEmpty(workingDir) || StringUtils.isEmpty(fileName)) {
+        if (isEmpty(workingDir) || isEmpty(fileName)) {
             logger.e("incorrect remote working directory name or remote file name");
             return false;
         }
@@ -709,7 +711,7 @@ public class FtpConnectionManager {
             final String encodedWorkingDir = new String(workingDir.getBytes("UTF-8"), "ISO-8859-1");
             final String currentWorkingDir = ftpClient.printWorkingDirectory();
 
-            if (!CompareUtils.stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
+            if (!stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
                 if (!ftpClient.changeWorkingDirectory(encodedWorkingDir)) {
                     logger.e("can't change working dir");
 
@@ -733,7 +735,7 @@ public class FtpConnectionManager {
 
                         logger.d("current ftp file: " + ftpFile.getName());
 
-                        final boolean equals = CompareUtils.stringsEqual(ftpFile.getName(), encodedFileName, false);
+                        final boolean equals = stringsEqual(ftpFile.getName(), encodedFileName, false);
                         logger.i("equals " + encodedFileName + ": " + equals);
 
                         if (equals) {
@@ -775,7 +777,7 @@ public class FtpConnectionManager {
             final String encodedWorkingDir = new String(workingDir.getBytes("UTF-8"), "ISO-8859-1");
             final String currentWorkingDir = ftpClient.printWorkingDirectory();
 
-            if (!CompareUtils.stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
+            if (!stringsEqual(currentWorkingDir, encodedWorkingDir, false)) {
                 if (!ftpClient.changeWorkingDirectory(encodedWorkingDir)) {
                     logger.e("can't change working dir");
 
@@ -796,7 +798,7 @@ public class FtpConnectionManager {
 
             if (dstFtpFileNames != null && dstFtpFileNames.length > 0) {
                 for (String ftpFileName : dstFtpFileNames) {
-                    if (!StringUtils.isEmpty(ftpFileName)) {
+                    if (!isEmpty(ftpFileName)) {
                         if (ftpFileName.equalsIgnoreCase(encodedDstFileName)) {
                             logger.w("ftp file with name " + encodedDstFileName + " already exists");
                             if (!overwriteExisting) {
@@ -819,7 +821,7 @@ public class FtpConnectionManager {
 
                         logger.d("current ftp file: " + ftpFile.getName());
 
-                        final boolean equals = CompareUtils.stringsEqual(ftpFile.getName(), encodedSrcFileName, false);
+                        final boolean equals = stringsEqual(ftpFile.getName(), encodedSrcFileName, false);
                         logger.i("equals " + encodedSrcFileName + ": " + equals);
 
                         if (equals) {

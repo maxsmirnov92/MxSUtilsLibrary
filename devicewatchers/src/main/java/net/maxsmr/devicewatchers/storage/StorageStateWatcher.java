@@ -1,9 +1,9 @@
 package net.maxsmr.devicewatchers.storage;
 
-import net.maxsmr.commonutils.data.CompareUtils;
+
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
-import net.maxsmr.commonutils.data.StringUtils;
+
 import net.maxsmr.commonutils.data.Units;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -23,6 +23,8 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
+import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 
 public final class StorageStateWatcher {
@@ -217,7 +219,7 @@ public final class StorageStateWatcher {
                             }
 
                             String deletePath = entry.getKey(); // settings.targetPath + File.separator +
-                            if (StringUtils.isEmpty(deletePath)) {
+                            if (isEmpty(deletePath)) {
                                 throw new RuntimeException("deletePath is empty");
                             }
                             if (FileHelper.isDirExists(deletePath)) {
@@ -339,7 +341,7 @@ public final class StorageStateWatcher {
             return Predicate.Methods.find(mapping.keySet(), new Predicate<StorageWatchSettings.DeleteOptionPair>() {
                 @Override
                 public boolean apply(StorageWatchSettings.DeleteOptionPair element) {
-                    return element != null && CompareUtils.stringsEqual(element.path, path, true);
+                    return element != null && stringsEqual(element.path, path, true);
                 }
             });
         }

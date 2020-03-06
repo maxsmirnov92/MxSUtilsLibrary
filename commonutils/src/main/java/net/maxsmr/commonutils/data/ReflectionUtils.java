@@ -6,65 +6,86 @@ import org.jetbrains.annotations.Nullable;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 
+import static net.maxsmr.commonutils.data.CompareUtilsKt.objectsEqual;
+import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+
 public class ReflectionUtils {
 
     /**
      * Finds method in class by iterating the available methods
      * CAUTION: Do not use this for overloaded methods!
      */
-    public static Method findMethod(@NotNull Class<?> clazz, String methodName) throws NoSuchMethodException {
-        if (StringUtils.isEmpty(methodName)) {
-            throw new IllegalArgumentException("Nethod name is empty");
-        }
+    @Nullable
+    public static Method findMethod(
+            @NotNull Class<?> clazz,
+            String methodName,
+            boolean ignoreCase,
+            boolean makeAccessible
+    ) {
         for (Method method : clazz.getMethods()) {
-            if (methodName.equals(method.getName())) {
-                if (!method.isAccessible()) {
+            if (stringsEqual(methodName, method.getName(), ignoreCase)) {
+                if (makeAccessible && !method.isAccessible()) {
                     method.setAccessible(true);
                 }
                 return method;
             }
         }
-        throw new NoSuchMethodException("Method '" + methodName + "' not found in class " + clazz.getName());
+        return null;
     }
 
     /**
      * @param callObject null if field is static
      */
     @SuppressWarnings("unchecked")
-    public static <T, O> T getFieldValue(@NotNull Class<O> classOfO, @Nullable O callObject, String fieldName) throws RuntimeException, NoSuchFieldException {
-        if (StringUtils.isEmpty(fieldName)) {
+    @Nullable
+    public static <T, O> T getFieldValue(
+            @NotNull Class<O> classOfObject,
+            @Nullable O callObject,
+            String fieldName
+    ) throws RuntimeException {
+        if (isEmpty(fieldName)) {
             throw new IllegalArgumentException("Field name is empty");
         }
-        final Field targetField = classOfO.getDeclaredField(fieldName);
-        if (!targetField.isAccessible()) {
-            targetField.setAccessible(true);
-        }
+        Field resultField;
+        Exception resultException = null;
         try {
-            return (T) targetField.get(callObject);
-        } catch (IllegalAccessException e) {
-            throw new RuntimeException(e);
+            resultField = classOfObject.getDeclaredField(fieldName);
+        } catch (NoSuchFieldException e) {
+            resultField = null;
+            resultException = e;
         }
+        if (resultField != null) {
+            if (!resultField.isAccessible()) {
+                resultField.setAccessible(true);
+            }
+            try {
+                // or 'isInstance'
+                return (T) resultField.get(callObject);
+            } catch (IllegalAccessException | ClassCastException e) {
+                resultException = e;
+            }
+        }
+        throw new RuntimeException(resultException);
     }
 
-    /**
-     * @param id      the constant value of resource subclass field
-     * @param resType subclass where the static final field with given id value declared
-     */
-    public static boolean checkResourceIdExists(int id, String resName, Class<?> resType) throws NullPointerException, IllegalArgumentException, IllegalAccessException {
+    public static boolean checkFieldValueExists(
+            Object fieldValue,
+            String fieldName,
+            @NotNull Class<?> type,
+            boolean ignoreCase
+    ) {
 
-        if (resType == null)
-            throw new NullPointerException("resType is null");
-
-        Field[] fields = resType.getDeclaredFields();
+        Field[] fields = type.getDeclaredFields();
 
         if (fields.length == 0)
             return false;
 
         for (Field field : fields) {
             field.setAccessible(true);
-            if (field.getName().equals(resName)) {
+            if (stringsEqual(fieldName, field.getName(), ignoreCase)) {
                 try {
-                    if (CompareUtils.objectsEqual(field.getInt(null), id))
+                    if (objectsEqual(field.get(null), fieldValue))
                         return true;
                 } catch (Exception e) {
                     e.printStackTrace();

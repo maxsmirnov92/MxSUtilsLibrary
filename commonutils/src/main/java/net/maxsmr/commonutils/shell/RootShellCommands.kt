@@ -117,7 +117,7 @@ val installedPackages: List<String>
         }
         val packages = ArrayList<String>()
         for (out in commandResult.getStdOutLines()) {
-            if (!StringUtils.isEmpty(out)) {
+            if (!isEmpty(out)) {
                 packages.add(out.replaceFirst("package:".toRegex(), ""))
             }
         }
@@ -202,7 +202,7 @@ fun installApkUntilSuccess(
  */
 fun uninstallPackage(packageName: String): Boolean {
 
-    if (StringUtils.isEmpty(packageName)) {
+    if (isEmpty(packageName)) {
         logger.e("Cannot uninstall app: package name is empty")
         return false
     }
@@ -241,7 +241,7 @@ fun killProcessesByName(
         processName: String,
         manager: AbstractProcessManager,
         includeSystemPackages: Boolean,
-        matchFlags: Int = CompareUtils.MatchStringOption.EQUALS.flag
+        matchFlags: Int = MatchStringOption.EQUALS.flag
 ): Boolean {
     val statusMap = killProcessesByNameWithStatus(processName, manager, includeSystemPackages, matchFlags)
     var result = true
@@ -263,7 +263,7 @@ fun killProcessesByNameWithStatus(
         processName: String,
         manager: AbstractProcessManager,
         includeSystemPackages: Boolean,
-        matchFlags: Int = CompareUtils.MatchStringOption.EQUALS.flag
+        matchFlags: Int = MatchStringOption.EQUALS.flag
 ): Map<Int, Boolean>? {
     val result = LinkedHashMap<Int, Boolean>()
     val pids = getPidsByName(processName, manager, includeSystemPackages, matchFlags)
@@ -283,14 +283,14 @@ fun killProcessesByNames(
         processNames: List<String>?,
         manager: AbstractProcessManager,
         includeSystemPackages: Boolean,
-        matchFlags: Int = CompareUtils.MatchStringOption.EQUALS.flag
+        matchFlags: Int = MatchStringOption.EQUALS.flag
 ): Boolean {
     var result = true
     if (processNames != null && processNames.isNotEmpty()) {
         val runningProcesses = manager.getProcesses(includeSystemPackages)
         for (process in runningProcesses) {
             if (Predicate.Methods.contains(processNames) { element ->
-                        CompareUtils.stringsMatch(process.packageName, element, matchFlags)
+                        stringsMatch(process.packageName, element, matchFlags)
                     }) {
                 if (!killProcessByPid(process.pid)) {
                     result = false
@@ -315,13 +315,13 @@ fun isInstallOrUninstallSuccess(commandResult: CommandResult): Boolean {
 
 private fun isInstallOrUninstallSuccess(std: List<String>): Boolean {
     return Predicate.Methods.contains(std) { s ->
-        !StringUtils.isEmpty(s) && s.toLowerCase(Locale.getDefault()).startsWith("success")
+        !isEmpty(s) && s.toLowerCase(Locale.getDefault()).startsWith("success")
     }
 }
 
 fun getInstallFailErrString(commandResult: CommandResult): String {
     var failure = getInstallFailErrString(commandResult.getStdErrLines())
-    if (StringUtils.isEmpty(failure)) {
+    if (isEmpty(failure)) {
         failure = getInstallFailErrString(commandResult.getStdOutLines())
     }
     return failure
@@ -329,6 +329,6 @@ fun getInstallFailErrString(commandResult: CommandResult): String {
 
 private fun getInstallFailErrString(std: List<String>): String {
     return Predicate.Methods.find(std) { s ->
-        !StringUtils.isEmpty(s) && s.toLowerCase(Locale.getDefault()).startsWith("failure")
+        !isEmpty(s) && s.toLowerCase(Locale.getDefault()).startsWith("failure")
     } ?: EMPTY_STRING
 }

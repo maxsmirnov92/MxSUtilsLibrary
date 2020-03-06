@@ -10,7 +10,7 @@ import android.os.Bundle;
 import android.provider.BaseColumns;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.data.StringUtils;
+
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation;
@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 import static net.maxsmr.customcontentprovider.sqlite.providers.AbstractSQLiteTableProvider.Order.ASC;
 
 public abstract class AbstractSQLiteContentProvider extends ContentProvider {
@@ -122,12 +123,12 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
         if (matchResult == UriMatch.MATCH_ALL) {
 
-            if (StringUtils.isEmpty(orderBy))
+            if (isEmpty(orderBy))
                 orderBy = BaseColumns._ID + " " + ASC;
 
         } else if (matchResult == UriMatch.MATCH_ID) {
 
-            if (StringUtils.isEmpty(where)) {
+            if (isEmpty(where)) {
                 where = BaseColumns._ID + "=?";
             } else {
                 where += " AND " + BaseColumns._ID + "=?";
@@ -213,7 +214,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
         if (matchResult == UriMatch.MATCH_ID) {
 
-            if (StringUtils.isEmpty(where)) {
+            if (isEmpty(where)) {
                 where = BaseColumns._ID + "=?";
             } else {
                 where += " AND " + BaseColumns._ID + "=?";
@@ -265,7 +266,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
         if (matchResult == UriMatch.MATCH_ID) {
 
-            if (StringUtils.isEmpty(where)) {
+            if (isEmpty(where)) {
                 where = BaseColumns._ID + "=?";
             } else {
                 where += " AND " + BaseColumns._ID + "=?";
@@ -318,7 +319,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
     protected void checkFields() throws RuntimeException {
 
-        if (StringUtils.isEmpty(databaseName))
+        if (isEmpty(databaseName))
             throw new RuntimeException("databaseName is empty");
 
         FileHelper.checkDir(databasePath);
@@ -345,7 +346,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
         for (String authority : authorities) {
 
-            if (StringUtils.isEmpty(authority))
+            if (isEmpty(authority))
                 continue;
 
             for (AbstractSQLiteTableProvider provider : tableProviders) {

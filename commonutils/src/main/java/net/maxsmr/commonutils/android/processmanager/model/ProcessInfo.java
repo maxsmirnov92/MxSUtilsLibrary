@@ -1,10 +1,10 @@
 package net.maxsmr.commonutils.android.processmanager.model;
 
 
-import net.maxsmr.commonutils.data.CompareUtils;
-
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
+
+import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
 
 public class ProcessInfo {
     
@@ -93,7 +93,7 @@ public class ProcessInfo {
         @Nullable
         public static ProcessState fromName(String name) {
             for (ProcessState s : ProcessState.values()) {
-                if (CompareUtils.stringsEqual(name, s.name(), false)) {
+                if (stringsEqual(name, s.name(), false)) {
                     return s;
                 }
             }
@@ -108,7 +108,7 @@ public class ProcessInfo {
         @Nullable
         public static PCY fromName(String name) {
             for (PCY p : PCY.values()) {
-                if (CompareUtils.stringsEqual(name, p.name(), false)) {
+                if (stringsEqual(name, p.name(), false)) {
                     return p;
                 }
             }

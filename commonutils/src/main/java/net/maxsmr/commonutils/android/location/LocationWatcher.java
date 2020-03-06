@@ -10,8 +10,6 @@ import android.location.LocationProvider;
 import android.os.Bundle;
 
 import net.maxsmr.commonutils.android.location.info.TrackingStatus;
-import net.maxsmr.commonutils.data.CompareUtils;
-import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -22,6 +20,9 @@ import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+
+import static net.maxsmr.commonutils.data.CompareUtilsKt.objectsEqual;
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 
 public final class LocationWatcher {
 
@@ -93,7 +94,7 @@ public final class LocationWatcher {
 
     private boolean updateLocation(@NotNull Location location) {
 
-        final boolean isSameLocationInfos = CompareUtils.objectsEqual(mLastLocation, location);
+        final boolean isSameLocationInfos = objectsEqual(mLastLocation, location);
         logger.i("last location info: " + mLastLocation + ", new location info: " + location + ", is same: " + isSameLocationInfos);
 
         final float accuracy = mLastLocation == null ? 0 : mLastLocation.getAccuracy();
@@ -275,7 +276,7 @@ public final class LocationWatcher {
     }
 
     public static boolean isProviderEnabled(@NotNull Context context, @Nullable String provider) {
-        if (StringUtils.isEmpty(provider)) {
+        if (isEmpty(provider)) {
             return false;
         }
         final LocationManager locationManager = (LocationManager) context.getSystemService(Context.LOCATION_SERVICE);

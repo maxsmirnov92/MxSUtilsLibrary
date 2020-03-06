@@ -4,7 +4,6 @@ import com.google.gson.ExclusionStrategy;
 import com.google.gson.FieldAttributes;
 
 import net.maxsmr.commonutils.data.Predicate;
-import net.maxsmr.commonutils.data.StringUtils;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -12,6 +11,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
+
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 
 public class FieldsExclusionStrategy implements ExclusionStrategy {
 
@@ -38,7 +39,7 @@ public class FieldsExclusionStrategy implements ExclusionStrategy {
             return true;
         }
         Class<?> clazz = f.getDeclaringClass();
-        return clazz == null || (StringUtils.isEmpty(f.getName()) || Predicate.Methods.contains(fieldNamesToCheck, element -> element != null && element.equals(f.getName()))) ||
+        return clazz == null || (isEmpty(f.getName()) || Predicate.Methods.contains(fieldNamesToCheck, element -> element != null && element.equals(f.getName()))) ||
                 (classesToCheck != null && Predicate.Methods.contains(classesToCheck, clazz::equals));
     }
 

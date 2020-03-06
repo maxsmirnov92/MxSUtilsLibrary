@@ -4,11 +4,12 @@ import android.content.Context;
 import net.maxsmr.commonutils.data.Pair;
 
 import net.maxsmr.commonutils.data.Predicate;
-import net.maxsmr.commonutils.data.StringUtils;
 
 import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
+
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 
 public abstract class AbstractTopProcessManager extends AbstractShellProcessManager {
 
@@ -25,7 +26,7 @@ public abstract class AbstractTopProcessManager extends AbstractShellProcessMana
     protected int getOutputHeaderIndex(@NotNull List<String> output) {
         // in 'top' header is usually not located in 0 index
         Pair<Integer, String> headerIndex = Predicate.Methods.findWithIndex(output, element -> {
-            if (!StringUtils.isEmpty(element)) {
+            if (!isEmpty(element)) {
                 element = element.trim();
                 return element.toLowerCase().contains(Column.PID.name().toLowerCase()); // try to find by PID string
             }

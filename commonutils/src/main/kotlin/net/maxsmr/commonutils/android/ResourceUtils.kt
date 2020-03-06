@@ -10,8 +10,8 @@ import android.util.TypedValue
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.graphics.drawable.DrawableCompat
 import net.maxsmr.commonutils.R
-import net.maxsmr.commonutils.android.gui.setColor
 
 const val EMPTY_ID = 0
 const val INVALID_ATTRIBUTE = 0
@@ -61,17 +61,33 @@ fun getResourceIdOrNull(typedArray: TypedArray, attributeValue: Int): Int? =
             return null
         }
 
-fun getColorFilteredDrawable(
+fun getColoredDrawable(
         resources: Resources,
         @DrawableRes icon: Int,
         @ColorInt color: Int,
         mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ): Drawable? {
-    ResourcesCompat.getDrawable(resources, icon, null)?.let { drawable ->
-        drawable.setColor(ColorStateList.valueOf(color), mode)
-        return drawable
+    ResourcesCompat.getDrawable(resources, icon, null)?.let {
+        setDrawableColor(it, ColorStateList.valueOf(color), mode)
+        return it
     }
     return null
+}
+
+/**
+ * Выставить цветовой фильтр [ColorStateList] для [Drawable]
+ */
+fun setDrawableColor(
+        drawable: Drawable,
+        color: ColorStateList,
+        mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
+) {
+    if (SdkUtils.isAtLeastLollipop()) {
+        DrawableCompat.setTintList(drawable, color)
+        DrawableCompat.setTintMode(drawable, mode)
+    } else {
+        drawable.setColorFilter(color.defaultColor, mode)
+    }
 }
 
 @ColorInt

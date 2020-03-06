@@ -11,10 +11,8 @@ import org.jetbrains.annotations.Nullable;
  */
 public class Pair<F, S> {
 
-    @Nullable
     public final F first;
 
-    @Nullable
     public final S second;
 
     /**
@@ -23,7 +21,7 @@ public class Pair<F, S> {
      * @param first the first object in the Pair
      * @param second the second object in the pair
      */
-    public Pair(@Nullable F first, @Nullable S second) {
+    public Pair(F first, S second) {
         this.first = first;
         this.second = second;
     }

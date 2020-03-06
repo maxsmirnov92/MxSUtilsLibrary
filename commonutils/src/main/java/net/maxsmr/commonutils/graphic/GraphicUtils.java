@@ -42,10 +42,8 @@ import androidx.annotation.XmlRes;
 import androidx.exifinterface.media.ExifInterface;
 import androidx.palette.graphics.Palette;
 
-import net.maxsmr.commonutils.android.gui.GuiUtils;
 import net.maxsmr.commonutils.android.media.MetadataRetriever;
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -85,6 +83,8 @@ import static androidx.exifinterface.media.ExifInterface.TAG_MAKE;
 import static androidx.exifinterface.media.ExifInterface.TAG_MODEL;
 import static androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION;
 import static androidx.exifinterface.media.ExifInterface.TAG_WHITE_BALANCE;
+import static net.maxsmr.commonutils.android.gui.GuiUtilsKt.getCorrectedDisplayRotation;
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 
 public final class GraphicUtils {
 
@@ -128,7 +128,7 @@ public final class GraphicUtils {
             return bitmap;
         }
 
-        if (StringUtils.isEmpty(text)) {
+        if (isEmpty(text)) {
             logger.e("text is null or empty");
             return bitmap;
         }
@@ -170,7 +170,7 @@ public final class GraphicUtils {
             return fontSize;
         }
 
-        if (StringUtils.isEmpty(text)) {
+        if (isEmpty(text)) {
             logger.e("text is empty");
             return fontSize;
         }
@@ -235,7 +235,7 @@ public final class GraphicUtils {
 
         String ext = getFileExtByCompressFormat(format);
 
-        if (StringUtils.isEmpty(ext)) {
+        if (isEmpty(ext)) {
             logger.e("unknown format: " + format);
             ext = FileHelper.getFileExtension(file.getName());
         }
@@ -809,7 +809,7 @@ public final class GraphicUtils {
     }
 
     public static int getExifOrientationByRotationAngle(int degrees) {
-        int orientation = GuiUtils.getCorrectedDisplayRotation(degrees);
+        int orientation = getCorrectedDisplayRotation(degrees);
         switch (orientation) {
             case 90:
                 orientation = ExifInterface.ORIENTATION_ROTATE_90;
@@ -830,7 +830,7 @@ public final class GraphicUtils {
         if (isBitmapCorrect(sourceBitmap)) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
                 final String path = FileHelper.getPath(context, uri);
-                if (!StringUtils.isEmpty(path)) {
+                if (!isEmpty(path)) {
                     ExifInterface exif = null;
                     try {
                         exif = new ExifInterface(path);
@@ -988,7 +988,7 @@ public final class GraphicUtils {
         }
         if (attributes != null) {
             for (String attr : attributes) {
-                if (!StringUtils.isEmpty(attr)) {
+                if (!isEmpty(attr)) {
                     final String value = oldExif.getAttribute(attr);
                     if (value != null) {
                         newExif.setAttribute(attr, value);

@@ -2,14 +2,12 @@ package net.maxsmr.commonutils.android.processmanager.shell.base;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
-import net.maxsmr.commonutils.data.Pair;
 
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
 import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
-import net.maxsmr.commonutils.data.CompareUtils;
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.Pair;
 import net.maxsmr.commonutils.data.Predicate;
-import net.maxsmr.commonutils.data.StringUtils;
 import net.maxsmr.commonutils.shell.CommandResult;
 import net.maxsmr.commonutils.shell.ShellWrapper;
 
@@ -27,7 +25,10 @@ import java.util.regex.Pattern;
 
 import static net.maxsmr.commonutils.android.AppUtilsKt.getApplicationInfo;
 import static net.maxsmr.commonutils.android.processmanager.model.ProcessInfo.ProcessState.S;
+import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
 import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.number.NumberConversionUtilsKt.toNotNullIntNoThrow;
 import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
 import static net.maxsmr.commonutils.shell.RootShellCommandsKt.isRootAvailable;
 
@@ -191,7 +192,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
         final Map<Column, Integer> indexMap = new LinkedHashMap<>();
         final Pair<Map<Column, Integer>, List<String>> result = new Pair<>(indexMap, columnNamesList);
 
-        if (StringUtils.isEmpty(headerLine)) {
+        if (isEmpty(headerLine)) {
             logger.e("Cannot parse output header line " + headerIndex + ": empty");
             return result;
         }
@@ -207,7 +208,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
         final String[] columnNames = headerLine.split("\\s+");
 
         for (String name : columnNames) {
-            if (!StringUtils.isEmpty(name)) {
+            if (!isEmpty(name)) {
                 String[] parts = name.split("\\d");
                 // remove trash, containing digits
                 if (parts.length <= 1) {
@@ -215,10 +216,10 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
                     if (bracketIndex > 0) {
                         final String namePartOne = name.substring(0, bracketIndex);
                         final String namePartTwo = name.substring(bracketIndex);
-                        if (!StringUtils.isEmpty(namePartOne)) {
+                        if (!isEmpty(namePartOne)) {
                             columnNamesList.add(namePartOne);
                         }
-                        if (!StringUtils.isEmpty(namePartTwo)) {
+                        if (!isEmpty(namePartTwo)) {
                             columnNamesList.add(namePartTwo);
                         }
                     } else {
@@ -241,11 +242,11 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
             }
 
             for (final String columnName : names) {
-                if (StringUtils.isEmpty(columnName)) {
+                if (isEmpty(columnName)) {
                     throw new IllegalArgumentException("Cannot parse output header line " + headerIndex + ": name is not specified for column " + column);
                 }
                 Pair<Integer, String> indexPair = Predicate.Methods.findWithIndex(columnNamesList, element -> {
-                    return CompareUtils.stringsEqual(element, columnName, true); // May be "NAME" or "Name", for example
+                    return stringsEqual(element, columnName, true); // May be "NAME" or "Name", for example
                 });
                 if (indexPair != null && indexPair.first != null && indexPair.first >= 0) {
                     indexMap.put(column, indexPair.first);
@@ -266,7 +267,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
             throw new IllegalArgumentException("Incorrect line index: " + lineIndex);
         }
 
-        if (StringUtils.isEmpty(line)) {
+        if (isEmpty(line)) {
             logger.e("Cannot parse output line " + lineIndex + ": empty");
             return null;
         }
@@ -298,7 +299,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
             processName = processNameParts[0];
         }
 
-        final boolean isPackageValid = !StringUtils.isEmpty(processName)
+        final boolean isPackageValid = !isEmpty(processName)
                 && PACKAGE_PATTERN.matcher(processName.toLowerCase(Locale.getDefault())).matches()
                 && isPackageInstalled(processName);
 
@@ -321,11 +322,11 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
         final int statIndex = getValueIndex(columnNames, indexMap, Column.STAT, fields);
 
         final String user = isValueIndexValid(userIndex, fields) ? fields[userIndex].trim() : null;
-        final int userId = StringUtils.strToInt(user);
-        final int pid = StringUtils.strToInt(isValueIndexValid(pidIndex, fields) ? fields[pidIndex].trim() : null);
-        final int pPid = StringUtils.strToInt(isValueIndexValid(pPidIndex, fields) ? fields[pPidIndex].trim() : null);
-        final int vSize = StringUtils.strToInt(isValueIndexValid(vSizeIndex, fields) ? fields[vSizeIndex].trim() : null);
-        final int rss = StringUtils.strToInt(isValueIndexValid(rssIndex, fields) ? fields[rssIndex].trim() : null);
+        final int userId = toNotNullIntNoThrow(user);
+        final int pid = toNotNullIntNoThrow(isValueIndexValid(pidIndex, fields) ? fields[pidIndex].trim() : null);
+        final int pPid = toNotNullIntNoThrow(isValueIndexValid(pPidIndex, fields) ? fields[pPidIndex].trim() : null);
+        final int vSize = toNotNullIntNoThrow(isValueIndexValid(vSizeIndex, fields) ? fields[vSizeIndex].trim() : null);
+        final int rss = toNotNullIntNoThrow(isValueIndexValid(rssIndex, fields) ? fields[rssIndex].trim() : null);
 
         final ProcessInfo.PCY pcy = ProcessInfo.PCY.fromName(isValueIndexValid(pcyIndex, fields) ? fields[pcyIndex].trim() : null);
         final ProcessInfo.ProcessState state = ProcessInfo.ProcessState.fromName(isValueIndexValid(statIndex, fields) ? fields[statIndex].trim() : null);

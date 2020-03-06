@@ -1,7 +1,7 @@
 package net.maxsmr.devicewatchers.usb;
 
 import net.maxsmr.commonutils.data.Observable;
-import net.maxsmr.commonutils.data.StringUtils;
+
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
@@ -18,6 +18,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 
@@ -265,7 +266,7 @@ public class UsbDeviceWatcher {
                 final int idLength = 9;
 
                 for (String str : output) {
-                    if (!StringUtils.isEmpty(str)) {
+                    if (!isEmpty(str)) {
 
                         int busStartIndex = str.contains("Bus") ? +str.indexOf("Bus") + "Bus".length() + 1 : -1;
                         int busEndIndex = busStartIndex + busLength;
@@ -295,7 +296,7 @@ public class UsbDeviceWatcher {
                         int vendorID = 0;
                         int productID = 0;
 
-                        if (!StringUtils.isEmpty(id)) {
+                        if (!isEmpty(id)) {
                             String[] parts = id.split(":");
                             if (parts.length == 2) {
                                 try {
@@ -382,7 +383,7 @@ public class UsbDeviceWatcher {
             List<Integer> evFlagsList = new ArrayList<>();
             if (!output.isEmpty()) {
                 for (String str : output) {
-                    if (!StringUtils.isEmpty(str)) {
+                    if (!isEmpty(str)) {
                         int evStartIndex = str.contains("EV=") ? str.indexOf("EV=") + "EV=".length() : -1;
                         int evEndIndex = str.length();
                         if (evStartIndex >= 0 && evStartIndex < evEndIndex) {

@@ -6,12 +6,14 @@ import android.app.usage.NetworkStatsManager;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.os.Build;
-import org.jetbrains.annotations.NotNull;
 
-import net.maxsmr.commonutils.android.AppUtils;
 import net.maxsmr.commonutils.android.hardware.DeviceUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+
+import org.jetbrains.annotations.NotNull;
+
+import static net.maxsmr.commonutils.android.AppUtilsKt.getApplicationUid;
 
 
 /**
@@ -28,16 +30,19 @@ public final class NetworkStatsHelper {
     private final int packageUid;
 
     public NetworkStatsHelper(@NotNull Context context) {
-        this(context, AppUtils.getApplicationUid(context, context.getPackageName()));
+        this(context, getApplicationUid(context, context.getPackageName()));
     }
 
-    public NetworkStatsHelper(@NotNull Context context, int packageUid) {
+    public NetworkStatsHelper(@NotNull Context context, Integer packageUid) {
         networkStatsManager = (NetworkStatsManager) context.getSystemService(Context.NETWORK_STATS_SERVICE);
         if (networkStatsManager == null) {
             throw new IllegalArgumentException(NetworkStatsManager.class.getSimpleName() + " is null");
         }
-        this.networkStatsManager = networkStatsManager;
-        this.packageUid = packageUid;
+        if (packageUid != null) {
+            this.packageUid = packageUid;
+        } else {
+            this.packageUid = -1;
+        }
     }
 
     public long getAllRxBytesMobile(Context context) {

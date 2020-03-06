@@ -1,9 +1,7 @@
 package net.maxsmr.tasksutils.storage.sync.collection;
 
-;
-
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.data.StringUtils;
+
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 
@@ -42,7 +40,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
             throw new RuntimeException("incorrect queue dir path: " + storageDirPath);
         }
         this.storageDirPath = storageDirPath;
-        this.extension = StringUtils.isEmpty(extension) && sync ? FILE_EXT_DAT : extension;
+        this.extension =  net.maxsmr.commonutils.data.TextUtilsKt.isEmpty(extension) && sync ? FILE_EXT_DAT : extension;
         if (startRestore) {
             startRestoreThread();
         }
@@ -133,7 +131,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
     @Nullable
     public File getStorageDirPath() {
-        return !StringUtils.isEmpty(storageDirPath) ? new File(storageDirPath) : null;
+        return ! net.maxsmr.commonutils.data.TextUtilsKt.isEmpty(storageDirPath) ? new File(storageDirPath) : null;
     }
 
     @Override

@@ -1,4 +1,6 @@
-package net.maxsmr.commonutils.data
+package net.maxsmr.commonutils.data.entity
+
+import net.maxsmr.commonutils.data.entity.EmptyValidable
 
 /**
  * [EmptyValidable], который всегда не пуст

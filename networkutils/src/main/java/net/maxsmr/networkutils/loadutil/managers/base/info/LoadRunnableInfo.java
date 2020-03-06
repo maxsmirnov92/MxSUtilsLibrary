@@ -3,7 +3,7 @@ package net.maxsmr.networkutils.loadutil.managers.base.info;
 import com.google.gson.JsonElement;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.data.StringUtils;
+
 import net.maxsmr.commonutils.data.model.IBuilder;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 
@@ -23,6 +23,8 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+
 public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableInfo {
 
     private static final long serialVersionUID = 2752232594822816967L;
@@ -30,7 +32,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
     public static final Charset DEFAULT_CHARSET = Charset.defaultCharset();
 
     protected LoadRunnableInfo(Builder<B, ?> b) {
-        super(b.id, StringUtils.isEmpty(b.name)? LoadRunnableInfo.class.getSimpleName() + "_" + b.id : b.name);
+        super(b.id, isEmpty(b.name)? LoadRunnableInfo.class.getSimpleName() + "_" + b.id : b.name);
         url = b.url;
         settings = b.settings;
         requestMethod = b.requestMethod;
@@ -191,7 +193,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
             if (id < 0) {
                 throw new IllegalArgumentException("incorrect id: " + id);
             }
-            if (StringUtils.isEmpty(url)) {
+            if (isEmpty(url)) {
                 throw new IllegalArgumentException("incorrect url: " + url);
             }
             this.id = id;
@@ -266,7 +268,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
 
         public NameValuePair(@NotNull String name, @Nullable String value) {
 
-            if (StringUtils.isEmpty(name)) {
+            if (isEmpty(name)) {
                 throw new IllegalArgumentException("name can't be empty");
             }
 
@@ -365,7 +367,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         }
 
         public StringBody(@NotNull String name, @Nullable String value, @Nullable String charset) {
-            super(name, value != null? value.getBytes(StringUtils.isEmpty(charset)? DEFAULT_CHARSET : Charset.forName(charset)) : null);
+            super(name, value != null? value.getBytes(net.maxsmr.commonutils.data.TextUtilsKt.isEmpty(charset)? DEFAULT_CHARSET : Charset.forName(charset)) : null);
             this.value = value;
         }
 
