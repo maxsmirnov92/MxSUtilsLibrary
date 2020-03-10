@@ -3,8 +3,7 @@ package net.maxsmr.devicewatchers.storage;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
-
-import net.maxsmr.commonutils.data.Units;
+import net.maxsmr.commonutils.data.SizeUnit;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
@@ -135,8 +134,8 @@ public final class StorageStateWatcher {
         private void doStateWatch(boolean notify) {
             logger.d("doStateWatch(), notify=" + notify);
 
-            final long totalKb = (long) FileHelper.getPartitionTotalSpace(settings.targetPath, Units.SizeUnit.KBYTES);
-            final long freeKb = (long) FileHelper.getPartitionFreeSpace(settings.targetPath, Units.SizeUnit.KBYTES);
+            final long totalKb = (long) FileHelper.getPartitionTotalSpace(settings.targetPath, SizeUnit.KBYTES);
+            final long freeKb = (long) FileHelper.getPartitionFreeSpace(settings.targetPath, SizeUnit.KBYTES);
             final long usedKb = totalKb - freeKb;
 
             logger.i("=== storage total space: " + totalKb + " kB, free: " + freeKb + " kB, used: " + usedKb + " kB ===");
@@ -363,6 +362,4 @@ public final class StorageStateWatcher {
 
         void onPartitionReadError(StorageWatchSettings settings);
     }
-
-
 }

@@ -15,6 +15,22 @@ fun isZeroOrNull(value: String?) = net.maxsmr.commonutils.data.number.isZeroOrNu
 
 fun isNotZeroOrNull(value: String?) = !isZeroOrNull(value)
 
+fun getStubValue(value: String?, stringsProvider: () -> String): String? {
+    return getStubValueWithAppend(value, null, stringsProvider)
+}
+
+fun getStubValue(value: Int, stringsProvider: () -> String): String? {
+    return getStubValueWithAppend(value, null, stringsProvider)
+}
+
+fun getStubValueWithAppend(value: Int, appendWhat: String?, stringsProvider: () -> String): String? {
+    return getStubValueWithAppend(if (value != 0) value.toString() else null, appendWhat, stringsProvider)
+}
+
+fun getStubValueWithAppend(value: String?, appendWhat: String?, stringsProvider: () -> String): String? {
+    return if (!isEmpty(value)) if (!isEmpty(appendWhat)) "$value $appendWhat" else value else stringsProvider.invoke()
+}
+
 // Copied from TextUtils
 fun join(delimiter: CharSequence, tokens: Array<Any?>): String {
     return join(delimiter, tokens.toList())
@@ -24,7 +40,7 @@ fun join(delimiter: CharSequence, tokens: Array<Any?>): String {
 fun join(delimiter: CharSequence, tokens: Iterable<*>): String {
     val it = tokens.iterator()
     if (!it.hasNext()) {
-        return ""
+        return EMPTY_STRING
     }
     val sb = StringBuilder()
     sb.append(it.next())
@@ -98,7 +114,7 @@ fun replaceRange(s: CharSequence, start: Int, end: Int, replacement: CharSequenc
     return sb.toString()
 }
 
-fun removeSubstings(
+fun removeSubstrings(
         text: String?,
         characters: Set<String?>?
 ) = replaceSubstrings(text, characters)
@@ -128,90 +144,130 @@ fun removeCharAt(s: CharSequence, index: Int): String {
     return sb.toString()
 }
 
+fun removeChars(
+        text: CharSequence,
+        isFromStart: Boolean,
+        byChar: Char,
+        condition: CompareCondition = CompareCondition.LESS_OR_EQUAL,
+        ignoreCase: Boolean = true,
+        andRule: Boolean = false,
+        excludeByConditions: Boolean = true
+): CharSequence = removeChars(text, isFromStart, mapOf(kotlin.Pair(byChar, CharConditionInfo(condition, ignoreCase))), andRule, excludeByConditions)
+
 /**
  * Убирает указанные символы с начала или конца строки
- * @param shouldNotLeaveEmpty не оставлять пустым, если все символы были исключены
+ * (в отличие от trim не останавливается на первом непрошедшем по данным условиям)
+ * @param andRule true - применяется ко всем условиям; false - применяется, если сработало хотя бы одно
+ * @param conditions условия исключения или включения указанных символов
  */
 fun removeChars(
-        text: String,
+        text: CharSequence,
         isFromStart: Boolean,
-        shouldNotLeaveEmpty: Boolean,
-        charsToExclude: List<Char?>?
-): String? {
+        conditions: Map<Char, CharConditionInfo>,
+        andRule: Boolean = false,
+        excludeByConditions: Boolean = true
+): CharSequence =
+        removeChars(text, isFromStart, excludeByConditions) {
+            isTrue(conditions, andRule, it)
+        }
+
+fun removeChars(
+        text: CharSequence,
+        isFromStart: Boolean,
+        excludeByConditions: Boolean = true,
+        predicate: (Char) -> Boolean
+): CharSequence {
     val result = StringBuilder()
-    var shouldAppendText = false
-    if (charsToExclude != null && charsToExclude.isNotEmpty()) {
-        var wasAppended = false
-        if (isFromStart) {
-            for (element in text) {
-                val current = element
-                if (wasAppended || !charsToExclude.contains(current)) {
-                    result.append(current)
-                    wasAppended = true
-                }
+    var wasAppended = false
+    if (isFromStart) {
+        for (current in text) {
+            val isTrue = predicate(current)
+            if (wasAppended || if (excludeByConditions) !isTrue else isTrue) {
+                result.append(current)
+                wasAppended = true
             }
-        } else {
-            for (i in text.length - 1 downTo 0) {
-                val current = text[i]
-                if (wasAppended || !charsToExclude.contains(current)) {
-                    result.append(current)
-                    wasAppended = true
-                }
-            }
-            result.reverse()
         }
     } else {
-        shouldAppendText = true
-    }
-    if (shouldNotLeaveEmpty && result.isEmpty()) {
-        shouldAppendText = true
-    }
-    if (shouldAppendText) {
-        result.append(text)
+        for (i in text.length - 1 downTo 0) {
+            val current = text[i]
+            val isTrue = predicate(current)
+            if (wasAppended || if (excludeByConditions) !isTrue else isTrue) {
+                result.append(current)
+                wasAppended = true
+            }
+        }
+        result.reverse()
     }
     return result.toString()
 }
 
-fun trim(cs: CharSequence?): String {
-    return trim(cs, true, true)
-}
+fun trimWithCondition(
+        text: CharSequence,
+        fromStart: Boolean,
+        byChar: Char,
+        condition: CompareCondition = CompareCondition.LESS_OR_EQUAL,
+        ignoreCase: Boolean = true,
+        andRule: Boolean = false,
+        excludeByConditions: Boolean = true
+): CharSequence =
+        trimWithCondition(text, fromStart, mapOf(kotlin.Pair(byChar, CharConditionInfo(condition, ignoreCase))), andRule, excludeByConditions)
 
-fun trim(cs: CharSequence?, fromStart: Boolean, fromEnd: Boolean): String {
-    return trim(cs, CompareCondition.LESS_OR_EQUAL, ' ', fromStart, fromEnd)
-}
+fun trimWithCondition(
+        text: CharSequence,
+        fromStart: Boolean,
+        conditions: Map<Char, CharConditionInfo>,
+        andRule: Boolean = false,
+        excludeByConditions: Boolean = true
+): CharSequence =
+        trim(text, fromStart, excludeByConditions) {
+            isTrue(conditions, andRule, it)
+        }
 
-fun trim(cs: CharSequence?, compareCondition: CompareCondition, byChar: Char, fromStart: Boolean, fromEnd: Boolean): String {
-    if (cs == null) {
-        return EMPTY_STRING
-    }
-    val str = cs.toString()
-    var len = str.length
-    var st = 0
-    if (fromStart) {
-        while (st < len && compareCondition.apply(str[st], byChar, false)) {
-            st++
+/**
+ * Returns a sub sequence of this char sequence having leading/trailing characters matching the [predicate] removed.
+ */
+fun trim(
+        text: CharSequence,
+        fromStart: Boolean,
+        excludeByPredicate: Boolean = true,
+        predicate: (Char) -> Boolean
+): CharSequence {
+    for (index in if (fromStart) text.indices else text.indices.reversed()) {
+        val ch = text[index]
+        val isTrue = predicate(ch)
+        if (if (excludeByPredicate) !isTrue else isTrue) {
+            return if (fromStart) {
+                text.subSequence(index, text.length)
+            } else {
+                text.subSequence(0, index + 1)
+            }
         }
     }
-    if (fromEnd) {
-        while (st < len && compareCondition.apply(str[len - 1], byChar, false)) {
-            len--
+
+    return EMPTY_STRING
+}
+
+private fun isTrue(
+        conditions: Map<Char, CharConditionInfo>,
+        andRule: Boolean,
+        currentCh: Char
+): Boolean {
+    return if (andRule) {
+        if (conditions.isEmpty()) {
+            return false
+        } else {
+            !Predicate.Methods.contains(conditions.entries) { entry ->
+                !entry.value.condition.apply(entry.key, currentCh, entry.value.ignoreCase)
+            }
+        }
+    } else {
+        Predicate.Methods.contains(conditions.entries) { entry ->
+            entry.value.condition.apply(entry.key, currentCh, entry.value.ignoreCase)
         }
     }
-    return if (st > 0 || len < str.length) str.substring(st, len) else str
 }
 
-fun getStubValue(value: String?, stringsProvider: () -> String): String? {
-    return getStubValueWithAppend(value, null, stringsProvider)
-}
-
-fun getStubValue(value: Int, stringsProvider: () -> String): String? {
-    return getStubValueWithAppend(value, null, stringsProvider)
-}
-
-fun getStubValueWithAppend(value: Int, appendWhat: String?, stringsProvider: () -> String): String? {
-    return getStubValueWithAppend(if (value != 0) value.toString() else null, appendWhat, stringsProvider)
-}
-
-fun getStubValueWithAppend(value: String?, appendWhat: String?, stringsProvider: () -> String): String? {
-    return if (!isEmpty(value)) if (!isEmpty(appendWhat)) "$value $appendWhat" else value else stringsProvider.invoke()
-}
+data class CharConditionInfo(
+        val condition: CompareCondition,
+        val ignoreCase: Boolean = true
+)

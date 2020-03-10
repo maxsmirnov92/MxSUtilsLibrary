@@ -2,15 +2,16 @@ package net.maxsmr.testapp;
 
 import android.graphics.Point;
 
-import net.maxsmr.commonutils.android.gui.GuiUtils;
-
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
+import static net.maxsmr.commonutils.android.gui.ViewSizeCalculatorKt.getAutoScaledSize;
+import static net.maxsmr.commonutils.android.gui.ViewSizeCalculatorKt.getFixedViewSize;
+
 @RunWith(JUnit4.class)
-public class GuiUtilsTest extends LoggerTest {
+public class ViewSizeCalculatorTest extends LoggerTest {
 
     private static final Point sourceSize = new Point(1920, 1080);
     private static final Point contentSize = new Point(1280, 1024);
@@ -21,11 +22,11 @@ public class GuiUtilsTest extends LoggerTest {
 
         float contentScale = (float) contentSize.x / contentSize.y;
 
-        Point fixedSize = GuiUtils.getFixedViewSize(contentSize, sourceSize);
+        Point fixedSize = getFixedViewSize(contentSize, sourceSize);
         float fixedScale = (float) fixedSize.x / fixedSize.y;
         Assert.assertEquals(fixedScale, contentScale, 0);
 
-        Point autoScaledSize = GuiUtils.getAutoScaledSize(contentSize, sourceSize.x);
+        Point autoScaledSize = getAutoScaledSize(contentSize, sourceSize.x);
         float autoScaledScale = (float) autoScaledSize.x / autoScaledSize.y;
         Assert.assertEquals(autoScaledScale, contentScale, 0);
     }

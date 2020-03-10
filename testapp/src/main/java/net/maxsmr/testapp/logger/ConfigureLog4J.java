@@ -1,7 +1,7 @@
 package net.maxsmr.testapp.logger;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.data.Units;
+import net.maxsmr.commonutils.data.SizeUnit;
 
 import org.apache.log4j.Level;
 import org.jetbrains.annotations.Nullable;
@@ -10,7 +10,7 @@ import de.mindpipe.android.logging.log4j.LogConfigurator;
 
 public class ConfigureLog4J {
 
-    public static final long DEFAULT_MIN_FILE_SIZE = Units.SizeUnit.MBYTES.toBytes(1);
+    public static final long DEFAULT_MIN_FILE_SIZE = SizeUnit.MBYTES.toBytes(1);
 
     private static ConfigureLog4J mInstance = null;
 

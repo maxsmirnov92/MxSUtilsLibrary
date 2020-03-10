@@ -6,8 +6,8 @@ import android.content.Context;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.GrantPermissionRule;
 
-
 import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.MatchStringOption;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -94,7 +94,7 @@ public class FileHelperTest extends LoggerTest {
     @Test
     public void testSearch() {
         Set<File> result = FileHelper.searchByName(SEARCH_PREFIX, sourceDir,
-                FileHelper.GetMode.ALL, MatchStringOption.STARTS_WITH_IGNORE_CASE.flag,
+                FileHelper.GetMode.ALL, MatchStringOption.STARTS_WITH_IGNORE_CASE.getFlag(),
                 new FileHelper.FileComparator(Collections.singletonMap(FileHelper.FileComparator.SortOption.LAST_MODIFIED, false)),
                 new FileHelper.IGetNotifier() {
 
@@ -120,7 +120,7 @@ public class FileHelperTest extends LoggerTest {
     @Test
     public void testSearchFirst() {
         File result = FileHelper.searchByNameFirst(SEARCH_PREFIX, sourceDir,
-                FileHelper.GetMode.ALL, MatchStringOption.STARTS_WITH_IGNORE_CASE.flag,
+                FileHelper.GetMode.ALL, MatchStringOption.STARTS_WITH_IGNORE_CASE.getFlag(),
                 null,
                 new FileHelper.IGetNotifier() {
 

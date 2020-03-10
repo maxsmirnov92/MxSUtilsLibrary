@@ -17,6 +17,7 @@ import androidx.annotation.RawRes;
 import androidx.collection.ArraySet;
 import androidx.exifinterface.media.ExifInterface;
 
+import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.sort.BaseOptionableComparator;
 import net.maxsmr.commonutils.data.sort.ISortOption;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
@@ -57,10 +58,12 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import java.util.zip.ZipOutputStream;
 
+import static java.util.Collections.emptySet;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.compareLongs;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.compareStrings;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.objectsEqual;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsMatch;
+import static net.maxsmr.commonutils.data.SizeConversionKt.sizeToString;
 import static net.maxsmr.commonutils.data.StreamUtils.readBytesFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringsFromInputStream;
@@ -70,7 +73,6 @@ import static net.maxsmr.commonutils.data.SymbolConstKt.NEXT_LINE;
 import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.data.TextUtilsKt.join;
 import static net.maxsmr.commonutils.data.TextUtilsKt.replaceRange;
-import static net.maxsmr.commonutils.data.Units.sizeToString;
 import static net.maxsmr.commonutils.shell.CommandResultKt.PROCESS_EXIT_CODE_SUCCESS;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 
@@ -204,10 +206,10 @@ public final class FileHelper {
         return result;
     }
 
-    public static double getPartitionTotalSpace(String path, @NotNull Units.SizeUnit unit) {
+    public static double getPartitionTotalSpace(String path, @NotNull SizeUnit unit) {
         if (isDirExists(path)) {
             try {
-                return Units.SizeUnit.convert(new File(path).getTotalSpace(), Units.SizeUnit.BYTES, unit);
+                return SizeUnit.Companion.convert(new File(path).getTotalSpace(), SizeUnit.BYTES, unit);
             } catch (SecurityException e) {
                 logger.e("a SecurityException occurred during convert(): " + e.getMessage(), e);
             }
@@ -215,10 +217,10 @@ public final class FileHelper {
         return 0;
     }
 
-    public static double getPartitionFreeSpace(String path, @NotNull Units.SizeUnit unit) {
+    public static double getPartitionFreeSpace(String path, @NotNull SizeUnit unit) {
         if (isDirExists(path)) {
             try {
-                return Units.SizeUnit.convert(new File(path).getFreeSpace(), Units.SizeUnit.BYTES, unit);
+                return SizeUnit.Companion.convert(new File(path).getFreeSpace(), SizeUnit.BYTES, unit);
             } catch (SecurityException e) {
                 logger.e("a SecurityException occurred during convert(): " + e.getMessage(), e);
             }
@@ -566,8 +568,14 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static File moveFile(File sourceFile, File destFile, boolean deleteIfExists, boolean deleteEmptyDirs,
-                                boolean preserveFileDate, @Nullable ISingleCopyNotifier notifier) {
+    public static File moveFile(
+            File sourceFile,
+            File destFile,
+            boolean deleteIfExists,
+            boolean deleteEmptyDirs,
+            boolean preserveFileDate,
+            @Nullable ISingleCopyNotifier notifier
+    ) {
         if (objectsEqual(sourceFile, destFile)) {
             return null;
         }
@@ -582,7 +590,13 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static File renameFile(File sourceFile, String destinationDir, String newFileName, boolean deleteIfExists, boolean deleteEmptyDirs) {
+    public static File renameFile(
+            File sourceFile,
+            String destinationDir,
+            String newFileName,
+            boolean deleteIfExists,
+            boolean deleteEmptyDirs
+    ) {
 
         if (!isFileExists(sourceFile)) {
             logger.e("Source file not exists: " + sourceFile);
@@ -1119,7 +1133,13 @@ public final class FileHelper {
     }
 
     @NotNull
-    public static Set<File> getFiles(Collection<File> fromFiles, @NotNull GetMode mode, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
+    public static Set<File> getFiles(
+            Collection<File> fromFiles,
+            @NotNull GetMode mode,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable IGetNotifier notifier,
+            int depth
+    ) {
         Set<File> collected = new LinkedHashSet<>();
         if (fromFiles != null) {
             for (File fromFile : fromFiles) {
@@ -1134,14 +1154,26 @@ public final class FileHelper {
      * @return collected set of files or directories from specified directories without source files
      */
     @NotNull
-    public static Set<File> getFiles(File fromFile, @NotNull GetMode mode, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
+    public static Set<File> getFiles(
+            File fromFile,
+            @NotNull GetMode mode,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable IGetNotifier notifier,
+            int depth
+    ) {
         return getFiles(fromFile, mode, comparator, notifier, depth, 0, null);
     }
 
     @NotNull
-    private static Set<File> getFiles(File fromFile, @NotNull GetMode mode,
-                                      @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier,
-                                      int depth, int currentLevel, @Nullable Set<File> collected) {
+    private static Set<File> getFiles(
+            File fromFile,
+            @NotNull GetMode mode,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable IGetNotifier notifier,
+            int depth,
+            int currentLevel,
+            @Nullable Set<File> collected
+    ) {
 
         final Set<File> result = new LinkedHashSet<>();
 
@@ -1217,7 +1249,15 @@ public final class FileHelper {
     }
 
     @NotNull
-    public static Set<File> searchByName(String name, Collection<File> searchFiles, @NotNull GetMode mode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
+    public static Set<File> searchByName(
+            String name,
+            Collection<File> searchFiles,
+            @NotNull GetMode mode,
+            int searchFlags,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable IGetNotifier notifier,
+            int depth
+    ) {
         Set<File> collected = new LinkedHashSet<>();
         if (searchFiles != null) {
             for (File searchFile : searchFiles) {
@@ -1232,13 +1272,30 @@ public final class FileHelper {
      * @return found set of files or directories with matched name
      */
     @NotNull
-    public static Set<File> searchByName(String name, File searchFile, @NotNull GetMode mode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier, int depth) {
+    public static Set<File> searchByName(
+            String name,
+            File searchFile,
+            @NotNull GetMode mode,
+            int searchFlags,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable IGetNotifier notifier,
+            int depth
+    ) {
         return searchByName(name, searchFile, mode, searchFlags, comparator, notifier, depth, 0, null);
     }
 
     @NotNull
-    private static Set<File> searchByName(String name, File searchFile, @NotNull GetMode mode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier,
-                                          int depth, int currentLevel, @Nullable Set<File> foundFiles) {
+    private static Set<File> searchByName(
+            String name,
+            File searchFile,
+            @NotNull GetMode mode,
+            int searchFlags,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable IGetNotifier notifier,
+            int depth,
+            int currentLevel,
+            @Nullable Set<File> foundFiles
+    ) {
 
         Set<File> result = new LinkedHashSet<>();
 
@@ -1311,7 +1368,15 @@ public final class FileHelper {
     }
 
     @NotNull
-    public static Set<File> searchByNameFirst(String name, Collection<File> searchFiles, @NotNull GetMode getMode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable final IGetNotifier notifier, int depth) {
+    public static Set<File> searchByNameFirst(
+            String name,
+            Collection<File> searchFiles,
+            @NotNull GetMode getMode,
+            int searchFlags,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable final IGetNotifier notifier,
+            int depth
+    ) {
         Set<File> collected = new LinkedHashSet<>();
         for (File file : searchFiles) {
             collected.addAll(searchByName(name, file, getMode, searchFlags, comparator, notifier, depth));
@@ -1320,7 +1385,14 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static File searchByNameFirst(String name, File searchFile, @NotNull GetMode getMode, int searchFlags, @Nullable Comparator<? super File> comparator, @Nullable final IGetNotifier notifier, int depth) {
+    public static File searchByNameFirst(
+            String name,
+            File searchFile,
+            @NotNull GetMode getMode,
+            int searchFlags,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable final IGetNotifier notifier,
+            int depth) {
         Set<File> found = searchByName(name, searchFile, getMode, searchFlags, comparator, new IGetNotifier() {
             @Override
             public boolean onProcessing(@NotNull File current, @NotNull Set<File> found, int currentLevel) {
@@ -1341,7 +1413,11 @@ public final class FileHelper {
     }
 
     @NotNull
-    public static Set<File> searchByNameWithStat(final String name, @Nullable Comparator<? super File> comparator, @Nullable IGetNotifier notifier) {
+    public static Set<File> searchByNameWithStat(
+            final String name,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable IGetNotifier notifier
+    ) {
         return searchByNameWithStat(name, null, comparator, notifier);
     }
 
@@ -1445,7 +1521,7 @@ public final class FileHelper {
         Set<File> searchFiles = new HashSet<>();
         String[] paths = System.getenv("PATH").split(":");
         if (paths.length == 0) {
-            return Collections.emptySet();
+            return emptySet();
         }
         for (String path : paths) {
             searchFiles.add(new File(path));
@@ -1478,7 +1554,14 @@ public final class FileHelper {
     }
 
     @NotNull
-    public static Set<File> delete(Collection<File> fromFiles, boolean deleteEmptyDirs, @Nullable Collection<File> excludeFiles, @Nullable Comparator<? super File> comparator, @Nullable IDeleteNotifier notifier, int depth) {
+    public static Set<File> delete(
+            Collection<File> fromFiles,
+            boolean deleteEmptyDirs,
+            @Nullable Collection<File> excludeFiles,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable IDeleteNotifier notifier,
+            int depth
+    ) {
         Set<File> collected = new LinkedHashSet<>();
         if (fromFiles != null) {
             for (File file : fromFiles) {
@@ -1493,13 +1576,28 @@ public final class FileHelper {
      * @return set of deleted files
      */
     @NotNull
-    public static Set<File> delete(File fromFile, boolean deleteEmptyDirs, @Nullable Collection<File> excludeFiles, @Nullable Comparator<? super File> comparator, @Nullable IDeleteNotifier notifier, int depth) {
+    public static Set<File> delete(
+            File fromFile,
+            boolean deleteEmptyDirs,
+            @Nullable Collection<File> excludeFiles,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable IDeleteNotifier notifier,
+            int depth
+    ) {
         return delete(fromFile, deleteEmptyDirs, excludeFiles, comparator, notifier, depth, 0, null);
     }
 
     @NotNull
-    private static Set<File> delete(File fromFile, boolean deleteEmptyDirs, @Nullable Collection<File> excludeFiles, @Nullable Comparator<? super File> comparator, @Nullable IDeleteNotifier notifier,
-                                    int depth, int currentLevel, @Nullable Set<File> deletedFiles) {
+    private static Set<File> delete(
+            File fromFile,
+            boolean deleteEmptyDirs,
+            @Nullable Collection<File> excludeFiles,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable IDeleteNotifier notifier,
+            int depth,
+            int currentLevel,
+            @Nullable Set<File> deletedFiles
+    ) {
 
         Set<File> result = new LinkedHashSet<>();
 
@@ -1694,10 +1792,12 @@ public final class FileHelper {
      * @param selectionArgs (Optional) Selection arguments used in the query.
      * @return The value of the _data column, which is typically a file path.
      */
-    public static String getDataColumn(@NotNull Context context,
-                                       @Nullable Uri uri,
-                                       @Nullable String selection,
-                                       @Nullable String[] selectionArgs) {
+    public static String getDataColumn(
+            @NotNull Context context,
+            @Nullable Uri uri,
+            @Nullable String selection,
+            @Nullable String[] selectionArgs
+    ) {
 
         if (uri == null) {
             return EMPTY_STRING;
@@ -2411,6 +2511,202 @@ public final class FileHelper {
         return result;
     }
 
+    @NotNull
+    public static Map<File, Long> suListFiles(
+            @NotNull Collection<File> fromDirs,
+            @Nullable Comparator<? super File> comparator,
+            @Nullable final ISuGetNotifier notifier
+    ) {
+        final Map<File, Long> collectedMap = new LinkedHashMap<>();
+        final Set<File> collected = new LinkedHashSet<>();
+        for (final File dir : new LinkedHashSet<>(fromDirs)) {
+
+            if (dir != null/* && isDirExists(dir.getAbsolutePath())*/) {
+                execProcess(Arrays.asList("su", "-c", "ls", dir.getAbsolutePath()),
+                        EMPTY_STRING,
+                        null,
+                        null,
+                        new ShellCallback() {
+                            @Override
+                            public boolean needToLogCommands() {
+                                return true;
+                            }
+
+                            @Override
+                            public void shellOut(@NotNull StreamType from, @NotNull String shellLine) {
+                                if (from == StreamType.OUT && !isEmpty(shellLine)) {
+                                    File current = new File(dir, shellLine);
+                                    if (notifier != null) {
+                                        notifier.onProcessing(current, collected, 0);
+                                    }
+                                    if (notifier == null || notifier.onGetFile(current)) {
+                                        collected.add(current);
+                                    }
+                                }
+                            }
+
+                            @Override
+                            public void processStarted() {
+                                // do nothing
+                            }
+
+                            @Override
+                            public void processStartFailed(Throwable t) {
+                                // do nothing
+                            }
+
+                            @Override
+                            public void processComplete(int exitValue) {
+                                // do nothing
+                            }
+                        },
+                        null,
+                        0,
+                        TimeUnit.SECONDS);
+            }
+        }
+        if (comparator != null) {
+            List<File> sortedList = new ArrayList<>(collected);
+            Collections.sort(sortedList, comparator);
+            collected.clear();
+            collected.addAll(sortedList);
+        }
+        for (final File current : collected) {
+            // option "-b" is not supported on android version
+            execProcess(Arrays.asList("su", "-c", "du", "-s", current.getAbsolutePath()),
+                    EMPTY_STRING,
+                    null,
+                    null,
+                    new ShellCallback() {
+
+                        @Override
+                        public boolean needToLogCommands() {
+                            return true;
+                        }
+
+                        @Override
+                        public void shellOut(@NotNull ShellCallback.StreamType from, @NotNull String shellLine) {
+                            if (from == StreamType.OUT && !isEmpty(shellLine)) {
+                                long size = 0;
+                                String[] parts = shellLine.split("\\t");
+                                if (parts.length > 1) {
+                                    try {
+                                        size = Long.parseLong(parts[0]);
+                                    } catch (NumberFormatException e) {
+                                        logger.e("an NumberFormatException occurred during parseLong(): " + e.getMessage(), e);
+                                    }
+                                }
+                                collectedMap.put(current, SizeUnit.KBYTES.toBytes(size));
+                            }
+                        }
+
+                        @Override
+                        public void processStarted() {
+                            // do nothing
+                        }
+
+                        @Override
+                        public void processStartFailed(Throwable t) {
+                            if (notifier != null) {
+                                notifier.onStartFailed(t, current);
+                            }
+                        }
+
+                        @Override
+                        public void processComplete(int exitValue) {
+                            if (exitValue != PROCESS_EXIT_CODE_SUCCESS && notifier != null) {
+                                notifier.onNonSuccessExitCode(exitValue, current);
+                            }
+                        }
+                    },
+                    null,
+                    0,
+                    TimeUnit.SECONDS);
+        }
+
+        return Collections.unmodifiableMap(collectedMap);
+    }
+
+    public static String filesToString(@NotNull Context context, Collection<File> files, int depth) {
+        if (files != null) {
+            Map<File, Long> map = new LinkedHashMap<>();
+            for (File f : files) {
+                if (f != null) {
+                    map.put(f, getSize(f, depth));
+                }
+            }
+            return filesWithSizeToString(context, map);
+        }
+        return EMPTY_STRING;
+    }
+
+    public static String filePairsToString(@NotNull Context context, Collection<Pair<File, File>> files, int depth) {
+        if (files != null) {
+            Map<Pair<File, File>, Long> map = new LinkedHashMap<>();
+            for (Pair<File, File> p : files) {
+                if (p != null && p.first != null) {
+                    map.put(p, getSize(p.first, depth));
+                }
+            }
+            return filePairsWithSizeToString(context, map);
+        }
+        return EMPTY_STRING;
+    }
+
+    public static String filesWithSizeToString(@NotNull Context context, @NotNull Map<File, Long> files) {
+        return filesWithSizeToString(context, files.entrySet());
+    }
+
+    /**
+     * @param files file < - > size in bytes
+     */
+    public static String filesWithSizeToString(@NotNull Context context, @NotNull Collection<Map.Entry<File, Long>> files) {
+        final List<String> result = new ArrayList<>();
+        for (Map.Entry<File, Long> f : files) {
+            if (f != null) {
+                final File key = f.getKey();
+                if (key != null) {
+                    final Long size = f.getValue();
+                    result.add(context.getString(R.string.file_size_format, key.getAbsolutePath(),
+                            (size != null ? sizeToString(size, SizeUnit.BYTES, emptySet(), context::getString) : 0)));
+                }
+            }
+        }
+        return join(NEXT_LINE, result);
+    }
+
+    public static String filePairsWithSizeToString(@NotNull Context context, Map<Pair<File, File>, Long> files) {
+        return filePairsWithSizeToString(context, files.entrySet());
+    }
+
+    /**
+     * @param files pair < source file - destination file > <-> size in bytes
+     */
+    public static String filePairsWithSizeToString(@NotNull Context context, Collection<Map.Entry<Pair<File, File>, Long>> files) {
+        final List<String> result = new ArrayList<>();
+        for (Map.Entry<Pair<File, File>, Long> f : files) {
+            if (f != null) {
+                final Pair<File, File> key = f.getKey();
+                if (key != null) {
+                    final File sourceFile = key.first;
+                    final File destinationFile = key.second;
+                    if (sourceFile != null) {
+                        StringBuilder sb = new StringBuilder();
+                        sb.append(sourceFile.getAbsolutePath());
+                        if (destinationFile != null) {
+                            sb.append(" -> ");
+                            sb.append(destinationFile.getAbsolutePath());
+                        }
+                        final Long size = f.getValue();
+                        result.add(context.getString(R.string.file_size_format, sb.toString(),
+                                (size != null ? sizeToString(size, SizeUnit.BYTES, emptySet(), context::getString) : 0)));
+                    }
+                }
+            }
+        }
+        return join(NEXT_LINE, result);
+    }
+
     public enum GetMode {
         FILES, FOLDERS, ALL
     }
@@ -2552,216 +2848,10 @@ public final class FileHelper {
         }
     }
 
-    @NotNull
-    public static Map<File, Long> suListFiles(@NotNull Collection<File> fromDirs, @Nullable Comparator<? super File> comparator, @Nullable final ISuGetNotifier notifier) {
-        final Map<File, Long> collectedMap = new LinkedHashMap<>();
-        final Set<File> collected = new LinkedHashSet<>();
-        for (final File dir : new LinkedHashSet<>(fromDirs)) {
-
-            if (dir != null/* && isDirExists(dir.getAbsolutePath())*/) {
-                execProcess(Arrays.asList("su", "-c", "ls", dir.getAbsolutePath()),
-                        EMPTY_STRING,
-                        null,
-                        null,
-                        new ShellCallback() {
-                            @Override
-                            public boolean needToLogCommands() {
-                                return true;
-                            }
-
-                            @Override
-                            public void shellOut(@NotNull StreamType from, @NotNull String shellLine) {
-                                if (from == StreamType.OUT && !isEmpty(shellLine)) {
-                                    File current = new File(dir, shellLine);
-                                    if (notifier != null) {
-                                        notifier.onProcessing(current, collected, 0);
-                                    }
-                                    if (notifier == null || notifier.onGetFile(current)) {
-                                        collected.add(current);
-                                    }
-                                }
-                            }
-
-                            @Override
-                            public void processStarted() {
-                                // do nothing
-                            }
-
-                            @Override
-                            public void processStartFailed(Throwable t) {
-                                // do nothing
-                            }
-
-                            @Override
-                            public void processComplete(int exitValue) {
-                                // do nothing
-                            }
-                        },
-                        null,
-                        0,
-                        TimeUnit.SECONDS);
-            }
-        }
-        if (comparator != null) {
-            List<File> sortedList = new ArrayList<>(collected);
-            Collections.sort(sortedList, comparator);
-            collected.clear();
-            collected.addAll(sortedList);
-        }
-        for (final File current : collected) {
-            // option "-b" is not supported on android version
-            execProcess(Arrays.asList("su", "-c", "du", "-s", current.getAbsolutePath()),
-                    EMPTY_STRING,
-                    null,
-                    null,
-                    new ShellCallback() {
-
-                        @Override
-                        public boolean needToLogCommands() {
-                            return true;
-                        }
-
-                        @Override
-                        public void shellOut(@NotNull ShellCallback.StreamType from, @NotNull String shellLine) {
-                            if (from == StreamType.OUT && !isEmpty(shellLine)) {
-                                long size = 0;
-                                String[] parts = shellLine.split("\\t");
-                                if (parts.length > 1) {
-                                    try {
-                                        size = Long.parseLong(parts[0]);
-                                    } catch (NumberFormatException e) {
-                                        logger.e("an NumberFormatException occurred during parseLong(): " + e.getMessage(), e);
-                                    }
-                                }
-                                collectedMap.put(current, Units.SizeUnit.KBYTES.toBytes(size));
-                            }
-                        }
-
-                        @Override
-                        public void processStarted() {
-                            // do nothing
-                        }
-
-                        @Override
-                        public void processStartFailed(Throwable t) {
-                            if (notifier != null) {
-                                notifier.onStartFailed(t, current);
-                            }
-                        }
-
-                        @Override
-                        public void processComplete(int exitValue) {
-                            if (exitValue != PROCESS_EXIT_CODE_SUCCESS && notifier != null) {
-                                notifier.onNonSuccessExitCode(exitValue, current);
-                            }
-                        }
-                    },
-                    null,
-                    0,
-                    TimeUnit.SECONDS);
-        }
-
-        return Collections.unmodifiableMap(collectedMap);
-    }
-
-    public interface ISuGetNotifier extends FileHelper.IGetNotifier {
+    public interface ISuGetNotifier extends IGetNotifier {
 
         void onStartFailed(Throwable t, File forFile);
 
         void onNonSuccessExitCode(int exitCode, File forFile);
-    }
-
-    public static String filesToString(@NotNull Context context, Collection<File> files, int depth) {
-        if (files != null) {
-            Map<File, Long> map = new LinkedHashMap<>();
-            for (File f : files) {
-                if (f != null) {
-                    map.put(f, getSize(f, depth));
-                }
-            }
-            return filesWithSizeToString(context, map);
-        }
-        return EMPTY_STRING;
-    }
-
-    public static String filePairsToString(@NotNull Context context, Collection<Pair<File, File>> files, int depth) {
-        if (files != null) {
-            Map<Pair<File, File>, Long> map = new LinkedHashMap<>();
-            for (Pair<File, File> p : files) {
-                if (p != null && p.first != null) {
-                    map.put(p, getSize(p.first, depth));
-                }
-            }
-            return filePairsWithSizeToString(context, map);
-        }
-        return EMPTY_STRING;
-    }
-
-    public static String filesWithSizeToString(@NotNull Context context, Map<File, Long> files) {
-        return filesWithSizeToString(context, files.entrySet());
-    }
-
-    /**
-     * @param files file < - > size in bytes
-     */
-    public static String filesWithSizeToString(@NotNull Context context, Collection<Map.Entry<File, Long>> files) {
-        StringBuilder sb = new StringBuilder();
-        if (files != null) {
-            boolean isFirst = false;
-            for (Map.Entry<File, Long> f : files) {
-                if (f != null && f.getKey() != null) {
-                    if (!isFirst) {
-                        isFirst = true;
-                    } else {
-                        sb.append(NEXT_LINE);
-                    }
-                    sb.append(f.getKey().getAbsolutePath());
-                    sb.append(": ");
-                    final Long size = f.getValue();
-                    sb.append(size != null ? sizeToString(context, size, Units.SizeUnit.BYTES) : 0);
-                }
-            }
-        }
-        return sb.toString();
-    }
-
-    public static String filePairsWithSizeToString(@NotNull Context context, Map<Pair<File, File>, Long> files) {
-        return filePairsWithSizeToString(context, files.entrySet());
-    }
-
-    /**
-     * @param files pair < source file - destination file > <-> size in bytes
-     */
-    public static String filePairsWithSizeToString(@NotNull Context context, Collection<Map.Entry<Pair<File, File>, Long>> files) {
-        StringBuilder sb = new StringBuilder();
-        if (files != null) {
-            boolean isFirst = false;
-            for (Map.Entry<Pair<File, File>, Long> f : files) {
-                if (f != null && f.getKey() != null) {
-                    final File sourceFile = f.getKey().first;
-                    final File destinationFile = f.getKey().second;
-                    if (sourceFile != null) {
-                        if (!isFirst) {
-                            isFirst = true;
-                        } else {
-                            sb.append(NEXT_LINE);
-                        }
-                        sb.append(sourceFile.getAbsolutePath());
-                        if (destinationFile != null) {
-                            sb.append(" -> ");
-                            sb.append(destinationFile.getAbsolutePath());
-                        }
-                        sb.append(": ");
-                        final Long size = f.getValue();
-                        sb.append(size != null ? sizeToString(context, size, Units.SizeUnit.BYTES) : 0);
-                    }
-                }
-            }
-        }
-        return sb.toString();
-    }
-
-    public static boolean hasKnoxFlag() {
-        return isFileExists("knox", Environment.getExternalStorageDirectory().getAbsolutePath());
     }
 }

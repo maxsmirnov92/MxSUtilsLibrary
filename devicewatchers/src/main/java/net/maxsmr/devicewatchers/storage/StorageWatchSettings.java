@@ -1,7 +1,7 @@
 package net.maxsmr.devicewatchers.storage;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.data.Units;
+import net.maxsmr.commonutils.data.SizeUnit;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -90,7 +90,7 @@ public class StorageWatchSettings {
 
             case SIZE:
 
-                double totalKb = FileHelper.getPartitionTotalSpace(targetPath, Units.SizeUnit.KBYTES);
+                double totalKb = FileHelper.getPartitionTotalSpace(targetPath, SizeUnit.KBYTES);
 
                 if ((value < DEFAULT_PARTITION_MIN_SIZE_KB || value >= totalKb) && value != SIZE_AUTO) {
                     throw new IllegalArgumentException("incorrect value: " + value);
@@ -111,6 +111,7 @@ public class StorageWatchSettings {
     }
 
     @Override
+    @NotNull
     public String toString() {
         return "StorageWatchSettings{" +
                 "what=" + what +
@@ -138,6 +139,7 @@ public class StorageWatchSettings {
         }
 
         @Override
+        @NotNull
         public String toString() {
             return "DeleteOptionPair{" +
                     "mode=" + mode +

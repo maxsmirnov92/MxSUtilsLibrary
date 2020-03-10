@@ -2,6 +2,12 @@ package net.maxsmr.commonutils.data
 
 import net.maxsmr.commonutils.data.entity.Valuable
 
+fun <K, V : Number> putIfNotNullOrZero(map: MutableMap<K, V>, key: K, value: V?) {
+    if (value != null && isNotZeroOrNull(value.toString())) {
+        map[key] = value
+    }
+}
+
 fun <N : Number> findMinValuable(collection: Collection<Valuable<N?>?>): Pair<Int, N>? = findValuable(collection, true)
 
 fun <N : Number> findMaxValuable(collection: Collection<Valuable<N?>?>): Pair<Int, N>? = findValuable(collection, false)

@@ -2,10 +2,14 @@
     <string name="app_name">Common Utils</string>
     <string name="empty_data">No data</string>
 
+    <string name="time_format">%s %s</string>
+    <string name="size_format">%s %s</string>
+    <string name="file_size_format">%s: %s</string>
+
     <string name="time_suffix_nanos">ns</string>
     <string name="time_suffix_micros">micros</string>
     <string name="time_suffix_millis">ms</string>
-    <string name="time_suffix_sec">sec</string>
+    <string name="time_suffix_seconds">sec</string>
     <string name="time_suffix_minutes">mins</string>
     <string name="time_suffix_hours">hrs</string>
     <string name="time_suffix_days">days</string>

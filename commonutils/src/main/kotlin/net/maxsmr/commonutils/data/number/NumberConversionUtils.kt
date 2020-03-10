@@ -1,6 +1,12 @@
 package net.maxsmr.commonutils.data.number
 
 @JvmOverloads
+fun toDoubleNotNullNoThrow(
+        value: String?,
+        exceptionAction: ((NumberFormatException) -> Unit)? = null
+): Double = toDoubleNoThrow(value, exceptionAction) ?: 0.0
+
+@JvmOverloads
 fun toDoubleNoThrow(
         value: String?,
         exceptionAction: ((NumberFormatException) -> Unit)? = null
@@ -17,10 +23,10 @@ fun toDoubleNoThrow(
 }
 
 @JvmOverloads
-fun toDoubleNotNullNoThrow(
+fun toNotNullIntNoThrow(
         value: String?,
         exceptionAction: ((NumberFormatException) -> Unit)? = null
-): Double = toDoubleNoThrow(value, exceptionAction) ?: 0.0
+): Int = toIntNoThrow(value, exceptionAction) ?: 0
 
 @JvmOverloads
 fun toIntNoThrow(
@@ -37,9 +43,3 @@ fun toIntNoThrow(
     }
     return result
 }
-
-@JvmOverloads
-fun toNotNullIntNoThrow(
-        value: String?,
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
-): Int = toIntNoThrow(value, exceptionAction) ?: 0
