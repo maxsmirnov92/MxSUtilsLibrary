@@ -5,11 +5,11 @@ import android.content.Intent
 import android.net.Uri
 import android.webkit.MimeTypeMap
 import androidx.core.content.FileProvider
-import net.maxsmr.commonutils.data.EMPTY_STRING
 import net.maxsmr.commonutils.data.FileHelper
+import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import java.io.File
 
-val PROVIDER_AUTHORITY_FORMAT = "%s.provider"
+const val PROVIDER_AUTHORITY_FORMAT = "%s.provider"
 
 fun getBrowseLinkIntent(
         url: String = EMPTY_STRING,

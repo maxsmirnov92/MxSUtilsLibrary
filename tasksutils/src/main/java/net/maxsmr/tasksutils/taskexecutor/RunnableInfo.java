@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.FINISHED;
 import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.PENDING;
 import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.RUNNING;

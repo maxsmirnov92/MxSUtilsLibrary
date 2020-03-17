@@ -12,7 +12,7 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public class FieldsExclusionStrategy implements ExclusionStrategy {
 

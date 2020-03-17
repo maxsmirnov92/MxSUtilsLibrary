@@ -6,9 +6,9 @@ import android.content.SharedPreferences
 import android.preference.PreferenceManager
 
 import net.maxsmr.commonutils.android.prefs.PreferencesHolder.PrefType
-import net.maxsmr.commonutils.data.EMPTY_STRING
+import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.Observable
-import net.maxsmr.commonutils.data.isEmpty
+import net.maxsmr.commonutils.data.text.isEmpty
 
 class PreferencesManager @JvmOverloads constructor(
         private val context: Context,

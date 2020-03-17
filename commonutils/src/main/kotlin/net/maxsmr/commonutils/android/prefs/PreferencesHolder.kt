@@ -1,11 +1,9 @@
 package net.maxsmr.commonutils.android.prefs
 
 import android.annotation.SuppressLint
-import android.content.Context
 import android.content.SharedPreferences
-import android.preference.PreferenceManager.getDefaultSharedPreferences
 import net.maxsmr.commonutils.android.prefs.PreferencesHolder.PrefType.*
-import net.maxsmr.commonutils.data.EMPTY_STRING
+import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 

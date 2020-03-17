@@ -21,7 +21,7 @@ import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteContentProvider> implements ISQLiteOperation {
 

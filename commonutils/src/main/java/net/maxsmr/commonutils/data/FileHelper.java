@@ -18,6 +18,7 @@ import androidx.collection.ArraySet;
 import androidx.exifinterface.media.ExifInterface;
 
 import net.maxsmr.commonutils.R;
+import net.maxsmr.commonutils.data.conversion.SizeUnit;
 import net.maxsmr.commonutils.data.sort.BaseOptionableComparator;
 import net.maxsmr.commonutils.data.sort.ISortOption;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
@@ -63,16 +64,14 @@ import static net.maxsmr.commonutils.data.CompareUtilsKt.compareLongs;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.compareStrings;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.objectsEqual;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsMatch;
-import static net.maxsmr.commonutils.data.SizeConversionKt.sizeToString;
+import static net.maxsmr.commonutils.data.conversion.SizeConversionKt.sizeToString;
 import static net.maxsmr.commonutils.data.StreamUtils.readBytesFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringsFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.revectorStream;
-import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
-import static net.maxsmr.commonutils.data.SymbolConstKt.NEXT_LINE;
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
-import static net.maxsmr.commonutils.data.TextUtilsKt.join;
-import static net.maxsmr.commonutils.data.TextUtilsKt.replaceRange;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.join;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.replaceRange;
 import static net.maxsmr.commonutils.shell.CommandResultKt.PROCESS_EXIT_CODE_SUCCESS;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 
@@ -120,7 +119,7 @@ public final class FileHelper {
         Set<File> result = null;
         if (isExternalStorageMounted()) {
             if (type == null) {
-                type = EMPTY_STRING;
+                type = net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING;
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
                 result = new ArraySet<>(Arrays.asList(context.getExternalFilesDirs(type)));
@@ -726,7 +725,7 @@ public final class FileHelper {
     @Nullable
     public static String readStringFromFile(File file) {
         List<String> strings = readStringsFromFile(file);
-        return !strings.isEmpty() ? join(NEXT_LINE, strings) : null;
+        return !strings.isEmpty() ? join(net.maxsmr.commonutils.data.text.SymbolConstsKt.NEXT_LINE, strings) : null;
     }
 
     /**
@@ -889,7 +888,7 @@ public final class FileHelper {
         try {
             for (String line : data) {
                 bw.append(line);
-                bw.append(NEXT_LINE);
+                bw.append(net.maxsmr.commonutils.data.text.SymbolConstsKt.NEXT_LINE);
                 bw.flush();
             }
             return true;
@@ -1064,10 +1063,10 @@ public final class FileHelper {
     @NotNull
     public static String getFileExtension(@Nullable String name) {
         if (name == null) {
-            name = EMPTY_STRING;
+            name = net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING;
         }
         int index = name.lastIndexOf('.');
-        return (index > 0 && index < name.length() - 1) ? name.substring(index + 1) : EMPTY_STRING;
+        return (index > 0 && index < name.length() - 1) ? name.substring(index + 1) : net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING;
     }
 
     /**
@@ -1079,7 +1078,7 @@ public final class FileHelper {
         if (!isEmpty(fileName)) {
             int startIndex = fileName.lastIndexOf('.');
             if (startIndex >= 0) {
-                fileName = replaceRange(fileName, startIndex, fileName.length(), EMPTY_STRING);
+                fileName = replaceRange(fileName, startIndex, fileName.length(), net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING);
             }
             return fileName;
         }
@@ -1449,7 +1448,7 @@ public final class FileHelper {
             final String currentPath = path;
 
             execProcess(Arrays.asList("stat", currentPath + name),
-                    EMPTY_STRING,
+                    net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING,
                     null,
                     null,
                     new ShellCallback() {
@@ -1800,7 +1799,7 @@ public final class FileHelper {
     ) {
 
         if (uri == null) {
-            return EMPTY_STRING;
+            return net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING;
         }
 
         final String column = MediaStore.Images.ImageColumns.DATA;
@@ -1887,7 +1886,7 @@ public final class FileHelper {
             if (result && mode > 0) {
                 return execProcess(
                         Arrays.asList("chmod", String.valueOf(mode), destFilePath),
-                        EMPTY_STRING,
+                        net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING,
                         null,
                         null,
                         null,
@@ -2523,7 +2522,7 @@ public final class FileHelper {
 
             if (dir != null/* && isDirExists(dir.getAbsolutePath())*/) {
                 execProcess(Arrays.asList("su", "-c", "ls", dir.getAbsolutePath()),
-                        EMPTY_STRING,
+                        net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING,
                         null,
                         null,
                         new ShellCallback() {
@@ -2574,7 +2573,7 @@ public final class FileHelper {
         for (final File current : collected) {
             // option "-b" is not supported on android version
             execProcess(Arrays.asList("su", "-c", "du", "-s", current.getAbsolutePath()),
-                    EMPTY_STRING,
+                    net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING,
                     null,
                     null,
                     new ShellCallback() {
@@ -2637,7 +2636,7 @@ public final class FileHelper {
             }
             return filesWithSizeToString(context, map);
         }
-        return EMPTY_STRING;
+        return net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING;
     }
 
     public static String filePairsToString(@NotNull Context context, Collection<Pair<File, File>> files, int depth) {
@@ -2650,7 +2649,7 @@ public final class FileHelper {
             }
             return filePairsWithSizeToString(context, map);
         }
-        return EMPTY_STRING;
+        return net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING;
     }
 
     public static String filesWithSizeToString(@NotNull Context context, @NotNull Map<File, Long> files) {
@@ -2672,7 +2671,7 @@ public final class FileHelper {
                 }
             }
         }
-        return join(NEXT_LINE, result);
+        return join(net.maxsmr.commonutils.data.text.SymbolConstsKt.NEXT_LINE, result);
     }
 
     public static String filePairsWithSizeToString(@NotNull Context context, Map<Pair<File, File>, Long> files) {
@@ -2704,7 +2703,7 @@ public final class FileHelper {
                 }
             }
         }
-        return join(NEXT_LINE, result);
+        return join(net.maxsmr.commonutils.data.text.SymbolConstsKt.NEXT_LINE, result);
     }
 
     public enum GetMode {

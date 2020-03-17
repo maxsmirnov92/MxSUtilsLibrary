@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+/**
+ * @see class {@linkplain android.database.Observable}
+ */
 public abstract class Observable<T> {
 
     @NotNull

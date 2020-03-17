@@ -3,8 +3,6 @@ package net.maxsmr.commonutils.android.hardware;
 import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.app.Activity;
-import android.app.AlarmManager;
-import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
@@ -15,7 +13,6 @@ import android.media.AudioManager;
 import android.os.BatteryManager;
 import android.os.Build;
 import android.os.PowerManager;
-import android.os.SystemClock;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.view.WindowManager;
@@ -39,8 +36,6 @@ import java.util.Locale;
 import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
-import static android.os.Build.VERSION.SDK_INT;
-import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 
 public final class DeviceUtils {
@@ -345,7 +340,7 @@ public final class DeviceUtils {
 
         dateFormat.setTimeZone(TimeZone.getDefault());
         String formatTime = dateFormat.format(new Date(timestamp));
-        execProcess(Arrays.asList("su", "-c", "date", "-s", formatTime), EMPTY_STRING, null, null, sc, null, 0, TimeUnit.SECONDS);
+        execProcess(Arrays.asList("su", "-c", "date", "-s", formatTime), net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING, null, null, sc, null, 0, TimeUnit.SECONDS);
     }
 
     /**

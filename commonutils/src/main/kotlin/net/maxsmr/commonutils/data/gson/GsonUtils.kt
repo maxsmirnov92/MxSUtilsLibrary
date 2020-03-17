@@ -4,8 +4,8 @@ package net.maxsmr.commonutils.data.gson
 
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
-import net.maxsmr.commonutils.data.EMPTY_STRING
-import net.maxsmr.commonutils.data.isEmpty
+import net.maxsmr.commonutils.data.text.EMPTY_STRING
+import net.maxsmr.commonutils.data.text.isEmpty
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.lang.reflect.Type

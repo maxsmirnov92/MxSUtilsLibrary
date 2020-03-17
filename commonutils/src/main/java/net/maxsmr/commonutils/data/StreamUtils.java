@@ -18,9 +18,8 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
-import static net.maxsmr.commonutils.data.SymbolConstKt.NEXT_LINE;
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
-import static net.maxsmr.commonutils.data.TextUtilsKt.join;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.join;
 
 /**
  * Вспомогательные методы для чтения из {@link InputStream]
@@ -168,7 +167,7 @@ public final class StreamUtils {
             String charsetName
     ) {
         Collection<String> strings = readStringsFromInputStream(is, count, closeInput, charsetName);
-        return !strings.isEmpty() ? join(NEXT_LINE, strings) : null;
+        return !strings.isEmpty() ? join(net.maxsmr.commonutils.data.text.SymbolConstsKt.NEXT_LINE, strings) : null;
     }
 
     /**

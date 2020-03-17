@@ -14,7 +14,7 @@ import org.jetbrains.annotations.NotNull;
 import java.io.Serializable;
 
 import static net.maxsmr.commonutils.data.CompareUtilsKt.objectsEqual;
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 ;
 

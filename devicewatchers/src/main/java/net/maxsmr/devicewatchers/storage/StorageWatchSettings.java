@@ -1,7 +1,7 @@
 package net.maxsmr.devicewatchers.storage;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.data.SizeUnit;
+import net.maxsmr.commonutils.data.conversion.SizeUnit;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;

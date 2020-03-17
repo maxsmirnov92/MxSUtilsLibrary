@@ -84,7 +84,7 @@ import static androidx.exifinterface.media.ExifInterface.TAG_MODEL;
 import static androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION;
 import static androidx.exifinterface.media.ExifInterface.TAG_WHITE_BALANCE;
 import static net.maxsmr.commonutils.android.gui.GuiUtilsKt.getCorrectedDisplayRotation;
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public final class GraphicUtils {
 

@@ -8,12 +8,11 @@ import android.view.View;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
-import net.maxsmr.commonutils.data.Pair;
 
 import com.google.android.material.snackbar.Snackbar;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.data.number.MathUtils;
+import net.maxsmr.commonutils.data.Pair;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.storage.ids.IdHolder;
@@ -37,6 +36,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+
+import static net.maxsmr.commonutils.data.number.RandomUtilsKt.randInt;
 
 public class TestTasksActivity extends AppCompatActivity implements AbstractSyncStorage.IStorageListener, TaskRunnableExecutor.Callbacks<TestRunnableInfo, Void, Boolean, TestTaskRunnable>, TaskRunnable.Callbacks<TestRunnableInfo, Void, Boolean, TaskRunnable<TestRunnableInfo, Void, Boolean>> {
 
@@ -104,7 +105,7 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
         Pair<Integer, TestRunnableInfo> max = storage.findByMinMaxId(false);
         IdHolder idHolder = max == null || max.second == null ? new IdHolder(0) : new IdHolder(max.second.id);
         for (int i = 0; i < TASKS_COUNT; i++) {
-            executor.execute(new TestTaskRunnable(new TestRunnableInfo(idHolder.getAndIncrement(), "TestRunnable_" + idHolder.get(), MathUtils.randInt(0, 5000))).
+            executor.execute(new TestTaskRunnable(new TestRunnableInfo(idHolder.getAndIncrement(), "TestRunnable_" + idHolder.get(), randInt(0, 5000))).
                     registerCallbacks(this));
         }
         assertFiles(storage.getSize());

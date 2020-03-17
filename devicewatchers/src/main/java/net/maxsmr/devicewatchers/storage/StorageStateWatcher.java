@@ -3,7 +3,7 @@ package net.maxsmr.devicewatchers.storage;
 
 import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Predicate;
-import net.maxsmr.commonutils.data.SizeUnit;
+import net.maxsmr.commonutils.data.conversion.SizeUnit;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
@@ -23,7 +23,7 @@ import java.util.Map;
 import java.util.Set;
 
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 
 public final class StorageStateWatcher {

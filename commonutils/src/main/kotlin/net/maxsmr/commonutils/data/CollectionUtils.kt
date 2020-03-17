@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.data
 
-import net.maxsmr.commonutils.data.entity.Valuable
+import net.maxsmr.commonutils.data.text.isNotZeroOrNull
 
 fun <K, V : Number> putIfNotNullOrZero(map: MutableMap<K, V>, key: K, value: V?) {
     if (value != null && isNotZeroOrNull(value.toString())) {
@@ -8,21 +8,39 @@ fun <K, V : Number> putIfNotNullOrZero(map: MutableMap<K, V>, key: K, value: V?)
     }
 }
 
-fun <N : Number> findMinValuable(collection: Collection<Valuable<N?>?>): Pair<Int, N>? = findValuable(collection, true)
-
-fun <N : Number> findMaxValuable(collection: Collection<Valuable<N?>?>): Pair<Int, N>? = findValuable(collection, false)
-
-fun <N : Number> findMin(collection: Collection<N?>): Pair<Int, N>? = find(collection, true)
-
-fun <N : Number> findMax(collection: Collection<N?>): Pair<Int, N>? = find(collection, false)
-
-private fun <N : Number> findValuable(collection: Collection<Valuable<N?>?>, isMin: Boolean): Pair<Int, N>? {
-    return find(collection.map { it?.value }, isMin)
+fun avg(numbers: Collection<Number?>?): Double {
+    var result = 0.0
+    if (numbers != null) {
+        val count = numbers.size
+        var sum = 0.0
+        for (n in numbers) {
+            if (n != null) {
+                sum += n.toDouble()
+            }
+        }
+        result = sum / count
+    }
+    return result
 }
 
-private fun <N : Number> find(collection: Collection<N?>, isMin: Boolean): Pair<Int, N>? {
-    var result: Pair<Int, N>? = null
-    collection.forEachIndexed { index, value ->
+fun sum(numbers: Collection<Number?>?): Double {
+    var result = 0.0
+    if (numbers != null) {
+        for (n in numbers) {
+            if (n != null) {
+                result += n.toDouble()
+            }
+        }
+    }
+    return result
+}
+fun findMin(collection: Collection<Number?>?): Pair<Int, Number>? = find(collection, true)
+
+fun findMax(collection: Collection<Number?>?): Pair<Int, Number>? = find(collection, false)
+
+private fun find(collection: Collection<Number?>?, isMin: Boolean): Pair<Int, Number>? {
+    var result: Pair<Int, Number>? = null
+    collection?.forEachIndexed { index, value ->
         if (value != null) {
             result.let {
                 if (it == null ||

@@ -33,8 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 
 public final class NetworkHelper {
@@ -298,7 +297,7 @@ public final class NetworkHelper {
                 "-W " + (timeoutUnit == null ? TimeUnit.MILLISECONDS.toSeconds(timeout) : timeoutUnit.toSeconds(timeout)),
                 inetAddress.getHostAddress()
                 ),
-                EMPTY_STRING, null, null, null, null, 0, TimeUnit.SECONDS);
+                net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING, null, null, null, null, 0, TimeUnit.SECONDS);
 
         String resultString = result.getStdOut();
 

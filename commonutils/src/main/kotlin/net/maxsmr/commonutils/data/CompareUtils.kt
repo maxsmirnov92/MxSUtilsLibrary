@@ -2,73 +2,67 @@ package net.maxsmr.commonutils.data
 
 import android.os.Bundle
 import net.maxsmr.commonutils.data.MatchStringOption.*
+import net.maxsmr.commonutils.data.text.EMPTY_STRING
+import net.maxsmr.commonutils.data.text.isEmpty
+import net.maxsmr.commonutils.data.text.join
 import java.util.*
-import kotlin.math.sign
 
 // may be usesul in Java, where Objects.equal() not allowed
-fun objectsEqual(one: Any?, another: Any?): Boolean {
-    return if (one != null) one == another else another == null
-}
+fun objectsEqual(one: Any?, another: Any?): Boolean =
+        if (one != null) one == another else another == null
 
 fun charsEqual(one: Char?, another: Char?, ignoreCase: Boolean): Boolean {
     var one = one
     var another = another
     if (ignoreCase) {
-        one = if (one != null) Character.toUpperCase(one) else null
-        another = if (another != null) Character.toUpperCase(another) else null
+        one = one?.toLowerCase()
+        another = another?.toLowerCase()
     }
     return if (one != null) one == another else another == null
 }
 
-fun stringsEqual(one: String?, another: String?, ignoreCase: Boolean): Boolean {
-    return if (one != null) if (!ignoreCase) one == another else one.equals(another, ignoreCase = true) else another == null
-}
+fun stringsEqual(one: String?, another: String?, ignoreCase: Boolean): Boolean =
+        if (one != null) {
+            if (!ignoreCase) objectsEqual(one, another) else one.equals(another, ignoreCase = true)
+        } else {
+            another == null
+        }
 
-fun compareForNull(lhs: Any?, rhs: Any?, ascending: Boolean = true): Int {
-    return if (ascending) if (lhs != null) if (rhs != null) 0 else 1 else if (rhs == null) 0 else -1 else if (lhs != null) if (rhs != null) 0 else -1 else if (rhs == null) 0 else 1
-}
+fun compareForNull(lhs: Any?, rhs: Any?, ascending: Boolean = true): Int =
+        if (ascending) if (lhs != null) if (rhs != null) 0 else 1 else if (rhs == null) 0 else -1 else if (lhs != null) if (rhs != null) 0 else -1 else if (rhs == null) 0 else 1
 
-fun <C : Comparable<C>?> compareObjects(one: C?, another: C?, ascending: Boolean = true): Int {
-    return if (one != null) if (another != null) if (ascending) one.compareTo(another) else another.compareTo(one) else 1 else if (another == null) 0 else -1
-}
+fun <C : Comparable<C>?> compareObjects(one: C?, another: C?, ascending: Boolean = true): Int =
+        if (one != null) if (another != null) if (ascending) one.compareTo(another) else another.compareTo(one) else 1 else if (another == null) 0 else -1
 
-fun compareNumbers(one: Number?, another: Number?, ascending: Boolean = true): Int {
-    return compareDouble(one?.toDouble(), another?.toDouble(), ascending)
-}
+fun compareNumbers(one: Number?, another: Number?, ascending: Boolean = true): Int =
+        compareDoubles(one?.toDouble(), another?.toDouble(), ascending)
 
-fun compareInts(one: Int?, another: Int?, ascending: Boolean = true): Int {
-    return if (one != null) if (another != null) if (!ascending) sign(another - one.toFloat()).toInt() else sign(one - another.toFloat()).toInt() else 1 else if (another == null) 0 else -1
-}
+fun compareInts(one: Int?, another: Int?, ascending: Boolean = true): Int =
+        compareLongs(one?.toLong(), another?.toLong(), ascending)
 
-fun compareLongs(one: Long?, another: Long?, ascending: Boolean = true): Int {
-    return if (one != null) if (another != null) if (!ascending) sign(another - one.toFloat()).toInt() else sign(one - another.toFloat()).toInt() else 1 else if (another == null) 0 else -1
-}
+fun compareLongs(one: Long?, another: Long?, ascending: Boolean = true): Int =
+        compareObjects(one, another, ascending)
 
-fun compareFloats(one: Float?, another: Float?, ascending: Boolean = true): Int {
-    return if (one != null) if (another != null) if (!ascending) sign(another - one).toInt() else sign(one - another).toInt() else 1 else if (another == null) 0 else -1
-}
+fun compareFloats(one: Float?, another: Float?, ascending: Boolean = true): Int =
+        compareDoubles(one?.toDouble(), another?.toDouble(), ascending)
 
-fun compareDouble(one: Double?, another: Double?, ascending: Boolean = true): Int {
-    return if (one != null) if (another != null) if (!ascending) sign(another - one).toInt() else sign(one - another).toInt() else 1 else if (another == null) 0 else -1
-}
+fun compareDoubles(one: Double?, another: Double?, ascending: Boolean = true): Int =
+        compareObjects(one, another, ascending)
 
 fun compareChars(one: Char?, another: Char?, ascending: Boolean = true, ignoreCase: Boolean): Int {
-    if (charsEqual(one, another, ignoreCase)) {
-        return 0
-    }
-    return if (one != null) if (another != null) if (!ascending) sign(another.toFloat() - one.toFloat()).toInt() else sign(one.toFloat() - another.toFloat()).toInt() else 1 else if (another == null) 0 else -1
+    val one = if (ignoreCase) one?.toLowerCase() else one
+    val another = if (ignoreCase) another?.toLowerCase() else another
+    return compareDoubles(one?.toDouble(), another?.toDouble())
 }
 
 fun compareStrings(one: String?, another: String?, ascending: Boolean = true, ignoreCase: Boolean): Int {
-    if (stringsEqual(one, another, ignoreCase)) {
-        return 0
-    }
-    return if (one != null) if (another != null) if (!ascending) one.compareTo(another) else another.compareTo(one) else 1 else -1
+    val one = if (ignoreCase) one?.toLowerCase(Locale.getDefault()) else one
+    val another = if (ignoreCase) another?.toLowerCase(Locale.getDefault()) else another
+    return compareObjects(one, another, ascending)
 }
 
-fun compareDates(one: Date?, another: Date?, ascending: Boolean = true): Int {
-    return compareLongs(one?.time ?: 0, another?.time ?: 0, ascending)
-}
+fun compareDates(one: Date?, another: Date?, ascending: Boolean = true): Int =
+        compareLongs(one?.time ?: 0, another?.time ?: 0, ascending)
 
 fun bundleEquals(one: Bundle?, two: Bundle?): Boolean {
     if (one == null && two == null) return false
@@ -95,9 +89,8 @@ fun bundleEquals(one: Bundle?, two: Bundle?): Boolean {
  * то же самое, что и расширенная версия [stringsMatch],
  * но с дефолтным флагом и разделителями
  */
-fun stringsMatch(initialText: CharSequence?, matchText: CharSequence?): Boolean {
-    return stringsMatch(initialText, matchText, AUTO_IGNORE_CASE.flag)
-}
+fun stringsMatch(initialText: CharSequence?, matchText: CharSequence?): Boolean =
+        stringsMatch(initialText, matchText, AUTO_IGNORE_CASE.flag)
 
 /**
  * @param initialText строка, в которой ищутся вхождения
@@ -275,7 +268,7 @@ enum class CompareCondition {
     }
 
     fun apply(one: Number?, another: Number?): Boolean {
-        return fromResult(compareDouble(one?.toDouble(), another?.toDouble(), true), this)
+        return fromResult(compareDoubles(one?.toDouble(), another?.toDouble(), true), this)
     }
 
     companion object {

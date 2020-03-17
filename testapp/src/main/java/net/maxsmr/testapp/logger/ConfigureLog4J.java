@@ -1,7 +1,7 @@
 package net.maxsmr.testapp.logger;
 
 import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.data.SizeUnit;
+import net.maxsmr.commonutils.data.conversion.SizeUnit;
 
 import org.apache.log4j.Level;
 import org.jetbrains.annotations.Nullable;

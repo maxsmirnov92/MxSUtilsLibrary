@@ -6,6 +6,8 @@ import net.maxsmr.commonutils.android.getPidsByName
 
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager
 import net.maxsmr.commonutils.data.*
+import net.maxsmr.commonutils.data.text.EMPTY_STRING
+import net.maxsmr.commonutils.data.text.isEmpty
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.io.File

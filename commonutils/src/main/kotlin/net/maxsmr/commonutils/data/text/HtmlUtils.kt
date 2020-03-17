@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.data
+package net.maxsmr.commonutils.data.text
 
 import android.text.Html
 import android.text.SpannableString
@@ -17,6 +17,7 @@ fun clearHtml(html: String): String {
 /**
  * Попытка привести html к Spanned строке с форматированием из html
  */
+@Throws
 fun parseHtmlToSpannedString(html: String): Spanned {
     return html.let { html.replace("\n", "<br/>") }
             .let {

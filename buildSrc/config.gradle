@@ -23,6 +23,9 @@ ext {
     commonsNetVersion = '3.3'
     gsonVersion = '2.8.5'
 
+    lifecycleVersion = '2.2.0'
+    tinkoffDecoroVersion = '1.3.5'
+
     jUnitVersion = '4.12'
     jUnitExtVersion = '1.1.1'
     testCoreVersion = '1.2.0'

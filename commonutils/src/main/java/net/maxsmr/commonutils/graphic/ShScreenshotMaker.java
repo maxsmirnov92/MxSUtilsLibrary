@@ -17,7 +17,6 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcessAsync;
 
@@ -92,7 +91,7 @@ public final class ShScreenshotMaker {
 
         return execProcess(
                 Arrays.asList("su", "-c", SCREENCAP_PROCESS_NAME, destFile.getAbsolutePath()),
-                EMPTY_STRING,
+                net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING,
                 null,
                 null,
                 sc,

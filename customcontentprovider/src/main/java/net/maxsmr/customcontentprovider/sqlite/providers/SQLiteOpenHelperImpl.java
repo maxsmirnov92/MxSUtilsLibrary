@@ -17,7 +17,7 @@ import java.util.Locale;
 import java.util.Set;
 
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
 

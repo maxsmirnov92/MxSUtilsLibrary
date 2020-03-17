@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.data
+package net.maxsmr.commonutils.data.text
 
 const val SPACE: String = " "
 const val NEXT_LINE: String = "\n"

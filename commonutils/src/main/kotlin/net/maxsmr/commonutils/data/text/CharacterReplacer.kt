@@ -1,6 +1,7 @@
-package net.maxsmr.commonutils.data
+package net.maxsmr.commonutils.data.text
 
-import java.util.ArrayList
+import net.maxsmr.commonutils.data.charsEqual
+import java.util.*
 
 object CharacterReplacer {
 

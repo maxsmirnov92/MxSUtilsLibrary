@@ -2,10 +2,10 @@ package net.maxsmr.commonutils.android.processmanager.shell.base;
 
 import android.content.Context;
 import android.content.pm.ApplicationInfo;
+import android.os.Environment;
 
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager;
 import net.maxsmr.commonutils.android.processmanager.model.ProcessInfo;
-import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Pair;
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.shell.CommandResult;
@@ -26,9 +26,9 @@ import java.util.regex.Pattern;
 import static net.maxsmr.commonutils.android.AppUtilsKt.getApplicationInfo;
 import static net.maxsmr.commonutils.android.processmanager.model.ProcessInfo.ProcessState.S;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
-import static net.maxsmr.commonutils.data.SymbolConstKt.EMPTY_STRING;
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
-import static net.maxsmr.commonutils.data.number.NumberConversionUtilsKt.toNotNullIntNoThrow;
+import static net.maxsmr.commonutils.data.FileHelper.isFileExists;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toNotNullIntNoThrow;
 import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
 import static net.maxsmr.commonutils.shell.RootShellCommandsKt.isRootAvailable;
 
@@ -36,7 +36,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
 
     private static final Pattern PACKAGE_PATTERN = Pattern.compile("^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+[0-9a-z_]$");
 
-    protected final ShellWrapper shellWrapper = new ShellWrapper(false, DEFAULT_TARGET_CODE, EMPTY_STRING, null);
+    protected final ShellWrapper shellWrapper = new ShellWrapper(false, DEFAULT_TARGET_CODE, net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING, null);
 
     @Nullable
     private String[] cachedCommands;
@@ -77,13 +77,6 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
     }
 
     /**
-     * in later Android versions 'su' is required for receiving full process list
-     */
-    protected boolean useSuForCommands(List<String> commands) {
-        return !FileHelper.hasKnoxFlag() && isRootAvailable();
-    }
-
-    /**
      * commands to execute on each {@linkplain AbstractProcessManager#getProcesses(boolean)} call
      * on some non-rooted devices "su -c" may freeze
      */
@@ -95,6 +88,13 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
      */
     @NotNull
     protected abstract Map<Column, Set<String>> getColumnNamesMap();
+
+    /**
+     * in later Android versions 'su' is required for receiving full process list
+     */
+    protected boolean useSuForCommands(List<String> commands) {
+        return !hasKnoxFlag() && isRootAvailable();
+    }
 
     protected boolean isOutputParseAllowed(int currentIndex, @NotNull String[] fields, @NotNull List<String> columnNames) {
         return fields.length == columnNames.size();
@@ -348,9 +348,12 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
         return index >= 0 && index < length;
     }
 
+    private static boolean hasKnoxFlag() {
+        return isFileExists("knox", Environment.getExternalStorageDirectory().getAbsolutePath());
+    }
+
     protected enum Column {
 
         USER, PID, PPID, VSIZE, RSS, STAT, PCY, NAME
     }
-
 }

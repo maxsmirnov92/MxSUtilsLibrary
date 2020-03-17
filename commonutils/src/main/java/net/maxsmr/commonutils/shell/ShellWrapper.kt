@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.shell
 
-import net.maxsmr.commonutils.data.EMPTY_STRING
+import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.util.concurrent.atomic.AtomicInteger

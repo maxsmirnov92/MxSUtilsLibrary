@@ -28,8 +28,8 @@ import java.io.RandomAccessFile;
 import java.net.InetAddress;
 
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
-import static net.maxsmr.commonutils.data.number.MathUtils.safeLongToInt;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toIntSafe;
 
 public class FtpConnectionManager {
 
@@ -486,7 +486,7 @@ public class FtpConnectionManager {
                         }
                     } : null)) {
 
-                        randomAccessLocalFile.write(dataStream.toByteArray(), safeLongToInt(randomAccessLocalFile.length()),
+                        randomAccessLocalFile.write(dataStream.toByteArray(), toIntSafe(randomAccessLocalFile.length()),
                                 dataStream.size());
 
                         lastDownloadTime = System.currentTimeMillis() - startDownloadTime;

@@ -1,42 +1,15 @@
-package net.maxsmr.commonutils.data
+package net.maxsmr.commonutils.data.text
 
-import net.maxsmr.commonutils.data.number.toDoubleNoThrow
+import net.maxsmr.commonutils.data.CompareCondition
+import net.maxsmr.commonutils.data.Predicate
+import net.maxsmr.commonutils.data.conversion.toDoubleNoThrow
+import net.maxsmr.commonutils.data.number.isZeroOrNull
 import java.util.*
 
-fun isEmpty(s: CharSequence?): Boolean {
-    return isEmpty(s, false)
-}
+// region: Copied from TextUtils
+fun join(delimiter: CharSequence, tokens: Array<Any?>): String =
+        join(delimiter, tokens.toList())
 
-fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean): Boolean {
-    return s == null || s == EMPTY_STRING || shouldCheckNullString && "null".equals(s.toString(), ignoreCase = true)
-}
-
-fun isZeroOrNull(value: String?) = net.maxsmr.commonutils.data.number.isZeroOrNull(toDoubleNoThrow(value))
-
-fun isNotZeroOrNull(value: String?) = !isZeroOrNull(value)
-
-fun getStubValue(value: String?, stringsProvider: () -> String): String? {
-    return getStubValueWithAppend(value, null, stringsProvider)
-}
-
-fun getStubValue(value: Int, stringsProvider: () -> String): String? {
-    return getStubValueWithAppend(value, null, stringsProvider)
-}
-
-fun getStubValueWithAppend(value: Int, appendWhat: String?, stringsProvider: () -> String): String? {
-    return getStubValueWithAppend(if (value != 0) value.toString() else null, appendWhat, stringsProvider)
-}
-
-fun getStubValueWithAppend(value: String?, appendWhat: String?, stringsProvider: () -> String): String? {
-    return if (!isEmpty(value)) if (!isEmpty(appendWhat)) "$value $appendWhat" else value else stringsProvider.invoke()
-}
-
-// Copied from TextUtils
-fun join(delimiter: CharSequence, tokens: Array<Any?>): String {
-    return join(delimiter, tokens.toList())
-}
-
-// Copied from TextUtils
 fun join(delimiter: CharSequence, tokens: Iterable<*>): String {
     val it = tokens.iterator()
     if (!it.hasNext()) {
@@ -50,8 +23,6 @@ fun join(delimiter: CharSequence, tokens: Iterable<*>): String {
     }
     return sb.toString()
 }
-
-// Copied from TextUtils
 fun split(text: String, expression: String): Array<String?>? {
     return if (text.isEmpty()) {
         arrayOf()
@@ -59,6 +30,29 @@ fun split(text: String, expression: String): Array<String?>? {
         text.split(expression).dropLastWhile { it.isEmpty() }.toTypedArray()
     }
 }
+// endregion
+
+fun isEmpty(s: CharSequence?): Boolean =
+        isEmpty(s, false)
+
+fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean): Boolean =
+        s == null || s == EMPTY_STRING || shouldCheckNullString && "null".equals(s.toString(), ignoreCase = true)
+
+fun isZeroOrNull(value: CharSequence?) = value.toDoubleNoThrow().isZeroOrNull()
+
+fun isNotZeroOrNull(value: CharSequence?) = !isZeroOrNull(value)
+
+fun getStubValue(value: String?, stringsProvider: () -> String): String? =
+        getStubValueWithAppend(value, null, stringsProvider)
+
+fun getStubValue(value: Int, stringsProvider: () -> String): String? =
+        getStubValueWithAppend(value, null, stringsProvider)
+
+fun getStubValueWithAppend(value: Int, appendWhat: String?, stringsProvider: () -> String): String? =
+        getStubValueWithAppend(if (value != 0) value.toString() else null, appendWhat, stringsProvider)
+
+fun getStubValueWithAppend(value: String?, appendWhat: String?, stringsProvider: () -> String): String? =
+        if (!isEmpty(value)) if (!isEmpty(appendWhat)) "$value $appendWhat" else value else stringsProvider.invoke()
 
 fun changeCaseFirstLatter(s: CharSequence?, upper: Boolean): String {
     var result = EMPTY_STRING
@@ -152,7 +146,7 @@ fun removeChars(
         ignoreCase: Boolean = true,
         andRule: Boolean = false,
         excludeByConditions: Boolean = true
-): CharSequence = removeChars(text, isFromStart, mapOf(kotlin.Pair(byChar, CharConditionInfo(condition, ignoreCase))), andRule, excludeByConditions)
+): CharSequence = removeChars(text, isFromStart, mapOf(Pair(byChar, CharConditionInfo(condition, ignoreCase))), andRule, excludeByConditions)
 
 /**
  * Убирает указанные символы с начала или конца строки
@@ -210,7 +204,7 @@ fun trimWithCondition(
         andRule: Boolean = false,
         excludeByConditions: Boolean = true
 ): CharSequence =
-        trimWithCondition(text, fromStart, mapOf(kotlin.Pair(byChar, CharConditionInfo(condition, ignoreCase))), andRule, excludeByConditions)
+        trimWithCondition(text, fromStart, mapOf(Pair(byChar, CharConditionInfo(condition, ignoreCase))), andRule, excludeByConditions)
 
 fun trimWithCondition(
         text: CharSequence,

@@ -3,8 +3,8 @@ package net.maxsmr.networkutils.loadutil.managers.base.info;
 import com.google.gson.JsonElement;
 
 import net.maxsmr.commonutils.data.FileHelper;
-
 import net.maxsmr.commonutils.data.model.IBuilder;
+import net.maxsmr.commonutils.data.text.TextUtilsKt;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 
 import org.jetbrains.annotations.NotNull;
@@ -23,7 +23,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableInfo {
 
@@ -367,7 +367,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         }
 
         public StringBody(@NotNull String name, @Nullable String value, @Nullable String charset) {
-            super(name, value != null? value.getBytes(net.maxsmr.commonutils.data.TextUtilsKt.isEmpty(charset)? DEFAULT_CHARSET : Charset.forName(charset)) : null);
+            super(name, value != null? value.getBytes(TextUtilsKt.isEmpty(charset)? DEFAULT_CHARSET : Charset.forName(charset)) : null);
             this.value = value;
         }
 

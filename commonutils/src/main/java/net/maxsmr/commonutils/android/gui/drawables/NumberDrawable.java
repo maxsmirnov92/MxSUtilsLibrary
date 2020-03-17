@@ -14,7 +14,7 @@ import androidx.annotation.DrawableRes;
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public class NumberDrawable extends BitmapDrawable {
 

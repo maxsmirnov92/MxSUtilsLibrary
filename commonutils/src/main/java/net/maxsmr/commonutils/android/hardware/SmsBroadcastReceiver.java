@@ -10,6 +10,7 @@ import android.telephony.SmsMessage;
 
 import androidx.localbroadcastmanager.content.LocalBroadcastManager;
 
+import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.io.Serializable;
@@ -101,6 +102,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
         }
 
         @Override
+        @NotNull
         public String toString() {
             return "SmsData{" +
                     "serviceCenterAddress='" + serviceCenterAddress + '\'' +

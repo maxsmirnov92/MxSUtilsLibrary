@@ -29,7 +29,7 @@ import java.util.Set;
 
 import javax.net.ssl.TrustManagerFactory;
 
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 
 public final class CertificateHelper {

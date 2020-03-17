@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.shell
 
-import net.maxsmr.commonutils.data.NEXT_LINE
-import net.maxsmr.commonutils.data.join
+import net.maxsmr.commonutils.data.text.NEXT_LINE
+import net.maxsmr.commonutils.data.text.join
 import java.util.*
 
 const val PROCESS_EXIT_CODE_SUCCESS = 0

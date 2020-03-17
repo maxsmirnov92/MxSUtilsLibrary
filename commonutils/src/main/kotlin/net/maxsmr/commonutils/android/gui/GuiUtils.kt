@@ -42,6 +42,7 @@ import net.maxsmr.commonutils.android.getBrowseLinkIntent
 import net.maxsmr.commonutils.android.getColorFromAttrs
 import net.maxsmr.commonutils.android.getColoredDrawable
 import net.maxsmr.commonutils.data.*
+import net.maxsmr.commonutils.data.text.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.util.concurrent.TimeUnit
@@ -130,7 +131,7 @@ fun setOnFocusIntervalEditorActionListener(textView: TextView, nextView: View) {
  * Убрать нижнее подчеркивание для текущего text
  */
 fun removeTextViewUnderline(view: TextView) {
-    view.text = removeUnderline(view.text)
+    setText(view, removeUnderline(view.text), true)
 }
 
 /**
@@ -164,12 +165,6 @@ fun setSelectionToEnd(edit: EditText) {
     }
 }
 
-fun setTextWithSelectionToEnd(edit: EditText, text: CharSequence) {
-    edit.setText(text)
-    // после возможных фильтров текст мог измениться
-    setSelectionToEnd(edit)
-}
-
 /**
  * Установка лимита на количество символов допустимых к набору в [EditText]
  *
@@ -201,7 +196,7 @@ fun clearMaxLength(view: EditText) {
 fun setHtmlText(textView: TextView, text: String) {
     try {
         textView.text = parseHtmlToSpannedString(text)
-    } catch (e: RuntimeException) {
+    } catch (e: Throwable) {
         textView.text = text
     }
 }
@@ -316,8 +311,8 @@ fun setHtmlTextWithCustomClick(
  * @param str текст
  * @param selection текст для выделения (ищется первое вхождение [selection] в [str]
  */
-fun setTextWithSelection(textView: TextView, @ColorInt highlightColor: Int, str: String, selection: String) {
-    textView.text = SpannableString(str)
+fun setTextWithSelection(view: TextView, @ColorInt highlightColor: Int, str: String, selection: String) {
+    view.text = SpannableString(str)
             .apply {
                 val start = str.indexOf(selection, ignoreCase = true)
                         .takeIf { it >= 0 }
@@ -331,13 +326,37 @@ fun setTextWithSelection(textView: TextView, @ColorInt highlightColor: Int, str:
             }
 }
 
-fun setTextWithVisibility(textView: TextView, text: CharSequence?) {
+fun setTextWithVisibility(
+        view: TextView,
+        text: CharSequence?,
+        distinct: Boolean = true
+) {
     if (isEmpty(text)) {
-        textView.visibility = View.GONE
+        view.visibility = View.GONE
     } else {
-        textView.text = text
-        textView.visibility = View.VISIBLE
+        setText(view, text, distinct)
+        view.visibility = View.VISIBLE
     }
+}
+
+fun setText(
+        view: TextView,
+        text: CharSequence?,
+        distinct: Boolean = true
+) {
+    if (!distinct || view.text != text) {
+        view.text = text
+    }
+}
+
+fun setTextWithSelectionToEnd(
+        edit: EditText,
+        text: CharSequence,
+        distinct: Boolean = true
+) {
+    setText(edit, text, distinct)
+    // после возможных фильтров текст мог измениться
+    setSelectionToEnd(edit)
 }
 
 fun setEditTextHintByError(on: TextInputLayout, hint: String = EMPTY_STRING) {
@@ -359,8 +378,8 @@ fun setInputErrorTextColor(on: TextInputLayout?, color: Int) {
     }
 }
 
-fun setInputError(til: TextInputLayout, @StringRes messageResId: Int, isChecked: Boolean = true) {
-    val message = if (messageResId == 0) {
+fun setInputError(til: TextInputLayout, @StringRes messageResId: Int?, isChecked: Boolean = true) {
+    val message = if (messageResId == null || messageResId == 0) {
         null
     } else {
         til.resources.getString(messageResId)
@@ -368,13 +387,20 @@ fun setInputError(til: TextInputLayout, @StringRes messageResId: Int, isChecked:
     setInputError(til, message, isChecked)
 }
 
-
-fun setInputError(on: TextInputLayout, message: String?, isChecked: Boolean = true) {
-    on.isErrorEnabled = !isChecked || message != null
-    on.error = message
-    //        editText.getBackground().setColorFilter(act.getResources().getColor(R.color.textColorSecondary), PorterDuff.Mode.SRC_ATOP);
-    on.refreshDrawableState()
-    requestFocus(on.editText)
+fun setInputError(
+        til: TextInputLayout,
+        message: CharSequence?,
+        noError: Boolean = true,
+        shouldRequestFocus: Boolean = true
+) {
+    if (til.error != message) {
+        til.isErrorEnabled = !noError || message != null
+        til.error = message
+        til.refreshDrawableState()
+        if (shouldRequestFocus && message != null) {
+            requestFocus(til.editText)
+        }
+    }
 }
 
 fun clearInputError(on: TextInputLayout, force: Boolean = false) {

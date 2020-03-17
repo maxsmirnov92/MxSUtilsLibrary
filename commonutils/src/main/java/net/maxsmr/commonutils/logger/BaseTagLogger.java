@@ -3,7 +3,7 @@ package net.maxsmr.commonutils.logger;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import static net.maxsmr.commonutils.data.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public abstract class BaseTagLogger extends BaseLogger {
 
