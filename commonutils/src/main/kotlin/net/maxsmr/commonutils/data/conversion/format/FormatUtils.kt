@@ -2,7 +2,7 @@ package net.maxsmr.commonutils.data.conversion.format
 
 import android.widget.TextView
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
-import net.maxsmr.commonutils.data.validation.isValidRusNumber
+import net.maxsmr.commonutils.data.validation.isValidRusPhoneNumber
 import ru.tinkoff.decoro.MaskImpl
 import ru.tinkoff.decoro.slots.PredefinedSlots
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
@@ -26,7 +26,7 @@ fun TextView.setFormattedText(
 ): MaskFormatWatcher? {
     this.text = text
     val currentText = this.text?.toString() ?: EMPTY_STRING
-    if (isValidRusNumber(currentText)) {
+    if (isValidRusPhoneNumber(currentText)) {
         val watcher =
                 if (applyWatcher) {
                     // watcher пересоздаётся

@@ -1,18 +1,18 @@
 package net.maxsmr.commonutils.data.conversion
 
 import net.maxsmr.commonutils.R
-import net.maxsmr.commonutils.data.text.join
 import net.maxsmr.commonutils.data.putIfNotNullOrZero
+import net.maxsmr.commonutils.data.text.join
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.*
 
-const val TIME_UNIT_C0 = 1L
-const val TIME_UNIT_C1 = 1000L
-const val TIME_UNIT_C2 = 1000000L
-const val TIME_UNIT_C3 = 1000000000L
-const val TIME_UNIT_C4 = 60000000000L
-const val TIME_UNIT_C5 = 3600000000000L
-const val TIME_UNIT_C6 = 86400000000000L
+private const val TIME_UNIT_C0 = 1L
+private const val TIME_UNIT_C1 = 1000L
+private const val TIME_UNIT_C2 = 1000000L
+private const val TIME_UNIT_C3 = 1000000000L
+private const val TIME_UNIT_C4 = 60000000000L
+private const val TIME_UNIT_C5 = 3600000000000L
+private const val TIME_UNIT_C6 = 86400000000000L
 
 /**
  * @param timeUnit           unit for time
