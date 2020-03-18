@@ -41,7 +41,8 @@ import net.maxsmr.commonutils.android.SdkUtils
 import net.maxsmr.commonutils.android.getBrowseLinkIntent
 import net.maxsmr.commonutils.android.getColorFromAttrs
 import net.maxsmr.commonutils.android.getColoredDrawable
-import net.maxsmr.commonutils.data.*
+import net.maxsmr.commonutils.data.Pair
+import net.maxsmr.commonutils.data.ReflectionUtils
 import net.maxsmr.commonutils.data.text.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
@@ -344,7 +345,7 @@ fun setText(
         text: CharSequence?,
         distinct: Boolean = true
 ) {
-    if (!distinct || view.text != text) {
+    if (!distinct || view.text?.toString() != text.toString()) {
         view.text = text
     }
 }

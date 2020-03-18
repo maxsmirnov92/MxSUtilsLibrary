@@ -98,7 +98,7 @@ class ValidationHelperImpl : ValidationHelper {
     override fun asPhone(value: String): Throwable? =
             when {
                 value.isBlank() -> EmptyFieldException()
-                isValidRusPhoneNumber(value).not() -> NotValidFieldException()
+                isRusPhoneNumberValid(value).not() -> NotValidFieldException()
                 else -> null
             }
 

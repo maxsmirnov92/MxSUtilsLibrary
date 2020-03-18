@@ -5,6 +5,7 @@ import android.text.Editable
 import android.widget.EditText
 import android.widget.TextView
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
+import net.maxsmr.commonutils.data.validation.isRusPhoneNumberValid
 import ru.tinkoff.decoro.MaskImpl
 import ru.tinkoff.decoro.parser.UnderscoreDigitSlotsParser
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
@@ -26,13 +27,12 @@ fun normalizePhoneNumber(phoneNumber: CharSequence): String {
     } else if (normalized.startsWith("7")) {
         normalized = normalized.replaceFirst("7", "+7")
     }
-
     return normalized
 }
 
 /**
  * Возвращает номер телефона в виде 71234567890
- * удаляя () и 8 и превращая в 7
+ * удаляя (), + и 8 превращая в 7
  */
 fun normalizePhoneNumberRemovePlus(phoneNumber: CharSequence): String =
         normalizePhoneNumber(phoneNumber).trim('+')
@@ -42,7 +42,6 @@ fun normalizePhoneNumberRemovePlus(phoneNumber: CharSequence): String =
  * с inputType phone
  */
 fun clearPhone(phoneNumber: String) = phoneNumber.replace("-", " ").replace("*", EMPTY_STRING)
-
 
 fun formatPhoneNumber(
         phoneNumber: String,
@@ -103,7 +102,9 @@ fun TextView.setPhoneFormattedText(
         text: CharSequence,
         applyWatcher: Boolean = true,
         isDistinct: Boolean = true
-) = setFormattedText(text, DEFAULT_RUS_PHONE_MASK_IMPL, applyWatcher, isDistinct)
+) = setFormattedText(text, DEFAULT_RUS_PHONE_MASK_IMPL, applyWatcher, isDistinct) {
+    isRusPhoneNumberValid(it)
+}
 
 fun createPhoneMask(phoneMask: String = DEFAULT_RUS_PHONE_MASK): MaskImpl {
     val slots = UnderscoreDigitSlotsParser().parseSlots(phoneMask)

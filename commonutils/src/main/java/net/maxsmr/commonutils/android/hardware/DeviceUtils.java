@@ -28,14 +28,14 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.IOException;
 import java.net.InetAddress;
-import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Locale;
-import java.util.TimeZone;
 import java.util.concurrent.TimeUnit;
 
+import static net.maxsmr.commonutils.data.conversion.format.DateFormatUtilsKt.formatDateNoThrow;
+import static net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 
 public final class DeviceUtils {
@@ -305,8 +305,6 @@ public final class DeviceUtils {
             throw new IllegalArgumentException("incorrect timestamp: " + timestamp);
         }
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyyMMdd.HHmmss", Locale.getDefault());
-
         ShellCallback sc = new ShellCallback() {
             @Override
             public boolean needToLogCommands() {
@@ -338,9 +336,8 @@ public final class DeviceUtils {
 //        SystemClock.setCurrentTimeMillis(timestamp);
 //        ShellUtils.execProcess(Arrays.asList(ShellUtils.SU_PROCESS_NAME, "-c", "chmod", "664", "/dev/alarm"), null, sc, null, false);
 
-        dateFormat.setTimeZone(TimeZone.getDefault());
-        String formatTime = dateFormat.format(new Date(timestamp));
-        execProcess(Arrays.asList("su", "-c", "date", "-s", formatTime), net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING, null, null, sc, null, 0, TimeUnit.SECONDS);
+        String formatTime = formatDateNoThrow(new Date(timestamp), "yyyyMMdd.HHmmss", null);
+        execProcess(Arrays.asList("su", "-c", "date", "-s", formatTime), EMPTY_STRING, null, null, sc, null, 0, TimeUnit.SECONDS);
     }
 
     /**

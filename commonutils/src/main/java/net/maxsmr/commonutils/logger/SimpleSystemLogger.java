@@ -7,6 +7,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import static net.maxsmr.commonutils.data.conversion.format.DateFormatUtilsKt.formatDateNoThrow;
+
 public class SimpleSystemLogger extends BaseTagLogger {
 
     protected SimpleSystemLogger(@Nullable String tag) {
@@ -160,8 +162,9 @@ public class SimpleSystemLogger extends BaseTagLogger {
         }
 
         @Override
+        @NotNull
         public String toString() {
-            return "[" + SDF.format(new Date(timestamp)) + "] " + level.name() + " " + tag + ": " + message;
+            return "[" + formatDateNoThrow(new Date(timestamp), SDF, null) + "] " + level.name() + " " + tag + ": " + message;
         }
     }
 }

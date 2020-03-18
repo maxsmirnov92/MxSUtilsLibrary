@@ -8,6 +8,8 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
+import static net.maxsmr.commonutils.data.conversion.format.DateFormatUtilsKt.formatDateNoThrow;
+
 public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> implements Serializable {
 
     private static final SimpleDateFormat SDF = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS", Locale.getDefault());
@@ -43,7 +45,7 @@ public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
     }
 
     synchronized public String getTimeWhenAddedToQueueFormatted() {
-        return SDF.format(new Date(timeWhenAddedToQueue));
+        return formatDateNoThrow(new Date(timeWhenAddedToQueue), SDF, null);
     }
 
     synchronized public long getTimeExecuting() {
@@ -51,7 +53,7 @@ public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends Ta
     }
 
     synchronized public String getTimeWhenStartedFormatted() {
-        return SDF.format(new Date(timeWhenStarted));
+        return formatDateNoThrow(new Date(timeWhenStarted), SDF, null);
     }
 
     synchronized public long getTotalTime() {
