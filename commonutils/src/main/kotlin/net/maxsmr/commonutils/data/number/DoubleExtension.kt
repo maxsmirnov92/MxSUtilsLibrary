@@ -2,6 +2,7 @@ package net.maxsmr.commonutils.data.number
 
 import java.math.BigDecimal
 import java.math.RoundingMode
+import kotlin.math.roundToInt
 
 fun Double.safeCompare(another: Double) =
         BigDecimal(this).compareTo(BigDecimal(another))
@@ -60,5 +61,5 @@ fun Double.round(precision: Int): Double {
     for (i in 0 until precision) {
         delimiter *= 10.0
     }
-    return Math.round(this * delimiter).toDouble() / delimiter
+    return (this * delimiter).roundToInt().toDouble() / delimiter
 }

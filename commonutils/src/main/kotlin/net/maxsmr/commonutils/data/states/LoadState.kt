@@ -87,6 +87,8 @@ data class LoadState<D>(
 
     companion object {
 
+        fun <D> createEmpty() = getOrCreate<D>(null).first
+
         /**
          * @return новый или существующий изменённый [LoadState] + флаг факта изменения
          */

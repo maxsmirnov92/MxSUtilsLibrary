@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <plurals name="time_suffix_nanos">
+        <item quantity="one">nano</item>
+        <item quantity="other">nanos</item>
+    </plurals>
+    <plurals name="time_suffix_micros">
+        <item quantity="one">micro</item>
+        <item quantity="other">micros</item>
+    </plurals>
+    <plurals name="time_suffix_millis">
+        <item quantity="one">millisecond</item>
+        <item quantity="other">millis</item>
+    </plurals>
+    <plurals name="time_suffix_seconds">
+        <item quantity="one">second</item>
+        <item quantity="other">seconds</item>
+    </plurals>
+    <plurals name="time_suffix_minutes">
+        <item quantity="one">min</item>
+        <item quantity="other">mins</item>
+    </plurals>
+    <plurals name="time_suffix_hours">
+        <item quantity="one">hour</item>
+        <item quantity="other">hours</item>
+    </plurals>
+    <plurals name="time_suffix_days">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+
+    <plurals name="size_suffix_bytes">
+        <item quantity="one">byte</item>
+        <item quantity="other">bytes</item>
+    </plurals>
+    <plurals name="size_suffix_kbytes">
+        <item quantity="one">kByte</item>
+        <item quantity="other">kBytes</item>
+    </plurals>
+    <plurals name="size_suffix_mbytes">
+        <item quantity="one">mByte</item>
+        <item quantity="other">mBytes</item>
+    </plurals>
+    <plurals name="size_suffix_gbytes">
+        <item quantity="one">gByte</item>
+        <item quantity="other">gBytes</item>
+    </plurals>
+</resources>

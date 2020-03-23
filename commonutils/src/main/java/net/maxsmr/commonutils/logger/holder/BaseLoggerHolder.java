@@ -32,6 +32,12 @@ public abstract class BaseLoggerHolder {
         }
     }
 
+    public static void releaseInstance() {
+        synchronized (BaseLoggerHolder.class) {
+            sInstance = null;
+        }
+    }
+
     private final Map<String, BaseLogger> loggersMap = new LinkedHashMap<>();
 
     private final boolean isNullInstancesAllowed;

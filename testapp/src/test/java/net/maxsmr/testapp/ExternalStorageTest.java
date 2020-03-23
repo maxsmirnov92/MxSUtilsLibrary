@@ -1,12 +1,9 @@
 package net.maxsmr.testapp;
 
-import android.content.Context;
-
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
 import net.maxsmr.commonutils.data.FileHelper;
 
-import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -17,14 +14,6 @@ import java.util.Set;
 
 @RunWith(AndroidJUnit4.class)
 public class ExternalStorageTest extends LoggerTest {
-
-    private Context context;
-
-    @Before
-    public void prepare() {
-        super.prepare();
-        context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().getContext();
-    }
 
     @Test
     @Override

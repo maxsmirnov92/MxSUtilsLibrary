@@ -1,5 +1,7 @@
 package net.maxsmr.testapp;
 
+import android.content.Context;
+
 import androidx.annotation.CallSuper;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -17,6 +19,8 @@ import org.junit.runners.JUnit4;
 @RunWith(JUnit4.class)
 public class LoggerTest {
 
+    protected Context context;
+
     protected BaseLogger logger;
 
     protected final Class<?> getLoggerClass() {
@@ -26,13 +30,16 @@ public class LoggerTest {
     @Before
     @CallSuper
     public void prepare() {
+        context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().getContext();
+        // may be already initialized in static Application
+        Holder.releaseInstance();
         Holder.initInstance((ILoggerHolderProvider<Holder>) Holder::new);
         logger = Holder.getInstance().getLogger(getLoggerClass());
+        logger.setLoggingEnabled(true);
     }
 
     @Test
     public void test() {
-        logger.setLoggingEnabled(true);
         Assert.assertEquals(1, Holder.getInstance().getLoggersCount());
     }
 

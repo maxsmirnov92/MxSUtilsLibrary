@@ -258,6 +258,13 @@ fun <X, Y> combineLatest(sources: List<LiveData<out X>>, combine: (List<X?>) -> 
     return combineLiveData
 }
 
+// region LoadState
+
+fun <D> NotifyCheckMutableLiveData<LoadState<D>>.setEmptyLoadState(
+        setOrPost: Boolean = true,
+        eagerNotify: Boolean = false
+) = setLoadState(null, null, null, setOrPost, eagerNotify)
+
 /**
  * Поместить изменённый или тот же [LoadState] в [LiveData]
  * @param eagerNotify требуется ли поместить значение даже при отсутствии изменений
@@ -349,6 +356,8 @@ fun <D> NotifyCheckMutableLiveData<LoadState<D>>.errorLoad(
     }
     return state
 }
+
+// endregion
 
 private class OnceObserver<T>(val liveData: LiveData<T>, val observer: Observer<T>) : Observer<T> {
     override fun onChanged(data: T?) {

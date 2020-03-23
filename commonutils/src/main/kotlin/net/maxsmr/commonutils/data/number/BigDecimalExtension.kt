@@ -66,7 +66,6 @@ fun Number?.removeFractionIfZero(): BigDecimal =
             }
         } ?: ZERO
 
-
 /**
  * Высчитывает процент от [total]
  */

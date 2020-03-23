@@ -64,11 +64,12 @@ import static net.maxsmr.commonutils.data.CompareUtilsKt.compareLongs;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.compareStrings;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.objectsEqual;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsMatch;
-import static net.maxsmr.commonutils.data.conversion.SizeConversionKt.sizeToString;
 import static net.maxsmr.commonutils.data.StreamUtils.readBytesFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringsFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.revectorStream;
+import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toNotNullLongNoThrow;
+import static net.maxsmr.commonutils.data.conversion.SizeConversionKt.sizeToString;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.join;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.replaceRange;
@@ -208,7 +209,7 @@ public final class FileHelper {
     public static double getPartitionTotalSpace(String path, @NotNull SizeUnit unit) {
         if (isDirExists(path)) {
             try {
-                return SizeUnit.Companion.convert(new File(path).getTotalSpace(), SizeUnit.BYTES, unit);
+                return SizeUnit.Companion.convert(new File(path).getTotalSpace(), SizeUnit.BYTES, unit).doubleValue();
             } catch (SecurityException e) {
                 logger.e("a SecurityException occurred during convert(): " + e.getMessage(), e);
             }
@@ -219,7 +220,7 @@ public final class FileHelper {
     public static double getPartitionFreeSpace(String path, @NotNull SizeUnit unit) {
         if (isDirExists(path)) {
             try {
-                return SizeUnit.Companion.convert(new File(path).getFreeSpace(), SizeUnit.BYTES, unit);
+                return SizeUnit.Companion.convert(new File(path).getFreeSpace(), SizeUnit.BYTES, unit).doubleValue();
             } catch (SecurityException e) {
                 logger.e("a SecurityException occurred during convert(): " + e.getMessage(), e);
             }
@@ -2589,11 +2590,10 @@ public final class FileHelper {
                                 long size = 0;
                                 String[] parts = shellLine.split("\\t");
                                 if (parts.length > 1) {
-                                    try {
-                                        size = Long.parseLong(parts[0]);
-                                    } catch (NumberFormatException e) {
+                                    size = toNotNullLongNoThrow(parts[0], 10, e -> {
                                         logger.e("an NumberFormatException occurred during parseLong(): " + e.getMessage(), e);
-                                    }
+                                        return null;
+                                    });
                                 }
                                 collectedMap.put(current, SizeUnit.KBYTES.toBytes(size));
                             }
@@ -2667,7 +2667,7 @@ public final class FileHelper {
                 if (key != null) {
                     final Long size = f.getValue();
                     result.add(context.getString(R.string.file_size_format, key.getAbsolutePath(),
-                            (size != null ? sizeToString(size, SizeUnit.BYTES, emptySet(), context::getString) : 0)));
+                            (size != null ? sizeToString(size, SizeUnit.BYTES, emptySet(), 0, context::getString) : 0)));
                 }
             }
         }
@@ -2698,7 +2698,7 @@ public final class FileHelper {
                         }
                         final Long size = f.getValue();
                         result.add(context.getString(R.string.file_size_format, sb.toString(),
-                                (size != null ? sizeToString(size, SizeUnit.BYTES, emptySet(), context::getString) : 0)));
+                                (size != null ? sizeToString(size, SizeUnit.BYTES, emptySet(), 0, context::getString) : 0)));
                     }
                 }
             }

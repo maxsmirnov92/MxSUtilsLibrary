@@ -8,9 +8,42 @@ fun <K, V : Number> putIfNotNullOrZero(map: MutableMap<K, V>, key: K, value: V?)
     }
 }
 
+@JvmOverloads
+fun <V> toMutableListExclude(
+        collection: Collection<V>?,
+        exclusionCollection: Collection<V>,
+        containsPredicate: (V, V) -> Boolean = { one, another -> one == another }
+): List<V> = fromCollectionExclude(mutableListOf(), collection, exclusionCollection, containsPredicate)
+
+@JvmOverloads
+fun <V> toSortedSetExclude(
+        collection: Collection<V>?,
+        exclusionCollection: Collection<V>,
+        containsPredicate: (V, V) -> Boolean = { one, another -> one == another }
+): Set<V> = fromCollectionExclude(sortedSetOf(), collection, exclusionCollection, containsPredicate)
+
+@JvmOverloads
+fun <V, C : MutableCollection<V>> fromCollectionExclude(
+        result: C,
+        collection: Collection<V>?,
+        exclusionCollection: Collection<V>,
+        containsPredicate: (V, V) -> Boolean = { one, another -> one == another }
+): C {
+    collection?.let {
+        collection.forEach { current ->
+            if (!Predicate.Methods.contains(exclusionCollection) {
+                        containsPredicate(current, it)
+                    }) {
+                result.add(current)
+            }
+        }
+    }
+    return result
+}
+
 fun avg(numbers: Collection<Number?>?): Double {
     var result = 0.0
-    if (numbers != null) {
+    numbers?.let {
         val count = numbers.size
         var sum = 0.0
         for (n in numbers) {
@@ -34,6 +67,7 @@ fun sum(numbers: Collection<Number?>?): Double {
     }
     return result
 }
+
 fun findMin(collection: Collection<Number?>?): Pair<Int, Number>? = find(collection, true)
 
 fun findMax(collection: Collection<Number?>?): Pair<Int, Number>? = find(collection, false)

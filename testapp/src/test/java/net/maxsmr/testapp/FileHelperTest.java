@@ -1,7 +1,6 @@
 package net.maxsmr.testapp;
 
 import android.Manifest;
-import android.content.Context;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.GrantPermissionRule;
@@ -22,17 +21,14 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static org.junit.Assert.assertNotNull;
-
 @RunWith(AndroidJUnit4.class)
 public class FileHelperTest extends LoggerTest {
 
     @Rule
     public GrantPermissionRule readPermissionRule = GrantPermissionRule.grant(Manifest.permission.READ_EXTERNAL_STORAGE);
+
     @Rule
     public GrantPermissionRule writePermissionRule = GrantPermissionRule.grant(Manifest.permission.WRITE_EXTERNAL_STORAGE);
-
-    private Context context;
 
     private static final String SOURCE_NAME = "source";
     private static final String DEST_NAME = "dest";
@@ -46,10 +42,9 @@ public class FileHelperTest extends LoggerTest {
     @Before
     public void prepare() {
         super.prepare();
-        context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().getContext();
         FileHelper.createNewDir("/data/data/" + context.getPackageName() + "/files");
         final File filesDir = context.getFilesDir();
-        assertNotNull(filesDir);
+        Assert.assertNotNull(filesDir);
         sourceDir = new File(filesDir, SOURCE_NAME);
         destinationDir = new File(filesDir, DEST_NAME);
 //        deleteFromDest()

@@ -1,6 +1,52 @@
 package net.maxsmr.commonutils.data.conversion
 
 @JvmOverloads
+fun CharSequence?.toNotNullByteNoThrow(
+        radix: Int = 10,
+        exceptionAction: ((NumberFormatException) -> Unit)? = null
+): Byte = this.toByteNoThrow(radix, exceptionAction) ?: 0
+
+@JvmOverloads
+fun CharSequence?.toByteNoThrow(
+        radix: Int = 10,
+        exceptionAction: ((NumberFormatException) -> Unit)? = null
+): Byte? = toNumber(Byte::class.java, radix, exceptionAction)
+
+@JvmOverloads
+fun CharSequence?.toNotNullIntNoThrow(
+        radix: Int = 10,
+        exceptionAction: ((NumberFormatException) -> Unit)? = null
+): Int = this.toIntNoThrow(radix, exceptionAction) ?: 0
+
+@JvmOverloads
+fun CharSequence?.toIntNoThrow(
+        radix: Int = 10,
+        exceptionAction: ((NumberFormatException) -> Unit)? = null
+): Int? = toNumber(Int::class.java, radix, exceptionAction)
+
+@JvmOverloads
+fun CharSequence?.toNotNullLongNoThrow(
+        radix: Int = 10,
+        exceptionAction: ((NumberFormatException) -> Unit)? = null
+): Long = toLongNoThrow(radix, exceptionAction) ?: 0L
+
+@JvmOverloads
+fun CharSequence?.toLongNoThrow(
+        radix: Int = 10,
+        exceptionAction: ((NumberFormatException) -> Unit)? = null
+): Long? = toNumber(Long::class.java, radix, exceptionAction)
+
+@JvmOverloads
+fun CharSequence?.toFloatNotNullNoThrow(
+        exceptionAction: ((NumberFormatException) -> Unit)? = null
+): Float = toFloatNoThrow(exceptionAction) ?: 0f
+
+@JvmOverloads
+fun CharSequence?.toFloatNoThrow(
+        exceptionAction: ((NumberFormatException) -> Unit)? = null
+): Float? = toNumber(Float::class.java, 10, exceptionAction)
+
+@JvmOverloads
 fun CharSequence?.toDoubleNotNullNoThrow(
         exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Double = toDoubleNoThrow(exceptionAction) ?: 0.0
@@ -8,72 +54,61 @@ fun CharSequence?.toDoubleNotNullNoThrow(
 @JvmOverloads
 fun CharSequence?.toDoubleNoThrow(
         exceptionAction: ((NumberFormatException) -> Unit)? = null
-): Double? {
-    var result: Double? = null
-    this?.let {
-        try {
-            result = it.toString().toDouble()
-        } catch (e: NumberFormatException) {
-            exceptionAction?.invoke(e)
-        }
-    }
-    return result
-}
-
-@JvmOverloads
-fun CharSequence?.toNotNullIntNoThrow(
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
-): Int = this.toIntNoThrow( exceptionAction) ?: 0
-
-@JvmOverloads
-fun CharSequence?.toIntNoThrow(
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
-): Int? {
-    var result: Int? = null
-    this?.let {
-        try {
-            result = it.toString().toInt()
-        } catch (e: NumberFormatException) {
-            exceptionAction?.invoke(e)
-        }
-    }
-    return result
-}
+): Double? = toNumber(Double::class.java, 10, exceptionAction)
 
 @Suppress("UNCHECKED_CAST")
-fun <N : Number?> String.toNumber(numberType: Class<N>): N? {
-    if (numberType.isAssignableFrom(Byte::class.java)) {
-        return try {
-            toByte() as N
-        } catch (e: java.lang.NumberFormatException) {
-            null
-        }
-    } else if (numberType.isAssignableFrom(Int::class.java)) {
-        return try {
-            toInt() as N
-        } catch (e: java.lang.NumberFormatException) {
-            null
-        }
-    } else if (numberType.isAssignableFrom(Long::class.java)) {
-        return try {
-            toLong() as N
-        } catch (e: java.lang.NumberFormatException) {
-            null
-        }
-    } else if (numberType.isAssignableFrom(Float::class.java)) {
-        return try {
-            toFloat() as N
-        } catch (e: java.lang.NumberFormatException) {
-            null
-        }
-    } else if (numberType.isAssignableFrom(Double::class.java)) {
-        return try {
-            toDouble() as N
-        } catch (e: java.lang.NumberFormatException) {
-            null
-        }
+fun <N : Number?> CharSequence?.toNumber(
+        numberType: Class<N>,
+        radix: Int = 10,
+        exceptionAction: ((NumberFormatException) -> Unit)? = null
+): N? {
+    if (this == null) {
+        return null
     }
-    throw IllegalArgumentException("incorrect number class: $numberType")
+    val numberString = this.toString()
+    when {
+        numberType.isAssignableFrom(Byte::class.java) -> {
+            return try {
+                numberString.toByte(radix) as N
+            } catch (e: java.lang.NumberFormatException) {
+                exceptionAction?.invoke(e)
+                null
+            }
+        }
+        numberType.isAssignableFrom(Int::class.java) -> {
+            return try {
+                numberString.toInt(radix) as N
+            } catch (e: java.lang.NumberFormatException) {
+                exceptionAction?.invoke(e)
+                null
+            }
+        }
+        numberType.isAssignableFrom(Long::class.java) -> {
+            return try {
+                numberString.toLong(radix) as N
+            } catch (e: java.lang.NumberFormatException) {
+                exceptionAction?.invoke(e)
+                null
+            }
+        }
+        numberType.isAssignableFrom(Float::class.java) -> {
+            return try {
+                numberString.toFloat() as N
+            } catch (e: java.lang.NumberFormatException) {
+                exceptionAction?.invoke(e)
+                null
+            }
+        }
+        numberType.isAssignableFrom(Double::class.java) -> {
+            return try {
+                numberString.toDouble() as N
+            } catch (e: java.lang.NumberFormatException) {
+                exceptionAction?.invoke(e)
+                null
+            }
+        }
+        else -> throw IllegalArgumentException("Incorrect number class: $numberType")
+    }
 }
 
 fun Long.toIntSafe(): Int {

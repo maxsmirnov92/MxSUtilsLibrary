@@ -21,6 +21,7 @@ private val REG_EX_PHONE_MASK: Regex = Regex("([0-9]|\\+)")
  * удаляя () и 8 в +7
  */
 fun normalizePhoneNumber(phoneNumber: CharSequence): String {
+    if (phoneNumber.isEmpty()) return EMPTY_STRING
     var normalized = phoneNumber.replace("[^0-9+]".toRegex(), EMPTY_STRING)
     if (normalized.startsWith("8")) {
         normalized = normalized.replaceFirst("8", "+7")

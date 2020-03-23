@@ -54,8 +54,6 @@ android {
     sourceSets {
         main {
             java.srcDirs += 'src/main/kotlin/'
-            test.java.srcDirs += 'src/test/kotlin'
-            androidTest.java.srcDirs += 'src/androidTest/kotlin'
         }
     }
 
@@ -89,6 +87,10 @@ android {
     dexOptions {
         javaMaxHeapSize "4G"
     }
+    kotlinOptions {
+        jvmTarget = '1.8'
+    }
+
 }
 
 dependencies {
