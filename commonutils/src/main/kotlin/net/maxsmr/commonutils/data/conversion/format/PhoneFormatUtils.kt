@@ -16,25 +16,41 @@ const val DEFAULT_PHONE_LENGTH = 12
 val DEFAULT_RUS_PHONE_MASK_IMPL: MaskImpl = createPhoneMask()
 private val REG_EX_PHONE_MASK: Regex = Regex("([0-9]|\\+)")
 
-/**
- * @return номер телефона в виде +71234567890
- * удаляя () и 8 в +7
- */
-fun normalizePhoneNumber(phoneNumber: CharSequence): String {
+@JvmOverloads
+fun normalizePhoneNumber(phoneNumber: CharSequence, prefixReplaceWith: String = "+7"): String {
     if (phoneNumber.isEmpty()) return EMPTY_STRING
+    var prefixReplaceWith = prefixReplaceWith
     var normalized = phoneNumber.replace("[^0-9+]".toRegex(), EMPTY_STRING)
-    if (normalized.startsWith("8")) {
-        normalized = normalized.replaceFirst("8", "+7")
-    } else if (normalized.startsWith("7")) {
-        normalized = normalized.replaceFirst("7", "+7")
+    val seven = "7"
+    val plusSeven = "+7"
+    val eight = "8"
+    val nine = "9"
+    val replaceSubstring = when {
+        seven != prefixReplaceWith && normalized.startsWith(seven) -> {
+            seven
+        }
+        plusSeven != prefixReplaceWith && normalized.startsWith(plusSeven) -> {
+            plusSeven
+        }
+        eight != prefixReplaceWith && normalized.startsWith(eight) -> {
+            eight
+        }
+        nine != prefixReplaceWith && normalized.startsWith(nine) -> {
+            nine
+        }
+        else -> {
+            EMPTY_STRING
+        }
+    }
+    if (replaceSubstring == nine) {
+        prefixReplaceWith += nine
+    }
+    if (replaceSubstring.isNotEmpty()) {
+        normalized = normalized.replaceFirst(replaceSubstring, prefixReplaceWith)
     }
     return normalized
 }
 
-/**
- * Возвращает номер телефона в виде 71234567890
- * удаляя (), + и 8 превращая в 7
- */
 fun normalizePhoneNumberRemovePlus(phoneNumber: CharSequence): String =
         normalizePhoneNumber(phoneNumber).trim('+')
 

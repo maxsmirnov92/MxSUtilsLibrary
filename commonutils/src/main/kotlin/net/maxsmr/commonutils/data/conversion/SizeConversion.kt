@@ -374,7 +374,6 @@ fun sizeToMap(
     require(size >= 0) { "Incorrect size: $size" }
     require(sizeUnit.isBytes) { "sizeUnit must be bytes only" }
 
-    val notAllowFractional = precision == null
     val s = sizeUnit.toBytes(size)
 
     val result = sortedMapOf<SizeUnit, Number>()
@@ -382,20 +381,19 @@ fun sizeToMap(
     if (s >= SizeUnit.C3 && !sizeUnitsToExclude.contains(SizeUnit.GBYTES)) {
         val gBytes = SizeUnit.BYTES.toGBytes(s.toDouble())
         val gBytesLong = gBytes.toLong().toDouble()
-        putIfNotNullOrZero(result, SizeUnit.GBYTES, if (notAllowFractional || !sizeUnitsToExclude.contains(SizeUnit.MBYTES)) gBytesLong else gBytes)
+        putIfNotNullOrZero(result, SizeUnit.GBYTES, gBytes)
         result.putAll(sizeToMapStep(SizeUnit.GBYTES.toBytes(gBytesLong), s, sizeUnitsToExclude, precision))
     } else if ((sizeUnitsToExclude.contains(SizeUnit.GBYTES) || s >= SizeUnit.C2 && s < SizeUnit.C3)
             && !sizeUnitsToExclude.contains(SizeUnit.MBYTES)) {
         val mBytes = SizeUnit.BYTES.toMBytes(s.toDouble())
         val mBytesLong = mBytes.toLong().toDouble()
-        putIfNotNullOrZero(result, SizeUnit.MBYTES, if (notAllowFractional ||!sizeUnitsToExclude.contains(SizeUnit.KBYTES)) mBytesLong else mBytes)
+        putIfNotNullOrZero(result, SizeUnit.MBYTES, mBytes)
         result.putAll(sizeToMapStep(SizeUnit.MBYTES.toBytes(mBytesLong), s, toSortedSetExclude(sizeUnitsToExclude, setOf(SizeUnit.GBYTES)), precision))
     } else if ((sizeUnitsToExclude.contains(SizeUnit.MBYTES) || s >= SizeUnit.C1 && s < SizeUnit.C2)
             && !sizeUnitsToExclude.contains(SizeUnit.KBYTES)) {
         val kBytes = SizeUnit.BYTES.toKBytes(s.toDouble())
         val kBytesLong = kBytes.toLong().toDouble()
-        // дополнительная проверка на наличие в исключениях предыдущего Unit (т.е. Bytes) - если есть там, то оставить дробное значение
-        putIfNotNullOrZero(result, SizeUnit.KBYTES, if (notAllowFractional ||!sizeUnitsToExclude.contains(SizeUnit.BYTES)) kBytesLong else kBytes)
+        putIfNotNullOrZero(result, SizeUnit.KBYTES, kBytes)
         result.putAll(sizeToMapStep(SizeUnit.KBYTES.toBytes(kBytesLong), s, toSortedSetExclude(sizeUnitsToExclude, setOf(SizeUnit.MBYTES)), precision))
     } else if (s < SizeUnit.C1 && !sizeUnitsToExclude.contains(SizeUnit.BYTES)) {
         putIfNotNullOrZero(result, SizeUnit.BYTES, s.toDouble())
