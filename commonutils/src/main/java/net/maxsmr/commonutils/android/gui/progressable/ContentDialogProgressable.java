@@ -6,6 +6,7 @@ import android.view.View;
 
 import androidx.annotation.IdRes;
 
+@Deprecated
 public class ContentDialogProgressable extends DialogProgressable {
 
     public interface IResultCallback {

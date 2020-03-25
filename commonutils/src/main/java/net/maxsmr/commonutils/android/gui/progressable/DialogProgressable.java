@@ -17,6 +17,7 @@ import org.jetbrains.annotations.Nullable;
 
 import java.lang.reflect.Field;
 
+@Deprecated
 public class DialogProgressable implements Progressable, DialogInterface.OnKeyListener, DialogInterface.OnDismissListener, DialogInterface.OnCancelListener {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(DialogProgressable.class);

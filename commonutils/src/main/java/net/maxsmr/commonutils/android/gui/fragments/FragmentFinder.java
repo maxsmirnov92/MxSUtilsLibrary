@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.android.gui;
+package net.maxsmr.commonutils.android.gui.fragments;
 
 import androidx.fragment.app.Fragment;
 import androidx.fragment.app.FragmentManager;
@@ -42,8 +42,7 @@ public final class FragmentFinder {
 
     @Nullable
     public static Pair<Integer, Fragment> findFragmentByTag(@Nullable Collection<Fragment> fragments, String tag) {
-        return Predicate.Methods.findWithIndex(fragments, fragment ->   fragment != null && !fragment.isDetached() && stringsEqual(fragment.getTag(), tag, false));
-
+        return Predicate.Methods.findWithIndex(fragments, fragment -> fragment != null && !fragment.isDetached() && stringsEqual(fragment.getTag(), tag, false));
     }
 
     @Nullable

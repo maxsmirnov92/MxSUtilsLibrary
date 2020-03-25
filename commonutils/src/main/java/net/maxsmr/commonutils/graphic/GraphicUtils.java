@@ -34,8 +34,6 @@ import android.renderscript.RenderScript;
 import android.renderscript.ScriptIntrinsicYuvToRGB;
 import android.renderscript.Type;
 
-import android.util.TypedValue;
-
 import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 import androidx.annotation.XmlRes;
@@ -465,21 +463,6 @@ public final class GraphicUtils {
         }
 
         return resultBitmap;
-    }
-
-    /**
-     * Converts pixel value to dp value
-     */
-    public static int pxToDp(int px, @NotNull Context context) {
-        return (int) ((float) px / context.getResources().getDisplayMetrics().density);
-    }
-
-    public static int dpToPx(int dp, @NotNull Context context) {
-        // OR simply px = dp * density
-        if (dp <= 0) {
-            return 0;
-        }
-        return (int) TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dp, context.getResources().getDisplayMetrics());
     }
 
     public static Bitmap cropBitmap(Bitmap srcBitmap, int fromX, int fromY, int toX, int toY) {

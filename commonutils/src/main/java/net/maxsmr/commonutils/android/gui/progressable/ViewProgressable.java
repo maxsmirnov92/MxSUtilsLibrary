@@ -4,6 +4,7 @@ import android.view.View;
 
 import org.jetbrains.annotations.Nullable;
 
+@Deprecated
 public class ViewProgressable implements Progressable {
 
     @Nullable

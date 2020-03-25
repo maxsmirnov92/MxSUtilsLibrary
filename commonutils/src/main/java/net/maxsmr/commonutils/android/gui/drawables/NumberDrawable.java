@@ -14,6 +14,7 @@ import androidx.annotation.DrawableRes;
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 
+import static net.maxsmr.commonutils.android.AppUtilsKt.convertAnyToPx;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public class NumberDrawable extends BitmapDrawable {
@@ -132,7 +133,7 @@ public class NumberDrawable extends BitmapDrawable {
 //        DisplayMetrics displayMetrics = new DisplayMetrics();
 //        ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(displayMetrics);
 //        int dpi = (int) (displayMetrics.density * DisplayMetrics.DENSITY_MEDIUM);
-        return GraphicUtils.dpToPx(mTextSizeDP, mContext);
+        return (int) convertAnyToPx(mTextSizeDP, mContext);
     }
 
     {

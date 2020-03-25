@@ -4,6 +4,7 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+@Deprecated
 public abstract class WrappedProgressable implements Progressable {
 
     private final Set<Progressable> progressables = new LinkedHashSet<>();

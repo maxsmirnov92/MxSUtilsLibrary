@@ -99,28 +99,38 @@ fun replaceSubstrings(
     return result
 }
 
-fun replaceRange(s: CharSequence, start: Int, end: Int, replacement: CharSequence): String {
-    if (start < 0) throw StringIndexOutOfBoundsException("start < 0")
-    if (start > end) throw StringIndexOutOfBoundsException("start > end")
-    if (end > s.length) throw StringIndexOutOfBoundsException("end > length")
+fun replaceRange(s: CharSequence, start: Int, end: Int, replacement: CharSequence): CharSequence {
+    checkArgs(s, start, end)
     val sb = StringBuilder(s)
     sb.replace(start, end, replacement.toString())
     return sb.toString()
 }
 
-fun removeSubstrings(
-        text: String?,
-        characters: Set<String?>?
-) = replaceSubstrings(text, characters)
+fun replaceRangeNoThrow(s: CharSequence, start: Int, end: Int, replacement: CharSequence): CharSequence =
+        try {
+            replaceRange(s, start, end, replacement)
+        } catch (e: IllegalArgumentException) {
+            s
+        }
 
 fun removeRange(s: CharSequence, start: Int, end: Int): String {
-    if (start < 0) throw StringIndexOutOfBoundsException("start < 0")
-    if (start > end) throw StringIndexOutOfBoundsException("start > end")
-    if (end > s.length) throw StringIndexOutOfBoundsException("end > length")
+    checkArgs(s, start, end)
     val sb = StringBuilder(s)
     sb.delete(start, end)
     return sb.toString()
 }
+
+fun removeRangeNoThrow(s: CharSequence, start: Int, end: Int): CharSequence =
+        try {
+            removeRange(s, start, end)
+        } catch (e: IllegalArgumentException) {
+            s
+        }
+
+fun removeSubstrings(
+        text: String?,
+        characters: Set<String?>?
+) = replaceSubstrings(text, characters, EMPTY_STRING)
 
 fun removeNonDigits(s: CharSequence): CharSequence {
     val format = StringBuilder(s)
@@ -137,6 +147,7 @@ fun removeCharAt(s: CharSequence, index: Int): String {
     sb.deleteCharAt(index)
     return sb.toString()
 }
+
 
 fun removeChars(
         text: CharSequence,
@@ -259,6 +270,12 @@ private fun isTrue(
             entry.value.condition.apply(entry.key, currentCh, entry.value.ignoreCase)
         }
     }
+}
+
+private fun checkArgs(s: CharSequence, start: Int, end: Int) {
+    require(start >= 0) {"start ($start) < 0"}
+    require(start <= end) {"start ($start) > end ($end)"}
+    require(end <= s.length) {"end ($end) > length (${s.length})"}
 }
 
 data class CharConditionInfo(

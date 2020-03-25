@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.Configuration
 import android.graphics.Color
+import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.Rect
 import android.graphics.drawable.Drawable
@@ -17,6 +18,7 @@ import android.text.style.ClickableSpan
 import android.text.style.ForegroundColorSpan
 import android.text.style.ImageSpan
 import android.text.style.URLSpan
+import android.util.TypedValue
 import android.view.*
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.inputmethod.EditorInfo
@@ -37,10 +39,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputLayout
 import net.maxsmr.commonutils.R
-import net.maxsmr.commonutils.android.SdkUtils
-import net.maxsmr.commonutils.android.getBrowseLinkIntent
-import net.maxsmr.commonutils.android.getColorFromAttrs
-import net.maxsmr.commonutils.android.getColoredDrawable
+import net.maxsmr.commonutils.android.*
 import net.maxsmr.commonutils.data.Pair
 import net.maxsmr.commonutils.data.ReflectionUtils
 import net.maxsmr.commonutils.data.text.*
@@ -138,12 +137,16 @@ fun removeTextViewUnderline(view: TextView) {
 /**
  * Добавить кликабельную картинку вместо последнего символа в строке
  */
-fun addClickableImageToEnd(textView: TextView, @DrawableRes drawableResId: Int, clickFunc: () -> Unit = {}) {
+fun addClickableImageToEnd(
+        textView: TextView,
+        @DrawableRes drawableResId: Int,
+        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+        clickFunc: () -> Unit = {}) {
     val text = textView.text
     if (text.isNotEmpty()) {
         val s = SpannableString(text)
         val imageSpan = ImageSpan(textView.context, drawableResId, ImageSpan.ALIGN_BASELINE)
-        s.setSpan(imageSpan, s.length - 1, s.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        s.setSpan(imageSpan, s.length - 1, s.length, spanFlags)
         s.setSpan(object : ClickableSpan() {
             override fun onClick(widget: View) {
                 if (!SdkUtils.isPreLollipop()) {
@@ -151,7 +154,7 @@ fun addClickableImageToEnd(textView: TextView, @DrawableRes drawableResId: Int, 
                 }
                 clickFunc.invoke()
             }
-        }, s.length - 1, s.length, Spannable.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }, s.length - 1, s.length, spanFlags)
         textView.text = s
         textView.movementMethod = LinkMovementMethod.getInstance()
     }
@@ -231,10 +234,10 @@ fun setLinkableText(
         endIndex: Int,
         removeUnderlying: Boolean,
         link: String,
-        clickAction: (() -> Unit
-        )? = null
+        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+        clickAction: (() -> Unit)? = null
 ) {
-    setTextWithClickableSpan(textView, text, startIndex, endIndex, removeUnderlying) {
+    setTextWithClickableSpan(textView, text, startIndex, endIndex, removeUnderlying, spanFlags) {
         textView.context.startActivity(getBrowseLinkIntent(link))
         clickAction?.invoke()
     }
@@ -250,7 +253,9 @@ fun setTextWithClickableSpan(
         startIndex: Int,
         endIndex: Int,
         removeUnderlying: Boolean,
-        clickAction: () -> Unit) {
+        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+        clickAction: () -> Unit
+) {
 
     textView.text = SpannableStringBuilder(text).apply {
         setSpan(object : ClickableSpan() {
@@ -265,7 +270,7 @@ fun setTextWithClickableSpan(
                     ds.isUnderlineText = false
                 }
             }
-        }, startIndex, endIndex, Spanned.SPAN_EXCLUSIVE_EXCLUSIVE)
+        }, startIndex, endIndex, spanFlags)
     }
     textView.movementMethod = LinkMovementMethod.getInstance()
 }
@@ -312,7 +317,13 @@ fun setHtmlTextWithCustomClick(
  * @param str текст
  * @param selection текст для выделения (ищется первое вхождение [selection] в [str]
  */
-fun setTextWithSelection(view: TextView, @ColorInt highlightColor: Int, str: String, selection: String) {
+fun setTextWithSelection(
+        view: TextView,
+        @ColorInt highlightColor: Int,
+        str: String,
+        selection: String,
+        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
+) {
     view.text = SpannableString(str)
             .apply {
                 val start = str.indexOf(selection, ignoreCase = true)
@@ -322,7 +333,7 @@ fun setTextWithSelection(view: TextView, @ColorInt highlightColor: Int, str: Str
                         ForegroundColorSpan(highlightColor),
                         start,
                         start + selection.length,
-                        Spannable.SPAN_EXCLUSIVE_EXCLUSIVE
+                        spanFlags
                 )
             }
 }
@@ -894,6 +905,53 @@ fun getViewsRotationForDisplay(context: Context, displayRotation: Int): Int {
         }
     }
     return result
+}
+
+@JvmOverloads
+fun calculateMaxTextSize(
+        textView: TextView,
+        maxWidthTextLength: Int,
+        maxTextSize: Float,
+        maxTextSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
+        measuredViewWidth: Int = 0
+): Float {
+    val text = StringBuilder()
+    for (i in 0..maxWidthTextLength) {
+        text.append("0")
+    }
+    return calculateMaxTextSize(textView, text.toString(), maxTextSize, maxTextSizeUnit, measuredViewWidth)
+}
+
+@JvmOverloads
+fun calculateMaxTextSize(
+        textView: TextView,
+        maxWidthText: CharSequence,
+        maxTextSize: Float,
+        maxTextSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
+        measuredViewWidth: Int = 0
+): Float {
+    if (maxWidthText.isEmpty() || maxTextSize <= 0) return maxTextSize
+    val measuredWidth = if (measuredViewWidth <= 0) textView.width else measuredViewWidth
+    if (measuredWidth == 0) return maxTextSize
+
+    val maxWidthString = maxWidthText.toString()
+    var resultSize = maxTextSize
+
+    val paint = Paint()
+    paint.typeface = textView.typeface
+
+    paint.textSize = convertAnyToPx(resultSize, maxTextSizeUnit, textView.context)
+    var measureText = paint.measureText(maxWidthString)
+
+    while (resultSize > 0 && measureText > measuredWidth) {
+        resultSize--
+        paint.textSize = convertAnyToPx(resultSize, maxTextSizeUnit, textView.context)
+        measureText = paint.measureText(maxWidthString)
+    }
+    if (resultSize == 0f) {
+        resultSize = maxTextSize
+    }
+    return resultSize
 }
 
 class ProtectRangeInputFilter(private val startIndex: Int, private val endIndex: Int) : InputFilter {

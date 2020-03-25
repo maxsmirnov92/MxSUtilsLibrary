@@ -11,6 +11,7 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.StrictMode
 import android.util.DisplayMetrics
+import android.util.TypedValue
 import android.view.WindowManager
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager
 import net.maxsmr.commonutils.data.*
@@ -371,6 +372,27 @@ fun getDisplayMetrics(context: Context): DisplayMetrics {
     val outMetrics = DisplayMetrics()
     wm.defaultDisplay.getMetrics(outMetrics)
     return outMetrics
+}
+
+/**
+ * Converts pixel value to dp value
+ */
+fun convertPxToDp(px: Float, context: Context): Float {
+    return px / context.resources.displayMetrics.density
+}
+
+@JvmOverloads
+fun convertAnyToPx(
+        value: Float,
+        unit: Int = TypedValue.COMPLEX_UNIT_DIP,
+        context: Context
+): Float {
+    // OR simply px = value * density (if DIP)
+    return if (value <= 0) {
+        0f
+    } else {
+        TypedValue.applyDimension(unit, value, context.resources.displayMetrics)
+    }
 }
 
 fun getScreenType(context: Context): DeviceType {
