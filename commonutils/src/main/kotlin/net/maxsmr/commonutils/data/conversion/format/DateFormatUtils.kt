@@ -83,6 +83,28 @@ fun formatDateNoThrow(
     }
 }
 
+fun getMonthsCount(
+        firstTime: Long,
+        firstTimeZone: TimeZone = TimeZone.getDefault(),
+        secondTime: Long,
+        secondTimeZone: TimeZone = TimeZone.getDefault()
+) = getMonthsCount(Date(firstTime), firstTimeZone, Date(secondTime), secondTimeZone)
+
+fun getMonthsCount(
+        firstDate: Date,
+        firstTimeZone: TimeZone = TimeZone.getDefault(),
+        secondDate: Date,
+        secondTimeZone: TimeZone = TimeZone.getDefault()
+): Int {
+    val firstCalendar = Calendar.getInstance(firstTimeZone)
+    val secondCalendar = Calendar.getInstance(secondTimeZone)
+    firstCalendar.time = firstDate
+    secondCalendar.time = secondDate
+    return getMonthsCount(firstCalendar, secondCalendar)
+}
+
+fun getMonthsCount(firstCalendar: Calendar, secondCalendar: Calendar) = firstCalendar.get(Calendar.MONTH) - secondCalendar.get(Calendar.MONTH) + 1 + (firstCalendar.get(Calendar.YEAR) - secondCalendar.get(Calendar.YEAR)) * 12
+
 fun createMonthYearMask() = MaskImpl.createTerminated(UnderscoreDigitSlotsParser().parseSlots(MONTH_YEAR_MASK))
 
 fun createYearMonthDayMask() = MaskImpl.createTerminated(UnderscoreDigitSlotsParser().parseSlots(YEAR_MONTH_DAY_MASK))

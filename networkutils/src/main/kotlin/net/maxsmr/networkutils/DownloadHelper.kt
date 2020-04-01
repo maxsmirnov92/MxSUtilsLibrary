@@ -58,10 +58,13 @@ class DownloadHelper<Request>(val context: Context) {
     val isAllDownloadsFailed: Boolean
         get() = currentDownloads.isEmpty() && downloadFailedIds.size == downloadedMap.size
 
+    val isAnyDownloadFailed: Boolean
+        get() = downloadFailedIds.isNotEmpty()
+
     /**
      * Зарегистрированные [DownloadBroadcastReceiver] по начатым download id
      */
-    private val registeredReceiversMap = mutableSetOf<DownloadBroadcastReceiver<Request>>()
+    private val registeredReceiversSet = mutableSetOf<DownloadBroadcastReceiver<Request>>()
 
     private val downloadManager: DownloadManager by lazy {
         context.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
@@ -111,7 +114,11 @@ class DownloadHelper<Request>(val context: Context) {
             }
             if (isSuccess != null) {
                 // успех/неуспех может произойти сразу, не вернувшись в BroadcastReceiver
-                receiver.onDownloadComplete(uri, isSuccess, getReason(cursor))
+                try {
+                    receiver.onDownloadComplete(uri, isSuccess, getDownloadReason(cursor))
+                } finally {
+                    unregisterReceiver(downloadId)
+                }
             }
             return downloadId
         } catch (e: Throwable) {
@@ -136,13 +143,13 @@ class DownloadHelper<Request>(val context: Context) {
     private fun registerReceiver(receiver: DownloadBroadcastReceiver<Request>) {
         unregisterReceiver(receiver.downloadId)
         context.registerReceiver(receiver, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
-        registeredReceiversMap.add(receiver)
+        registeredReceiversSet.add(receiver)
     }
 
     private fun unregisterReceiver(downloadId: Long) {
-        registeredReceiversMap.find { it.downloadId == downloadId }?.let {
+        registeredReceiversSet.find { it.downloadId == downloadId }?.let {
             context.unregisterReceiver(it)
-            val iterator = registeredReceiversMap.iterator()
+            val iterator = registeredReceiversSet.iterator()
             while (iterator.hasNext()) {
                 if (iterator.next().downloadId == downloadId) {
                     iterator.remove()
@@ -152,7 +159,7 @@ class DownloadHelper<Request>(val context: Context) {
     }
 
     private fun unregisterAllReceivers() {
-        registeredReceiversMap.map { it.downloadId }.forEach {
+        registeredReceiversSet.map { it.downloadId }.forEach {
             unregisterReceiver(it)
         }
     }
@@ -184,7 +191,7 @@ class DownloadHelper<Request>(val context: Context) {
                 val cursor = downloadHelper.downloadManager.query(DownloadManager.Query().setFilterById(id))
                 if (!cursor.moveToFirst()) return
                 val isSuccess = isDownloadSuccess(cursor)
-                val reason = getReason(cursor)
+                val reason = getDownloadReason(cursor)
                 onDownloadComplete(downloadUri, isSuccess, reason)
             } finally {
                 downloadHelper.unregisterReceiver(downloadId)
@@ -194,18 +201,16 @@ class DownloadHelper<Request>(val context: Context) {
         fun onDownloadComplete(downloadUri: Uri, isSuccess: Boolean, reason: Int) {
             val fileUri: Uri? = downloadHelper.downloadManager.getUriForDownloadedFile(downloadId)
             downloadHelper.downloadedMap[downloadId] = DownloadedInfo(isSuccess, downloadUri, fileUri)
+            val request = downloadHelper.currentDownloadsRequestMap[downloadId]
             downloadHelper.currentDownloads.remove(downloadId)
             downloadHelper.currentDownloadsRequestMap.remove(downloadId)
-            onDownloadComplete(downloadUri, fileUri, isSuccess, reason)
+            onDownloadRequestComplete(request, downloadUri, fileUri, isSuccess, reason)
         }
 
         protected open fun onDownloadRequestComplete(request: Request?, downloadUri: Uri, fileUri: Uri?, isSuccess: Boolean, reason: Int) {
             // override if needed
         }
 
-        private fun onDownloadComplete(downloadUri: Uri, fileUri: Uri?, isSuccess: Boolean, reason: Int) {
-            onDownloadRequestComplete(downloadHelper.currentDownloadsRequestMap[downloadId], downloadUri, fileUri, isSuccess, reason)
-        }
     }
 
     /**
@@ -219,12 +224,19 @@ class DownloadHelper<Request>(val context: Context) {
 
     companion object {
 
-        private fun isDownloadSuccess(cursor: Cursor): Boolean = DownloadManager.STATUS_SUCCESSFUL ==
-                cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+        fun getDownloadStatus(cursor: Cursor) = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
 
-        private fun isDownloadFailed(cursor: Cursor): Boolean = DownloadManager.STATUS_FAILED ==
-                cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_STATUS))
+        fun isDownloadSuccess(cursor: Cursor): Boolean = DownloadManager.STATUS_SUCCESSFUL ==
+                getDownloadStatus(cursor)
 
-        private fun getReason(cursor: Cursor): Int = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON))
+        fun isDownloadFailed(cursor: Cursor): Boolean = DownloadManager.STATUS_FAILED ==
+                getDownloadStatus(cursor)
+
+        fun getDownloadReason(cursor: Cursor): Int = cursor.getInt(cursor.getColumnIndex(DownloadManager.COLUMN_REASON))
+
+        fun getDownloadedUri(cursor: Cursor): Uri? =
+                cursor.getString(cursor.getColumnIndex(DownloadManager.COLUMN_LOCAL_URI))?.let {
+                    Uri.parse(it)
+                }
     }
 }
