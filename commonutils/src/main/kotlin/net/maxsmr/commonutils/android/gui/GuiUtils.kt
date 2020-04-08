@@ -916,7 +916,7 @@ fun calculateMaxTextSize(
         measuredViewWidth: Int = 0
 ): Float {
     val text = StringBuilder()
-    for (i in 0..maxWidthTextLength) {
+    for (i in 0 until maxWidthTextLength) {
         text.append("0")
     }
     return calculateMaxTextSize(textView, text.toString(), maxTextSize, maxTextSizeUnit, measuredViewWidth)

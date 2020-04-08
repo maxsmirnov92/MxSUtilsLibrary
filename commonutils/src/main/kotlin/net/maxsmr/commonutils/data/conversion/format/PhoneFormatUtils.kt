@@ -60,6 +60,7 @@ fun normalizePhoneNumberRemovePlus(phoneNumber: CharSequence): String =
  */
 fun clearPhone(phoneNumber: String) = phoneNumber.replace("-", " ").replace("*", EMPTY_STRING)
 
+@JvmOverloads
 fun formatPhoneNumber(
         phoneNumber: String,
         withMask: Boolean = false,
@@ -85,6 +86,7 @@ fun formatPhoneNumber(
  * Может быть использован в afterTextChanges в динамике;
  * в активном [watcher] меняются маски в зав-ти от условий
  */
+@JvmOverloads
 fun EditText.formatPhone(
         current: Editable?,
         watcher: MaskFormatWatcher,
@@ -115,6 +117,7 @@ fun EditText.setPhoneHead(editable: Editable) {
     }
 }
 
+@JvmOverloads
 fun TextView.setPhoneFormattedText(
         text: CharSequence,
         applyWatcher: Boolean = true,
@@ -123,11 +126,13 @@ fun TextView.setPhoneFormattedText(
     isRusPhoneNumberValid(it)
 }
 
+@JvmOverloads
 fun createPhoneMask(phoneMask: String = DEFAULT_RUS_PHONE_MASK): MaskImpl {
     val slots = UnderscoreDigitSlotsParser().parseSlots(phoneMask)
     return MaskImpl.createTerminated(slots)
 }
 
+@JvmOverloads
 fun createPhoneWatcher(phoneMask: String = DEFAULT_RUS_PHONE_MASK): MaskFormatWatcher {
     return MaskFormatWatcher(createPhoneMask(phoneMask))
 }

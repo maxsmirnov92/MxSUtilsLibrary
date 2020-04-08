@@ -261,7 +261,7 @@ fun <X, Y> combineLatest(sources: List<LiveData<out X>>, combine: (List<X?>) -> 
 // region LoadState
 
 fun <D> NotifyCheckMutableLiveData<LoadState<D>>.setEmptyLoadState(
-        setOrPost: Boolean = true,
+        setOrPost: Boolean = false,
         eagerNotify: Boolean = false
 ) = setLoadState(null, null, null, setOrPost, eagerNotify)
 
@@ -273,7 +273,7 @@ fun <D> NotifyCheckMutableLiveData<LoadState<D>>.setLoadState(
         data: D? = null,
         isLoading: Boolean? = null,
         error: Throwable? = null,
-        setOrPost: Boolean = true,
+        setOrPost: Boolean = false,
         eagerNotify: Boolean = false,
         shouldNotify: Boolean = true
 ): LoadState<D> {
@@ -290,7 +290,7 @@ fun <D> NotifyCheckMutableLiveData<LoadState<D>>.setLoadState(
 }
 
 fun <D> NotifyCheckMutableLiveData<LoadState<D>>.preLoad(
-        setOrPost: Boolean = true,
+        setOrPost: Boolean = false,
         eagerNotify: Boolean = false,
         shouldNotify: Boolean = true
 ): LoadState<D> {
@@ -313,7 +313,7 @@ fun <D> NotifyCheckMutableLiveData<LoadState<D>>.preLoad(
 
 fun <D> NotifyCheckMutableLiveData<LoadState<D>>.successLoad(
         data: D,
-        setOrPost: Boolean = true,
+        setOrPost: Boolean = false,
         eagerNotify: Boolean = false,
         shouldNotify: Boolean = true
 ): LoadState<D> {
@@ -336,7 +336,7 @@ fun <D> NotifyCheckMutableLiveData<LoadState<D>>.successLoad(
 
 fun <D> NotifyCheckMutableLiveData<LoadState<D>>.errorLoad(
         error: Throwable,
-        setOrPost: Boolean = true,
+        setOrPost: Boolean = false,
         eagerNotify: Boolean = false,
         shouldNotify: Boolean = true
 ): LoadState<D> {

@@ -53,7 +53,7 @@ data class LoadState<D>(
 
     override fun successLoad(result: D): Boolean {
         var hasChanged = false
-        if (!isLoading) {
+        if (isLoading) {
             isLoading = false
             hasChanged = true
         }

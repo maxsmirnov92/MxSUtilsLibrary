@@ -25,37 +25,31 @@ import java.util.*
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("AppUtils")
 
-fun isPackageInstalled(context: Context, packageName: String): Boolean {
-    return getApplicationInfo(context, packageName) != null
-}
+fun isPackageInstalled(context: Context, packageName: String): Boolean =
+        getApplicationInfo(context, packageName) != null
 
-fun getSelfVersionName(context: Context): String {
-    return getVersionName(getSelfPackageInfo(context, PackageManager.GET_META_DATA))
-}
+fun getSelfVersionName(context: Context): String =
+        getVersionName(getSelfPackageInfo(context, PackageManager.GET_META_DATA))
 
-fun getSelfVersionCode(context: Context): Long? {
-    return getVersionCode(getSelfPackageInfo(context, PackageManager.GET_META_DATA))
-}
+fun getSelfVersionCode(context: Context): Long? =
+        getVersionCode(getSelfPackageInfo(context, PackageManager.GET_META_DATA))
 
-fun getVersionName(context: Context, packageName: String): String {
-    return getVersionName(getPackageInfo(context, packageName, PackageManager.GET_META_DATA))
-}
+fun getVersionName(context: Context, packageName: String): String =
+        getVersionName(getPackageInfo(context, packageName, PackageManager.GET_META_DATA))
 
-fun getVersionCode(context: Context, packageName: String): Long? {
-    return getVersionCode(getPackageInfo(context, packageName, PackageManager.GET_META_DATA))
-}
+fun getVersionCode(context: Context, packageName: String): Long? =
+        getVersionCode(getPackageInfo(context, packageName, PackageManager.GET_META_DATA))
 
-fun getArchiveVersionName(context: Context, apkFile: File?): String {
-    return getVersionName(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
-}
+fun getArchiveVersionName(context: Context, apkFile: File?): String =
+        getVersionName(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
 
-fun getArchiveVersionCode(context: Context, apkFile: File?): Long? {
-    return getVersionCode(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
-}
+@JvmOverloads
+fun getArchiveVersionCode(context: Context, apkFile: File?): Long? =
+        getVersionCode(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
 
-fun getSelfApplicationInfo(context: Context, flags: Int = 0): ApplicationInfo? {
-    return getApplicationInfo(context, context.packageName, flags)
-}
+@JvmOverloads
+fun getSelfApplicationInfo(context: Context, flags: Int = 0): ApplicationInfo? =
+        getApplicationInfo(context, context.packageName, flags)
 
 fun getApplicationInfo(
         context: Context,
@@ -71,10 +65,11 @@ fun getApplicationInfo(
 
 }
 
-fun getSelfPackageInfo(context: Context, flags: Int = 0): PackageInfo? {
-    return getPackageInfo(context, context.packageName)
-}
+@JvmOverloads
+fun getSelfPackageInfo(context: Context, flags: Int = 0): PackageInfo? =
+        getPackageInfo(context, context.packageName)
 
+@JvmOverloads
 fun getPackageInfo(
         context: Context,
         packageName: String,
@@ -92,6 +87,7 @@ fun getPackageInfo(
     return null
 }
 
+@JvmOverloads
 fun getArchivePackageInfo(
         context: Context,
         apkFile: File?,
@@ -124,10 +120,10 @@ fun getArchiveLaunchIntentForPackage(context: Context, apkFile: File): Intent? {
     return if (packageInfo != null) getLaunchIntentForPackage(context, packageInfo.packageName) else null
 }
 
-fun getSelfLaunchIntentForPackage(context: Context): Intent? {
-    return getLaunchIntentForPackage(context, context.packageName)
-}
+fun getSelfLaunchIntentForPackage(context: Context): Intent? =
+        getLaunchIntentForPackage(context, context.packageName)
 
+@JvmOverloads
 fun launchSelf(context: Context, flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK) {
     val activityIntent = getSelfLaunchIntentForPackage(context)
             ?: throw RuntimeException("Cannot launch: self package ${context.packageName} intent not found")
@@ -206,9 +202,8 @@ fun isPackageRequireUpdate(
             || currentVersionCode <= 0 || targetVersionCode <= 0
 }
 
-fun getSelfApplicationLabel(context: Context): String? {
-    return getApplicationLabel(context, context.packageName)
-}
+fun getSelfApplicationLabel(context: Context): String? =
+        getApplicationLabel(context, context.packageName)
 
 /**
  * Get application title by package name
@@ -221,9 +216,8 @@ fun getApplicationLabel(context: Context, packageName: String): String? {
     return info?.loadLabel(packageManager)?.toString()
 }
 
-fun getApplicationUid(context: Context): Int? {
-    return getApplicationUid(context, context.packageName)
-}
+fun getApplicationUid(context: Context): Int? =
+        getApplicationUid(context, context.packageName)
 
 /**
  * @return uid for specified name or null if not found
@@ -263,9 +257,8 @@ fun isSelfAppInBackground(
         context: Context,
         manager: AbstractProcessManager,
         includeSystemPackages: Boolean
-): Boolean? {
-    return isAppInBackground(context.packageName, manager, includeSystemPackages)
-}
+): Boolean? =
+        isAppInBackground(context.packageName, manager, includeSystemPackages)
 
 /**
  * @return null if not found
@@ -326,9 +319,8 @@ fun getVersionCode(info: PackageInfo?): Long? {
     }
 }
 
-fun isSystemApp(packageInfo: PackageInfo?): Boolean? {
-    return isSystemApp(packageInfo?.applicationInfo)
-}
+fun isSystemApp(packageInfo: PackageInfo?): Boolean? =
+        isSystemApp(packageInfo?.applicationInfo)
 
 /**
  * @return null if not found
@@ -359,7 +351,7 @@ fun forceLocaleInApp(context: Context, locale: Locale?) {
     }
 }
 
-fun copyToClipboard(context: Context, label: String?, text: String?) {
+fun copyToClipboard(context: Context, label: String, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?
             ?: throw NullPointerException(ClipboardManager::class.java.simpleName + " is null")
     val clip = ClipData.newPlainText(label, text)
