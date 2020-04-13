@@ -2,12 +2,6 @@ package net.maxsmr.commonutils.data
 
 import net.maxsmr.commonutils.data.text.isNotZeroOrNull
 
-fun <K, V : Number> putIfNotNullOrZero(map: MutableMap<K, V>, key: K, value: V?) {
-    if (value != null && isNotZeroOrNull(value.toString())) {
-        map[key] = value
-    }
-}
-
 @JvmOverloads
 fun <V> toMutableListExclude(
         collection: Collection<V>?,

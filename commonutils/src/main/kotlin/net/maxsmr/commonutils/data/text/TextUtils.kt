@@ -32,10 +32,8 @@ fun split(text: String, expression: String): Array<String?>? {
 }
 // endregion
 
-fun isEmpty(s: CharSequence?): Boolean =
-        isEmpty(s, false)
-
-fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean): Boolean =
+@JvmOverloads
+fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): Boolean =
         s == null || s == EMPTY_STRING || shouldCheckNullString && "null".equals(s.toString(), ignoreCase = true)
 
 fun isZeroOrNull(value: CharSequence?) = value.toDoubleNoThrow().isZeroOrNull()

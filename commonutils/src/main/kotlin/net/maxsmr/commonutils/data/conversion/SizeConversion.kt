@@ -1,11 +1,7 @@
 package net.maxsmr.commonutils.data.conversion
 
 import net.maxsmr.commonutils.R
-import net.maxsmr.commonutils.data.number.fraction
-import net.maxsmr.commonutils.data.number.isGreater
-import net.maxsmr.commonutils.data.number.isZero
-import net.maxsmr.commonutils.data.number.round
-import net.maxsmr.commonutils.data.putIfNotNullOrZero
+import net.maxsmr.commonutils.data.number.*
 import net.maxsmr.commonutils.data.text.join
 import net.maxsmr.commonutils.data.toSortedSetExclude
 import java.math.BigDecimal
@@ -381,22 +377,30 @@ fun sizeToMap(
     if (s >= SizeUnit.C3 && !sizeUnitsToExclude.contains(SizeUnit.GBYTES)) {
         val gBytes = SizeUnit.BYTES.toGBytes(s.toDouble())
         val gBytesLong = gBytes.toLong().toDouble()
-        putIfNotNullOrZero(result, SizeUnit.GBYTES, gBytes)
+        if (gBytes.isNotZero()) {
+            result[SizeUnit.GBYTES] = gBytes
+        }
         result.putAll(sizeToMapStep(SizeUnit.GBYTES.toBytes(gBytesLong), s, sizeUnitsToExclude, precision))
     } else if ((sizeUnitsToExclude.contains(SizeUnit.GBYTES) || s >= SizeUnit.C2 && s < SizeUnit.C3)
             && !sizeUnitsToExclude.contains(SizeUnit.MBYTES)) {
         val mBytes = SizeUnit.BYTES.toMBytes(s.toDouble())
         val mBytesLong = mBytes.toLong().toDouble()
-        putIfNotNullOrZero(result, SizeUnit.MBYTES, mBytes)
+        if (mBytes.isNotZero()) {
+            result[SizeUnit.MBYTES] = mBytes
+        }
         result.putAll(sizeToMapStep(SizeUnit.MBYTES.toBytes(mBytesLong), s, toSortedSetExclude(sizeUnitsToExclude, setOf(SizeUnit.GBYTES)), precision))
     } else if ((sizeUnitsToExclude.contains(SizeUnit.MBYTES) || s >= SizeUnit.C1 && s < SizeUnit.C2)
             && !sizeUnitsToExclude.contains(SizeUnit.KBYTES)) {
         val kBytes = SizeUnit.BYTES.toKBytes(s.toDouble())
         val kBytesLong = kBytes.toLong().toDouble()
-        putIfNotNullOrZero(result, SizeUnit.KBYTES, kBytes)
+        if (kBytes.isNotZero()) {
+            result[SizeUnit.KBYTES] = kBytes
+        }
         result.putAll(sizeToMapStep(SizeUnit.KBYTES.toBytes(kBytesLong), s, toSortedSetExclude(sizeUnitsToExclude, setOf(SizeUnit.MBYTES)), precision))
     } else if (s < SizeUnit.C1 && !sizeUnitsToExclude.contains(SizeUnit.BYTES)) {
-        putIfNotNullOrZero(result, SizeUnit.BYTES, s.toDouble())
+        if (s != 0L) {
+            result[SizeUnit.BYTES] = s
+        }
     }
 
     val iterator = result.toSortedMap(reverseOrder()).iterator()

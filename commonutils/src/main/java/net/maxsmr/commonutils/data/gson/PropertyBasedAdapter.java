@@ -10,35 +10,36 @@ import com.google.gson.JsonSerializer;
 
 import java.lang.reflect.Type;
 
-public class PropertyBasedAdapter<T> implements JsonSerializer<T>, JsonDeserializer<T> {
+import static net.maxsmr.commonutils.data.gson.GsonUtilsKt.getJsonElementAs;
+import static net.maxsmr.commonutils.data.gson.GsonUtilsKt.getJsonPrimitive;
 
-//    @NotNull
-//    private final Class<T> mClass;
-//
-//    public PropertyBasedAdapter(@NotNull Class<T> clazz) {
-//        mClass = clazz;
-//    }
+public class PropertyBasedAdapter<T> implements JsonSerializer<T>, JsonDeserializer<T> {
 
     private static final String CLASS_META_KEY = "CLASS_META_KEY";
 
     @Override
     public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context) {
         JsonElement jsonElem = context.serialize(src, src.getClass());
-        jsonElem.getAsJsonObject().addProperty(CLASS_META_KEY,
-                src.getClass().getCanonicalName());
+        JsonObject jsonObject = getJsonElementAs(jsonElem, JsonObject.class);
+        if (jsonObject != null) {
+            jsonObject.addProperty(CLASS_META_KEY, src.getClass().getCanonicalName());
+        }
         return jsonElem;
     }
 
     @Override
     public T deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        JsonObject jsonObj = json.getAsJsonObject();
-        String className = jsonObj.get(CLASS_META_KEY).getAsString();
-        try {
-            Class<?> clz = Class.forName(className);
+        String className = getJsonPrimitive(json, CLASS_META_KEY, String.class);
+        if (className != null) {
+            Class<?> clz;
+            try {
+                clz = Class.forName(className);
+            } catch (ClassNotFoundException e) {
+                throw new JsonParseException(e);
+            }
             return context.deserialize(json, clz);
-        } catch (ClassNotFoundException e) {
-            throw new JsonParseException(e);
         }
+        throw new JsonParseException(CLASS_META_KEY + " not specified");
     }
 
 }

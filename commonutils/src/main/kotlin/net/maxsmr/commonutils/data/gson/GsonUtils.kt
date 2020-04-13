@@ -2,6 +2,7 @@
 
 package net.maxsmr.commonutils.data.gson
 
+import android.text.TextUtils
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
@@ -21,18 +22,16 @@ private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("GsonU
  * информация о котором содержится в [classOfT],
  * используя [gson]
  */
-fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, classOfT: Class<T>): T? {
-    return fromJsonObjectString(gson, jsonString, classOfT as Type)
-}
+fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, classOfT: Class<T>): T? =
+        fromJsonObjectString<T>(gson, jsonString, classOfT as Type)
 
 /**
  * Преобразует строку [jsonString] в инстанс указанного типа [T],
  * информация о котором содержится в [typeToken],
  * используя [gson]
  */
-fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, typeToken: TypeToken<T>): T? {
-    return fromJsonObjectString(gson, jsonString, typeToken.type)
-}
+fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, typeToken: TypeToken<T>): T? =
+        fromJsonObjectString<T>(gson, jsonString, typeToken.type)
 
 /**
  * Преобразует строку [jsonString] в список сущностей указанного типа [T],
@@ -54,10 +53,12 @@ fun <T> fromJsonArrayString(gson: Gson, jsonString: String?, type: Class<Array<T
  * используя [gson]
  */
 fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, type: Type): T? {
-    try {
-        return gson.fromJson(jsonString, type)
-    } catch (e: JsonParseException) {
-        logger.e("an JsonParseException occurred during fromJson(): " + e.message, e)
+    if (!TextUtils.isEmpty(jsonString)) {
+        try {
+            return gson.fromJson(jsonString, type)
+        } catch (e: JsonParseException) {
+            logger.e("A JsonParseException occurred during fromJson(): " + e.message, e)
+        }
     }
     return null
 }
@@ -122,30 +123,52 @@ fun getPrimitiveBoolean(element: JsonElement?): Boolean? {
     return if (element.isBoolean) element.asBoolean else null
 }
 
-fun <V> getJsonPrimitiveValueIn(inElement: JsonElement?, memberName: String?, clazz: Class<V>): V? {
-    var value: V? = null
-    if (inElement != null) {
-        if (inElement.isJsonObject) {
-            val obj = inElement.asJsonObject
-            value = getJsonPrimitiveValueFor(obj[memberName], clazz)
+fun <E : JsonElement> getJsonElementAs(jsonElement: JsonElement?, clazz: Class<E>): E? {
+    var result: E? = null
+    if (jsonElement != null) {
+        when {
+            jsonElement is JsonNull && clazz.isAssignableFrom(JsonNull::class.java) ->
+                result = jsonElement as E
+            jsonElement is JsonPrimitive && clazz.isAssignableFrom(JsonPrimitive::class.java) ->
+                result = jsonElement as E
+            jsonElement is JsonObject && clazz.isAssignableFrom(JsonObject::class.java) ->
+                result = jsonElement as E
+            jsonElement is JsonArray && clazz.isAssignableFrom(JsonArray::class.java) ->
+                result = jsonElement as E
+        }
+    }
+    return result
+}
+
+fun <E : JsonElement> getJsonElement(jsonElement: JsonElement?, memberName: String?, clazz: Class<E>): E? {
+    var value: E? = null
+    if (jsonElement != null) {
+        if (jsonElement.isJsonObject) {
+            val obj = jsonElement.asJsonObject
+            value = getJsonElementAs(obj[memberName], clazz)
         }
     }
     return value
 }
 
-fun <V> getJsonPrimitiveValueFor(forElement: JsonElement?, clazz: Class<V>): V? {
+@JvmOverloads
+fun <V> getJsonPrimitiveAs(forElement: JsonPrimitive?, clazz: Class<V>, defaultValue: V? = null): V? {
     var value: V? = null
-    if (forElement != null && forElement.isJsonPrimitive) {
-        val primitive = forElement.asJsonPrimitive
-        if (primitive.isString && clazz.isAssignableFrom(String::class.java)) {
-            value = primitive.asString as V
-        } else if (primitive.isNumber && clazz.isAssignableFrom(Number::class.java)) {
-            value = primitive.asNumber as V
-        } else if (primitive.isBoolean && clazz.isAssignableFrom(Boolean::class.java)) {
-            value = java.lang.Boolean.valueOf(primitive.asBoolean) as V
+    if (forElement != null) {
+        if (forElement.isString && clazz.isAssignableFrom(String::class.java)) {
+            value = forElement.asString as V
+        } else if (forElement.isNumber && clazz.isAssignableFrom(Number::class.java)) {
+            value = forElement.asNumber as V
+        } else if (forElement.isBoolean && clazz.isAssignableFrom(Boolean::class.java)) {
+            value = forElement.asBoolean as V
         }
     }
-    return value
+    return value ?: defaultValue
+}
+
+@JvmOverloads
+fun <V> getJsonPrimitive(jsonElement: JsonElement?, memberName: String?, clazz: Class<V>, defaultValue: V? = null): V? {
+    return getJsonPrimitiveAs(getJsonElement(jsonElement, memberName, JsonPrimitive::class.java), clazz, defaultValue)
 }
 
 fun <J : JsonElement?> asJsonElement(

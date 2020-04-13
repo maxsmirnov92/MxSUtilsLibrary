@@ -1,12 +1,10 @@
 package net.maxsmr.commonutils.data.conversion
 
 import net.maxsmr.commonutils.R
-import net.maxsmr.commonutils.data.putIfNotNullOrZero
 import net.maxsmr.commonutils.data.text.join
 import net.maxsmr.commonutils.data.toSortedSetExclude
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.*
-
 
 private const val TIME_UNIT_C0 = 1L
 private const val TIME_UNIT_C1 = 1000L
@@ -71,35 +69,49 @@ fun timeToMap(
 
     if (t >= TIME_UNIT_C6 && !timeUnitsToExclude.contains(DAYS)) {
         val days = NANOSECONDS.toDays(t)
-        putIfNotNullOrZero(result, DAYS, days)
+        if (days != 0L) {
+            result[DAYS] = days
+        }
         result.putAll(timeToMapStep(DAYS.toNanos(days), t, timeUnitsToExclude))
     } else if ((timeUnitsToExclude.contains(DAYS) || t in TIME_UNIT_C5 until TIME_UNIT_C6)
             && !timeUnitsToExclude.contains(HOURS)) {
         val hours = NANOSECONDS.toHours(t)
-        putIfNotNullOrZero(result, HOURS, hours)
+        if (hours != 0L) {
+            result[HOURS] = hours
+        }
         result.putAll(timeToMapStep(HOURS.toNanos(hours), t, toSortedSetExclude(timeUnitsToExclude, setOf(DAYS))))
     } else if ((timeUnitsToExclude.contains(HOURS) || t in TIME_UNIT_C4 until TIME_UNIT_C5)
             && !timeUnitsToExclude.contains(MINUTES)) {
         val minutes = NANOSECONDS.toMinutes(t)
-        putIfNotNullOrZero(result, MINUTES, minutes)
+        if (minutes != 0L) {
+            result[MINUTES] = minutes
+        }
         result.putAll(timeToMapStep(MINUTES.toNanos(minutes), t, toSortedSetExclude(timeUnitsToExclude, setOf(HOURS))))
     } else if ((timeUnitsToExclude.contains(MINUTES) || t in TIME_UNIT_C3 until TIME_UNIT_C4)
             && !timeUnitsToExclude.contains(SECONDS)) {
         val seconds = NANOSECONDS.toSeconds(t)
-        putIfNotNullOrZero(result, SECONDS, seconds)
+        if (seconds != 0L) {
+            result[SECONDS] = seconds
+        }
         result.putAll(timeToMapStep(SECONDS.toNanos(seconds), t, toSortedSetExclude(timeUnitsToExclude, setOf(MINUTES))))
     } else if ((timeUnitsToExclude.contains(SECONDS) || t in TIME_UNIT_C2 until TIME_UNIT_C3)
             && !timeUnitsToExclude.contains(MILLISECONDS)) {
         val millis = NANOSECONDS.toMillis(t)
-        putIfNotNullOrZero(result, MILLISECONDS, millis)
+        if (millis != 0L) {
+            result[MILLISECONDS] = millis
+        }
         result.putAll(timeToMapStep(MILLISECONDS.toNanos(millis), t, toSortedSetExclude(timeUnitsToExclude, setOf(SECONDS))))
     } else if ((timeUnitsToExclude.contains(MILLISECONDS) || t in TIME_UNIT_C1 until TIME_UNIT_C2)
             && !timeUnitsToExclude.contains(MICROSECONDS)) {
         val micros = NANOSECONDS.toMicros(t)
-        putIfNotNullOrZero(result, MICROSECONDS, micros)
+        if (micros != 0L) {
+            result[MICROSECONDS] = micros
+        }
         result.putAll(timeToMapStep(MICROSECONDS.toNanos(micros), t, toSortedSetExclude(timeUnitsToExclude, setOf(MILLISECONDS))))
     } else if (t < TIME_UNIT_C1 && !timeUnitsToExclude.contains(NANOSECONDS)) {
-        putIfNotNullOrZero(result, NANOSECONDS, t)
+        if (t != 0L) {
+            result[NANOSECONDS] = t
+        }
     }
 
     return result.toSortedMap(reverseOrder())
