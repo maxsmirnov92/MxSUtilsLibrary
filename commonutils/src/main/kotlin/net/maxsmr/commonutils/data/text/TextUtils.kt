@@ -97,7 +97,7 @@ fun replaceSubstrings(
     return result
 }
 
-fun replaceRange(s: CharSequence, start: Int, end: Int, replacement: CharSequence): CharSequence {
+fun replaceRange(s: CharSequence, start: Int, end: Int, replacement: CharSequence): String {
     checkArgs(s, start, end)
     val sb = StringBuilder(s)
     sb.replace(start, end, replacement.toString())

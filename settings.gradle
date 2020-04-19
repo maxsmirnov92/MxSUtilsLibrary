@@ -1,4 +1,4 @@
-include ':commonutils', ':customcontentprovider', ':tasksutils', ':networkutils', ':devicewatchers', ':testapp'
+include ':commonutils'
 // ':commonutils'
 // ':customcontentprovider'
 // ':tasksutils'

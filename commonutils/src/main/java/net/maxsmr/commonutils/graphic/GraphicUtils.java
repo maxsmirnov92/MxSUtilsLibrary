@@ -235,10 +235,10 @@ public final class GraphicUtils {
 
         if (isEmpty(ext)) {
             logger.e("unknown format: " + format);
-            ext = FileHelper.getFileExtension(file.getName());
+            ext = FileHelper.getExtension(file.getName());
         }
 
-        file = FileHelper.createNewFile(FileHelper.removeExtension(file.getName()) + "." + ext, file.getParent());
+        file = FileHelper.createNewFile(FileHelper.removeFileExtension(file.getName()) + "." + ext, file.getParent());
 
         if (file == null) {
             logger.e("file was not created");
