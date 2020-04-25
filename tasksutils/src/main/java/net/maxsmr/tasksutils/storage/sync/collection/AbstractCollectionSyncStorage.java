@@ -86,7 +86,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
                 final String ext = FileHelper.getFileExtension(f.getName());
 
-                if (FileHelper.isFileCorrect(f) && extension.equalsIgnoreCase(ext)) {
+                if (FileHelper.isFileValid(f) && extension.equalsIgnoreCase(ext)) {
 
                     I runnableInfo = null;
 
@@ -258,7 +258,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
 //    @Override
 //    protected boolean checkRunnableInfo(@NotNull I info) {
-//        return FileHelper.isFileCorrect(info.getFile());
+//        return FileHelper.isFileValid(info.getFile());
 //    }
 //
 //    public synchronized void clear(boolean deleteSourceFiles) {

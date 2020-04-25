@@ -93,7 +93,7 @@ fun getArchivePackageInfo(
         apkFile: File?,
         flags: Int = 0
 ): PackageInfo? {
-    if (apkFile != null && FileHelper.isFileCorrect(apkFile)) {
+    if (apkFile != null && FileHelper.isFileValid(apkFile)) {
         val packageManager = context.packageManager
         return packageManager.getPackageArchiveInfo(apkFile.absolutePath, flags)
     }

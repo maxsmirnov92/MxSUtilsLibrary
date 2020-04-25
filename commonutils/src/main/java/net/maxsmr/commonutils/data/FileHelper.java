@@ -305,8 +305,26 @@ public final class FileHelper {
         return false;
     }
 
-    public static boolean isFileCorrect(File file) {
+    public static boolean isFileValid(File file) {
         return isFileExists(file) && file.length() > 0;
+    }
+
+    public static boolean isFileValid(String filePath) {
+        if (!isEmpty(filePath)) {
+            return isFileValid(new File(filePath));
+        }
+        return false;
+    }
+
+    public static boolean isFileExists(File file) {
+        return file != null && file.isFile() && file.exists();
+    }
+
+    public static boolean isFileExists(String filePath) {
+        if (!isEmpty(filePath)) {
+            return isFileExists(new File(filePath));
+        }
+        return false;
     }
 
     public static boolean isFileExists(String fileName, String parentPath) {
@@ -319,20 +337,7 @@ public final class FileHelper {
             return false;
         }
 
-        File f = new File(parentPath, fileName);
-        return f.exists() && f.isFile();
-    }
-
-    public static boolean isFileExists(File file) {
-        return file != null && isFileExists(file.getAbsolutePath());
-    }
-
-    public static boolean isFileExists(String filePath) {
-        if (!isEmpty(filePath)) {
-            File f = new File(filePath);
-            return (f.exists() && f.isFile());
-        }
-        return false;
+        return isFileExists(new File(parentPath, fileName));
     }
 
     public static boolean isFileReadAccessible(@Nullable File file) {
@@ -344,15 +349,14 @@ public final class FileHelper {
     }
 
     public static boolean isDirExists(@Nullable File dir) {
-        return dir != null && isDirExists(dir.getAbsolutePath());
+        return dir != null && dir.isDirectory() && dir.exists();
     }
 
     public static boolean isDirExists(@Nullable String dirPath) {
-        if (dirPath == null) {
-            return false;
+        if (!isEmpty(dirPath)) {
+            return isDirExists(new File(dirPath));
         }
-        File dir = new File(dirPath);
-        return dir.exists() && dir.isDirectory();
+        return false;
     }
 
     public static boolean isDirReadAccessible(@Nullable File dir) {
@@ -396,7 +400,7 @@ public final class FileHelper {
     }
 
     public static boolean checkFileNoThrow(File file, boolean createIfNotExists) {
-        return file != null && (file.exists() && file.isFile() || (createIfNotExists && createNewFile(file.getName(), file.getParent()) != null));
+        return file != null && (isFileExists(file) || (createIfNotExists && createNewFile(file.getName(), file.getParent()) != null));
     }
 
     public static boolean checkFileNoThrow(String file) {
@@ -422,15 +426,15 @@ public final class FileHelper {
     }
 
     public static boolean checkDirNoThrow(String dirPath, boolean createIfNotExists) {
-        if (!isDirExists(dirPath)) {
-            if (!createIfNotExists) {
-                return false;
-            }
-            if (createNewDir(dirPath) == null) {
-                return false;
-            }
-        }
-        return true;
+        return !isEmpty(dirPath) && checkDirNoThrow(new File(dirPath), createIfNotExists);
+    }
+
+    public static boolean checkDirNoThrow(File file) {
+        return checkFileNoThrow(file, true);
+    }
+
+    public static boolean checkDirNoThrow(File file, boolean createIfNotExists) {
+        return file != null && (isDirExists(file) || (createIfNotExists && createNewDir(file.getAbsolutePath()) != null));
     }
 
     public static File checkPath(String parent, String fileName) {
@@ -684,7 +688,7 @@ public final class FileHelper {
     @Nullable
     public static byte[] readBytesFromFile(File file) {
 
-        if (!isFileCorrect(file)) {
+        if (!isFileValid(file)) {
             logger.e("incorrect file: " + file);
             return null;
         }
@@ -707,7 +711,7 @@ public final class FileHelper {
 
         List<String> lines = new ArrayList<>();
 
-        if (!isFileCorrect(file)) {
+        if (!isFileValid(file)) {
             logger.e("incorrect file: " + file);
             return lines;
         }
@@ -932,7 +936,7 @@ public final class FileHelper {
 
                 for (File srcFile : new ArrayList<>(srcFiles)) {
 
-                    if (!isFileCorrect(srcFile)) {
+                    if (!isFileValid(srcFile)) {
                         logger.e("incorrect file to zip: " + srcFile);
                         continue;
                     }
@@ -974,7 +978,7 @@ public final class FileHelper {
 
     public static boolean unzipFile(File zipFile, File destPath, boolean saveDirHierarchy) {
 
-        if (!isFileCorrect(zipFile)) {
+        if (!isFileValid(zipFile)) {
             logger.e("incorrect zip file: " + zipFile);
             return false;
         }
@@ -1717,7 +1721,7 @@ public final class FileHelper {
      * @author paulburke
      */
     @TargetApi(Build.VERSION_CODES.KITKAT)
-    public static String getPath(final Context context, final Uri uri) {
+    public static String getPath(@NotNull final Context context, final Uri uri) {
 
         final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
@@ -1937,7 +1941,7 @@ public final class FileHelper {
      */
     public static File copyFile(File sourceFile, String destName, String destDir, boolean rewrite, boolean preserveFileDate) {
 
-        if (!isFileCorrect(sourceFile)) {
+        if (!isFileValid(sourceFile)) {
             logger.e("source file not exists: " + sourceFile);
             return null;
         }

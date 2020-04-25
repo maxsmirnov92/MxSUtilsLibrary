@@ -130,7 +130,7 @@ public final class MetadataRetriever {
 
     @Nullable
     public static <M> M extractMetadataField(@Nullable File file, int keyCode, @NotNull Class<M> clazz, @Nullable M defaultValue) {
-        return FileHelper.isFileCorrect(file) ? extractMetadataField(file.getAbsolutePath(), keyCode, clazz, defaultValue) : null;
+        return FileHelper.isFileValid(file) ? extractMetadataField(file.getAbsolutePath(), keyCode, clazz, defaultValue) : null;
     }
 
     @Nullable
@@ -184,7 +184,7 @@ public final class MetadataRetriever {
 
     @NotNull
     public static MediaMetadata extractMetadata(@Nullable File file) {
-        return FileHelper.isFileCorrect(file) ? extractMetadata(file.getAbsolutePath()) : new MediaMetadata();
+        return FileHelper.isFileValid(file) ? extractMetadata(file.getAbsolutePath()) : new MediaMetadata();
     }
 
     @NotNull
@@ -350,7 +350,7 @@ public final class MetadataRetriever {
     }
 
     public static long extractMediaDuration(@Nullable File file) {
-        return FileHelper.isFileCorrect(file) ? extractMediaDuration(file.getAbsolutePath()) : 0;
+        return FileHelper.isFileValid(file) ? extractMediaDuration(file.getAbsolutePath()) : 0;
     }
 
     public static long extractMediaDuration(@Nullable String filePath) {
@@ -389,7 +389,7 @@ public final class MetadataRetriever {
 
     @Nullable
     public static Bitmap extractFrameAtPosition(@Nullable File file, long positionMs) {
-        return FileHelper.isFileCorrect(file) ? extractFrameAtPosition(file.getAbsolutePath(), positionMs) : null;
+        return FileHelper.isFileValid(file) ? extractFrameAtPosition(file.getAbsolutePath(), positionMs) : null;
     }
 
     @Nullable
@@ -436,7 +436,7 @@ public final class MetadataRetriever {
 
     @NotNull
     public static Map<Long, Bitmap> extractFrames(@Nullable File file, int framesCount) {
-        return FileHelper.isFileCorrect(file) ? extractFrames(file.getAbsolutePath(), framesCount) : Collections.<Long, Bitmap>emptyMap();
+        return FileHelper.isFileValid(file) ? extractFrames(file.getAbsolutePath(), framesCount) : Collections.<Long, Bitmap>emptyMap();
     }
 
     @NotNull

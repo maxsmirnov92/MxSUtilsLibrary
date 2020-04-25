@@ -269,7 +269,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                                 if (!((LoadRunnableInfo.FilesBody) rInfo.body).ignoreIncorrect) {
                                     for (File uploadFile : lastUploadFiles) {
-                                        if (!FileHelper.isFileCorrect(uploadFile)) {
+                                        if (!FileHelper.isFileValid(uploadFile)) {
                                             isFileReasonFail = true;
                                             throw new RuntimeException("incorrect source upload file" + uploadFile);
                                         } else if (!uploadFile.canRead()) {
@@ -368,7 +368,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     }
 
 
-                    if (rInfo.settings.readBodyMode == FILE && rInfo.settings.downloadWriteMode == RESUME_DOWNLOAD && FileHelper.isFileCorrect(lastDownloadFile)) {
+                    if (rInfo.settings.readBodyMode == FILE && rInfo.settings.downloadWriteMode == RESUME_DOWNLOAD && FileHelper.isFileValid(lastDownloadFile)) {
                         currentLoadInfo.downloadedBytesCount = (int) lastDownloadFile.length();
                         connection.setRequestProperty("Range", "bytes=" + currentLoadInfo.downloadedBytesCount + "-");
                     }
@@ -941,7 +941,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
             if (!handled) {
                 currentLoadInfo.totalDownloadBytesCount = 0;
-            } else if (FileHelper.isFileCorrect(lastDownloadFile)) {
+            } else if (FileHelper.isFileValid(lastDownloadFile)) {
                 currentLoadInfo.totalDownloadBytesCount = lastDownloadFile.length();
             }
 
@@ -1003,7 +1003,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
             for (File file : uploadFiles.keySet()) {
 
-                if (!FileHelper.isFileCorrect(file) || !file.canRead()) {
+                if (!FileHelper.isFileValid(file) || !file.canRead()) {
                     logger.e("incorrect upload file: " + file);
                     if (!ignoreIncorrect) {
                         logger.e("aborting adding file parts...");

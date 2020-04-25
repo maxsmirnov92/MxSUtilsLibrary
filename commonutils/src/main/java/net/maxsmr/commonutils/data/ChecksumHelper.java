@@ -66,6 +66,6 @@ public final class ChecksumHelper {
     }
 
     public static String md5Hash(File file) {
-        return FileHelper.isFileCorrect(file)? md5Hash(FileHelper.readBytesFromFile(file)) : null;
+        return FileHelper.isFileValid(file)? md5Hash(FileHelper.readBytesFromFile(file)) : null;
     }
 }

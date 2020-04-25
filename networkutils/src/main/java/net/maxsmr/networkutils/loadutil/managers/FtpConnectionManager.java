@@ -554,7 +554,7 @@ public class FtpConnectionManager {
             return false;
         }
 
-        if (!FileHelper.isFileCorrect(localFile)) {
+        if (!FileHelper.isFileValid(localFile)) {
             logger.e("incorrect local file: " + localFile);
             return false;
         }

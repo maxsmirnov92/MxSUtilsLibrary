@@ -362,7 +362,7 @@ public final class GraphicUtils {
         }
 
         if (result) {
-            return FileHelper.isFileCorrect(compressedImageFile) ? compressedImageFile : imageFile;
+            return FileHelper.isFileValid(compressedImageFile) ? compressedImageFile : imageFile;
         } else {
             return imageFile;
         }
@@ -737,7 +737,7 @@ public final class GraphicUtils {
     }
 
     public static boolean canDecodeImage(File file) {
-        if (!FileHelper.isFileCorrect(file)) {
+        if (!FileHelper.isFileValid(file)) {
             return false;
         }
         BitmapFactory.Options options = new BitmapFactory.Options();
@@ -747,7 +747,7 @@ public final class GraphicUtils {
     }
 
     public static boolean canDecodeVideo(File file) {
-        return FileHelper.isFileCorrect(file) && MetadataRetriever.extractMediaDuration(file) > 0;
+        return FileHelper.isFileValid(file) && MetadataRetriever.extractMediaDuration(file) > 0;
     }
 
     /**

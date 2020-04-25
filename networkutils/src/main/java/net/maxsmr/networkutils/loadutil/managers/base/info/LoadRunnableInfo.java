@@ -458,7 +458,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         public boolean hasCorrectSourceFiles() {
             boolean has = false;
             for (File f : sourceFiles) {
-                if (FileHelper.isFileCorrect(f)) {
+                if (FileHelper.isFileValid(f)) {
                     has = true;
                     break;
                 }
@@ -469,7 +469,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         public boolean hasIncorrectSourceFiles() {
             boolean has = false;
             for (File f : sourceFiles) {
-                if (!FileHelper.isFileCorrect(f)) {
+                if (!FileHelper.isFileValid(f)) {
                     has = true;
                     break;
                 }
