@@ -6,6 +6,7 @@ import android.util.DisplayMetrics
 import android.view.View
 import android.view.WindowManager
 import net.maxsmr.commonutils.data.Pair
+import kotlin.math.roundToInt
 
 fun getFixedViewSizeByDisplay(context: Context, targetSize: Point): Point {
     return getFixedViewSizeByDisplay(context, targetSize.x.toFloat() / targetSize.y)
@@ -61,10 +62,10 @@ fun getFixedViewSize(targetScale: Float, measuredViewSize: Point?, maxViewSize: 
     val viewScale = measuredViewSize.x.toFloat() / measuredViewSize.y
     if (viewScale <= targetScale) {
         newViewSize.x = measuredViewSize.x
-        newViewSize.y = Math.round(newViewSize.x.toFloat() / targetScale)
+        newViewSize.y = (newViewSize.x.toFloat() / targetScale).roundToInt()
     } else {
         newViewSize.y = measuredViewSize.y
-        newViewSize.x = Math.round(newViewSize.y.toFloat() * targetScale)
+        newViewSize.x = (newViewSize.y.toFloat() * targetScale).roundToInt()
     }
     return newViewSize
 }

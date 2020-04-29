@@ -32,7 +32,8 @@ open class FilePickerDialogFragmentsHolder(tags: Collection<String>) : DialogFra
 
     override fun onSetOtherEventListener(forFragment: DialogFragment, owner: LifecycleOwner) {
         if (forFragment is TypedDialogFragment<*>) {
-            forFragment.buttonClickSubject.subscribe(owner) {
+            buttonClickEvents()
+            buttonClickEvents(forFragment.tag).subscribe(owner)  {
                 onDialogButtonClick(forFragment, it.value)
             }
         }
@@ -80,7 +81,7 @@ open class FilePickerDialogFragmentsHolder(tags: Collection<String>) : DialogFra
         val positiveButton = filePickerConfigurator.getPickFromGalleryAlertButtonName(context)
         val neutralButton = filePickerConfigurator.getPickFromFileAlertButtonName(context)
         val negativeButton = filePickerConfigurator.getPickFromCameraAlertButtonName(context)
-        show(TAG_PICK_FILE_CHOICE, TypedDialogFragment.DefaultBuilder()
+        show(TAG_PICK_FILE_CHOICE, TypedDialogFragment.DefaultAlertBuilder()
                 .setIconResId(filePickerConfigurator.alertIconResId)
                 .setMessage(filePickerConfigurator.getAlertMessage(context))
                 .setCancelable(filePickerConfigurator.isAlertCancelable)

@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils.android.gui.fragments.dialogs.holder
 
+import android.app.Dialog
 import android.text.TextUtils
 import androidx.annotation.CallSuper
 import androidx.annotation.MainThread
@@ -10,13 +11,21 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
+import io.reactivex.Observable
+import io.reactivex.functions.Predicate
+import io.reactivex.subjects.BehaviorSubject
+import net.maxsmr.commonutils.android.gui.fragments.actions.EmptyAction
+import net.maxsmr.commonutils.android.gui.fragments.actions.TypedAction
 import net.maxsmr.commonutils.android.gui.fragments.dialogs.TypedDialogFragment
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.rx.LiveObservable
+import net.maxsmr.commonutils.rx.toLive
 import org.jetbrains.annotations.Nullable
-import ru.railways.core.common.utils.rx.LiveSubject
 
-val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("DialogFragmentsHolder")
+val logger: BaseLogger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("DialogFragmentsHolder")
+
+private val RESTRICTED_STATES = setOf(Lifecycle.Event.ON_ANY, Lifecycle.Event.ON_STOP, Lifecycle.Event.ON_DESTROY)
 
 /**
  * Class for showing/hiding [DialogFragment] via specified [FragmentManager], with storing its state info
@@ -32,7 +41,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
         checkTags()
     }
 
-    val triggerListenerSubject = LiveSubject<DialogFragment>(LiveSubject.SubjectType.BEHAVIOUR)
+    private val listenerSubject: BehaviorSubject<DialogFragment> = BehaviorSubject.create()
 
     val showingFragments: List<DialogFragment> get() = activeFragments.filter { it.isAdded }
 
@@ -40,10 +49,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
 
     val isAnyFragmentShowing: Boolean get() = showingFragmentsCount > 0
 
-    val isCommitAllowed
-        get() = with(ownerCurrentState) {
-            this != Lifecycle.Event.ON_STOP || this != Lifecycle.Event.ON_DESTROY
-        }
+    val isCommitAllowed get() = !RESTRICTED_STATES.contains(lastLifecycleEvent)
 
     /**
      * Active DialogFragments, added to specified [FragmentManager]
@@ -107,9 +113,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             }
         }
 
-    protected var currentOwner: LifecycleOwner? = null
-
-    private var ownerCurrentState = Lifecycle.Event.ON_ANY
+    private var lastLifecycleEvent = Lifecycle.Event.ON_ANY
         private set(value) {
             if (field != value) {
                 field = value
@@ -122,6 +126,8 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             }
         }
 
+    private var currentOwner: LifecycleOwner? = null
+
     private var fragmentManager: FragmentManager? = null
         set(value) {
             field = value
@@ -130,7 +136,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                 handleTargetFragmentsToHide()
                 handleTargetFragmentsToShow()
             } else {
-                if (ownerCurrentState != Lifecycle.Event.ON_DESTROY) {
+                if (lastLifecycleEvent != Lifecycle.Event.ON_DESTROY) {
                     // if it's happening onDestroy - don't hide and remember those tags
                     hideActive()
                 } else {
@@ -139,33 +145,115 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             }
         }
 
+
+    /**
+     * @param tag тэг, с которым был стартован диалог, может быть пустым
+     * @param eventsMapper функция, извлекающая из диалога указанного типа требуемый Observable, эмитящий эвенты
+     * @return [LiveObservable] с конкретным типом эвента с автоматической отпиской в onDestroy
+     */
+    fun <T, D : DialogFragment> events(
+            tag: String? = null,
+            dialogClass: Class<D>,
+            eventsFilter: Predicate<T>? = null,
+            eventsMapper: (D) -> Observable<T>
+    ): LiveObservable<T> =
+            listenerSubject
+                    .ofType(dialogClass) // отфильтровали по целевому типу диалога
+                    .filter { (tag.isNullOrEmpty() || it.tag == tag) }
+                    .switchMap { eventsMapper(it) } // целевой observable из диалога
+                    .filter {
+                        // данные, выбрасываемые из него, удовлетворяют условию
+                        eventsFilter?.test(it) ?: true
+                    }
+                    .toLive()
+
+    @Suppress("UNCHECKED_CAST")
+    fun <D : Dialog> createdEvents(tag: String? = null): LiveObservable<TypedAction<D>> =
+            events(
+                    tag,
+                    TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>
+            ) {
+                it.createdObservable()
+            }
+
+    /**
+     * Подписка на клики по кнопкам диалога
+     *
+     * @param tag тэг, с которым был стартован диалог
+     * @param buttons типы кнопок, за которыми наблюдаем (см. [android.content.DialogInterface]), или
+     * пустой список, если наблюдаем за всеми
+     */
+    fun buttonClickEvents(tag: String? = null, vararg buttons: Int): LiveObservable<TypedAction<Int>> =
+            events(
+                    tag,
+                    TypedDialogFragment::class.java,
+                    Predicate {
+                        buttons.isEmpty() || it.value in buttons
+                    }
+            ) {
+                it.buttonClickObservable()
+            }
+
+    fun keyActionEvents(
+            tag: String? = null, vararg keyCodes: Int
+    ): LiveObservable<TypedDialogFragment.KeyAction> =
+            keyActionEvents(tag, Predicate { keyCodes.isEmpty() || it.keyCode in keyCodes })
+
+    fun keyActionEvents(
+            tag: String? = null, keyEventFilter: Predicate<TypedDialogFragment.KeyAction>
+    ): LiveObservable<TypedDialogFragment.KeyAction> =
+            events(
+                    tag,
+                    TypedDialogFragment::class.java,
+                    keyEventFilter
+            ) {
+                it.keyActionObservable()
+            }
+
+    fun dismissEvents(tag: String? = null): LiveObservable<EmptyAction> =
+            events(
+                    tag,
+                    TypedDialogFragment::class.java
+            ) {
+                it.dismissObservable()
+            }
+
+    fun cancelEvents(tag: String? = null): LiveObservable<EmptyAction> =
+            events(
+                    tag,
+                    TypedDialogFragment::class.java
+            ) {
+                it.cancelObservable()
+            }
+
     /**
      * Should call manually from appropriate method of activity/fragment
      */
     @CallSuper
-    open fun onCreate(owner: LifecycleOwner, fragmentManager: FragmentManager) {
+    open fun init(owner: LifecycleOwner, fragmentManager: FragmentManager) {
+        logger.d("init")
+        lastLifecycleEvent = Lifecycle.Event.ON_CREATE
         attachOwner(owner, fragmentManager)
-        ownerCurrentState = Lifecycle.Event.ON_CREATE
     }
 
     @CallSuper
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     open fun onResumed() {
-        logger.d( "onResumed")
-        ownerCurrentState = Lifecycle.Event.ON_RESUME
+        logger.d("onResumed")
+        lastLifecycleEvent = Lifecycle.Event.ON_RESUME
     }
 
     @CallSuper
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     open fun onStop() {
-        logger.d( "onStop")
-        ownerCurrentState = Lifecycle.Event.ON_STOP
+        logger.d("onStop")
+        lastLifecycleEvent = Lifecycle.Event.ON_STOP
     }
 
     @CallSuper
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     open fun onDestroy() {
-        logger.d( "onDestroy")
+        logger.d("onDestroy")
         cleanUp(true)
     }
 
@@ -183,8 +271,8 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
      * @param reshow   if fragment for specified tag is already showing, it will be re-showed
      * @return true if successfully showed, false - otherwise
      */
-    fun show(tag: String, fragment: DialogFragment, reshow: Boolean): Boolean {
-        logger.d( "show: tag=$tag, reshow=$reshow")
+    fun show(tag: String, fragment: DialogFragment, reshow: Boolean = true): Boolean {
+        logger.d("show: tag=$tag, fragment=$fragment, reshow=$reshow")
 
         val fragmentManager = fragmentManager
         checkNotNull(fragmentManager) { "FragmentManager is not specified" }
@@ -206,7 +294,6 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             return false
         }
         if (isCommitAllowed) {
-            onSetEventListener(fragment)
             try {
                 fragment.show(fragmentManager, tag)
             } catch (e: Exception) {
@@ -216,6 +303,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             }
             activeFragments.add(fragment)
             targetFragmentsToShow.remove(tag)
+            onSetEventListener(fragment)
             return true
         }
         logger.w( "Transaction commits are not allowed, schedule showing...")
@@ -230,7 +318,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
      * - [TypedDialogFragment] instance non-null if was added to [FragmentManager] before, false otherwise
      */
     fun hide(tag: String?): Pair<Boolean, DialogFragment?> {
-        logger.d( "hide: tag=$tag")
+        logger.d("hide: tag=$tag")
 
         var result = false
         var fragment: DialogFragment? = null
@@ -349,18 +437,18 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     }
 
     protected open fun cleanUp(isDestroyed: Boolean = true) {
-        ownerCurrentState = if (isDestroyed) Lifecycle.Event.ON_DESTROY else Lifecycle.Event.ON_ANY
-        detachCurrentOwner()
+        lastLifecycleEvent = if (isDestroyed) Lifecycle.Event.ON_DESTROY else Lifecycle.Event.ON_ANY
+        detachOwner()
     }
 
     private fun attachOwner(owner: LifecycleOwner, fragmentManager: FragmentManager) {
-        detachCurrentOwner()
+        detachOwner()
         owner.lifecycle.addObserver(this)
         this.currentOwner = owner
         this.fragmentManager = fragmentManager
     }
 
-    private fun detachCurrentOwner() {
+    private fun detachOwner() {
         currentOwner?.lifecycle?.removeObserver(this)
         currentOwner = null
         fragmentManager = null
@@ -372,13 +460,13 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
         with(currentOwner) {
             checkNotNull(this) { "LifecycleOwner is not attached" }
             if (forFragment is TypedDialogFragment<*>) {
-                forFragment.dismissSubject.subscribe(this) {
+                dismissEvents(forFragment.tag).subscribe(this) {
                     onDialogDismiss(forFragment)
                 }
             }
             onSetOtherEventListener(forFragment, this)
         }
-        triggerListenerSubject.onNext(forFragment)
+        listenerSubject.onNext(forFragment)
     }
 
     private fun checkTags() {

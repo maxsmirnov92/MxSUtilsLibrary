@@ -11,10 +11,11 @@ import androidx.annotation.DrawableRes
 import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDialogFragment
+import io.reactivex.Observable
+import io.reactivex.subjects.PublishSubject
 import net.maxsmr.commonutils.android.gui.fragments.actions.EMPTY_ACTION
 import net.maxsmr.commonutils.android.gui.fragments.actions.EmptyAction
 import net.maxsmr.commonutils.android.gui.fragments.actions.TypedAction
-import ru.railways.core.common.utils.rx.LiveSubject
 
 const val ARG_TITLE = "AlertDialogFragment#ARG_TITLE"
 const val ARG_MESSAGE = "AlertDialogFragment#ARG_MESSAGE"
@@ -30,20 +31,22 @@ const val ARG_BUTTON_NEUTRAL = "AlertDialogFragment#ARG_BUTTON_NEUTRAL"
  */
 open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogInterface.OnClickListener {
 
-    val createdSubject = LiveSubject<TypedAction<D>>()
-    val buttonClickSubject = LiveSubject<TypedAction<Int>>()
-    val keySubject = LiveSubject<KeyAction>()
-    val cancelSubject = LiveSubject<EmptyAction>()
-    val dismissSubject = LiveSubject<EmptyAction>()
+    protected val createdSubject = PublishSubject.create<TypedAction<D>>()
+    protected val buttonClickSubject = PublishSubject.create<TypedAction<Int>>()
+    protected val keySubject = PublishSubject.create<KeyAction>()
+    protected val cancelSubject = PublishSubject.create<EmptyAction>()
+    protected val dismissSubject = PublishSubject.create<EmptyAction>()
 
     /**
      * initialized after onCreate
      */
     protected lateinit var args: Bundle
+        private set
     /**
      * initialized after onGetLayoutInflater
      */
     protected lateinit var createdDialog: D
+        private set
 
     protected var customView: View? = null
         private set
@@ -90,6 +93,16 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
     override fun onClick(dialog: DialogInterface?, which: Int) {
         buttonClickSubject.onNext(TypedAction(which))
     }
+
+    fun createdObservable(): Observable<TypedAction<D>> = createdSubject.hide()
+
+    fun buttonClickObservable(): Observable<TypedAction<Int>> = buttonClickSubject.hide()
+
+    fun keyActionObservable(): Observable<KeyAction> = keySubject.hide()
+
+    fun cancelObservable(): Observable<EmptyAction> = cancelSubject.hide()
+
+    fun dismissObservable(): Observable<EmptyAction> = dismissSubject.hide()
 
     /** here you can setup your views  */
     @CallSuper
@@ -211,7 +224,7 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             val event: KeyEvent?
     )
 
-    class DefaultBuilder : Builder<TypedDialogFragment<AlertDialog>>() {
+    class DefaultAlertBuilder : Builder<TypedDialogFragment<AlertDialog>>() {
 
         override fun build(): TypedDialogFragment<AlertDialog> {
             return newInstance(createArgs())
