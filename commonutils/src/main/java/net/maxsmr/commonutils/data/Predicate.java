@@ -16,7 +16,12 @@ public interface Predicate<V> {
 
     class Methods {
 
+        public static <V> boolean all(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
+            return findWithIndex(elements, element -> !predicate.apply(element)) == null;
+        }
+
         public static <V> boolean contains(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
+            // any
             return findWithIndex(elements, predicate) != null;
         }
 

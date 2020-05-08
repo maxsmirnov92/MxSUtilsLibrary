@@ -1061,19 +1061,24 @@ public final class FileHelper {
      */
     @NotNull
     public static String getFileExtension(@Nullable File file) {
-        return getExtension(file != null ? file.getName() : null);
+        return getFileExtension(file != null ? file.getName() : null);
     }
 
     /**
      * @return расширение файла
      */
     @NotNull
-    public static String getExtension(@Nullable String fileName) {
+    public static String getFileExtension(@Nullable String fileName) {
         if (fileName == null) {
             fileName = EMPTY_STRING;
         }
         int index = fileName.lastIndexOf('.');
         return (index > 0 && index < fileName.length() - 1) ? fileName.substring(index + 1) : EMPTY_STRING;
+    }
+
+    @NotNull
+    public static String removeFileExtension(@Nullable File file) {
+        return removeFileExtension(file != null ? file.getName() : null);
     }
 
     /**
@@ -1098,7 +1103,7 @@ public final class FileHelper {
             if (file != null) {
                 do {
                     String name = result.getName();
-                    name = FileHelper.removeFileExtension(name) + postfix + "." + FileHelper.getExtension(name);
+                    name = FileHelper.removeFileExtension(name) + postfix + "." + FileHelper.getFileExtension(name);
                     result = new File(result.getParent(), name);
                 } while (checkExists && result.exists());
             }

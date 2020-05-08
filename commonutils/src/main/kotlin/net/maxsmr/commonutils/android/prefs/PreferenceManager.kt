@@ -4,16 +4,15 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
-
 import net.maxsmr.commonutils.android.prefs.PreferencesHolder.PrefType
-import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.Observable
+import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.text.isEmpty
 
 class PreferencesManager @JvmOverloads constructor(
-        private val context: Context,
+        context: Context,
         preferencesName: String = EMPTY_STRING,
-        private val mode: Int = Context.MODE_PRIVATE
+        mode: Int = Context.MODE_PRIVATE
 ) {
 
     private val preferences: SharedPreferences =

@@ -883,7 +883,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                             String newName = lastDownloadFile.getName();
                                             String ext = FileHelper.getFileExtension(newName);
                                             if (!isEmpty(ext)) {
-                                                newName = FileHelper.removeExtension(newName) + " (" + it + ")." + ext;
+                                                newName = FileHelper.removeFileExtension(newName) + " (" + it + ")." + ext;
                                             } else {
                                                 newName += " (" + it + ")";
                                             }

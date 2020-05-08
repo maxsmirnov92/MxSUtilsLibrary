@@ -140,17 +140,6 @@ fun <E : JsonElement> getJsonElementAs(jsonElement: JsonElement?, clazz: Class<E
     return result
 }
 
-fun <E : JsonElement> getJsonElement(jsonElement: JsonElement?, memberName: String?, clazz: Class<E>): E? {
-    var value: E? = null
-    if (jsonElement != null) {
-        if (jsonElement.isJsonObject) {
-            val obj = jsonElement.asJsonObject
-            value = getJsonElementAs(obj[memberName], clazz)
-        }
-    }
-    return value
-}
-
 @JvmOverloads
 fun <V> getJsonPrimitiveAs(forElement: JsonPrimitive?, clazz: Class<V>, defaultValue: V? = null): V? {
     var value: V? = null
@@ -164,6 +153,12 @@ fun <V> getJsonPrimitiveAs(forElement: JsonPrimitive?, clazz: Class<V>, defaultV
         }
     }
     return value ?: defaultValue
+}
+
+fun <E : JsonElement> getJsonElement(jsonElement: JsonElement?, memberName: String?, clazz: Class<E>): E? {
+    return getJsonElementAs(jsonElement, JsonObject::class.java)?.let {
+        getJsonElementAs(it[memberName], clazz)
+    }
 }
 
 @JvmOverloads

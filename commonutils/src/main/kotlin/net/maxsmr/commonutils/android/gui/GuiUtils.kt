@@ -14,9 +14,7 @@ import android.os.Build
 import android.os.CountDownTimer
 import android.text.*
 import android.text.method.LinkMovementMethod
-import android.text.style.ClickableSpan
-import android.text.style.ForegroundColorSpan
-import android.text.style.ImageSpan
+import android.text.style.CharacterStyle
 import android.text.style.URLSpan
 import android.util.TypedValue
 import android.view.*
@@ -39,7 +37,10 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputLayout
 import net.maxsmr.commonutils.R
-import net.maxsmr.commonutils.android.*
+import net.maxsmr.commonutils.android.SdkUtils
+import net.maxsmr.commonutils.android.convertAnyToPx
+import net.maxsmr.commonutils.android.getColorFromAttrs
+import net.maxsmr.commonutils.android.getColoredDrawable
 import net.maxsmr.commonutils.data.Pair
 import net.maxsmr.commonutils.data.ReflectionUtils
 import net.maxsmr.commonutils.data.text.*
@@ -128,39 +129,6 @@ fun setOnFocusIntervalEditorActionListener(textView: TextView, nextView: View) {
 }
 
 /**
- * Убрать нижнее подчеркивание для текущего text
- */
-fun removeTextViewUnderline(view: TextView) {
-    setText(view, removeUnderline(view.text), true)
-}
-
-/**
- * Добавить кликабельную картинку вместо последнего символа в строке
- */
-fun addClickableImageToEnd(
-        textView: TextView,
-        @DrawableRes drawableResId: Int,
-        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-        clickFunc: () -> Unit = {}) {
-    val text = textView.text
-    if (text.isNotEmpty()) {
-        val s = SpannableString(text)
-        val imageSpan = ImageSpan(textView.context, drawableResId, ImageSpan.ALIGN_BASELINE)
-        s.setSpan(imageSpan, s.length - 1, s.length, spanFlags)
-        s.setSpan(object : ClickableSpan() {
-            override fun onClick(widget: View) {
-                if (!SdkUtils.isPreLollipop()) {
-                    widget.cancelPendingInputEvents()
-                }
-                clickFunc.invoke()
-            }
-        }, s.length - 1, s.length, spanFlags)
-        textView.text = s
-        textView.movementMethod = LinkMovementMethod.getInstance()
-    }
-}
-
-/**
  * Устанавливает курсор в конец строки
  */
 fun setSelectionToEnd(edit: EditText) {
@@ -195,120 +163,100 @@ fun clearMaxLength(view: EditText) {
 }
 
 /**
+ * Добавить кликабельную картинку вместо последнего символа в строке
+ */
+fun appendClickableImageTextView(
+        textView: TextView,
+        @DrawableRes drawableResId: Int,
+        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+        clickFunc: () -> Unit = {}
+): CharSequence {
+    val text = textView.text
+    return appendClickableImage(textView.context, text, drawableResId, spanFlags, clickFunc)
+}
+
+/**
+ * Убрать нижнее подчеркивание для текущего text
+ */
+fun removeUnderlineTextView(view: TextView): CharSequence {
+    return setTextWithMovementMethod(view, removeUnderline(view.text))
+}
+
+/**
  * Установить html текст в TextView
  */
-fun setHtmlText(textView: TextView, text: String) {
-    try {
-        textView.text = parseHtmlToSpannedString(text)
-    } catch (e: Throwable) {
-        textView.text = text
-    }
+fun setHtmlText(textView: TextView, text: CharSequence): CharSequence {
+    return setTextWithMovementMethod(textView, parseHtmlToSpannedStringNoThrow(text))
 }
 
 fun setHtmlText(textView: TextView, @StringRes resId: Int) =
         setHtmlText(textView, textView.resources.getString(resId))
 
-/**
- * Установить ссылку из html-текста
- */
-fun setLinkFromHtml(textView: TextView, htmlLink: String, removeUnderlying: Boolean = true) {
-    setHtmlText(textView, htmlLink)
-    if (removeUnderlying) {
-        removeTextViewUnderline(textView)
-    }
-    textView.movementMethod = LinkMovementMethod.getInstance()
-}
-
+@JvmOverloads
 fun setLinkFromHtml(textView: TextView, @StringRes htmlLinkResId: Int, removeUnderlying: Boolean = true) =
         setLinkFromHtml(textView, textView.resources.getString(htmlLinkResId), removeUnderlying)
 
 /**
- * Альтернатива [setLinkFromHtml], в котором в кач-ве [text]
- * вместо html-разметки обычный текст с кликабельной ссылкой
- * в указанном диапазоне
+ * Установить ссылку из html-текста
  */
-fun setLinkableText(
-        textView: TextView,
-        text: CharSequence,
-        startIndex: Int,
-        endIndex: Int,
-        removeUnderlying: Boolean,
-        link: String,
-        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-        clickAction: (() -> Unit)? = null
-) {
-    setTextWithClickableSpan(textView, text, startIndex, endIndex, removeUnderlying, spanFlags) {
-        textView.context.startActivity(getBrowseLinkIntent(link))
-        clickAction?.invoke()
+@JvmOverloads
+fun setLinkFromHtml(textView: TextView, htmlLink: String, removeUnderlying: Boolean = true): CharSequence {
+    val result = setHtmlText(textView, htmlLink)
+    if (removeUnderlying) {
+        removeUnderlineTextView(textView)
     }
+    return result
 }
 
 /**
  * Установить кликабельный span
  * с кастомным действием при нажатии
  */
-fun setTextWithClickableSpan(
+fun setTextWithCustomSpan(
         textView: TextView,
         text: CharSequence,
-        startIndex: Int,
-        endIndex: Int,
-        removeUnderlying: Boolean,
-        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-        clickAction: () -> Unit
-) {
+        spanInfos: Collection<SpanInfo>
+): CharSequence {
+    return setTextWithMovementMethod(textView, createCustomSpanText(text, spanInfos))
+}
 
-    textView.text = SpannableStringBuilder(text).apply {
-        setSpan(object : ClickableSpan() {
+/**
+ * @param text в строке аргументы с префиксами "^" будут заменены на [CharacterStyle]
+ * @param spanInfosMap маппинг информации о [Spannable] + link для перехода по клику по нему
+ */
+fun setTextWithCustomSpanExpanded(
+        textView: TextView,
+        text: CharSequence,
+        spanInfosMap: Map<SpanInfo, String>
+): CharSequence {
+    return setTextWithMovementMethod(textView, createCustomSpanTextExpanded(text, spanInfosMap))
+}
 
-            override fun onClick(widget: View) {
-                clickAction()
-            }
-
-            override fun updateDrawState(ds: TextPaint) {
-                super.updateDrawState(ds)
-                if (removeUnderlying) {
-                    ds.isUnderlineText = false
-                }
-            }
-        }, startIndex, endIndex, spanFlags)
-    }
-    textView.movementMethod = LinkMovementMethod.getInstance()
+/**
+ * Альтернатива [setLinkFromHtml], в котором в кач-ве [text]
+ * вместо html-разметки обычный текст с кликабельной ссылкой
+ * в указанном диапазоне
+ * @param spanInfosMap маппинг информации о [Spannable] + link для перехода по клику по нему
+ */
+fun setLinkableText(
+        textView: TextView,
+        text: CharSequence,
+        spanInfosMap: Map<SpanInfo, String>
+): CharSequence {
+    return setTextWithMovementMethod(textView, createLinkableText(textView.context, text, spanInfosMap))
 }
 
 /**
  * Выставить [html] в кач-ве html текста, но для кликабельных сегментов оповещать о клике
  */
-fun setHtmlTextWithCustomClick(
+@JvmOverloads
+fun replaceUrlSpans(
         textView: TextView,
         html: String,
         removeUnderlying: Boolean = true,
         action: ((URLSpan) -> Unit)? = null
-) {
-    val sequence = parseHtmlToSpannedString(html)
-    val strBuilder = SpannableStringBuilder(sequence)
-    val urls = strBuilder.getSpans(0, sequence.length, URLSpan::class.java)
-    urls.forEach { span ->
-        val start = strBuilder.getSpanStart(span)
-        val end = strBuilder.getSpanEnd(span)
-        val flags = strBuilder.getSpanFlags(span)
-        strBuilder.setSpan(object : ClickableSpan() {
-
-            override fun onClick(widget: View) {
-                textView.context.startActivity(getBrowseLinkIntent(span.url))
-                action?.invoke(span)
-            }
-
-            override fun updateDrawState(ds: TextPaint) {
-                super.updateDrawState(ds)
-                if (removeUnderlying) {
-                    ds.isUnderlineText = false
-                }
-            }
-        }, start, end, flags)
-        strBuilder.removeSpan(span)
-    }
-    textView.text = strBuilder
-    textView.movementMethod = LinkMovementMethod.getInstance()
+): CharSequence {
+    return setTextWithMovementMethod(textView, replaceUrlSpans(textView.context, html, removeUnderlying, action))
 }
 
 /**
@@ -319,23 +267,12 @@ fun setHtmlTextWithCustomClick(
  */
 fun setTextWithSelection(
         view: TextView,
+        text: String,
         @ColorInt highlightColor: Int,
-        str: String,
         selection: String,
         spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
 ) {
-    view.text = SpannableString(str)
-            .apply {
-                val start = str.indexOf(selection, ignoreCase = true)
-                        .takeIf { it >= 0 }
-                        ?: return@apply
-                setSpan(
-                        ForegroundColorSpan(highlightColor),
-                        start,
-                        start + selection.length,
-                        spanFlags
-                )
-            }
+    setTextWithMovementMethod(view, createSelectedText(text, highlightColor, selection, spanFlags))
 }
 
 fun setTextWithVisibility(
@@ -351,13 +288,18 @@ fun setTextWithVisibility(
     }
 }
 
+@JvmOverloads
 fun setText(
         view: TextView,
         text: CharSequence?,
-        distinct: Boolean = true
+        distinct: Boolean = true,
+        setMovementMethod: Boolean = false
 ) {
     if (!distinct || view.text?.toString() != text.toString()) {
         view.text = text
+    }
+    if (setMovementMethod) {
+        view.movementMethod = LinkMovementMethod.getInstance()
     }
 }
 
@@ -954,6 +896,11 @@ fun calculateMaxTextSize(
     return resultSize
 }
 
+private fun setTextWithMovementMethod(textView: TextView, text: CharSequence): CharSequence {
+    setText(textView, text, distinct = false, setMovementMethod = true)
+    return text
+}
+
 class ProtectRangeInputFilter(private val startIndex: Int, private val endIndex: Int) : InputFilter {
 
     override fun filter(source: CharSequence, start: Int, end: Int, dest: Spanned, dstart: Int, dend: Int): CharSequence {
@@ -990,14 +937,12 @@ class EditTextKeyLimiter(private val et: EditText, private val linesLimit: Int) 
                 val text = et.text.toString().trim { it <= ' ' }
                 // find how many rows it cointains
                 val editTextRowCount: Int = text.split(NEXT_LINE).toTypedArray().size
-                // user has input more than limited - lets do something
-// about that
+                // user has input more than limited - lets do something about that
                 if (editTextRowCount >= linesLimit) { // find the last break
                     val lastBreakIndex = text.lastIndexOf("\n")
                     // compose new text
                     val newText = text.substring(0, lastBreakIndex)
-                    // add new text - delete old one and append new one
-// (append because I want the cursor to be at the end)
+                    // add new text - delete old one and append new one (append because I want the cursor to be at the end)
                     et.setText("")
                     et.append(newText)
                 }
@@ -1009,5 +954,23 @@ class EditTextKeyLimiter(private val et: EditText, private val linesLimit: Int) 
 
     init {
         require(linesLimit > 0) { "incorrect linesLimit: $linesLimit" }
+    }
+}
+
+/**
+ * @param style использовать этот стиль
+ * (последующие параметры для ClickableSpan игнорируется)
+ */
+data class SpanInfo(
+        val startIndex: Int,
+        val endIndex: Int,
+        val style: CharacterStyle? = null,
+        val removeUnderlying: Boolean = false,
+        val flags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+        val clickAction: (() -> Unit)? = null
+) {
+
+    enum class SpanType {
+        CLICKABLE, URL
     }
 }
