@@ -68,6 +68,7 @@ import static net.maxsmr.commonutils.data.StreamUtils.readBytesFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.readStringsFromInputStream;
 import static net.maxsmr.commonutils.data.StreamUtils.revectorStream;
+import static net.maxsmr.commonutils.data.StreamUtils.writeBytesToOutputStream;
 import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toNotNullLongNoThrow;
 import static net.maxsmr.commonutils.data.conversion.SizeConversionKt.sizeToString;
 import static net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING;
@@ -805,23 +806,7 @@ public final class FileHelper {
         } catch (FileNotFoundException e) {
             logger.e("an Exception occurred", e);
         }
-        if (fos != null) {
-            try {
-                fos.write(data);
-                fos.flush();
-                return true;
-            } catch (IOException e) {
-                logger.e("an Exception occurred", e);
-            } finally {
-                try {
-                    fos.close();
-                } catch (IOException e) {
-                    logger.e("an Exception occurred", e);
-                }
-            }
-        }
-        return false;
-
+        return writeBytesToOutputStream(fos, data);
     }
 
     @Nullable

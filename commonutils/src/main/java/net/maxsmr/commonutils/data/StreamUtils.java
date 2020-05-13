@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
+import static net.maxsmr.commonutils.data.text.SymbolConstsKt.NEXT_LINE;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.join;
 
@@ -27,9 +28,9 @@ import static net.maxsmr.commonutils.data.text.TextUtilsKt.join;
  */
 public final class StreamUtils {
 
-    private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(StreamUtils.class);
+    private static final BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(StreamUtils.class);
 
-    private final static int DEFAULT_STREAM_BUF_SIZE = 256;
+    private static final int DEFAULT_STREAM_BUF_SIZE = 256;
 
     private StreamUtils() {
         throw new AssertionError("no instances.");
@@ -156,9 +157,10 @@ public final class StreamUtils {
 
     /**
      * Читает в одну строку содержимое [inputStream]
-     * @param count количество исходных строк для чтения
+     *
+     * @param count       количество исходных строк для чтения
      * @param charsetName имя кодировки
-     * */
+     */
     @Nullable
     public static String readStringFromInputStream(
             InputStream is,
@@ -167,7 +169,7 @@ public final class StreamUtils {
             String charsetName
     ) {
         Collection<String> strings = readStringsFromInputStream(is, count, closeInput, charsetName);
-        return !strings.isEmpty() ? join(net.maxsmr.commonutils.data.text.SymbolConstsKt.NEXT_LINE, strings) : null;
+        return !strings.isEmpty() ? join(NEXT_LINE, strings) : null;
     }
 
     /**
@@ -220,6 +222,31 @@ public final class StreamUtils {
             }
         }
         return Collections.emptyList();
+    }
+
+    public static boolean writeBytesToOutputStream(@Nullable OutputStream outputStream, byte[] data) {
+        return writeBytesToOutputStream(outputStream, data, true);
+    }
+
+    public static boolean writeBytesToOutputStream(@Nullable OutputStream outputStream, byte[] data, boolean closeOutput) {
+        if (outputStream != null) {
+            try {
+                outputStream.write(data);
+                outputStream.flush();
+                return true;
+            } catch (IOException e) {
+                logger.e("an Exception occurred", e);
+            } finally {
+                try {
+                    if (closeOutput) {
+                        outputStream.close();
+                    }
+                } catch (IOException e) {
+                    logger.e("an Exception occurred", e);
+                }
+            }
+        }
+        return false;
     }
 
     @Nullable

@@ -83,10 +83,10 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                     while (it.hasNext() && showingFragmentsCount > 1) {
                         val tag: String? = it.next().getTag()
                         if (tag != null && tag.isNotEmpty()) {
-                            val hideResult: Pair<Boolean?, DialogFragment?> = hide(tag)
+                            val hideResult: Pair<HideResult, DialogFragment?> = hide(tag)
                             with(hideResult.first) {
                                 val hideFragment = hideResult.second
-                                if (shouldStoreRejectedFragments && this != null && this && hideFragment != null) {
+                                if (shouldStoreRejectedFragments && this.isSuccess() && hideFragment != null) {
                                     targetFragmentsToShow[tag] = Pair(hideFragment, false)
                                 }
                             }
@@ -231,7 +231,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
      */
     @CallSuper
     open fun init(owner: LifecycleOwner, fragmentManager: FragmentManager) {
-        logger.d("init")
+        logger.d( "init")
         lastLifecycleEvent = Lifecycle.Event.ON_CREATE
         attachOwner(owner, fragmentManager)
     }
@@ -239,21 +239,21 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @CallSuper
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     open fun onResumed() {
-        logger.d("onResumed")
+        logger.d( "onResumed")
         lastLifecycleEvent = Lifecycle.Event.ON_RESUME
     }
 
     @CallSuper
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     open fun onStop() {
-        logger.d("onStop")
+        logger.d( "onStop")
         lastLifecycleEvent = Lifecycle.Event.ON_STOP
     }
 
     @CallSuper
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     open fun onDestroy() {
-        logger.d("onDestroy")
+        logger.d( "onDestroy")
         cleanUp(true)
     }
 
@@ -265,24 +265,28 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     fun <F : DialogFragment> findShowingFragmentByTag(tag: String?): F? =
             showingFragments.find { tag == it.tag } as F?
 
+    fun showNoResult(tag: String, fragment: DialogFragment, reshow: Boolean = true): Boolean =
+            show(tag, fragment, reshow).isSuccess()
+
     /**
      * @param tag      new tag for adding for specified fragment
      * @param fragment created instance
      * @param reshow   if fragment for specified tag is already showing, it will be re-showed
      * @return true if successfully showed, false - otherwise
      */
-    fun show(tag: String, fragment: DialogFragment, reshow: Boolean = true): Boolean {
-        logger.d("show: tag=$tag, fragment=$fragment, reshow=$reshow")
+    fun show(tag: String, fragment: DialogFragment, reshow: Boolean = true): ShowResult {
+        logger.d( "show: tag=$tag, fragment=$fragment, reshow=$reshow")
 
+        val isFragmentShowing = isFragmentShowing(tag)
         val fragmentManager = fragmentManager
         checkNotNull(fragmentManager) { "FragmentManager is not specified" }
         checkTag(tag)
 
-        if (!reshow && isFragmentShowing(tag)) {
-            return false
+        if (!reshow && isFragmentShowing) {
+            return ShowResult.AlreadyShowed
         }
-        if (!hide(tag).first) {
-            return false
+        if (!hide(tag).first.isSuccess()) {
+            return ShowResult.Failed(ShowResult.Failed.Reason.HIDE)
         }
         if (showRule == ShowRule.SINGLE && isAnyFragmentShowing) {
             logger.w( "Not adding fragment for tag '$tag', because show rule is '" + ShowRule.SINGLE.name
@@ -291,7 +295,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                 logger.w( "Saving fragment for tag '$tag' to show it later...")
                 targetFragmentsToShow[tag] = Pair(fragment, reshow)
             }
-            return false
+            return ShowResult.Failed(ShowResult.Failed.Reason.SHOW_RULE)
         }
         if (isCommitAllowed) {
             try {
@@ -299,17 +303,23 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             } catch (e: Exception) {
                 logger.e( "An Exception occurred during show(): " + e.message, e)
                 targetFragmentsToShow[tag] = Pair(fragment, reshow)
-                return false
+                return ShowResult.Failed(ShowResult.Failed.Reason.EXCEPTION)
             }
             activeFragments.add(fragment)
             targetFragmentsToShow.remove(tag)
             onSetEventListener(fragment)
-            return true
+            return if (isFragmentShowing) ShowResult.Reshowed else ShowResult.Showed
         }
         logger.w( "Transaction commits are not allowed, schedule showing...")
         targetFragmentsToShow[tag] = Pair(fragment, reshow)
-        return false
+        return ShowResult.Failed(ShowResult.Failed.Reason.NOT_ALLOWED)
     }
+
+    fun hideNoResult(tag: String?): Pair<Boolean, DialogFragment?> =
+            with(hide(tag)) {
+                Pair(this.first.isSuccess(), this.second)
+            }
+
 
     /**
      * @return Pair:
@@ -317,33 +327,31 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
      * false - otherwise (also when showing was scheduled)
      * - [TypedDialogFragment] instance non-null if was added to [FragmentManager] before, false otherwise
      */
-    fun hide(tag: String?): Pair<Boolean, DialogFragment?> {
-        logger.d("hide: tag=$tag")
+    fun hide(tag: String?): Pair<HideResult, DialogFragment?> {
+        logger.d( "hide: tag=$tag")
 
-        var result = false
+        var result: HideResult = HideResult.FAILED
         var fragment: DialogFragment? = null
 
         if (tag != null) {
-            result = true
             fragment = findShowingFragmentByTag(tag)
-            var isDismissed = fragment == null
             if (fragment != null) {
                 if (isCommitAllowed) {
                     try {
                         fragment.dismiss()
+                        result = HideResult.DISMISSED
                     } catch (e: Exception) {
                         logger.e( "An Exception occurred during dismiss(): " + e.message, e)
                         targetFragmentsToHide.add(tag)
-                        result = false
                     }
-                    isDismissed = result
                 } else {
                     logger.w( "Transaction commits are not allowed, schedule hiding")
                     targetFragmentsToHide.add(tag)
-                    result = false
                 }
+            } else {
+                result = HideResult.ALREADY_DISMISSED
             }
-            if (isDismissed) {
+            if (result.isSuccess()) {
                 val it = activeFragments.iterator()
                 while (it.hasNext()) {
                     val f = it.next()
@@ -351,9 +359,9 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                         it.remove()
                     }
                 }
-            }
-            if (result) {
-                targetFragmentsToHide.remove(tag)
+                if (result == HideResult.DISMISSED) {
+                    targetFragmentsToHide.remove(tag)
+                }
             }
         }
         return Pair(result, fragment)
@@ -498,6 +506,45 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
          * fragments count is not limited
          */
         MULTI
+    }
+
+    sealed class ShowResult {
+
+        object Showed : ShowResult()
+        object Reshowed : ShowResult()
+        object AlreadyShowed : ShowResult()
+
+        data class Failed(val reason: Reason) : ShowResult() {
+
+            enum class Reason {
+                /**
+                 * failed dismiss
+                 */
+                HIDE,
+                /**
+                 * due to [ShowRule.SINGLE]
+                 */
+                SHOW_RULE,
+                /**
+                 * exception
+                 */
+                EXCEPTION,
+                /**
+                 * transactions are not allowed
+                 */
+                NOT_ALLOWED
+            }
+        }
+
+        fun isSuccess() = this !is Failed
+    }
+
+    enum class HideResult {
+        DISMISSED,
+        ALREADY_DISMISSED,
+        FAILED;
+
+        fun isSuccess() = this != FAILED
     }
 
     companion object {
