@@ -104,11 +104,13 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
 
     fun dismissObservable(): Observable<EmptyAction> = dismissSubject.hide()
 
+    protected open fun shouldBeCancelable() = args.getBoolean(ARG_CANCELABLE, true)
+
     /** here you can setup your views  */
     @CallSuper
     protected open fun onDialogCreated(dialog: D) {
         // not working for dialog when wrapped in fragment, so call it here
-        isCancelable = args.getBoolean(ARG_CANCELABLE, true)
+        isCancelable = shouldBeCancelable()
         createdSubject.onNext(TypedAction(dialog))
     }
 

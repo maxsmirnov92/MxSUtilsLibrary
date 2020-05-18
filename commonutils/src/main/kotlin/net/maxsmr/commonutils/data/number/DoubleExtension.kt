@@ -55,8 +55,9 @@ fun Double?.toBigDecimalRoundScale(
 fun Double.multiply(another: Double) =
         BigDecimal(this).multiply(BigDecimal(another)).toDouble()
 
-fun Double.round(precision: Int): Double {
+fun Double?.round(precision: Int): Double {
     require(precision >= 0) { "Incorrect precision: $precision" }
+    if (this == null) return 0.0
     var delimiter = 1.0
     for (i in 0 until precision) {
         delimiter *= 10.0

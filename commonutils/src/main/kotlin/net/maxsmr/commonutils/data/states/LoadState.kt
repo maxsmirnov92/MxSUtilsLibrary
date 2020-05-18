@@ -17,6 +17,7 @@ interface ILoadState<D> : Serializable {
     fun errorLoad(error: Throwable): Boolean
 
     fun isSuccessLoad() = !_isLoading() && error == null
+    fun isErrorLoad() = !_isLoading() && error != null
 }
 
 /**

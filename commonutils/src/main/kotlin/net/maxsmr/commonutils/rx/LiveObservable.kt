@@ -24,15 +24,27 @@ class LiveObservable<T>(
 
     private val observers: MutableMap<LifecycleOwner, DisposeObserver> = mutableMapOf()
 
-    fun subscribe(owner: LifecycleOwner, onNext: (T) -> Unit) {
+    fun subscribe(owner: LifecycleOwner, emitOnce: Boolean = true, onNext: (T) -> Unit) {
         if (observers.containsKey(owner)) return //owner уже подписан
         val disposeObserver = DisposeObserver(owner, observable
                 .filter { owner.lifecycle.currentState.isAtLeast(observingState) }
-                .subscribe { onNext(it) })
+                .doOnNext {
+                    onNext(it)
+                }
+                .doAfterNext {
+                    if (emitOnce) {
+                        unsubscribe(owner)
+                    }
+                }
+                .subscribe()
+        )
         owner.lifecycle.addObserver(disposeObserver)
         observers[owner] = disposeObserver
     }
 
+    fun unsubscribe(owner: LifecycleOwner) {
+        observers[owner]?.dispose()
+    }
 
     private inner class DisposeObserver(
             private val owner: LifecycleOwner,

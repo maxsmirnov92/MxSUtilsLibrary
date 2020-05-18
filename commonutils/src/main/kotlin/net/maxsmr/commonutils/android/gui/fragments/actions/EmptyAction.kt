@@ -5,4 +5,4 @@ val EMPTY_ACTION = EmptyAction()
 /**
  * Действие без параметров для простого реагирования на onNext
  */
-class EmptyAction: ViewModelAction
+class EmptyAction: BaseViewModelAction<Any>()
