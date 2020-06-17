@@ -9,17 +9,22 @@ import android.view.View
 import androidx.annotation.CallSuper
 import androidx.annotation.DrawableRes
 import androidx.annotation.LayoutRes
+import androidx.annotation.StyleRes
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDialogFragment
+import io.reactivex.Completable
 import io.reactivex.Observable
+import io.reactivex.Single
+import io.reactivex.subjects.CompletableSubject
 import io.reactivex.subjects.PublishSubject
-import net.maxsmr.commonutils.android.gui.fragments.actions.EMPTY_ACTION
-import net.maxsmr.commonutils.android.gui.fragments.actions.EmptyAction
+import io.reactivex.subjects.SingleSubject
 import net.maxsmr.commonutils.android.gui.fragments.actions.TypedAction
 
 const val ARG_TITLE = "AlertDialogFragment#ARG_TITLE"
 const val ARG_MESSAGE = "AlertDialogFragment#ARG_MESSAGE"
+const val ARG_STYLE_RES_ID = "AlertDialogFragment#ARG_STYLE_RES_ID"
 const val ARG_ICON_RES_ID = "AlertDialogFragment#ARG_ICON_RES_ID"
+const val ARG_BACKGROUND_RES_ID = "AlertDialogFragment#ARG_BACKGROUND_RES_ID"
 const val ARG_CUSTOM_VIEW_RES_ID = "AlertDialogFragment#ARG_CUSTOM_VIEW_RES_ID"
 const val ARG_CANCELABLE = "AlertDialogFragment#ARG_CANCELABLE"
 const val ARG_BUTTON_POSITIVE = "AlertDialogFragment#ARG_BUTTON_OK"
@@ -31,12 +36,11 @@ const val ARG_BUTTON_NEUTRAL = "AlertDialogFragment#ARG_BUTTON_NEUTRAL"
  */
 open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogInterface.OnClickListener {
 
-    protected val createdSubject = PublishSubject.create<TypedAction<D>>()
+    protected val createdSubject = SingleSubject.create<TypedAction<D>>()
     protected val buttonClickSubject = PublishSubject.create<TypedAction<Int>>()
     protected val keySubject = PublishSubject.create<KeyAction>()
-    protected val cancelSubject = PublishSubject.create<EmptyAction>()
-    protected val dismissSubject = PublishSubject.create<EmptyAction>()
-
+    protected val cancelSubject = CompletableSubject.create()
+    protected val dismissSubject = CompletableSubject.create()
     /**
      * initialized after onCreate
      */
@@ -81,12 +85,12 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
 
     override fun onDismiss(dialog: DialogInterface) {
         super.onDismiss(dialog)
-        dismissSubject.onNext(EMPTY_ACTION)
+        dismissSubject.onComplete()
     }
 
     override fun onCancel(dialog: DialogInterface) {
         super.onCancel(dialog)
-        cancelSubject.onNext(EMPTY_ACTION)
+        cancelSubject.onComplete()
     }
 
     @CallSuper
@@ -94,29 +98,38 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
         buttonClickSubject.onNext(TypedAction(which))
     }
 
-    fun createdObservable(): Observable<TypedAction<D>> = createdSubject.hide()
+    fun createdSingle(): Single<TypedAction<D>> = createdSubject.hide()
 
     fun buttonClickObservable(): Observable<TypedAction<Int>> = buttonClickSubject.hide()
 
     fun keyActionObservable(): Observable<KeyAction> = keySubject.hide()
 
-    fun cancelObservable(): Observable<EmptyAction> = cancelSubject.hide()
+    fun cancelCompletable(): Completable = cancelSubject.hide()
 
-    fun dismissObservable(): Observable<EmptyAction> = dismissSubject.hide()
+    fun dismissCompletable(): Completable = dismissSubject.hide()
 
     protected open fun shouldBeCancelable() = args.getBoolean(ARG_CANCELABLE, true)
 
-    /** here you can setup your views  */
     @CallSuper
     protected open fun onDialogCreated(dialog: D) {
+        setupDialog(dialog)
+        createdSubject.onSuccess(TypedAction(dialog))
+    }
+
+    protected open fun setupDialog(dialog: D) {
+        args.getInt(ARG_BACKGROUND_RES_ID).let {
+            if (it != 0) {
+                dialog.window?.setBackgroundDrawableResource(it)
+            }
+        }
         // not working for dialog when wrapped in fragment, so call it here
         isCancelable = shouldBeCancelable()
-        createdSubject.onNext(TypedAction(dialog))
     }
 
     /** override if want to create own [AlertDialog.Builder]  */
     protected open fun createBuilder(args: Bundle): AlertDialog.Builder {
-        val builder = AlertDialog.Builder(requireContext())
+        val styleResId = args.getInt(ARG_STYLE_RES_ID)
+        val builder = if (styleResId == 0) AlertDialog.Builder(requireContext()) else AlertDialog.Builder(requireContext(), styleResId)
         builder.setTitle(args.getString(ARG_TITLE))
         if (args.containsKey(ARG_ICON_RES_ID)) {
             builder.setIcon(args.getInt(ARG_ICON_RES_ID))
@@ -150,8 +163,12 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
 
         protected var title: String? = null
         protected var message: String? = null
+        @StyleRes
+        protected var styleResId = 0
         @DrawableRes
         protected var iconResId = 0
+        @DrawableRes
+        protected var backgroundResId = 0
         @LayoutRes
         protected var customViewResId = 0
         protected var cancelable = true
@@ -169,12 +186,22 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             return this
         }
 
-        fun setIconResId(iconResId: Int): Builder<*> {
+        fun setStyleResId(@StyleRes styleResId: Int): Builder<*> {
+            this.styleResId = styleResId
+            return this
+        }
+
+        fun setIconResId(@DrawableRes iconResId: Int): Builder<*> {
             this.iconResId = iconResId
             return this
         }
 
-        fun setCustomView(customViewResId: Int): Builder<*> {
+        fun setBackgroundResId(@DrawableRes backgroundResId: Int): Builder<*> {
+            this.backgroundResId = backgroundResId
+            return this
+        }
+
+        fun setCustomView(@LayoutRes customViewResId: Int): Builder<*> {
             this.customViewResId = customViewResId
             return this
         }
@@ -199,8 +226,14 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             if (message != null) {
                 args.putString(ARG_MESSAGE, message)
             }
+            if (styleResId != 0) {
+                args.putInt(ARG_STYLE_RES_ID, styleResId)
+            }
             if (iconResId != 0) {
                 args.putInt(ARG_ICON_RES_ID, iconResId)
+            }
+            if (backgroundResId != 0) {
+                args.putInt(ARG_BACKGROUND_RES_ID, backgroundResId)
             }
             if (customViewResId != 0) {
                 args.putInt(ARG_CUSTOM_VIEW_RES_ID, customViewResId)

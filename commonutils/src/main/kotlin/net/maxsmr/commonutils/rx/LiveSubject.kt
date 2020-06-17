@@ -17,7 +17,10 @@ import io.reactivex.subjects.Subject
  * Цель: иметь возможность подписаться из View на единоразовые события от ViewModel без
  * необходимости отписываться вручную.
  */
-class LiveSubject<T>(subjectType: SubjectType = SubjectType.PUBLISH) {
+class LiveSubject<T>(
+        private val observingState: Lifecycle.State = Lifecycle.State.STARTED,
+        subjectType: SubjectType = SubjectType.PUBLISH
+) {
 
     private val subject: Subject<T> = subjectType.createSubject()
 
@@ -27,11 +30,27 @@ class LiveSubject<T>(subjectType: SubjectType = SubjectType.PUBLISH) {
         subject.onNext(event)
     }
 
-    fun subscribe(owner: LifecycleOwner, onNext: (T) -> Unit) {
+    @JvmOverloads
+    fun subscribe(owner: LifecycleOwner, emitOnce: Boolean = false, onNext: (T) -> Unit) {
         if (observers.containsKey(owner)) return //owner уже подписан
-        val disposeObserver = DisposeObserver(owner, subject.subscribe { onNext(it) })
+        val disposeObserver = DisposeObserver(owner, subject
+                .filter { owner.lifecycle.currentState.isAtLeast(observingState) }
+                .doOnNext {
+                    onNext(it)
+                }
+                .doAfterNext {
+                    if (emitOnce) {
+                        unsubscribe(owner)
+                    }
+                }
+                .subscribe()
+        )
         owner.lifecycle.addObserver(disposeObserver)
         observers[owner] = disposeObserver
+    }
+
+    fun unsubscribe(owner: LifecycleOwner) {
+        observers[owner]?.dispose()
     }
 
     enum class SubjectType {

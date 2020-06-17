@@ -2,6 +2,7 @@ package net.maxsmr.commonutils.android.gui.fragments.dialogs.holder
 
 import android.app.Dialog
 import android.text.TextUtils
+import android.util.Log
 import androidx.annotation.CallSuper
 import androidx.annotation.MainThread
 import androidx.fragment.app.DialogFragment
@@ -11,7 +12,10 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
+import io.reactivex.Completable
+import io.reactivex.Maybe
 import io.reactivex.Observable
+import io.reactivex.Single
 import io.reactivex.functions.Predicate
 import io.reactivex.subjects.BehaviorSubject
 import net.maxsmr.commonutils.android.gui.fragments.actions.EmptyAction
@@ -19,8 +23,7 @@ import net.maxsmr.commonutils.android.gui.fragments.actions.TypedAction
 import net.maxsmr.commonutils.android.gui.fragments.dialogs.TypedDialogFragment
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.rx.LiveObservable
-import net.maxsmr.commonutils.rx.toLive
+import net.maxsmr.commonutils.rx.*
 import org.jetbrains.annotations.Nullable
 
 val logger: BaseLogger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("DialogFragmentsHolder")
@@ -41,7 +44,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
         checkTags()
     }
 
-    private val listenerSubject: BehaviorSubject<DialogFragment> = BehaviorSubject.create()
+    private val showDialogSubject: BehaviorSubject<DialogFragment> = BehaviorSubject.create()
 
     val showingFragments: List<DialogFragment> get() = activeFragments.filter { it.isAdded }
 
@@ -130,36 +133,35 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
 
     private var fragmentManager: FragmentManager? = null
         set(value) {
-            field = value
-            if (value != null) {
-                restoreDialogsFromFragmentManager()
-                handleTargetFragmentsToHide()
-                handleTargetFragmentsToShow()
-            } else {
-                if (lastLifecycleEvent != Lifecycle.Event.ON_DESTROY) {
-                    // if it's happening onDestroy - don't hide and remember those tags
-                    hideActive()
+            if (field != value) {
+                field = value
+                if (value != null) {
+                    restoreDialogsFromFragmentManager()
+                    handleTargetFragmentsToHide()
+                    handleTargetFragmentsToShow()
                 } else {
-                    activeFragments.clear()
+                    if (lastLifecycleEvent != Lifecycle.Event.ON_DESTROY) {
+                        hideActive()
+                    } else {
+                        // if it's happening onDestroy - don't hide and remember those tags
+                        activeFragments.clear()
+                    }
                 }
             }
         }
-
 
     /**
      * @param tag тэг, с которым был стартован диалог, может быть пустым
      * @param eventsMapper функция, извлекающая из диалога указанного типа требуемый Observable, эмитящий эвенты
      * @return [LiveObservable] с конкретным типом эвента с автоматической отпиской в onDestroy
      */
-    fun <T, D : DialogFragment> events(
+    fun <T, D : DialogFragment> eventsObservable(
             tag: String? = null,
             dialogClass: Class<D>,
             eventsFilter: Predicate<T>? = null,
             eventsMapper: (D) -> Observable<T>
     ): LiveObservable<T> =
-            listenerSubject
-                    .ofType(dialogClass) // отфильтровали по целевому типу диалога
-                    .filter { (tag.isNullOrEmpty() || it.tag == tag) }
+            showDialogEvents(tag, dialogClass)
                     .switchMap { eventsMapper(it) } // целевой observable из диалога
                     .filter {
                         // данные, выбрасываемые из него, удовлетворяют условию
@@ -167,13 +169,73 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                     }
                     .toLive()
 
+    // FIXME not working
+    fun <T, D : DialogFragment> eventsSingle(
+            tag: String? = null,
+            dialogClass: Class<D>,
+            eventsFilter: Predicate<T>? = null,
+            eventsMapper: (D) -> Single<T>
+    ): LiveSingle<T> =
+            Single.fromObservable(showDialogEvents(tag, dialogClass)
+                    .switchMap { dialog ->
+                        eventsMapper(dialog).toObservable()
+                    }
+                    .filter {
+                        eventsFilter?.test(it) ?: true
+                    })
+                    .toLive()
+
+    fun <T, D : DialogFragment> eventsMaybe(
+            tag: String? = null,
+            dialogClass: Class<D>,
+            eventsFilter: Predicate<T>? = null,
+            eventsMapper: (D) -> Maybe<T>
+    ): LiveMaybe<T> =
+            showDialogEvents(tag, dialogClass)
+                    .switchMap { dialog ->
+                        eventsMapper(dialog).toObservable()
+                    }
+                    .filter {
+                        eventsFilter?.test(it) ?: true
+                    }
+                    .firstElement()
+                    .toLive()
+
+    // FIXME not working
+    fun <D : DialogFragment> eventsCompletable(
+            tag: String? = null,
+            dialogClass: Class<D>,
+            eventsMapper: (D) -> Completable
+    ): LiveCompletable {
+        return showDialogEvents(tag, dialogClass)
+                .switchMap { dialog ->
+                    eventsMapper(dialog).andThen(Observable.just(EmptyAction))
+                }
+                .ignoreElements()
+                .toLive()
+    }
+
+
     @Suppress("UNCHECKED_CAST")
-    fun <D : Dialog> createdEvents(tag: String? = null): LiveObservable<TypedAction<D>> =
-            events(
+    @JvmOverloads
+    fun <D : Dialog> createdEventsOnce(tag: String? = null, eventsFilter: Predicate<TypedAction<D>>? = null): LiveSingle<TypedAction<D>> =
+            eventsSingle(
                     tag,
-                    TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>
+                    TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>,
+                    eventsFilter
             ) {
-                it.createdObservable()
+                it.createdSingle()
+            }
+
+    @Suppress("UNCHECKED_CAST")
+    @JvmOverloads
+    fun <D : Dialog> createdEvents(tag: String? = null, eventsFilter: Predicate<TypedAction<D>>? = null): LiveObservable<TypedAction<D>> =
+            eventsObservable(
+                    tag,
+                    TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>,
+                    eventsFilter
+            ) {
+                it.createdSingle().toObservable()
             }
 
     /**
@@ -184,7 +246,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
      * пустой список, если наблюдаем за всеми
      */
     fun buttonClickEvents(tag: String? = null, vararg buttons: Int): LiveObservable<TypedAction<Int>> =
-            events(
+            eventsObservable(
                     tag,
                     TypedDialogFragment::class.java,
                     Predicate {
@@ -202,7 +264,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     fun keyActionEvents(
             tag: String? = null, keyEventFilter: Predicate<TypedDialogFragment.KeyAction>
     ): LiveObservable<TypedDialogFragment.KeyAction> =
-            events(
+            eventsObservable(
                     tag,
                     TypedDialogFragment::class.java,
                     keyEventFilter
@@ -210,20 +272,43 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                 it.keyActionObservable()
             }
 
-    fun dismissEvents(tag: String? = null): LiveObservable<EmptyAction> =
-            events(
+    fun dismissEventsOnce(tag: String? = null): LiveCompletable =
+            eventsCompletable(
                     tag,
                     TypedDialogFragment::class.java
             ) {
-                it.dismissObservable()
+                it.dismissCompletable()
+            }
+
+    fun dismissEvents(tag: String? = null): LiveObservable<EmptyAction> =
+            eventsObservable(
+                    tag,
+                    TypedDialogFragment::class.java
+            ) { fragment ->
+                fragment.dismissCompletable().andThen(Observable.just(EmptyAction))
+                // то же самое по смыслу:
+//                Observable.create<EmptyAction> {
+//                    fragment.dismissCompletable().doOnComplete {
+//                                it.onNext(EMPTY_ACTION)
+//                            }
+//                            .subscribe()
+//                }
+            }
+
+    fun cancelEventsOnce(tag: String? = null): LiveCompletable =
+            eventsCompletable(
+                    tag,
+                    TypedDialogFragment::class.java
+            ) {
+                it.cancelCompletable()
             }
 
     fun cancelEvents(tag: String? = null): LiveObservable<EmptyAction> =
-            events(
+            eventsObservable(
                     tag,
                     TypedDialogFragment::class.java
             ) {
-                it.cancelObservable()
+                it.cancelCompletable().andThen(Observable.just(EmptyAction))
             }
 
     /**
@@ -446,17 +531,19 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
 
     protected open fun cleanUp(isDestroyed: Boolean = true) {
         lastLifecycleEvent = if (isDestroyed) Lifecycle.Event.ON_DESTROY else Lifecycle.Event.ON_ANY
-        detachOwner()
+        detachCurrentOwner()
     }
 
     private fun attachOwner(owner: LifecycleOwner, fragmentManager: FragmentManager) {
-        detachOwner()
-        owner.lifecycle.addObserver(this)
-        this.currentOwner = owner
+        if (currentOwner != owner) {
+            detachCurrentOwner()
+            owner.lifecycle.addObserver(this)
+            this.currentOwner = owner
+        }
         this.fragmentManager = fragmentManager
     }
 
-    private fun detachOwner() {
+    private fun detachCurrentOwner() {
         currentOwner?.lifecycle?.removeObserver(this)
         currentOwner = null
         fragmentManager = null
@@ -468,14 +555,22 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
         with(currentOwner) {
             checkNotNull(this) { "LifecycleOwner is not attached" }
             if (forFragment is TypedDialogFragment<*>) {
-                dismissEvents(forFragment.tag).subscribe(this) {
+                dismissEvents(forFragment.tag).subscribe(this, true) {
                     onDialogDismiss(forFragment)
                 }
             }
             onSetOtherEventListener(forFragment, this)
         }
-        listenerSubject.onNext(forFragment)
+        showDialogSubject.onNext(forFragment)
     }
+
+    private fun <D : DialogFragment> showDialogEvents(
+            tag: String? = null,
+            dialogClass: Class<D>
+    ): Observable<D> =
+            showDialogSubject
+                    .ofType(dialogClass) // отфильтровали по целевому типу диалога
+                    .filter { (tag.isNullOrEmpty() || it.tag == tag) } // при пустом тэге - все; или если совпадает
 
     private fun checkTags() {
         var checkResult = allowedTags.isEmpty()

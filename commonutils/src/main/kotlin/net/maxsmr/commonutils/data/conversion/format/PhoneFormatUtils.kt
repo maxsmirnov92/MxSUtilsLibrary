@@ -7,13 +7,14 @@ import android.widget.TextView
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.validation.isRusPhoneNumberValid
 import ru.tinkoff.decoro.MaskImpl
-import ru.tinkoff.decoro.parser.UnderscoreDigitSlotsParser
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 
-const val DEFAULT_RUS_PHONE_MASK = "+7 (___) ___ __ __"
-const val DEFAULT_PHONE_LENGTH = 12
+const val RUS_PHONE_MASK_DEFAULT = "+7 (___) ___ __ __"
+const val PHONE_LENGTH_CLEAR = 10
+const val PHONE_LENGTH_SEVEN_OR_EIGHT = PHONE_LENGTH_CLEAR + 1
+const val PHONE_LENGTH_PLUS_SEVEN = PHONE_LENGTH_CLEAR + 2
 
-val DEFAULT_RUS_PHONE_MASK_IMPL: MaskImpl = createPhoneMask()
+val RUS_PHONE_MASK_IMPL_DEFAULT: MaskImpl = createDefaultPhoneMask()
 private val REG_EX_PHONE_MASK: Regex = Regex("([0-9]|\\+)")
 
 @JvmOverloads
@@ -55,6 +56,17 @@ fun normalizePhoneNumberRemovePlus(phoneNumber: CharSequence): String =
         normalizePhoneNumber(phoneNumber).trim('+')
 
 /**
+ * @return ожидаемая длина телефона в зав-ти от его префикса
+ */
+fun getPhoneNumberLengthByPrefix(phoneNumber: CharSequence): Int =
+        when {
+            phoneNumber.startsWith("+7") -> PHONE_LENGTH_PLUS_SEVEN
+            phoneNumber.startsWith("8") || phoneNumber.startsWith("7") -> PHONE_LENGTH_SEVEN_OR_EIGHT
+            else -> PHONE_LENGTH_CLEAR
+        }
+
+
+/**
  * Убрать символы, которые несовместимы
  * с inputType phone
  */
@@ -68,7 +80,7 @@ fun formatPhoneNumber(
 ): String {
     var phoneFormatted = normalizePhoneNumber(phoneNumber)
 
-    return if (phoneFormatted.startsWith("+7") && phoneFormatted.length == DEFAULT_PHONE_LENGTH) {
+    return if (phoneFormatted.startsWith("+7") && phoneFormatted.length == PHONE_LENGTH_PLUS_SEVEN) {
         if (withMask) {
             phoneFormatted = phoneFormatted.replaceRange(rangeToMask, "*".repeat(rangeToMask.last - rangeToMask.first + 1))
         }
@@ -90,13 +102,13 @@ fun formatPhoneNumber(
 fun EditText.formatPhone(
         current: Editable?,
         watcher: MaskFormatWatcher,
-        mask: MaskImpl = DEFAULT_RUS_PHONE_MASK_IMPL
+        mask: MaskImpl = RUS_PHONE_MASK_IMPL_DEFAULT
 ) {
     // watcher переиспользуется
     current?.let {
         if (current.length == 1 && current[0].toString().matches(REG_EX_PHONE_MASK)) {
             setPhoneHead(current)
-            applyMask(this.text, watcher, mask)
+            applyToMask(this.text, mask, watcher)
         } else if (current.isEmpty()) {
             EMPTY_MASK.clear()
             watcher.setMask(EMPTY_MASK)
@@ -122,17 +134,14 @@ fun TextView.setPhoneFormattedText(
         text: CharSequence,
         applyWatcher: Boolean = true,
         isDistinct: Boolean = true
-) = setFormattedText(text, DEFAULT_RUS_PHONE_MASK_IMPL, applyWatcher, isDistinct) {
+) = setFormattedText(text, RUS_PHONE_MASK_IMPL_DEFAULT, applyWatcher, isDistinct) {
     isRusPhoneNumberValid(it)
 }
 
 @JvmOverloads
-fun createPhoneMask(phoneMask: String = DEFAULT_RUS_PHONE_MASK): MaskImpl {
-    val slots = UnderscoreDigitSlotsParser().parseSlots(phoneMask)
-    return MaskImpl.createTerminated(slots)
-}
+fun createDefaultPhoneMask(isTerminated: Boolean = true, hideHardcodedHead: Boolean = false)
+        = createDigitsMask(RUS_PHONE_MASK_DEFAULT, isTerminated, hideHardcodedHead)
 
 @JvmOverloads
-fun createPhoneWatcher(phoneMask: String = DEFAULT_RUS_PHONE_MASK): MaskFormatWatcher {
-    return MaskFormatWatcher(createPhoneMask(phoneMask))
-}
+fun createDefaultPhoneWatcher(isTerminated: Boolean = true, hideHardcodedHead: Boolean = false)
+        = createDigitsWatcher(RUS_PHONE_MASK_DEFAULT, isTerminated, hideHardcodedHead)

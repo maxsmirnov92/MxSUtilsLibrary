@@ -9,6 +9,8 @@ import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.text.isEmpty
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import org.json.JSONArray
+import org.json.JSONObject
 import java.lang.reflect.Type
 import java.util.*
 
@@ -67,9 +69,13 @@ fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, type: Type): T? {
  * Преобразует объект [obj] указанного типа [T]
  * в строку, используя [gson]
  */
-fun <T> toJsonString(gson: Gson, obj: T): String {
+fun <T> toJsonString(
+        gson: Gson,
+        obj: T,
+        type: Type
+): String {
     try {
-        return gson.toJson(obj)
+        return gson.toJson(obj, type)
     } catch (e: JsonParseException) {
         logger.e("an JsonParseException occurred during toJson(): " + e.message, e)
     }
@@ -80,11 +86,15 @@ fun <T> toJsonString(gson: Gson, obj: T): String {
  * Преобразует коллекцию объектов [listOfObjects] указанного типа [T]
  * в маппинг: объект - json-строка, используя [gson]
  */
-fun <T> toJsonStringMap(gson: Gson, listOfObjects: Collection<T>?): Map<T, String> {
+fun <T> toJsonStringMap(
+        gson: Gson,
+        listOfObjects: Collection<T>?,
+        type: Type
+): Map<T, String> {
     val result: MutableMap<T, String> = LinkedHashMap()
     if (listOfObjects != null) {
         for (o in listOfObjects) {
-            result[o] = toJsonString(gson, o)
+            result[o] = toJsonString(gson, o, type)
         }
     }
     return result
@@ -135,6 +145,8 @@ fun <E : JsonElement> getJsonElementAs(jsonElement: JsonElement?, clazz: Class<E
                 result = jsonElement as E
             jsonElement is JsonArray && JsonArray::class.java.isAssignableFrom(clazz) ->
                 result = jsonElement as E
+            JsonElement::class.java.isAssignableFrom(clazz) ->
+                result = jsonElement as E
         }
     }
     return result
@@ -183,5 +195,52 @@ fun <J : JsonElement?> asJsonElement(
         element as J
     } else {
         null
+    }
+}
+
+fun convertJSONObject(obj: Any?): JsonElement {
+    var value: JsonElement = JsonNull.INSTANCE
+    when (obj) {
+        is JSONObject -> {
+            value = JsonObject().apply {
+                obj.keys().forEach { key ->
+                    obj.get(key)?.let {
+                        add(key, convertJSONObject(it))
+                    }
+                }
+            }
+        }
+        is JSONArray -> {
+            value = JsonArray().apply {
+                for (i in 0 until obj.length()) {
+                    add(convertJSONObject(obj.get(i)))
+                }
+            }
+        }
+        is Boolean -> {
+            value = JsonPrimitive(obj)
+        }
+        is Number -> {
+            value = JsonPrimitive(obj)
+        }
+        is String -> {
+            value = JsonPrimitive(obj)
+        }
+        is Char -> {
+            value = JsonPrimitive(obj)
+        }
+    }
+    return value
+}
+
+fun JsonObject.mergeJsonObject(fromAnother: JsonObject) {
+    fromAnother.keySet().forEach {
+        add(it, fromAnother[it])
+    }
+}
+
+fun JsonArray.mergeJsonArray(fromAnother: JsonArray) {
+    for (i in 0 until fromAnother.size()) {
+        add(fromAnother.get(i))
     }
 }

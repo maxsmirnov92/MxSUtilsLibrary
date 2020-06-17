@@ -10,26 +10,26 @@ import com.google.gson.JsonSerializer;
 
 import java.lang.reflect.Type;
 
-import static net.maxsmr.commonutils.data.gson.GsonUtilsKt.getJsonElementAs;
+import static net.maxsmr.commonutils.data.gson.GsonUtilsKt.getJsonElement;
 import static net.maxsmr.commonutils.data.gson.GsonUtilsKt.getJsonPrimitive;
 
 public class PropertyBasedAdapter<T> implements JsonSerializer<T>, JsonDeserializer<T> {
 
-    private static final String CLASS_META_KEY = "CLASS_META_KEY";
+    private static final String KEY_SOURCE = "SOURCE";
+    private static final String KEY_CLASS_META = "CLASS_META";
 
     @Override
     public JsonElement serialize(T src, Type typeOfSrc, JsonSerializationContext context) {
         JsonElement jsonElem = context.serialize(src, src.getClass());
-        JsonObject jsonObject = getJsonElementAs(jsonElem, JsonObject.class);
-        if (jsonObject != null) {
-            jsonObject.addProperty(CLASS_META_KEY, src.getClass().getCanonicalName());
-        }
-        return jsonElem;
+        JsonObject object = new JsonObject();
+        object.add(KEY_SOURCE, jsonElem);
+        object.addProperty(KEY_CLASS_META, src.getClass().getCanonicalName());
+        return object;
     }
 
     @Override
     public T deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
-        String className = getJsonPrimitive(json, CLASS_META_KEY, String.class);
+        String className = getJsonPrimitive(json, KEY_CLASS_META, String.class);
         if (className != null) {
             Class<?> clz;
             try {
@@ -37,9 +37,8 @@ public class PropertyBasedAdapter<T> implements JsonSerializer<T>, JsonDeseriali
             } catch (ClassNotFoundException e) {
                 throw new JsonParseException(e);
             }
-            return context.deserialize(json, clz);
+            return context.deserialize(getJsonElement(json, KEY_SOURCE, JsonElement.class), clz);
         }
-        throw new JsonParseException(CLASS_META_KEY + " not specified");
+        throw new JsonParseException(KEY_CLASS_META + " not specified");
     }
-
 }

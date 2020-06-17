@@ -1,32 +1,33 @@
 package net.maxsmr.commonutils.rx
 
 import androidx.lifecycle.Lifecycle
-import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
-import androidx.lifecycle.OnLifecycleEvent
 import io.reactivex.Observable
 import io.reactivex.disposables.Disposable
 
 
 /**
- * Представляет собой lifecycle-aware Observable.
+ * Представляет собой lifecycle-aware [Observable].
  *
  * Цель: иметь возможность подписаться из View на единоразовые события от ViewModel без
  * необходимости отписываться вручную.
  *
- * @param observable source Rx Observable
  * @param observingState минимальное состояние ЖЦ LifecycleOwner, при котором он должен получать эвенты
  */
 class LiveObservable<T>(
         private val observable: Observable<T>,
-        private val observingState: Lifecycle.State = Lifecycle.State.STARTED
-) {
+        observingState: Lifecycle.State = Lifecycle.State.STARTED
+): BaseLiveWrapper(observingState) {
 
-    private val observers: MutableMap<LifecycleOwner, DisposeObserver> = mutableMapOf()
+    @JvmOverloads
+    fun subscribe(owner: LifecycleOwner, emitOnce: Boolean = false, onNext: (T) -> Unit) {
+        registerDisposable(owner) {
+            createDisposable(owner, emitOnce, onNext)
+        }
+    }
 
-    fun subscribe(owner: LifecycleOwner, emitOnce: Boolean = true, onNext: (T) -> Unit) {
-        if (observers.containsKey(owner)) return //owner уже подписан
-        val disposeObserver = DisposeObserver(owner, observable
+    private fun createDisposable(owner: LifecycleOwner, emitOnce: Boolean, onNext: (T) -> Unit): Disposable {
+        return observable
                 .filter { owner.lifecycle.currentState.isAtLeast(observingState) }
                 .doOnNext {
                     onNext(it)
@@ -37,27 +38,6 @@ class LiveObservable<T>(
                     }
                 }
                 .subscribe()
-        )
-        owner.lifecycle.addObserver(disposeObserver)
-        observers[owner] = disposeObserver
-    }
-
-    fun unsubscribe(owner: LifecycleOwner) {
-        observers[owner]?.dispose()
-    }
-
-    private inner class DisposeObserver(
-            private val owner: LifecycleOwner,
-            private val disposable: Disposable
-    ) : LifecycleObserver {
-
-        @Suppress("unused")
-        @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
-        fun dispose() {
-            disposable.dispose()
-            owner.lifecycle.removeObserver(this)
-            observers.remove(owner)
-        }
     }
 }
 

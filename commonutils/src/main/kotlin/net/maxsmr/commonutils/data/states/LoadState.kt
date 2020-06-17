@@ -7,6 +7,11 @@ import java.io.Serializable
  */
 interface ILoadState<D> : Serializable {
 
+    /**
+     * Флаг о том, что загрузка завершилась хотя бы один раз с любым результатом
+     */
+    var wasLoaded: Boolean
+
     var data: D?
 
     var error: Throwable?
@@ -16,8 +21,9 @@ interface ILoadState<D> : Serializable {
     fun successLoad(result: D): Boolean
     fun errorLoad(error: Throwable): Boolean
 
-    fun isSuccessLoad() = !_isLoading() && error == null
-    fun isErrorLoad() = !_isLoading() && error != null
+    fun isSuccessLoad(dataValidator: ((D?) -> Boolean)? = {it != null}) = !_isLoading() && error == null
+            && (dataValidator == null || dataValidator(data))
+    fun hasData() = data != null
 }
 
 /**
@@ -37,6 +43,8 @@ data class LoadState<D>(
         override var error: Throwable? = null
 ): ILoadState<D> {
 
+    override var wasLoaded: Boolean = false
+
     override fun _isLoading(): Boolean = isLoading
 
     override fun preLoad(): Boolean {
@@ -54,6 +62,10 @@ data class LoadState<D>(
 
     override fun successLoad(result: D): Boolean {
         var hasChanged = false
+        if (!wasLoaded) {
+            wasLoaded = true
+            hasChanged = true
+        }
         if (isLoading) {
             isLoading = false
             hasChanged = true
@@ -71,6 +83,10 @@ data class LoadState<D>(
 
     override fun errorLoad(error: Throwable): Boolean {
         var hasChanged = false
+        if (!wasLoaded) {
+            wasLoaded = true
+            hasChanged = true
+        }
         if (isLoading) {
             isLoading = false
             hasChanged = true
@@ -135,6 +151,8 @@ data class PgnLoadState<D>(
         override var error: Throwable? = null
 ) : IPgnLoadState<D> {
 
+    override var wasLoaded: Boolean = false
+
     override fun _isLoading(): Boolean = loading.state.isLoading()
 
     override fun preLoad(): Boolean {
@@ -167,6 +185,10 @@ data class PgnLoadState<D>(
 
     override fun successLoad(result: D): Boolean {
         var hasChanged = false
+        if (!wasLoaded) {
+            wasLoaded = true
+            hasChanged = true
+        }
         val newLoadingState = loading.copy(state = PgnState.STANDBY)
         if (loading != newLoadingState) {
             loading = newLoadingState
@@ -185,6 +207,10 @@ data class PgnLoadState<D>(
 
     override fun errorLoad(error: Throwable): Boolean {
         var hasChanged = false
+        if (!wasLoaded) {
+            wasLoaded = true
+            hasChanged = true
+        }
         val newLoadingState = loading.copy(state = PgnState.STANDBY)
         if (loading != newLoadingState) {
             loading = newLoadingState
@@ -211,3 +237,8 @@ enum class PgnState {
 
     fun isLoading() = this == MAIN_LOAD || this == PGN_LOAD
 }
+
+/**
+ * Пустые данные, например, для случая результата Completable
+ */
+object EmptyData

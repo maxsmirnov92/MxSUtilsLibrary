@@ -1,10 +1,7 @@
 package net.maxsmr.commonutils.android
 
 import android.app.ActivityManager
-import android.content.ClipData
-import android.content.ClipboardManager
-import android.content.Context
-import android.content.Intent
+import android.content.*
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
@@ -13,6 +10,8 @@ import android.os.StrictMode
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.WindowManager
+import androidx.fragment.app.FragmentActivity
+import androidx.lifecycle.LifecycleOwner
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager
 import net.maxsmr.commonutils.data.*
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
@@ -233,6 +232,14 @@ fun isSelfAppInBackground(context: Context): Boolean {
             ?: throw RuntimeException("Self package ${context.packageName} not found")
 }
 
+fun isSelfAppInBackgroundNoThrow(context: Context): Boolean? {
+    return try {
+        isSelfAppInBackground(context)
+    } catch (e: RuntimeException) {
+        null
+    }
+}
+
 /**
  * @return null if not found
  */
@@ -404,6 +411,53 @@ fun getScreenType(context: Context): DeviceType {
 
 fun isTabletUI(con: Context): Boolean {
     return getScreenType(con) == DeviceType.TABLET
+}
+
+@JvmOverloads
+@Throws(RuntimeException::class)
+fun Context.fragmentActivity(maxDepth: Int = 20): FragmentActivity {
+    require(maxDepth > 0) { "Incorrect maxDepth: $maxDepth"}
+    var curContext = this
+    var depth = maxDepth
+    while (--depth > 0 && curContext !is FragmentActivity) {
+        curContext = (curContext as ContextWrapper).baseContext
+    }
+    return if(curContext is FragmentActivity) {
+        curContext
+    }
+    else {
+        throw RuntimeException("FragmentActivity not found")
+    }
+}
+
+@JvmOverloads
+fun Context.fragmentActivityNoThrow(maxDepth: Int = 20): FragmentActivity? = try {
+    fragmentActivity(maxDepth)
+} catch (e: RuntimeException) {
+    null
+}
+
+@JvmOverloads
+@Throws(RuntimeException::class)
+fun Context.lifecycleOwner(maxDepth: Int = 20): LifecycleOwner {
+    require(maxDepth > 0) { "Incorrect maxDepth: $maxDepth"}
+    var curContext = this
+    var depth = maxDepth
+    while (--depth > 0 && curContext !is LifecycleOwner) {
+        curContext = (curContext as ContextWrapper).baseContext
+    }
+    return if (curContext is LifecycleOwner) {
+        curContext
+    } else {
+        throw RuntimeException("LifecycleOwner not found")
+    }
+}
+
+@JvmOverloads
+fun Context.lifecycleOwnerNoThrow(maxDepth: Int = 20): LifecycleOwner? = try {
+    lifecycleOwner(maxDepth)
+} catch (e: RuntimeException) {
+    null
 }
 
 enum class DeviceType {
