@@ -1,12 +1,5 @@
 package net.maxsmr.commonutils.data.conversion.format.decoro
 
-import ru.tinkoff.decoro.slots.PredefinedSlots
-
-@JvmField
-val HARDCODED_CHARS = listOf(
-        '#', '-', ' '
-)
-
 private val DIGITS_STAR = listOf(
         '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '*'
 )
@@ -43,7 +36,7 @@ val MASK_SNILS = listOf(
  */
 val MASK_NON_STRICT_PHONE_NUMBER = listOf(
         hardcodedPlusSlot(),
-        PredefinedSlots.digit(),
+        any(listOf('7')),
         hardcodedSpaceSlot(),
         hardcodedOpenBracketSlot(),
         any(DIGITS_STAR),

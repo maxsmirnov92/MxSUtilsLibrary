@@ -178,9 +178,8 @@ fun appendClickableImageTextView(
 /**
  * Убрать нижнее подчеркивание для текущего text
  */
-fun removeUnderlineTextView(view: TextView): CharSequence {
-    return setTextWithMovementMethod(view, removeUnderline(view.text))
-}
+fun removeUnderlineTextView(view: TextView): CharSequence =
+        setTextWithMovementMethod(view, removeUnderline(view.text))
 
 /**
  * Установить html текст в TextView
@@ -216,9 +215,8 @@ fun setTextWithCustomSpan(
         textView: TextView,
         text: CharSequence,
         spanInfos: Collection<SpanInfo>
-): CharSequence {
-    return setTextWithMovementMethod(textView, createCustomSpanText(text, spanInfos))
-}
+): CharSequence =
+        setTextWithMovementMethod(textView, createCustomSpanText(text, spanInfos))
 
 /**
  * @param text в строке аргументы с префиксами "^" будут заменены на [CharacterStyle]
@@ -228,9 +226,9 @@ fun setTextWithCustomSpanExpanded(
         textView: TextView,
         text: CharSequence,
         spanInfosMap: Map<SpanInfo, String>
-): CharSequence {
-    return setTextWithMovementMethod(textView, createCustomSpanTextExpanded(text, spanInfosMap))
-}
+): CharSequence =
+        setTextWithMovementMethod(textView, createCustomSpanTextExpanded(text, spanInfosMap))
+
 
 /**
  * Альтернатива [setLinkFromHtml], в котором в кач-ве [text]
@@ -242,9 +240,8 @@ fun setLinkableText(
         textView: TextView,
         text: CharSequence,
         spanInfosMap: Map<SpanInfo, String>
-): CharSequence {
-    return setTextWithMovementMethod(textView, createLinkableText(textView.context, text, spanInfosMap))
-}
+): CharSequence =
+        setTextWithMovementMethod(textView, createLinkableText(text, spanInfosMap))
 
 /**
  * Выставить [html] в кач-ве html текста, но для кликабельных сегментов оповещать о клике
@@ -254,10 +251,9 @@ fun replaceUrlSpans(
         textView: TextView,
         html: String,
         removeUnderlying: Boolean = true,
-        action: ((URLSpan) -> Unit)? = null
-): CharSequence {
-    return setTextWithMovementMethod(textView, replaceUrlSpans(textView.context, html, removeUnderlying, action))
-}
+        action: ((URLSpan) -> Boolean)? = null
+): CharSequence =
+        setTextWithMovementMethod(textView, replaceUrlSpansByClickableSpans(textView.context, html, removeUnderlying, action))
 
 /**
  * Установить текст с выделенным текстом
@@ -278,49 +274,29 @@ fun setTextWithSelection(
 fun setTextWithVisibility(
         view: TextView,
         text: CharSequence?,
-        distinct: Boolean = true
+        distinct: Boolean = true,
+        asString: Boolean = true
 ) {
     if (isEmpty(text)) {
         view.visibility = View.GONE
     } else {
-        setText(view, text, distinct)
+        setText(view, text, distinct, asString)
         view.visibility = View.VISIBLE
-    }
-}
-
-@JvmOverloads
-fun setText(
-        view: TextView,
-        text: CharSequence?,
-        distinct: Boolean = true,
-        setMovementMethod: Boolean = false
-) {
-    if (!distinct || view.text?.toString() != text.toString()) {
-        view.text = text
-    }
-    if (setMovementMethod) {
-        view.movementMethod = LinkMovementMethod.getInstance()
     }
 }
 
 fun setTextWithSelectionToEnd(
         edit: EditText,
         text: CharSequence,
-        distinct: Boolean = true
+        distinct: Boolean = true,
+        asString: Boolean = true
 ) {
-    setText(edit, text, distinct)
+    setText(edit, text, distinct, asString)
     // после возможных фильтров текст мог измениться
     setSelectionToEnd(edit)
 }
 
-fun setEditTextHintByError(on: TextInputLayout, hint: String = EMPTY_STRING) {
-    val et = on.editText
-    if (et != null) {
-        et.hint = if (isEmpty(on.error)) null else hint
-    }
-}
-
-fun setInputErrorTextColor(on: TextInputLayout?, color: Int) {
+fun setInputErrorTextColor(on: TextInputLayout, color: Int) {
     try {
         val view = ReflectionUtils.getFieldValue<TextView, TextInputLayout>(TextInputLayout::class.java, on, "mErrorView")
         view?.let {
@@ -332,35 +308,52 @@ fun setInputErrorTextColor(on: TextInputLayout?, color: Int) {
     }
 }
 
-fun setInputError(til: TextInputLayout, @StringRes messageResId: Int?, isChecked: Boolean = true) {
+@JvmOverloads
+fun setInputError(
+        til: TextInputLayout,
+        @StringRes messageResId: Int?,
+        errorEnabledByDefault: Boolean = false,
+        requestFocusIfError: Boolean = true,
+        distinct: Boolean = true
+) {
     val message = if (messageResId == null || messageResId == 0) {
         null
     } else {
         til.resources.getString(messageResId)
     }
-    setInputError(til, message, isChecked)
+    setInputError(til, message, errorEnabledByDefault, requestFocusIfError, distinct)
 }
 
+@JvmOverloads
 fun setInputError(
         til: TextInputLayout,
         message: CharSequence?,
-        noError: Boolean = true,
-        shouldRequestFocus: Boolean = true
+        errorEnabledByDefault: Boolean = false,
+        requestFocusIfError: Boolean = true,
+        distinct: Boolean = true
 ) {
-    if (til.error != message) {
-        til.isErrorEnabled = !noError || message != null
+    if (!distinct || til.error != message) {
+        val isErrorEnabled = errorEnabledByDefault || !isEmpty(message)
         til.error = message
+        til.isErrorEnabled = isErrorEnabled
         til.refreshDrawableState()
-        if (shouldRequestFocus && message != null) {
-            requestFocus(til.editText)
+        if (requestFocusIfError && isErrorEnabled) {
+            requestFocus(til)
         }
     }
 }
 
-fun clearInputError(on: TextInputLayout, force: Boolean = false) {
-    if (force || !isEmpty(on.error)) {
-        on.error = null
-        on.refreshDrawableState()
+fun clearInputError(til: TextInputLayout, force: Boolean = false) {
+    if (force || til.error != null) {
+        til.error = null
+        til.isErrorEnabled = false
+        til.refreshDrawableState()
+    }
+}
+
+fun setEditTextHintByError(on: TextInputLayout, hint: String = EMPTY_STRING) {
+    on.editText?.let {
+        it.hint = if (isEmpty(on.error)) null else hint
     }
 }
 
@@ -896,10 +889,151 @@ fun calculateMaxTextSize(
     return resultSize
 }
 
+/**
+ * @return relative coordinates to the parent
+ */
+fun calculateCoordsForChild(childView: View, parent: ViewGroup): Rect {
+    val offsetViewBounds = Rect();
+    childView.getDrawingRect(offsetViewBounds);
+    parent.offsetDescendantRectToMyCoords(childView, offsetViewBounds);
+    return offsetViewBounds
+}
+
+@JvmOverloads
+fun setTextDistinct(
+        view: TextView,
+        text: CharSequence?,
+        asString: Boolean = true
+) {
+    if (if (asString) view.text?.toString() != text.toString() else view.text != text) {
+        view.text = text
+    }
+}
+
+@JvmOverloads
+fun setText(
+        view: TextView,
+        text: CharSequence?,
+        distinct: Boolean = true,
+        asString: Boolean = true
+) {
+    if (!distinct) {
+        view.text = text
+    } else {
+        setTextDistinct(view, text, asString)
+    }
+}
+
+@JvmOverloads
+fun TextView.observePlaceholderOrLabelHint(
+        inputLayout: TextInputLayout?,
+        @StringRes placeholderTextResId: Int,
+        @StringRes labelTextResId: Int,
+        setHintFunc: ((CharSequence) -> Unit)? = null,
+        isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
+) = observePlaceholderOrLabelHint(inputLayout, context.getString(placeholderTextResId), context.getString(labelTextResId), setHintFunc, isForPlaceholderFunc)
+
+
+/**
+ * Меняет в динамике hint в зав-ти от текста
+ */
+@JvmOverloads
+fun TextView.observePlaceholderOrLabelHint(
+        inputLayout: TextInputLayout?,
+        placeholderText: CharSequence,
+        labelText: CharSequence,
+        setHintFunc: ((CharSequence) -> Unit)? = null,
+        isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
+): TextWatcher {
+    val listener = object : DefaultTextWatcher() {
+        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+            val text = text
+            val hint = if (isForPlaceholderFunc?.invoke(text)
+                            ?: TextUtils.isEmpty(text)) placeholderText else labelText
+            if (setHintFunc != null) {
+                setHintFunc.invoke(hint)
+            } else {
+                if (inputLayout != null) {
+                    inputLayout.hint = hint
+                } else {
+                    setHint(hint)
+                }
+            }
+        }
+    }
+    addTextChangedListener(listener)
+    return listener
+}
+
+@JvmOverloads
+fun TextView.setupPlaceholderOrLabelHint(
+        inputLayout: TextInputLayout?,
+        rule: RequiredFieldRule,
+        @StringRes placeholderTextResId: Int,
+        @StringRes labelTextResId: Int,
+        setHintFunc: ((CharSequence) -> Unit)? = null,
+        isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
+) = setupPlaceholderOrLabelHint(inputLayout, rule, context.getString(placeholderTextResId), context.getString(labelTextResId), setHintFunc, isForPlaceholderFunc)
+
+/**
+ * В зав-ти от правила [rule] выставляет hint разово или в динамике
+ * @param setHintFunc кастомная функция для выставления подсказки
+ */
+@JvmOverloads
+fun TextView.setupPlaceholderOrLabelHint(
+        inputLayout: TextInputLayout?,
+        rule: RequiredFieldRule,
+        placeholderText: CharSequence,
+        labelText: CharSequence,
+        setHintFunc: ((CharSequence) -> Unit)? = null,
+        isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
+) {
+    val hint: CharSequence
+    when (rule) {
+        RequiredFieldRule.NON_REQUIRED -> hint = labelText
+        RequiredFieldRule.REQUIRED_INIT -> hint = placeholderText
+        else -> {
+            val text = text
+            hint = if (isForPlaceholderFunc?.invoke(text)
+                            ?: TextUtils.isEmpty(text)) placeholderText else labelText
+            observePlaceholderOrLabelHint(inputLayout, placeholderText, labelText, setHintFunc, isForPlaceholderFunc)
+        }
+    }
+    if (setHintFunc != null) {
+        setHintFunc.invoke(hint)
+    } else {
+        if (inputLayout != null) {
+            inputLayout.hint = hint
+        } else {
+            setHint(hint)
+        }
+    }
+}
+
 private fun setTextWithMovementMethod(textView: TextView, text: CharSequence): CharSequence {
-    setText(textView, text, distinct = false, setMovementMethod = true)
+    textView.text = text
+    textView.movementMethod = LinkMovementMethod.getInstance()
     return text
 }
+
+enum class RequiredFieldRule {
+
+    /**
+     * Поле не является обязательным, используется labelText
+     */
+    NON_REQUIRED,
+
+    /**
+     * Поле является обязательным, но выставление (placeholder/label) происходит только при инициализации, не зависит от текста
+     */
+    REQUIRED_INIT,
+
+    /**
+     * Поле является обязательным, выставление происходит в зав-ти от текущего текста в поле
+     */
+    REQUIRED_DYNAMIC
+}
+
 
 class ProtectRangeInputFilter(private val startIndex: Int, private val endIndex: Int) : InputFilter {
 
@@ -954,23 +1088,5 @@ class EditTextKeyLimiter(private val et: EditText, private val linesLimit: Int) 
 
     init {
         require(linesLimit > 0) { "incorrect linesLimit: $linesLimit" }
-    }
-}
-
-/**
- * @param style использовать этот стиль
- * (последующие параметры для ClickableSpan игнорируется)
- */
-data class SpanInfo(
-        val startIndex: Int,
-        val endIndex: Int,
-        val style: CharacterStyle? = null,
-        val removeUnderlying: Boolean = false,
-        val flags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-        val clickAction: (() -> Unit)? = null
-) {
-
-    enum class SpanType {
-        CLICKABLE, URL
     }
 }

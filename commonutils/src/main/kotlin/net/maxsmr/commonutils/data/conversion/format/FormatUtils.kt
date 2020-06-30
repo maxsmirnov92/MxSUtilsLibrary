@@ -1,6 +1,7 @@
 package net.maxsmr.commonutils.data.conversion.format
 
 import android.widget.TextView
+import net.maxsmr.commonutils.android.gui.setText
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import ru.tinkoff.decoro.MaskImpl
 import ru.tinkoff.decoro.parser.UnderscoreDigitSlotsParser
@@ -19,6 +20,16 @@ fun clearText(text: CharSequence, excludedChars: Collection<Char>): String {
         result = result.replace(it.toString().toRegex(), "")
     }
     return result.toString()
+}
+
+/**
+ * @return неотформатированный [text] по исходной [mask]
+ */
+fun clearText(mask: MaskImpl, text: CharSequence): String {
+    val copyMask = MaskImpl(mask)
+    copyMask.clear()
+    copyMask.insertFront(text)
+    return copyMask.toUnformattedString()
 }
 
 /**
@@ -100,9 +111,7 @@ fun TextView.setFormattedText(
         val newText = formatText(currentText,
                 mask,
                 watcher)
-        if (!isDistinct || newText != this.text) {
-            this.text = newText
-        }
+        setText(this, newText, isDistinct)
         return watcher
     }
     return null

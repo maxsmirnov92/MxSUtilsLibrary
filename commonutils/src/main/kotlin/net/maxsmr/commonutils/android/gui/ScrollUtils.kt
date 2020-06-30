@@ -35,6 +35,7 @@ fun requestScrollOnScreen(view: View) =
  * Определяет возможность скролла у [RecyclerView] с [LinearLayoutManager]
  * @param isFromStart смотреть от начала
  */
+@JvmOverloads
 fun isScrollable(view: RecyclerView, isFromStart: Boolean = false): Boolean? {
     val layoutManager = view.layoutManager as? LinearLayoutManager ?: return null
     val adapter = view.adapter ?: return null
@@ -42,6 +43,7 @@ fun isScrollable(view: RecyclerView, isFromStart: Boolean = false): Boolean? {
             && (isFromStart.not() || layoutManager.findFirstCompletelyVisibleItemPosition() == 0)
 }
 
+@JvmOverloads
 fun setOnScrollChangesListener(
         view: RecyclerView,
         layoutManager: LinearLayoutManager,
@@ -88,31 +90,59 @@ fun setOnScrollChangesListener(view: NestedScrollView, listener: ((ScrollState) 
     }
 }
 
+@JvmOverloads
+fun scrollToView(
+        view: ScrollView,
+        activity: Activity?,
+        target: View,
+        isVertically: Boolean,
+        smoothScroll: Boolean = true
+) {
+    val x: Int
+    val y: Int
+    val coords = calculateCoordsForChild(target, view)
+    if (isVertically) {
+        x = 0
+        y = coords.top
+    } else {
+        x = coords.left
+        y = 0
+    }
+    scrollTo(view, activity, x, y, smoothScroll)
+}
+
 /**
  * Скролл в указанную позицию (x, y) [ScrollView]
  */
+@JvmOverloads
 fun scrollTo(
         view: ScrollView,
         activity: Activity?,
         x: Int,
         y: Int,
-        smoothScroll: Boolean = true
+        smoothScroll: Boolean = true,
+        changeFocus: Boolean = false
 ) {
-    // если не очистить текущий фокус,
-    // может не сработать
-    clearFocus(activity)
-    view.fullScroll(View.FOCUS_DOWN)
+    if (changeFocus) {
+        // если не очистить текущий фокус,
+        // может не сработать
+        clearFocus(activity)
+        view.fullScroll(View.FOCUS_DOWN)
+    }
     if (smoothScroll) {
         view.smoothScrollTo(x, y)
     } else {
         view.scrollTo(x, y)
     }
-    view.parent.requestChildFocus(view, view)
+    if (changeFocus) {
+        view.parent.requestChildFocus(view, view)
+    }
 }
 
 /**
  * Скролл в указанную позицию [RecyclerView]
  */
+@JvmOverloads
 fun scrollTo(
         view: RecyclerView,
         position: Int,
@@ -131,6 +161,7 @@ fun scrollTo(
  * При неполностью раскрытом состоянии [AppBarLayout]
  * прокрутить на указанный [offset] с анимацией или без
  */
+@JvmOverloads
 fun scrollByOffset(layout: AppBarLayout, offset: Int, animationDuration: Long = SCROLL_ANIMATION_DURATION) {
     val params = layout.layoutParams as CoordinatorLayout.LayoutParams
     val behavior = params.behavior as AppBarLayout.Behavior?

@@ -1,17 +1,57 @@
 package net.maxsmr.commonutils.data.validation
 
-import net.maxsmr.commonutils.data.conversion.format.normalizePhoneNumber
 import net.maxsmr.commonutils.data.conversion.format.parseDateNoThrow
+import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import java.text.SimpleDateFormat
 
-private val REG_EX_RUS_PHONE_NUMBER: Regex = "^((\\+7|7|8)+([0-9]){10})\$".toRegex()
-private val REG_EX_EMAIL: Regex = "^[^ ]+@.[^!#\$%&'*+/=?^_`{|}~ -]+\\..[^!#\$%&'*+/=?^_`{|}~0-9 -]{1,6}\$".toRegex()
+const val REG_EX_PHONE_NUMBER_RUS = "^((\\+7|7|8)+([0-9]){10})\$"
+const val REG_EX_PHONE_NUMBER = "^\\d{10}$"
+const val REG_EX_EMAIL = "^[^ ]+@.[^!#\$%&'*+/=?^_`{|}~ -]+\\..[^!#\$%&'*+/=?^_`{|}~0-9 -]{1,6}\$"
+const val REG_EX_EMAIL_ALT = "^.+@.+\\..+$"
+const val REG_EX_SNILS = "^\\d{11}$"
 
-fun isRusPhoneNumberValid(phone: String): Boolean =
-        normalizePhoneNumber(phone).matches(REG_EX_RUS_PHONE_NUMBER)
+fun isPhoneNumberRusValid(phone: String?): Boolean =
+        validate(phone, REG_EX_PHONE_NUMBER_RUS)
 
-fun isEmailValid(email: CharSequence): Boolean =
-        email.matches(REG_EX_EMAIL)
+/**
+ * Проверка валидности формата phone [ValidationUtilsKt.validate]
+ *
+ * @param phone [String]
+ * @return true - если формат соответствует формату [ValidationUtilsKt.REG_EX_PHONE_NUMBER]
+ */
+fun isPhoneValid(phone: String?): Boolean =
+        validate(phone, REG_EX_PHONE_NUMBER)
+
+
+/**
+ * Проверка валидности формата email {@link ValidationUtilsKt#validate}
+ *
+ * @return true - если формат соответствует формату [REG_EX_EMAIL]
+ */
+fun isEmailValid(email: CharSequence?): Boolean =
+        validate(email, REG_EX_EMAIL)
+
+/**
+ * Проверка валидности формата email (выбор способа доставки чека, RZD-7521) [validate]
+ *
+ * @param email [String]
+ * @return true - если формат соответствует формату [REG_EX_EMAIL_ALT]
+ */
+fun isEmailValidReceipt(email: String?): Boolean =
+        validate(email, REG_EX_EMAIL_ALT)
+
+fun isSnilsValid(snils: String?): Boolean =
+        validate(snils, REG_EX_SNILS)
+
+/**
+ * Вызывать для проверки строки на соотвествие формату
+ *
+ * @param target  - проверяемая строка
+ * @param pattern - формат
+ * @return true, если соответствует формату
+ */
+fun validate(target: CharSequence?, pattern: String?): Boolean =
+        target?.matches((pattern?: EMPTY_STRING).toRegex()) ?: false
 
 fun isDateValid(
         dateText: String,

@@ -45,7 +45,7 @@ fun letter(
         supportRussian: Boolean = true,
         excludedChars: Collection<Char> = emptyList()
 ): Slot {
-    val validators = mutableListOf<SlotValidator>(LetterValidator(supportEnglish, supportRussian))
+    val validators = mutableListOf<SlotValidator>(SlotValidators.LetterValidator(supportEnglish, supportRussian))
     if (excludedChars.isNotEmpty()) {
         validators.add(ExcludeValidator(excludedChars))
     }
@@ -105,13 +105,6 @@ fun getSlots(base: List<Slot>, count: Int, lastIterationInserts: Int = base.size
         }
     }
     return result
-}
-
-private class LetterValidator(supportEnglish: Boolean, supportRussian: Boolean) : SlotValidator {
-
-    private val letterValidator = SlotValidators.LetterValidator(supportEnglish, supportRussian)
-
-    override fun validate(value: Char) = letterValidator.validate(value)
 }
 
 /**

@@ -1,11 +1,13 @@
 package net.maxsmr.commonutils.android
 
+import android.app.Activity
 import android.app.ActivityManager
 import android.content.*
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
+import android.os.Bundle
 import android.os.StrictMode
 import android.util.DisplayMetrics
 import android.util.TypedValue
@@ -42,7 +44,6 @@ fun getVersionCode(context: Context, packageName: String): Long? =
 fun getArchiveVersionName(context: Context, apkFile: File?): String =
         getVersionName(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
 
-@JvmOverloads
 fun getArchiveVersionCode(context: Context, apkFile: File?): Long? =
         getVersionCode(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
 
@@ -159,20 +160,58 @@ fun disableFileUriStrictMode(): Boolean {
     return result
 }
 
-fun canLaunchIntent(context: Context, intent: Intent?): Boolean {
+@JvmOverloads
+fun canHandleActivityIntent(
+        context: Context,
+        intent: Intent?,
+        flags: Int = 0
+): Boolean {
     var result = false
     if (intent != null) {
         val pm = context.packageManager
-        if (pm.resolveActivity(intent, 0) != null) {
+        if (pm.resolveActivity(intent, flags) != null) {
             result = true
         }
     }
     return result
 }
 
-fun canHandleActivityIntent(context: Context, intent: Intent?): Boolean {
-    val resolveInfos = if (intent != null) context.packageManager.queryIntentActivities(intent, 0) else null
+@JvmOverloads
+fun canHandleActivityIntentQuery(
+        context: Context,
+        intent: Intent?,
+        flags: Int = 0
+): Boolean {
+    val resolveInfos =
+            if (intent != null) context.packageManager.queryIntentActivities(intent, flags) else null
     return resolveInfos != null && resolveInfos.isNotEmpty()
+}
+
+@JvmOverloads
+fun startActivitySafe(
+        context: Context,
+        intent: Intent?,
+        options: Bundle? = null
+): Boolean {
+    if (canHandleActivityIntent(context, intent)) {
+        context.startActivity(intent, options)
+        return true
+    }
+    return false
+}
+
+@JvmOverloads
+fun startActivityForResultSafe(
+        activity: Activity,
+        intent: Intent?,
+        requestCode: Int,
+        options: Bundle? = null
+): Boolean {
+    if (canHandleActivityIntent(activity, intent)) {
+        activity.startActivityForResult(intent, requestCode, options)
+        return true
+    }
+    return false
 }
 
 fun getPackageActivitiesCount(packageInfo: PackageInfo): Int {

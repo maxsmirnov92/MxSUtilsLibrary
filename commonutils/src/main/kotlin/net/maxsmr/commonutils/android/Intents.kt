@@ -3,7 +3,10 @@ package net.maxsmr.commonutils.android
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import android.text.TextUtils
 import android.webkit.MimeTypeMap
+import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
 import net.maxsmr.commonutils.data.FileHelper
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
@@ -11,23 +14,38 @@ import java.io.File
 
 const val PROVIDER_AUTHORITY_FORMAT = "%s.provider"
 
-fun getBrowseLinkIntent(
-        url: String = EMPTY_STRING,
+fun wrapIntent(
+        intent: Intent,
         title: String = EMPTY_STRING,
-        flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK
+        flags: Int = 0
 ): Intent {
-    val targetIntent = Intent(Intent.ACTION_VIEW)
-            .apply {
-                data = Uri.parse(url)
-                if (flags != 0) {
-                    this.flags = flags
-                }
-            }
+    with(intent) {
+        if (flags != 0) {
+            this.flags = flags
+        }
+        return if (title.isNotEmpty()) {
+            Intent.createChooser(this, title)
+        } else {
+            this
+        }
+    }
+}
 
-    return if (title.isNotEmpty()) {
-        Intent.createChooser(targetIntent, title)
-    } else {
-        targetIntent
+fun getBrowseLinkIntent(url: String = EMPTY_STRING): Intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+
+@RequiresApi(Build.VERSION_CODES.KITKAT)
+fun getOpenDocumentIntent(type: String?, mimeTypes: Array<String?>?): Intent {
+    with(Intent(Intent.ACTION_OPEN_DOCUMENT)) {
+        addCategory(Intent.CATEGORY_OPENABLE)
+        this.type = if (!TextUtils.isEmpty(type)) {
+            type
+        } else {
+            "*/*"
+        }
+        if (mimeTypes != null && mimeTypes.isNotEmpty()) {
+            putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
+        }
+        return this
     }
 }
 
@@ -63,9 +81,6 @@ fun getViewFileIntent(
 
         if (shouldUseFileProvider) {
             result.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
-        if (!canHandleActivityIntent(context, result)) {
-            result = null
         }
     }
     return result

@@ -1,6 +1,7 @@
 package net.maxsmr.commonutils.data.text
 
 import android.content.Context
+import android.content.Intent
 import android.text.*
 import android.text.style.*
 import android.view.View
@@ -8,50 +9,46 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import net.maxsmr.commonutils.android.SdkUtils
 import net.maxsmr.commonutils.android.getBrowseLinkIntent
-import net.maxsmr.commonutils.android.gui.SpanInfo
+import net.maxsmr.commonutils.android.startActivitySafe
+import net.maxsmr.commonutils.android.wrapIntent
 
 /**
  * Попытка привести html к Spanned строке с форматированием из html
  */
 @Throws
-fun parseHtmlToSpannedString(html: CharSequence): Spanned {
-    return html.let { html.toString().replace("\n", "<br/>") }
-            .let {
-                if (SdkUtils.isAtLeastNougat()) {
-                    @Suppress("NewApi")
-                    Html.fromHtml(it, Html.FROM_HTML_MODE_COMPACT)
-                } else {
-                    @Suppress("DEPRECATION")
-                    Html.fromHtml(it)
+fun parseHtmlToSpannedString(html: CharSequence): Spanned =
+        html.let { html.toString().replace("\n", "<br/>") }
+                .let {
+                    if (SdkUtils.isAtLeastNougat()) {
+                        @Suppress("NewApi")
+                        Html.fromHtml(it, Html.FROM_HTML_MODE_COMPACT)
+                    } else {
+                        @Suppress("DEPRECATION")
+                        Html.fromHtml(it)
+                    }
                 }
-            }
-}
 
 
-fun parseHtmlToSpannedStringNoThrow(text: CharSequence): CharSequence {
-    return try {
-        parseHtmlToSpannedString(text)
-    } catch (e: Throwable) {
-        text
-    }
-}
+fun parseHtmlToSpannedStringNoThrow(text: CharSequence): CharSequence =
+        try {
+            parseHtmlToSpannedString(text)
+        } catch (e: Throwable) {
+            text
+        }
 
 /**
  * Попытка привести html к строке с потерей части форматирования.
  */
-fun clearHtml(html: String): String {
-    return parseHtmlToSpannedStringNoThrow(html).toString()
-}
+fun clearHtml(html: String): String =
+        parseHtmlToSpannedStringNoThrow(html).toString()
 
 fun createCustomSpanText(
         text: CharSequence,
         spanInfos: Collection<SpanInfo>
-): CharSequence {
-    return SpannableStringBuilder(text).apply {
-        spanInfos.forEach {
-            if (it.startIndex in text.indices && it.endIndex in text.indices) {
-                setSpan(createSpan(it.style, it.removeUnderlying, it.clickAction), it.startIndex, it.endIndex, it.flags)
-            }
+): CharSequence = SpannableStringBuilder(text).apply {
+    spanInfos.forEach {
+        if (it.startIndex in text.indices && it.endIndex in 0..text.length) {
+            setSpan(createSpan(it.style, it.removeUnderlying, it.clickAction), it.startIndex, it.endIndex, it.flags)
         }
     }
 }
@@ -70,17 +67,18 @@ fun createCustomSpanTextExpanded(
 }
 
 fun createLinkableText(
-        context: Context,
         text: CharSequence,
         spanInfosMap: Map<SpanInfo, String>
 ): CharSequence {
     val newSpanInfosMap = mutableListOf<SpanInfo>()
     spanInfosMap.forEach {
-        newSpanInfosMap.add(SpanInfo(it.key.startIndex, it.key.endIndex, null, it.key.removeUnderlying, it.key.flags) {
-            context.startActivity(getBrowseLinkIntent(it.value))
-            // вызываем отдельно исходный action, если он был
-            it.key.clickAction?.invoke()
-        })
+        newSpanInfosMap.add(SpanInfo(it.key.startIndex, it.key.endIndex, object : URLSpan(it.value) {
+            override fun onClick(widget: View) {
+                super.onClick(widget)
+                // вызываем отдельно исходный action, если он был
+                it.key.clickAction?.invoke()
+            }
+        }, it.key.removeUnderlying, it.key.flags))
     }
     return createCustomSpanText(text, newSpanInfosMap)
 }
@@ -90,20 +88,18 @@ fun createSelectedText(
         @ColorInt highlightColor: Int,
         selection: String,
         spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-): CharSequence {
-    return SpannableString(text)
-            .apply {
-                val start = text.indexOf(selection, ignoreCase = true)
-                        .takeIf { it >= 0 }
-                        ?: return@apply
-                setSpan(
-                        ForegroundColorSpan(highlightColor),
-                        start,
-                        start + selection.length,
-                        spanFlags
-                )
-            }
-}
+): CharSequence = SpannableString(text)
+                .apply {
+                    val start = text.indexOf(selection, ignoreCase = true)
+                            .takeIf { it >= 0 }
+                            ?: return@apply
+                    setSpan(
+                            ForegroundColorSpan(highlightColor),
+                            start,
+                            start + selection.length,
+                            spanFlags
+                    )
+                }
 
 fun appendClickableImage(
         context: Context,
@@ -129,11 +125,11 @@ fun appendClickableImage(
     return text
 }
 
-fun replaceUrlSpans(
+fun replaceUrlSpansByClickableSpans(
         context: Context,
         html: String,
         removeUnderlying: Boolean = true,
-        action: ((URLSpan) -> Unit)? = null
+        action: ((URLSpan) -> Boolean)? = null
 ): CharSequence {
     val sequence = parseHtmlToSpannedString(html)
     val strBuilder = SpannableStringBuilder(sequence)
@@ -145,8 +141,11 @@ fun replaceUrlSpans(
         strBuilder.setSpan(object : ClickableSpan() {
 
             override fun onClick(widget: View) {
-                context.startActivity(getBrowseLinkIntent(span.url))
-                action?.invoke(span)
+                if (action?.invoke(span) != true) {
+                    // not handled by action
+                    startActivitySafe(context, wrapIntent(getBrowseLinkIntent(span.url),
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK))
+                }
             }
 
             override fun updateDrawState(ds: TextPaint) {
@@ -183,8 +182,7 @@ private fun createSpan(
         style: CharacterStyle?,
         removeUnderlying: Boolean,
         clickAction: (() -> Unit)?
-): CharacterStyle {
-    return style
+): CharacterStyle = style
             ?: object : ClickableSpan() {
 
                 override fun onClick(widget: View) {
@@ -198,4 +196,15 @@ private fun createSpan(
                     }
                 }
             }
-}
+
+/**
+ * @param style использовать этот стиль; null - использовать [ClickableSpan] с [clickAction]
+ */
+data class SpanInfo(
+        val startIndex: Int,
+        val endIndex: Int,
+        val style: CharacterStyle? = null,
+        val removeUnderlying: Boolean = false,
+        val flags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+        val clickAction: (() -> Unit)? = null
+)

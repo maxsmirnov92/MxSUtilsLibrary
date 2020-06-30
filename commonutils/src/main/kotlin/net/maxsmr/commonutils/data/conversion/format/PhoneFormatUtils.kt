@@ -5,25 +5,34 @@ import android.text.Editable
 import android.widget.EditText
 import android.widget.TextView
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
-import net.maxsmr.commonutils.data.validation.isRusPhoneNumberValid
+import net.maxsmr.commonutils.data.validation.isPhoneNumberRusValid
 import ru.tinkoff.decoro.MaskImpl
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 
-const val RUS_PHONE_MASK_DEFAULT = "+7 (___) ___ __ __"
-const val PHONE_LENGTH_CLEAR = 10
-const val PHONE_LENGTH_SEVEN_OR_EIGHT = PHONE_LENGTH_CLEAR + 1
-const val PHONE_LENGTH_PLUS_SEVEN = PHONE_LENGTH_CLEAR + 2
+const val PHONE_RUS_PLUS_SEVEN_PREFIX = "+7"
+const val PHONE_RUS_MASK_DEFAULT = "$PHONE_RUS_PLUS_SEVEN_PREFIX (___) ___-__-__"
+const val PHONE_RUS_LENGTH_CLEAR = 10
+const val PHONE_RUS_LENGTH_SEVEN_OR_EIGHT = PHONE_RUS_LENGTH_CLEAR + 1
+const val PHONE_RUS_LENGTH_PLUS_SEVEN = PHONE_RUS_LENGTH_CLEAR + 2
 
 val RUS_PHONE_MASK_IMPL_DEFAULT: MaskImpl = createDefaultPhoneMask()
 private val REG_EX_PHONE_MASK: Regex = Regex("([0-9]|\\+)")
 
+/**
+ * @return номер телефона в виде +71234567890
+ * удаляя () и 8 в +7
+ */
 @JvmOverloads
-fun normalizePhoneNumber(phoneNumber: CharSequence, prefixReplaceWith: String = "+7"): String {
+fun normalizePhoneNumber(
+        phoneNumber: CharSequence,
+        prefixReplaceWith: String = PHONE_RUS_PLUS_SEVEN_PREFIX,
+        checkDigits: Boolean = true
+): String {
     if (phoneNumber.isEmpty()) return EMPTY_STRING
     var prefixReplaceWith = prefixReplaceWith
-    var normalized = phoneNumber.replace("[^0-9+]".toRegex(), EMPTY_STRING)
+    var normalized = if (checkDigits) phoneNumber.replace("[^0-9+]".toRegex(), EMPTY_STRING) else phoneNumber.toString()
     val seven = "7"
-    val plusSeven = "+7"
+    val plusSeven = PHONE_RUS_PLUS_SEVEN_PREFIX
     val eight = "8"
     val nine = "9"
     val replaceSubstring = when {
@@ -49,8 +58,12 @@ fun normalizePhoneNumber(phoneNumber: CharSequence, prefixReplaceWith: String = 
     if (replaceSubstring.isNotEmpty()) {
         normalized = normalized.replaceFirst(replaceSubstring, prefixReplaceWith)
     }
+    if (normalized == prefixReplaceWith) {
+        normalized = EMPTY_STRING
+    }
     return normalized
 }
+
 
 fun normalizePhoneNumberRemovePlus(phoneNumber: CharSequence): String =
         normalizePhoneNumber(phoneNumber).trim('+')
@@ -58,11 +71,11 @@ fun normalizePhoneNumberRemovePlus(phoneNumber: CharSequence): String =
 /**
  * @return ожидаемая длина телефона в зав-ти от его префикса
  */
-fun getPhoneNumberLengthByPrefix(phoneNumber: CharSequence): Int =
+fun getPhoneNumberRusLengthByPrefix(phoneNumber: CharSequence): Int =
         when {
-            phoneNumber.startsWith("+7") -> PHONE_LENGTH_PLUS_SEVEN
-            phoneNumber.startsWith("8") || phoneNumber.startsWith("7") -> PHONE_LENGTH_SEVEN_OR_EIGHT
-            else -> PHONE_LENGTH_CLEAR
+            phoneNumber.startsWith(PHONE_RUS_PLUS_SEVEN_PREFIX) -> PHONE_RUS_LENGTH_PLUS_SEVEN
+            phoneNumber.startsWith("8") || phoneNumber.startsWith("7") -> PHONE_RUS_LENGTH_SEVEN_OR_EIGHT
+            else -> PHONE_RUS_LENGTH_CLEAR
         }
 
 
@@ -70,7 +83,7 @@ fun getPhoneNumberLengthByPrefix(phoneNumber: CharSequence): Int =
  * Убрать символы, которые несовместимы
  * с inputType phone
  */
-fun clearPhone(phoneNumber: String) = phoneNumber.replace("-", " ").replace("*", EMPTY_STRING)
+fun clearPhone(phoneNumber: String) = clearText(phoneNumber, listOf('-', '*'))
 
 @JvmOverloads
 fun formatPhoneNumber(
@@ -80,7 +93,7 @@ fun formatPhoneNumber(
 ): String {
     var phoneFormatted = normalizePhoneNumber(phoneNumber)
 
-    return if (phoneFormatted.startsWith("+7") && phoneFormatted.length == PHONE_LENGTH_PLUS_SEVEN) {
+    return if (phoneFormatted.startsWith(PHONE_RUS_PLUS_SEVEN_PREFIX) && phoneFormatted.length == PHONE_RUS_LENGTH_PLUS_SEVEN) {
         if (withMask) {
             phoneFormatted = phoneFormatted.replaceRange(rangeToMask, "*".repeat(rangeToMask.last - rangeToMask.first + 1))
         }
@@ -135,13 +148,24 @@ fun TextView.setPhoneFormattedText(
         applyWatcher: Boolean = true,
         isDistinct: Boolean = true
 ) = setFormattedText(text, RUS_PHONE_MASK_IMPL_DEFAULT, applyWatcher, isDistinct) {
-    isRusPhoneNumberValid(it)
+    isPhoneNumberRusValid(normalizePhoneNumber(it))
 }
 
 @JvmOverloads
 fun createDefaultPhoneMask(isTerminated: Boolean = true, hideHardcodedHead: Boolean = false)
-        = createDigitsMask(RUS_PHONE_MASK_DEFAULT, isTerminated, hideHardcodedHead)
+        = createDigitsMask(PHONE_RUS_MASK_DEFAULT, isTerminated, hideHardcodedHead)
 
 @JvmOverloads
 fun createDefaultPhoneWatcher(isTerminated: Boolean = true, hideHardcodedHead: Boolean = false)
-        = createDigitsWatcher(RUS_PHONE_MASK_DEFAULT, isTerminated, hideHardcodedHead)
+        = createDigitsWatcher(PHONE_RUS_MASK_DEFAULT, isTerminated, hideHardcodedHead)
+
+/**
+ * Выставить [createDefaultPhoneWatcher] + вручную prefix, т.к. hideHardcodedHead = false недостаточно
+ */
+@JvmOverloads
+fun TextView.installDefaultPhoneWatcher(isTerminated: Boolean = true, hideHardcodedHead: Boolean = false) {
+    createDefaultPhoneWatcher(isTerminated, hideHardcodedHead).installOn(this)
+    if (!hideHardcodedHead) {
+        text = PHONE_RUS_PLUS_SEVEN_PREFIX
+    }
+}

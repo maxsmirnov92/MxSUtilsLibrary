@@ -1711,7 +1711,10 @@ public final class FileHelper {
      * @author paulburke
      */
     @TargetApi(Build.VERSION_CODES.KITKAT)
-    public static String getPath(@NotNull final Context context, final Uri uri) {
+    @NotNull
+    public static String getPath(@NotNull final Context context, @Nullable final Uri uri) {
+
+        if (uri == null) return EMPTY_STRING;
 
         final boolean isKitKat = Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT;
 
@@ -1736,7 +1739,8 @@ public final class FileHelper {
                 final Uri contentUri = ContentUris.withAppendedId(
                         Uri.parse("content://downloads/public_downloads"), Long.valueOf(id));
 
-                return getDataColumn(context, contentUri, null, null);
+                final String data = getDataColumn(context, contentUri, null, null);
+                return data != null? data : EMPTY_STRING;
             }
             // MediaProvider
             else if (isMediaDocument(uri)) {
@@ -1758,24 +1762,29 @@ public final class FileHelper {
                         split[1]
                 };
 
-                return getDataColumn(context, contentUri, selection, selectionArgs);
+                final String data = getDataColumn(context, contentUri, selection, selectionArgs);
+                return data != null? data : EMPTY_STRING;
             }
         }
         // MediaStore (and general)
         else if ("content".equalsIgnoreCase(uri.getScheme())) {
 
             // Return the remote address
-            if (isGooglePhotosDocument(uri))
-                return uri.getLastPathSegment();
+            if (isGooglePhotosDocument(uri)) {
+                final String data = uri.getLastPathSegment();
+                return data != null? data : EMPTY_STRING;
+            }
 
-            return getDataColumn(context, uri, null, null);
+            final String data = getDataColumn(context, uri, null, null);
+            return data != null? data : EMPTY_STRING;
         }
         // File
         else if ("file".equalsIgnoreCase(uri.getScheme())) {
-            return uri.getPath();
+            final String data = uri.getPath();
+            return data != null? data : EMPTY_STRING;
         }
 
-        return null;
+        return EMPTY_STRING;
     }
 
     /**
