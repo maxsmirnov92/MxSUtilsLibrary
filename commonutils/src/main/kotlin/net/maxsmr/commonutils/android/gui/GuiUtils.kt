@@ -577,16 +577,16 @@ fun addSoftInputStateListener(
     return listener
 }
 
-fun isKeyboardShown(activity: Activity): Boolean {
-    return isKeyboardShown(activity.currentFocus)
-}
+fun isKeyboardShown(activity: Activity): Boolean =
+        isKeyboardShown(activity.currentFocus)
 
 fun isKeyboardShown(view: View?): Boolean {
     if (view == null) {
         return false
     }
     try {
-        val inputManager = view.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
+        val inputManager = view.context.getSystemService(Context.INPUT_METHOD_SERVICE)
+                as InputMethodManager? ?: return false
         return inputManager.isActive(view)
     } catch (e: Exception) {
         logger.e("An exception occurred: ${e.message}", e)
@@ -594,41 +594,72 @@ fun isKeyboardShown(view: View?): Boolean {
     }
 }
 
-fun showKeyboard(activity: Activity?) {
-    if (activity != null) {
-        showKeyboard(activity.currentFocus)
+@JvmOverloads
+fun showKeyboard(
+        activity: Activity?,
+        flags: Int = InputMethodManager.SHOW_IMPLICIT,
+        requestFocus: Boolean = true
+): Boolean {
+    activity?.let {
+        return showKeyboard(activity.currentFocus, flags, requestFocus)
+    }
+    return false
+}
+
+@JvmOverloads
+fun showKeyboard(
+        hostView: View?,
+        flags: Int = InputMethodManager.SHOW_IMPLICIT,
+        requestFocus: Boolean = true
+): Boolean {
+    if (hostView == null) return false
+    if (requestFocus) {
+        requestFocus(hostView)
+    }
+    val imm = hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
+            ?: return false
+    return imm.showSoftInput(hostView, flags)
+}
+
+fun hideKeyboard(
+        activity: Activity?,
+        flags: Int = 0,
+        clearFocus: Boolean = true
+) {
+    activity?.let {
+        hideKeyboard(activity.currentFocus, flags, clearFocus)
     }
 }
 
-fun showKeyboard(hostView: View?): Boolean {
-    return if (hostView != null && hostView.windowToken != null) {
-        val imm = hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager
-        imm.showSoftInput(hostView, InputMethodManager.SHOW_IMPLICIT)
-    } else {
-        true
+fun hideKeyboard(
+        hostView: View?,
+        flags: Int = 0,
+        clearFocus: Boolean = true
+): Boolean {
+    hostView?.let {
+        if (clearFocus) {
+            clearFocus(hostView)
+        }
+        hostView.windowToken?.let {
+            val imm = hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
+                    ?: return false
+            return imm.hideSoftInputFromWindow(it, flags)
+        }
     }
+    return false
 }
 
-fun hideKeyboard(activity: Activity?) {
-    if (activity != null) {
-        hideKeyboard(activity.currentFocus)
-    }
+@JvmOverloads
+fun toggleKeyboard(activity: Activity, toggleFocus: Boolean = true) {
+    toggleKeyboard(activity.currentFocus, toggleFocus)
 }
 
-fun hideKeyboard(hostView: View?): Boolean {
-    return hostView != null && hostView.windowToken != null && (hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager)
-            .hideSoftInputFromWindow(hostView.windowToken, 0)
-}
-
-fun toggleKeyboard(activity: Activity) {
-    toggleKeyboard(activity.currentFocus)
-}
-
-fun toggleKeyboard(hostView: View?) {
+@JvmOverloads
+fun toggleKeyboard(hostView: View?, toggleFocus: Boolean = true) {
     if (isKeyboardShown(hostView)) {
-        hideKeyboard(hostView)
+        hideKeyboard(hostView, clearFocus = toggleFocus)
     } else {
-        showKeyboard(hostView)
+        showKeyboard(hostView, requestFocus = toggleFocus)
     }
 }
 

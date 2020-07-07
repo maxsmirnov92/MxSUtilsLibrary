@@ -1,8 +1,5 @@
 package net.maxsmr.commonutils.data.conversion
 
-import net.maxsmr.commonutils.data.number.fraction
-import net.maxsmr.commonutils.data.number.round
-
 @JvmOverloads
 fun CharSequence?.toNotNullByteNoThrow(
         radix: Int = 10,
@@ -143,15 +140,4 @@ fun splitNumberToDigits(number: Number?): List<Int>? {
         }
     }
     return result
-}
-
-fun Double?.rublesToKopecks(): Long {
-    if (this == null) return 0
-    val fraction = this
-            .round(2) // оставляем 2 знака после запятой
-            .toBigDecimal().fraction() // отбрасываем целую часть
-            .toLong() // оставшаяся дробная часть == копейки
-    var kopecks = this.toLong() * 100
-    kopecks += fraction
-    return kopecks
 }
