@@ -103,8 +103,8 @@ fun Double?.mergeFraction(count: Int): Long {
             .toBigDecimal()
     var fraction = source.fraction() // отбрасываем целую часть
     val grade = 10.0.pow(count)
-    fraction = fraction.multiply(grade.toBigDecimal()) // оставшаяся дробная часть == копейки
-    var kopecks = this.toLong() * grade.toLong()
-    kopecks += fraction.toLong()
-    return kopecks
+    fraction = fraction.multiply(grade.toBigDecimal()) // оставшаяся дробная часть
+    var result = this.toLong() * grade.toLong()
+    result += fraction.toLong()
+    return result
 }

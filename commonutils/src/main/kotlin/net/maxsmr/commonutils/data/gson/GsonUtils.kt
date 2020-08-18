@@ -3,6 +3,7 @@
 package net.maxsmr.commonutils.data.gson
 
 import android.text.TextUtils
+import android.util.Log
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
@@ -69,10 +70,11 @@ fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, type: Type): T? {
  * Преобразует объект [obj] указанного типа [T]
  * в строку, используя [gson]
  */
-fun <T> toJsonString(
+@JvmOverloads
+fun <T: Any> toJsonString(
         gson: Gson,
         obj: T,
-        type: Type
+        type: Type = obj.javaClass
 ): String {
     try {
         return gson.toJson(obj, type)
@@ -86,7 +88,7 @@ fun <T> toJsonString(
  * Преобразует коллекцию объектов [listOfObjects] указанного типа [T]
  * в маппинг: объект - json-строка, используя [gson]
  */
-fun <T> toJsonStringMap(
+fun <T: Any> toJsonStringMap(
         gson: Gson,
         listOfObjects: Collection<T>?,
         type: Type

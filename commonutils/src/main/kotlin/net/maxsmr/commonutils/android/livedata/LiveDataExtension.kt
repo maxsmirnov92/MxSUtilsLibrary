@@ -6,6 +6,28 @@ import net.maxsmr.commonutils.android.livedata.wrappers.NotifyCheckMutableLiveDa
 import net.maxsmr.commonutils.data.states.LoadState
 
 /**
+ * @return [LiveData] с изменёнными текущими данными из исходного [T] с использованием [changeFunc]
+ */
+fun <T> LiveData<T>.observeWithChange(changeFunc: (T) -> T): LiveData<T> {
+    val result = MediatorLiveData<T>()
+    result.addSource(this) {
+        result.postValue(changeFunc(it))
+    }
+    return result
+}
+
+/**
+ * @return [LiveData] с текущими данными другого типа из исходного [T] с использованием [changeFunc]
+ */
+fun <T, X> LiveData<T>.observeWithTypeChange(changeFunc: (T) -> X): LiveData<X> {
+    val result = MediatorLiveData<X>()
+    result.addSource(this) {
+        result.postValue(changeFunc(it))
+    }
+    return result
+}
+
+/**
  * Однократно получить данные подписчиком и после этого удалить подписку
  */
 fun <T> LiveData<T>.observeOnce(observer: Observer<T>) {

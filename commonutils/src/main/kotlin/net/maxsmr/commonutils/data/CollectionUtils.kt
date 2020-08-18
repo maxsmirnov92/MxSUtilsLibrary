@@ -35,6 +35,11 @@ fun <V, C : MutableCollection<V>> fromCollectionExclude(
     return result
 }
 
+fun <T> limit(collection: Collection<T>, limit: Int): Collection<T> {
+    if (limit <= 0 || collection.isEmpty() || limit > collection.size) return collection
+    return collection.toList().subList(0, limit - 1)
+}
+
 fun avg(numbers: Collection<Number?>?): Double {
     var result = 0.0
     numbers?.let {
