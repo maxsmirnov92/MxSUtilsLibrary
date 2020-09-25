@@ -19,7 +19,7 @@ import androidx.exifinterface.media.ExifInterface;
 
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.conversion.SizeUnit;
-import net.maxsmr.commonutils.data.sort.BaseOptionableComparator;
+import net.maxsmr.commonutils.data.sort.BaseOptionalComparator;
 import net.maxsmr.commonutils.data.sort.ISortOption;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -2810,13 +2810,14 @@ public final class FileHelper {
         void onFailed(File currentFile, File destDir);
     }
 
-    public static class FileComparator extends BaseOptionableComparator<FileComparator.SortOption, File> {
+    public static class FileComparator extends BaseOptionalComparator<FileComparator.SortOption, File> {
 
         public enum SortOption implements ISortOption {
 
             NAME, SIZE, LAST_MODIFIED;
 
             @Override
+            @NotNull
             public String getName() {
                 return name();
             }

@@ -218,10 +218,13 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
 
     @Suppress("UNCHECKED_CAST")
     @JvmOverloads
-    fun <D : Dialog> createdEventsOnce(tag: String? = null, eventsFilter: Predicate<TypedAction<D>>? = null): LiveSingle<TypedAction<D>> =
+    fun <D : Dialog> createdEventsOnce(
+            tag: String? = null,
+            clazz: Class<TypedDialogFragment<D>> = TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>,
+            eventsFilter: Predicate<TypedAction<D>>? = null): LiveSingle<TypedAction<D>> =
             eventsSingle(
                     tag,
-                    TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>,
+                    clazz,
                     eventsFilter
             ) {
                 it.createdSingle()
@@ -229,14 +232,26 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
 
     @Suppress("UNCHECKED_CAST")
     @JvmOverloads
-    fun <D : Dialog> createdEvents(tag: String? = null, eventsFilter: Predicate<TypedAction<D>>? = null): LiveObservable<TypedAction<D>> =
+    fun <D : Dialog> createdEvents(
+            tag: String? = null,
+            clazz: Class<TypedDialogFragment<D>> = TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>,
+            eventsFilter: Predicate<TypedAction<D>>? = null
+    ): LiveObservable<TypedAction<D>> =
             eventsObservable(
                     tag,
-                    TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>,
+                    clazz,
                     eventsFilter
             ) {
                 it.createdSingle().toObservable()
             }
+
+    fun buttonClickEvents(vararg buttons: Int) = buttonClickEvents(buttons = buttons.toList())
+
+    @JvmOverloads
+    fun buttonClickEvents(
+            tag: String? = null,
+            buttons: Collection<Int> = listOf()
+    ): LiveObservable<TypedAction<Int>> = buttonClickEvents(tag, TypedDialogFragment::class.java, buttons)
 
     /**
      * Подписка на клики по кнопкам диалога
@@ -245,10 +260,14 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
      * @param buttons типы кнопок, за которыми наблюдаем (см. [android.content.DialogInterface]), или
      * пустой список, если наблюдаем за всеми
      */
-    fun buttonClickEvents(tag: String? = null, vararg buttons: Int): LiveObservable<TypedAction<Int>> =
+    fun buttonClickEvents(
+            tag: String? = null,
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            buttons: Collection<Int> = listOf()
+    ): LiveObservable<TypedAction<Int>> =
             eventsObservable(
                     tag,
-                    TypedDialogFragment::class.java,
+                    clazz,
                     Predicate {
                         buttons.isEmpty() || it.value in buttons
                     }
@@ -256,34 +275,48 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                 it.buttonClickObservable()
             }
 
+    @JvmOverloads
     fun keyActionEvents(
-            tag: String? = null, vararg keyCodes: Int
+            tag: String? = null,
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            vararg keyCodes: Int
     ): LiveObservable<TypedDialogFragment.KeyAction> =
-            keyActionEvents(tag, Predicate { keyCodes.isEmpty() || it.keyCode in keyCodes })
+            keyActionEvents(tag, clazz, Predicate { keyCodes.isEmpty() || it.keyCode in keyCodes })
 
+    @JvmOverloads
     fun keyActionEvents(
-            tag: String? = null, keyEventFilter: Predicate<TypedDialogFragment.KeyAction>
+            tag: String? = null,
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            keyEventFilter: Predicate<TypedDialogFragment.KeyAction>
     ): LiveObservable<TypedDialogFragment.KeyAction> =
             eventsObservable(
                     tag,
-                    TypedDialogFragment::class.java,
+                    clazz,
                     keyEventFilter
             ) {
                 it.keyActionObservable()
             }
 
-    fun dismissEventsOnce(tag: String? = null): LiveCompletable =
+    @JvmOverloads
+    fun dismissEventsOnce(
+            tag: String? = null,
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java
+    ): LiveCompletable =
             eventsCompletable(
                     tag,
-                    TypedDialogFragment::class.java
+                    clazz
             ) {
                 it.dismissCompletable()
             }
 
-    fun dismissEvents(tag: String? = null): LiveObservable<EmptyAction> =
+    @JvmOverloads
+    fun dismissEvents(
+            tag: String? = null,
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java
+    ): LiveObservable<EmptyAction> =
             eventsObservable(
                     tag,
-                    TypedDialogFragment::class.java
+                    clazz
             ) { fragment ->
                 fragment.dismissCompletable().andThen(Observable.just(EmptyAction))
                 // то же самое по смыслу:
@@ -295,18 +328,26 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
 //                }
             }
 
-    fun cancelEventsOnce(tag: String? = null): LiveCompletable =
+    @JvmOverloads
+    fun cancelEventsOnce(
+            tag: String? = null,
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java
+    ): LiveCompletable =
             eventsCompletable(
                     tag,
-                    TypedDialogFragment::class.java
+                    clazz
             ) {
                 it.cancelCompletable()
             }
 
-    fun cancelEvents(tag: String? = null): LiveObservable<EmptyAction> =
+    @JvmOverloads
+    fun cancelEvents(
+            tag: String? = null,
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java
+    ): LiveObservable<EmptyAction> =
             eventsObservable(
                     tag,
-                    TypedDialogFragment::class.java
+                    clazz
             ) {
                 it.cancelCompletable().andThen(Observable.just(EmptyAction))
             }
@@ -316,7 +357,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
      */
     @CallSuper
     open fun init(owner: LifecycleOwner, fragmentManager: FragmentManager) {
-        logger.d( "init")
+        logger.d("init")
         lastLifecycleEvent = Lifecycle.Event.ON_CREATE
         attachOwner(owner, fragmentManager)
     }
@@ -324,21 +365,21 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @CallSuper
     @OnLifecycleEvent(Lifecycle.Event.ON_RESUME)
     open fun onResumed() {
-        logger.d( "onResumed")
+        logger.d("onResumed")
         lastLifecycleEvent = Lifecycle.Event.ON_RESUME
     }
 
     @CallSuper
     @OnLifecycleEvent(Lifecycle.Event.ON_STOP)
     open fun onStop() {
-        logger.d( "onStop")
+        logger.d("onStop")
         lastLifecycleEvent = Lifecycle.Event.ON_STOP
     }
 
     @CallSuper
     @OnLifecycleEvent(Lifecycle.Event.ON_DESTROY)
     open fun onDestroy() {
-        logger.d( "onDestroy")
+        logger.d("onDestroy")
         cleanUp(true)
     }
 
@@ -360,24 +401,24 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
      * @return true if successfully showed, false - otherwise
      */
     fun show(tag: String, fragment: DialogFragment, reshow: Boolean = true): ShowResult {
-        logger.d( "show: tag=$tag, fragment=$fragment, reshow=$reshow")
+        logger.d("show: tag=$tag, fragment=$fragment, reshow=$reshow")
 
         val isFragmentShowing = isFragmentShowing(tag)
         val fragmentManager = fragmentManager
         checkNotNull(fragmentManager) { "FragmentManager is not specified" }
         checkTag(tag)
 
-        if (!reshow && isFragmentShowing) {
+        if (isFragmentShowing && !reshow) {
             return ShowResult.AlreadyShowed
         }
-        if (!hide(tag).first.isSuccess()) {
+        if (isFragmentShowing && !hide(tag).first.isSuccess()) {
             return ShowResult.Failed(ShowResult.Failed.Reason.HIDE)
         }
         if (showRule == ShowRule.SINGLE && isAnyFragmentShowing) {
-            logger.w( "Not adding fragment for tag '$tag', because show rule is '" + ShowRule.SINGLE.name
+            logger.w("Not adding fragment for tag '$tag', because show rule is '" + ShowRule.SINGLE.name
                     + "' and some dialogs are showing")
             if (shouldStoreRejectedFragments) {
-                logger.w( "Saving fragment for tag '$tag' to show it later...")
+                logger.w("Saving fragment for tag '$tag' to show it later...")
                 targetFragmentsToShow[tag] = Pair(fragment, reshow)
             }
             return ShowResult.Failed(ShowResult.Failed.Reason.SHOW_RULE)
@@ -386,7 +427,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             try {
                 fragment.show(fragmentManager, tag)
             } catch (e: Exception) {
-                logger.e( "An Exception occurred during show(): " + e.message, e)
+                logger.e("An Exception occurred during show(): " + e.message, e)
                 targetFragmentsToShow[tag] = Pair(fragment, reshow)
                 return ShowResult.Failed(ShowResult.Failed.Reason.EXCEPTION)
             }
@@ -395,7 +436,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             onSetEventListener(fragment)
             return if (isFragmentShowing) ShowResult.Reshowed else ShowResult.Showed
         }
-        logger.w( "Transaction commits are not allowed, schedule showing...")
+        logger.w("Transaction commits are not allowed, schedule showing...")
         targetFragmentsToShow[tag] = Pair(fragment, reshow)
         return ShowResult.Failed(ShowResult.Failed.Reason.NOT_ALLOWED)
     }
@@ -413,7 +454,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
      * - [TypedDialogFragment] instance non-null if was added to [FragmentManager] before, false otherwise
      */
     fun hide(tag: String?): Pair<HideResult, DialogFragment?> {
-        logger.d( "hide: tag=$tag")
+        logger.d("hide: tag=$tag")
 
         var result: HideResult = HideResult.FAILED
         var fragment: DialogFragment? = null
@@ -426,11 +467,11 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                         fragment.dismiss()
                         result = HideResult.DISMISSED
                     } catch (e: Exception) {
-                        logger.e( "An Exception occurred during dismiss(): " + e.message, e)
+                        logger.e("An Exception occurred during dismiss(): " + e.message, e)
                         targetFragmentsToHide.add(tag)
                     }
                 } else {
-                    logger.w( "Transaction commits are not allowed, schedule hiding")
+                    logger.w("Transaction commits are not allowed, schedule hiding")
                     targetFragmentsToHide.add(tag)
                 }
             } else {
@@ -616,14 +657,17 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                  * failed dismiss
                  */
                 HIDE,
+
                 /**
                  * due to [ShowRule.SINGLE]
                  */
                 SHOW_RULE,
+
                 /**
                  * exception
                  */
                 EXCEPTION,
+
                 /**
                  * transactions are not allowed
                  */

@@ -1,5 +1,7 @@
 package net.maxsmr.commonutils.data.conversion
 
+import java.math.BigDecimal
+
 @JvmOverloads
 fun CharSequence?.toNotNullByteNoThrow(
         radix: Int = 10,
@@ -55,6 +57,18 @@ fun CharSequence?.toDoubleNotNullNoThrow(
 fun CharSequence?.toDoubleNoThrow(
         exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Double? = toNumber(Double::class.java, 10, exceptionAction)
+
+fun Number?.toBigDecimal(): BigDecimal? {
+    return if (this != null) {
+        if (this is BigDecimal) {
+            this
+        } else {
+            BigDecimal(this.toDouble())
+        }
+    } else {
+        null
+    }
+}
 
 @Suppress("UNCHECKED_CAST")
 fun <N : Number?> CharSequence?.toNumber(

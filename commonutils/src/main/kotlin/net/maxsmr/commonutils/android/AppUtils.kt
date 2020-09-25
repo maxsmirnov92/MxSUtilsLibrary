@@ -214,6 +214,14 @@ fun startActivityForResultSafe(
     return false
 }
 
+@JvmOverloads
+fun browseLink(url: String = EMPTY_STRING, context: Context, options: Bundle? = null): Boolean {
+    if (!startActivitySafe(context, getBrowseLinkIntent(url), options)) {
+        return startActivitySafe(context, getBrowseLinkIntent(url, false), options)
+    }
+    return false
+}
+
 fun getPackageActivitiesCount(packageInfo: PackageInfo): Int {
     return if (packageInfo.activities == null || packageInfo.activities.isEmpty()) {
         0

@@ -85,26 +85,12 @@ fun Double?.round(precision: Int): Double {
     return (this * delimiter).roundToInt().toDouble() / delimiter
 }
 
-fun Double?.rublesToKopecksSimple(): Long = mergeFractionSimple(2)
-
-fun Double?.mergeFractionSimple(count: Int): Long {
+fun Double?.mergeFraction(count: Int): Long {
     if (this == null) return 0
     val grade = 10.0.pow(count)
     return (this * grade).toLong()
 }
 
-fun Double?.rublesToKopecks(): Long = mergeFraction(2)
-
-fun Double?.mergeFraction(count: Int): Long {
-    require(count > 0) { "count must be at least 1" }
-    if (this == null) return 0
-    val source = this
-            .round(count) // оставляем n знаков после запятой
-            .toBigDecimal()
-    var fraction = source.fraction() // отбрасываем целую часть
-    val grade = 10.0.pow(count)
-    fraction = fraction.multiply(grade.toBigDecimal()) // оставшаяся дробная часть
-    var result = this.toLong() * grade.toLong()
-    result += fraction.toLong()
-    return result
-}
+@JvmOverloads
+fun Double?.rublesToKopecks(precision: Int = 2): Long =
+        round(precision).mergeFraction(2)

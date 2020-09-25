@@ -407,7 +407,7 @@ fun sizeToMap(
     result.clear()
     while (iterator.hasNext()) {
         val current = iterator.next()
-        val fraction = current.value.fraction()
+        val fraction = current.value.toBigDecimal().fraction()
         result[current.key] = if (precision == null ||
                 fraction.isZero() ||
                 fraction.isGreater(BigDecimal.ZERO) && iterator.hasNext()) {

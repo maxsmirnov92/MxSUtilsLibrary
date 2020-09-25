@@ -31,7 +31,19 @@ fun wrapIntent(
     }
 }
 
-fun getBrowseLinkIntent(url: String = EMPTY_STRING): Intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+fun getBrowseLinkIntent(url: String = EMPTY_STRING, withType: Boolean = true): Intent {
+    val result = Intent(Intent.ACTION_VIEW)
+    val uri = Uri.parse(url)
+    if (withType) {
+        val ext = MimeTypeMap.getFileExtensionFromUrl(url)
+        var type = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+        if (type == null) type = "*/*"
+        result.setDataAndType(uri, type)
+    } else {
+        result.data = uri
+    }
+    return result
+}
 
 @RequiresApi(Build.VERSION_CODES.KITKAT)
 fun getOpenDocumentIntent(type: String?, mimeTypes: Array<String?>?): Intent {
@@ -72,7 +84,8 @@ fun getViewFileIntent(
             Uri.fromFile(file)
         }
 
-        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(FileHelper.getFileExtension(file))
+        val ext = FileHelper.getFileExtension(file)
+        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
         result.setDataAndType(fileUri, mimeType)
 
         if (flags != 0) {
