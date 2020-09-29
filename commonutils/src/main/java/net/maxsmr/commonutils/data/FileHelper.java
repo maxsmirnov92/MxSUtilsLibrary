@@ -19,8 +19,8 @@ import androidx.exifinterface.media.ExifInterface;
 
 import net.maxsmr.commonutils.R;
 import net.maxsmr.commonutils.data.conversion.SizeUnit;
-import net.maxsmr.commonutils.data.sort.BaseOptionalComparator;
-import net.maxsmr.commonutils.data.sort.ISortOption;
+import net.maxsmr.commonutils.data.collection.sort.BaseOptionalComparator;
+import net.maxsmr.commonutils.data.collection.sort.ISortOption;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -2816,8 +2816,8 @@ public final class FileHelper {
 
             NAME, SIZE, LAST_MODIFIED;
 
-            @Override
             @NotNull
+            @Override
             public String getName() {
                 return name();
             }
@@ -2829,23 +2829,20 @@ public final class FileHelper {
         }
 
         @Override
-        protected int compare(@Nullable File lhs, @Nullable File rhs, @NotNull SortOption option, boolean ascending) {
+        protected int compare(@NotNull File lhs, @NotNull File rhs, @NotNull SortOption option, @Nullable Boolean ascending) {
 
+            ascending = ascending != null && ascending;
             int result = 0;
-
-            if (lhs == null && rhs == null) {
-                return result;
-            }
 
             switch (option) {
                 case NAME:
-                    result = compareStrings(lhs != null ? lhs.getAbsolutePath() : null, rhs != null ? rhs.getAbsolutePath() : null, ascending, true);
+                    result = compareStrings(lhs.getAbsolutePath(), rhs.getAbsolutePath(), ascending, true);
                     break;
                 case SIZE:
-                    result = compareLongs(lhs != null ? lhs.length() : null, rhs != null ? rhs.length() : null, ascending);
+                    result = compareLongs(lhs.length(), rhs.length(), ascending);
                     break;
                 case LAST_MODIFIED:
-                    result = compareLongs(lhs != null ? lhs.lastModified() : null, rhs != null ? rhs.lastModified() : null, ascending);
+                    result = compareLongs(lhs.lastModified(), rhs.lastModified(), ascending);
                     break;
             }
 

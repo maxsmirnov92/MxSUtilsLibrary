@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.rx
+package net.maxsmr.commonutils.rx.live
 
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner

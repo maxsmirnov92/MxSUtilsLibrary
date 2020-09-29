@@ -3,7 +3,7 @@ package net.maxsmr.commonutils.data.conversion
 import net.maxsmr.commonutils.R
 import net.maxsmr.commonutils.data.number.*
 import net.maxsmr.commonutils.data.text.join
-import net.maxsmr.commonutils.data.toSortedSetExclude
+import net.maxsmr.commonutils.data.collection.toSortedSetExclude
 import java.math.BigDecimal
 
 enum class SizeUnit {
@@ -388,7 +388,7 @@ fun sizeToMap(
         if (mBytes.isNotZero()) {
             result[SizeUnit.MBYTES] = mBytes
         }
-        result.putAll(sizeToMapStep(SizeUnit.MBYTES.toBytes(mBytesLong), s, toSortedSetExclude(sizeUnitsToExclude, setOf(SizeUnit.GBYTES)), precision))
+        result.putAll(sizeToMapStep(SizeUnit.MBYTES.toBytes(mBytesLong), s, sizeUnitsToExclude.toSortedSetExclude(setOf(SizeUnit.GBYTES)), precision))
     } else if ((sizeUnitsToExclude.contains(SizeUnit.MBYTES) || s >= SizeUnit.C1 && s < SizeUnit.C2)
             && !sizeUnitsToExclude.contains(SizeUnit.KBYTES)) {
         val kBytes = SizeUnit.BYTES.toKBytes(s.toDouble())
@@ -396,7 +396,7 @@ fun sizeToMap(
         if (kBytes.isNotZero()) {
             result[SizeUnit.KBYTES] = kBytes
         }
-        result.putAll(sizeToMapStep(SizeUnit.KBYTES.toBytes(kBytesLong), s, toSortedSetExclude(sizeUnitsToExclude, setOf(SizeUnit.MBYTES)), precision))
+        result.putAll(sizeToMapStep(SizeUnit.KBYTES.toBytes(kBytesLong), s, sizeUnitsToExclude.toSortedSetExclude(setOf(SizeUnit.MBYTES)), precision))
     } else if (s < SizeUnit.C1 && !sizeUnitsToExclude.contains(SizeUnit.BYTES)) {
         if (s != 0L) {
             result[SizeUnit.BYTES] = s

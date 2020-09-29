@@ -409,7 +409,7 @@ fun copyToClipboard(context: Context, label: String, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?
             ?: throw NullPointerException(ClipboardManager::class.java.simpleName + " is null")
     val clip = ClipData.newPlainText(label, text)
-    clipboard.primaryClip = clip
+    clipboard.setPrimaryClip(clip)
 }
 
 fun getDisplayMetrics(context: Context): DisplayMetrics {

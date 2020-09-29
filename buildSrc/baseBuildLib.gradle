@@ -39,6 +39,8 @@ android {
         versionCode project.getModuleVersionCode(module)
         versionName project.getModuleVersionName(module)
         vectorDrawables.useSupportLibrary = true
+
+        consumerProguardFiles "consumer-rules.pro"
     }
 
     compileOptions {
@@ -99,7 +101,7 @@ dependencies {
     api fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
 
     // Kotlin
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlinVersion"
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
 }
 

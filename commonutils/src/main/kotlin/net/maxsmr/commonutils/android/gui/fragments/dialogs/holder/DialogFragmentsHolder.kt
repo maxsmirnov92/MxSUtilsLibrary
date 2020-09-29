@@ -2,7 +2,6 @@ package net.maxsmr.commonutils.android.gui.fragments.dialogs.holder
 
 import android.app.Dialog
 import android.text.TextUtils
-import android.util.Log
 import androidx.annotation.CallSuper
 import androidx.annotation.MainThread
 import androidx.fragment.app.DialogFragment
@@ -23,7 +22,7 @@ import net.maxsmr.commonutils.android.gui.fragments.actions.TypedAction
 import net.maxsmr.commonutils.android.gui.fragments.dialogs.TypedDialogFragment
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.rx.*
+import net.maxsmr.commonutils.rx.live.*
 import org.jetbrains.annotations.Nullable
 
 val logger: BaseLogger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("DialogFragmentsHolder")

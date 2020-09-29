@@ -1,30 +1,29 @@
-package net.maxsmr.commonutils.data
+package net.maxsmr.commonutils.data.collection
 
-import net.maxsmr.commonutils.data.text.isNotZeroOrNull
+import net.maxsmr.commonutils.data.Pair
+import net.maxsmr.commonutils.data.Predicate
+import net.maxsmr.commonutils.data.compareNumbers
 
 @JvmOverloads
-fun <V> toMutableListExclude(
-        collection: Collection<V>?,
+fun <V> Collection<V>?.toMutableListExclude(
         exclusionCollection: Collection<V>,
         containsPredicate: (V, V) -> Boolean = { one, another -> one == another }
-): List<V> = fromCollectionExclude(mutableListOf(), collection, exclusionCollection, containsPredicate)
+): List<V> = fromCollectionExclude(mutableListOf(), exclusionCollection, containsPredicate)
 
 @JvmOverloads
-fun <V> toSortedSetExclude(
-        collection: Collection<V>?,
+fun <V> Collection<V>?.toSortedSetExclude(
         exclusionCollection: Collection<V>,
         containsPredicate: (V, V) -> Boolean = { one, another -> one == another }
-): Set<V> = fromCollectionExclude(sortedSetOf(), collection, exclusionCollection, containsPredicate)
+): Set<V> = fromCollectionExclude(sortedSetOf(), exclusionCollection, containsPredicate)
 
 @JvmOverloads
-fun <V, C : MutableCollection<V>> fromCollectionExclude(
+fun <V, C : MutableCollection<V>> Collection<V>?.fromCollectionExclude(
         result: C,
-        collection: Collection<V>?,
         exclusionCollection: Collection<V>,
         containsPredicate: (V, V) -> Boolean = { one, another -> one == another }
 ): C {
-    collection?.let {
-        collection.forEach { current ->
+    this?.let {
+        it.forEach { current ->
             if (!Predicate.Methods.contains(exclusionCollection) {
                         containsPredicate(current, it)
                     }) {
@@ -35,17 +34,27 @@ fun <V, C : MutableCollection<V>> fromCollectionExclude(
     return result
 }
 
-fun <T> limit(collection: Collection<T>, limit: Int): Collection<T> {
-    if (limit <= 0 || collection.isEmpty() || limit > collection.size) return collection
-    return collection.toList().subList(0, limit - 1)
+fun <K, V> Collection<K>?.toMapIndexed(valueForKey: (Int, K) -> V): Map<K, V> {
+    val result = mutableMapOf<K, V>()
+    this?.let {
+        it.forEachIndexed { index, key ->
+            result[key] = valueForKey(index, key)
+        }
+    }
+    return result
 }
 
-fun avg(numbers: Collection<Number?>?): Double {
+fun <T> Collection<T>?.limit(limit: Int): Collection<T> {
+    if (limit <= 0 || this == null || this.isEmpty() || limit > this.size) return this ?: emptyList()
+    return this.toList().subList(0, limit - 1)
+}
+
+fun Collection<Number?>?.avg(): Double {
     var result = 0.0
-    numbers?.let {
-        val count = numbers.size
+    this?.let {
+        val count = this.size
         var sum = 0.0
-        for (n in numbers) {
+        for (n in this) {
             if (n != null) {
                 sum += n.toDouble()
             }
@@ -55,10 +64,10 @@ fun avg(numbers: Collection<Number?>?): Double {
     return result
 }
 
-fun sum(numbers: Collection<Number?>?): Double {
+fun Collection<Number?>?.sum(): Double {
     var result = 0.0
-    if (numbers != null) {
-        for (n in numbers) {
+    if (this != null) {
+        for (n in this) {
             if (n != null) {
                 result += n.toDouble()
             }
@@ -67,13 +76,13 @@ fun sum(numbers: Collection<Number?>?): Double {
     return result
 }
 
-fun findMin(collection: Collection<Number?>?): Pair<Int, Number>? = find(collection, true)
+fun Collection<Number?>?.min(): Pair<Int, Number>? = find(true)
 
-fun findMax(collection: Collection<Number?>?): Pair<Int, Number>? = find(collection, false)
+fun Collection<Number?>?.max(): Pair<Int, Number>? = find(false)
 
-private fun find(collection: Collection<Number?>?, isMin: Boolean): Pair<Int, Number>? {
+private fun Collection<Number?>?.find(isMin: Boolean): Pair<Int, Number>? {
     var result: Pair<Int, Number>? = null
-    collection?.forEachIndexed { index, value ->
+    this?.forEachIndexed { index, value ->
         if (value != null) {
             result.let {
                 if (it == null ||

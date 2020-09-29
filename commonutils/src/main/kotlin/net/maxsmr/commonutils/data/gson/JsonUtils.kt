@@ -41,6 +41,13 @@ fun <T> asListIndexed(array: JSONArray?, parcel: JSONParcelArrayIndexed<T>): Lis
 
 fun <T> asListIndexedNonNull(array: JSONArray?, parcel: JSONParcelArrayIndexed<T>): List<T> = asListIndexed(array, parcel, true) as List<T>
 
+fun isJsonFieldJson(jsonObject: JSONObject?, fieldName: String?): Boolean {
+    if (jsonObject != null) {
+        val value = jsonObject.opt(fieldName)
+        return value is JSONObject || value is JSONArray
+    }
+    return false
+}
 
 /**
  * @return массив объектов T из JSONParcel, исходя из того, что в каждом индексе исходного array лежит JSONObject
