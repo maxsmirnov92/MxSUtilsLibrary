@@ -1,7 +1,7 @@
-package net.maxsmr.commonutils.android.gui.fragments.actions.dialog
+package net.maxsmr.commonutils.android.gui.actions.dialog
 
 import androidx.fragment.app.DialogFragment
-import net.maxsmr.commonutils.android.gui.fragments.actions.BaseTaggedViewModelAction
+import net.maxsmr.commonutils.android.gui.actions.BaseTaggedViewModelAction
 import net.maxsmr.commonutils.android.gui.fragments.dialogs.TypedDialogFragment
 import net.maxsmr.commonutils.android.gui.fragments.dialogs.holder.DialogFragmentsHolder
 

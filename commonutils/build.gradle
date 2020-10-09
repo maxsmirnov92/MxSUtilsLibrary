@@ -5,11 +5,14 @@ dependencies {
     api "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
 
     // Android + Support
-    api "com.google.android.material:material:$androidXMaterialVersion"
-    api "androidx.palette:palette:$androidXPaletteVersion"
-    api "androidx.exifinterface:exifinterface:$androidXExifInterfaceVersion"
     api "androidx.core:core:$androidxCoreVersion"
-    api "androidx.core:core-ktx:$androidXKtxVersion"
+    api "androidx.core:core-ktx:$androidxCoreVersion"
+    api "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    api "androidx.palette:palette:$androidxPaletteVersion"
+    api "androidx.palette:palette-ktx:$androidxPaletteVersion"
+    api "androidx.recyclerview:recyclerview:$androidxRecyclerViewVersion"
+    api "androidx.exifinterface:exifinterface:$androidxExifInterfaceVersion"
+    api "com.google.android.material:material:$materialVersion"
 
     api "commons-net:commons-net:$commonsNetVersion"
     api "com.google.code.gson:gson:$gsonVersion"

@@ -1,15 +1,13 @@
 package net.maxsmr.commonutils.android.gui.fragments.dialogs
 
 import android.app.Dialog
+import android.content.Context
 import android.content.DialogInterface
 import android.os.Bundle
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
-import androidx.annotation.CallSuper
-import androidx.annotation.DrawableRes
-import androidx.annotation.LayoutRes
-import androidx.annotation.StyleRes
+import androidx.annotation.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDialogFragment
 import io.reactivex.Completable
@@ -18,7 +16,8 @@ import io.reactivex.Single
 import io.reactivex.subjects.CompletableSubject
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.SingleSubject
-import net.maxsmr.commonutils.android.gui.fragments.actions.TypedAction
+import net.maxsmr.commonutils.android.gui.actions.TypedAction
+import net.maxsmr.commonutils.data.text.EMPTY_STRING
 
 const val ARG_TITLE = "AlertDialogFragment#ARG_TITLE"
 const val ARG_MESSAGE = "AlertDialogFragment#ARG_MESSAGE"
@@ -159,7 +158,7 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
         return builder
     }
 
-    abstract class Builder<F : TypedDialogFragment<*>> {
+    abstract class Builder<F : TypedDialogFragment<*>>(protected val context: Context) {
 
         protected var title: String? = null
         protected var message: String? = null
@@ -181,8 +180,18 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             return this
         }
 
+        fun setTitle(@StringRes titleResId: Int): Builder<*> {
+            this.title = context.getString(titleResId)
+            return this
+        }
+
         fun setMessage(message: String?): Builder<*> {
             this.message = message
+            return this
+        }
+
+        fun setMessage(@StringRes messageResId: Int): Builder<*> {
+            this.message = context.getString(messageResId)
             return this
         }
 
@@ -215,6 +224,13 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             buttonNegative = negative
             buttonNeutral = neutral
             buttonPositive = positive
+            return this
+        }
+
+        fun setButtons(@StringRes positiveResId: Int?, @StringRes neutralResId: Int?, @StringRes negativeResId: Int?): Builder<*> {
+            buttonPositive =  positiveResId?.let { context.getString(it) } ?: EMPTY_STRING
+            buttonNeutral =  neutralResId?.let { context.getString(it) } ?: EMPTY_STRING
+            buttonNegative = negativeResId?.let { context.getString(it) } ?: EMPTY_STRING
             return this
         }
 
@@ -259,7 +275,7 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             val event: KeyEvent?
     )
 
-    class DefaultAlertBuilder : Builder<TypedDialogFragment<AlertDialog>>() {
+    class DefaultTypedDialogBuilder(context: Context) : Builder<TypedDialogFragment<AlertDialog>>(context) {
 
         override fun build(): TypedDialogFragment<AlertDialog> {
             return newInstance(createArgs())

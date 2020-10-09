@@ -17,8 +17,8 @@ import io.reactivex.Observable
 import io.reactivex.Single
 import io.reactivex.functions.Predicate
 import io.reactivex.subjects.BehaviorSubject
-import net.maxsmr.commonutils.android.gui.fragments.actions.EmptyAction
-import net.maxsmr.commonutils.android.gui.fragments.actions.TypedAction
+import net.maxsmr.commonutils.android.gui.actions.EmptyAction
+import net.maxsmr.commonutils.android.gui.actions.TypedAction
 import net.maxsmr.commonutils.android.gui.fragments.dialogs.TypedDialogFragment
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder

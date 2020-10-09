@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.android.gui.fragments.actions
+package net.maxsmr.commonutils.android.gui.actions
 
 import androidx.annotation.CallSuper
 import io.reactivex.Observable

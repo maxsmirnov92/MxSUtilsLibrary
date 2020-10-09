@@ -74,14 +74,14 @@ open class FilePickerDialogFragmentsHolder(tags: Collection<String>) : DialogFra
     }
 
     @JvmOverloads
-    fun showPictureModeDialog(reshow: Boolean = false) {
+    fun showPictureModeDialog(reshow: Boolean = true) {
         val context = getContext()
         val filePickerConfigurator = filePickerConfigurator
         checkNotNull(filePickerConfigurator) { "IFilePickerConfigurator is not specified" }
         val positiveButton = filePickerConfigurator.getPickFromGalleryAlertButtonName(context)
         val neutralButton = filePickerConfigurator.getPickFromFileAlertButtonName(context)
         val negativeButton = filePickerConfigurator.getPickFromCameraAlertButtonName(context)
-        show(TAG_PICK_FILE_CHOICE, TypedDialogFragment.DefaultAlertBuilder()
+        show(TAG_PICK_FILE_CHOICE, TypedDialogFragment.DefaultTypedDialogBuilder(getContext())
                 .setIconResId(filePickerConfigurator.alertIconResId)
                 .setMessage(filePickerConfigurator.getAlertMessage(context))
                 .setCancelable(filePickerConfigurator.isAlertCancelable)

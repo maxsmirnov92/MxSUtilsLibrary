@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.android.gui.fragments.actions
+package net.maxsmr.commonutils.android.gui.actions
 
 abstract class BaseTaggedViewModelAction<Actor>: BaseViewModelAction<Actor>() {
 

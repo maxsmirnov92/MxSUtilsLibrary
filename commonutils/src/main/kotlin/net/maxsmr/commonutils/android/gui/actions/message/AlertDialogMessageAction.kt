@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.android.gui.fragments.actions.message
+package net.maxsmr.commonutils.android.gui.actions.message
 
 import android.content.Context
 import android.content.DialogInterface

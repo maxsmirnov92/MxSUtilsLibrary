@@ -1,7 +1,7 @@
-package net.maxsmr.commonutils.android.gui.fragments.actions.message
+package net.maxsmr.commonutils.android.gui.actions.message
 
 import android.content.Context
-import net.maxsmr.commonutils.android.gui.fragments.actions.BaseViewModelAction
+import net.maxsmr.commonutils.android.gui.actions.BaseViewModelAction
 
 /**
  * Базовое действие для показа сообщения

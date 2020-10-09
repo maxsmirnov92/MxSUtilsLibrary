@@ -70,9 +70,8 @@ fun setHomeButtonEnabled(activity: AppCompatActivity, toggle: Boolean) {
     }
 }
 
-fun isEnterKeyPressed(event: KeyEvent?, actionId: Int): Boolean {
-    return event != null && event.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_NULL
-}
+fun isEnterKeyPressed(event: KeyEvent?, actionId: Int): Boolean =
+        event != null && event.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_NULL
 
 /**
  * Установка [IntervalEditorActionListener] на editor action у [EditText]
@@ -952,6 +951,22 @@ fun setText(
         view.text = text
     } else {
         setTextDistinct(view, text, asString)
+    }
+}
+
+@JvmOverloads
+fun setTextOrHide(
+        view: TextView,
+        text: CharSequence?,
+        distinct: Boolean = true,
+        asString: Boolean = true,
+        isEmptyFunc: (CharSequence?) -> Boolean = { it.isNullOrEmpty() }
+) {
+    if (isEmptyFunc(text)) {
+        view.visibility = View.GONE
+    } else {
+        setText(view, text, distinct, asString)
+        view.visibility = View.VISIBLE
     }
 }
 

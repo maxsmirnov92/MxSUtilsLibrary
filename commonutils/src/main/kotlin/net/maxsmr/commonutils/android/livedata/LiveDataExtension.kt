@@ -58,6 +58,12 @@ fun <X, Y> LiveData<X>.map(body: (X?) -> Y?): LiveData<Y> {
     return Transformations.map(this, body)
 }
 
+fun <X, Y> LiveData<X>.mapNotNull(body: (X) -> Y): LiveData<Y> {
+    val result = MediatorLiveData<Y>()
+    result.addSource(this) { x -> if (x != null) result.value = body(x) }
+    return result
+}
+
 /**
  * Реализует преобразование `Transformations.switchMap` над LiveData в стиле цепочек RxJava
  */
@@ -127,6 +133,24 @@ fun <X> LiveData<X>.skip(count: Int): LiveData<X> {
     return this
             .doOnNext { counter++ }
             .filter { counter > count }
+}
+
+/**
+ * Пропускает все первые элементы, не удовлетворяющие [predicate]. После первого элемента,
+ * удовлетворяющего [predicate], фильтрация перестает выполняться.
+ */
+fun <X> LiveData<X>.skipUntil(predicate: (X) -> Boolean): LiveData<X> {
+    val m = MediatorLiveData<X>()
+    var success = false
+    m.addSource(this) {
+        if (success) {
+            m.postValue(it)
+        } else if (predicate(it)) {
+            success = true
+            m.postValue(it)
+        }
+    }
+    return m
 }
 
 /**

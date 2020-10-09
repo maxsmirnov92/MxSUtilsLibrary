@@ -1573,7 +1573,7 @@ public final class GraphicUtils {
         logger.d("Resizing bitmap");
         logger.d("Screen size: " + screenWidth + "x" + screenHeight + ", wallpaper size: " + bitmap.getWidth() + "x" + bitmap.getHeight());
 
-        float wallpaperAspectRatio = bitmap.getWidth() / bitmap.getHeight();
+        float wallpaperAspectRatio = (float) bitmap.getWidth() / bitmap.getHeight();
 
         logger.d("Wallpaper aspect ratio: " + wallpaperAspectRatio +
                 ", screen aspect ratio: " + screenAspectRatio);
