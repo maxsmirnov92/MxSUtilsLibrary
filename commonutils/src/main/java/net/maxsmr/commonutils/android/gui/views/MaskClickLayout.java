@@ -34,7 +34,7 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-import static net.maxsmr.commonutils.android.gui.GuiUtilsKt.getImageViewContentSize;
+import static net.maxsmr.commonutils.android.gui.GuiUtilsKt.getContentSize;
 import static net.maxsmr.commonutils.android.gui.GuiUtilsKt.getRescaledImageViewSize;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
 
@@ -497,32 +497,32 @@ public class MaskClickLayout extends FrameLayout {
 
     @NotNull
     public Pair<Integer, Integer> getBackgroundImageSize() {
-        return getImageViewContentSize(backgroundImageView);
+        return getContentSize(backgroundImageView);
     }
 
     @NotNull
     public Pair<Integer, Integer> getLayersImageSize() {
-        return getImageViewContentSize(layersImageView);
+        return getContentSize(layersImageView);
     }
 
     @NotNull
     public Pair<Integer, Integer> getMasksImageSize() {
-        return getImageViewContentSize(masksImageView);
+        return getContentSize(masksImageView);
     }
 
     @NotNull
     public Pair<Integer, Integer> getBackgroundRescaledSize() {
-        return getImageViewContentSize(backgroundImageView);
+        return getContentSize(backgroundImageView);
     }
 
     @NotNull
     public Pair<Integer, Integer> getLayersRescaledSize() {
-        return getImageViewContentSize(layersImageView);
+        return getContentSize(layersImageView);
     }
 
     @NotNull
     public Pair<Integer, Integer> getMasksRescaledSize() {
-        return getImageViewContentSize(masksImageView);
+        return getContentSize(masksImageView);
     }
 
     public boolean isLoaded() {

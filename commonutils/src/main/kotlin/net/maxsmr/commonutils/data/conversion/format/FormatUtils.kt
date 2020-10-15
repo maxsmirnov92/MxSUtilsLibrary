@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.data.conversion.format
 
 import android.widget.TextView
-import net.maxsmr.commonutils.android.gui.setText
+import net.maxsmr.commonutils.android.gui.setTextChecked
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import ru.tinkoff.decoro.MaskImpl
 import ru.tinkoff.decoro.parser.UnderscoreDigitSlotsParser
@@ -111,7 +111,7 @@ fun TextView.setFormattedText(
         val newText = formatText(currentText,
                 mask,
                 watcher)
-        setText(this, newText, isDistinct)
+        setTextChecked(newText, isDistinct)
         return watcher
     }
     return null

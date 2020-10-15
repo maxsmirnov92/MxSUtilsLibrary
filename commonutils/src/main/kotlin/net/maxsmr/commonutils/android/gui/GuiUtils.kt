@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.Configuration
+import android.content.res.Resources
 import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
@@ -52,26 +53,28 @@ private const val DEFAULT_DARK_COLOR_RATIO = 0.7
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("GuiUtils")
 
-fun setFullScreen(activity: Activity, toggle: Boolean) {
-    if (toggle) {
-        activity.window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
-        activity.window.clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN)
-    } else {
-        activity.window.addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN)
-        activity.window.clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+fun Activity.setFullScreen(toggle: Boolean) {
+    with(window) {
+        if (toggle) {
+            addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+            clearFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN)
+        } else {
+            addFlags(WindowManager.LayoutParams.FLAG_FORCE_NOT_FULLSCREEN)
+            clearFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN)
+        }
+        decorView.requestLayout()
     }
-    activity.window.decorView.requestLayout()
 }
 
-fun setHomeButtonEnabled(activity: AppCompatActivity, toggle: Boolean) {
-    activity.supportActionBar?.let {
+fun AppCompatActivity.setHomeButtonEnabled(toggle: Boolean) {
+    supportActionBar?.let {
         it.setDisplayShowHomeEnabled(toggle)
         it.setDisplayHomeAsUpEnabled(toggle)
     }
 }
 
-fun isEnterKeyPressed(event: KeyEvent?, actionId: Int): Boolean =
-        event != null && event.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_NULL
+fun KeyEvent?.isEnterKeyPressed(actionId: Int): Boolean =
+        this != null && this.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_NULL
 
 /**
  * Установка [IntervalEditorActionListener] на editor action у [EditText]
@@ -79,8 +82,8 @@ fun isEnterKeyPressed(event: KeyEvent?, actionId: Int): Boolean =
  * @param action пользовательское действие, которое необходимо выполнить при срабатывании
  * (должно вернуть true, если было обработано)
  */
-fun setOnIntervalEditorActionListener(textView: TextView, action: ((TextView, Int, KeyEvent?) -> Boolean)?) {
-    textView.setOnEditorActionListener(object : IntervalEditorActionListener() {
+fun TextView.setOnIntervalEditorActionListener(action: ((TextView, Int, KeyEvent?) -> Boolean)?) {
+    setOnEditorActionListener(object : IntervalEditorActionListener() {
 
         override fun shouldDoAction(v: TextView, actionId: Int, event: KeyEvent?) = true
 
@@ -98,8 +101,8 @@ fun setOnIntervalEditorActionListener(textView: TextView, action: ((TextView, In
  * срабатывает только на Enter
  * @param action пользовательское действие, которое необходимо выполнить при срабатывании
  */
-fun setOnEnterIntervalEditorActionListener(textView: TextView, action: ((TextView) -> Unit)?) {
-    textView.setOnEditorActionListener(object : IntervalEditorActionListener() {
+fun TextView.setOnEnterIntervalEditorActionListener(action: ((TextView) -> Unit)?) {
+    setOnEditorActionListener(object : IntervalEditorActionListener() {
 
         override fun doAction(v: TextView, actionId: Int, event: KeyEvent?): Boolean {
             action?.let {
@@ -115,8 +118,8 @@ fun setOnEnterIntervalEditorActionListener(textView: TextView, action: ((TextVie
  *  срабатывает на Enter и на [EditorInfo.IME_ACTION_NEXT]
  *  @param nextView [View], на которую следует перевести фокус
  */
-fun setOnFocusIntervalEditorActionListener(textView: TextView, nextView: View) {
-    textView.setOnEditorActionListener(object : IntervalEditorActionListener() {
+fun TextView.setOnFocusIntervalEditorActionListener(nextView: View) {
+    setOnEditorActionListener(object : IntervalEditorActionListener() {
 
         override fun shouldDoAction(v: TextView, actionId: Int, event: KeyEvent?) = actionId == EditorInfo.IME_ACTION_NEXT
                 || actionId == EditorInfo.IME_NULL // именно такой id будет при хардварном Enter
@@ -130,9 +133,9 @@ fun setOnFocusIntervalEditorActionListener(textView: TextView, nextView: View) {
 /**
  * Устанавливает курсор в конец строки
  */
-fun setSelectionToEnd(edit: EditText) {
-    if (edit.text.isNotEmpty()) {
-        edit.setSelection(edit.text.length)
+fun EditText.setSelectionToEnd() {
+    if (text.isNotEmpty()) {
+        setSelection(text.length)
     }
 }
 
@@ -142,10 +145,10 @@ fun setSelectionToEnd(edit: EditText) {
  * @param length целочисленное значение, соответствующее максимальному
  * количеству символов, допустимых к набору в [EditText].
  */
-fun setMaxLength(view: EditText, length: Int) {
+fun EditText.setMaxLength(length: Int) {
     if (length >= 0) {
         val inputTextFilter = InputFilter.LengthFilter(length)
-        view.filters = view.filters
+        filters = filters
                 .filterNot { it is InputFilter.LengthFilter }
                 .toTypedArray()
                 .plus(inputTextFilter)
@@ -155,8 +158,8 @@ fun setMaxLength(view: EditText, length: Int) {
 /**
  * Снятие лимита на количество символов допустимых к набору в [EditText]
  */
-fun clearMaxLength(view: EditText) {
-    view.filters = view.filters
+fun EditText.clearMaxLength() {
+    filters = filters
             .filterNot { it is InputFilter.LengthFilter }
             .toTypedArray()
 }
@@ -164,44 +167,42 @@ fun clearMaxLength(view: EditText) {
 /**
  * Добавить кликабельную картинку вместо последнего символа в строке
  */
-fun appendClickableImageTextView(
-        textView: TextView,
+fun TextView.appendClickableImageTextView(
         @DrawableRes drawableResId: Int,
         spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
         clickFunc: () -> Unit = {}
-): CharSequence {
-    val text = textView.text
-    return appendClickableImage(textView.context, text, drawableResId, spanFlags, clickFunc)
-}
+): CharSequence =
+        appendClickableImage(context, text, drawableResId, spanFlags, clickFunc)
+
 
 /**
  * Убрать нижнее подчеркивание для текущего text
  */
-fun removeUnderlineTextView(view: TextView): CharSequence =
-        setTextWithMovementMethod(view, removeUnderline(view.text))
+fun TextView.removeUnderlineTextView(): CharSequence =
+        setTextWithMovementMethod(removeUnderline(this.text))
 
 /**
  * Установить html текст в TextView
  */
-fun setHtmlText(textView: TextView, text: CharSequence): CharSequence {
-    return setTextWithMovementMethod(textView, parseHtmlToSpannedStringNoThrow(text))
-}
+fun TextView.setHtmlText(text: CharSequence): CharSequence =
+        setTextWithMovementMethod(parseHtmlToSpannedStringNoThrow(text))
 
-fun setHtmlText(textView: TextView, @StringRes resId: Int) =
-        setHtmlText(textView, textView.resources.getString(resId))
+
+fun TextView.setHtmlText(@StringRes resId: Int) =
+        setHtmlText(resources.getString(resId))
 
 @JvmOverloads
-fun setLinkFromHtml(textView: TextView, @StringRes htmlLinkResId: Int, removeUnderlying: Boolean = true) =
-        setLinkFromHtml(textView, textView.resources.getString(htmlLinkResId), removeUnderlying)
+fun TextView.setLinkFromHtml(@StringRes htmlLinkResId: Int, removeUnderlying: Boolean = true) =
+        setLinkFromHtml(resources.getString(htmlLinkResId), removeUnderlying)
 
 /**
  * Установить ссылку из html-текста
  */
 @JvmOverloads
-fun setLinkFromHtml(textView: TextView, htmlLink: String, removeUnderlying: Boolean = true): CharSequence {
-    val result = setHtmlText(textView, htmlLink)
+fun TextView.setLinkFromHtml(htmlLink: String, removeUnderlying: Boolean = true): CharSequence {
+    val result = setHtmlText(htmlLink)
     if (removeUnderlying) {
-        removeUnderlineTextView(textView)
+        removeUnderlineTextView()
     }
     return result
 }
@@ -210,23 +211,15 @@ fun setLinkFromHtml(textView: TextView, htmlLink: String, removeUnderlying: Bool
  * Установить кликабельный span
  * с кастомным действием при нажатии
  */
-fun setTextWithCustomSpan(
-        textView: TextView,
-        text: CharSequence,
-        spanInfos: Collection<SpanInfo>
-): CharSequence =
-        setTextWithMovementMethod(textView, createCustomSpanText(text, spanInfos))
+fun TextView.setTextWithCustomSpan(text: CharSequence, spanInfos: Collection<SpanInfo>): CharSequence =
+        setTextWithMovementMethod(createCustomSpanText(text, spanInfos))
 
 /**
  * @param text в строке аргументы с префиксами "^" будут заменены на [CharacterStyle]
  * @param spanInfosMap маппинг информации о [Spannable] + link для перехода по клику по нему
  */
-fun setTextWithCustomSpanExpanded(
-        textView: TextView,
-        text: CharSequence,
-        spanInfosMap: Map<SpanInfo, String>
-): CharSequence =
-        setTextWithMovementMethod(textView, createCustomSpanTextExpanded(text, spanInfosMap))
+fun TextView.setTextWithCustomSpanExpanded(text: CharSequence, spanInfosMap: Map<SpanInfo, String>): CharSequence =
+        setTextWithMovementMethod(createCustomSpanTextExpanded(text, spanInfosMap))
 
 
 /**
@@ -235,24 +228,19 @@ fun setTextWithCustomSpanExpanded(
  * в указанном диапазоне
  * @param spanInfosMap маппинг информации о [Spannable] + link для перехода по клику по нему
  */
-fun setLinkableText(
-        textView: TextView,
-        text: CharSequence,
-        spanInfosMap: Map<SpanInfo, String>
-): CharSequence =
-        setTextWithMovementMethod(textView, createLinkableText(text, spanInfosMap))
+fun TextView.setLinkableText(text: CharSequence, spanInfosMap: Map<SpanInfo, String>): CharSequence =
+        setTextWithMovementMethod(createLinkableText(text, spanInfosMap))
 
 /**
  * Выставить [html] в кач-ве html текста, но для кликабельных сегментов оповещать о клике
  */
 @JvmOverloads
-fun replaceUrlSpans(
-        textView: TextView,
+fun TextView.replaceUrlSpans(
         html: String,
         removeUnderlying: Boolean = true,
         action: ((URLSpan) -> Boolean)? = null
 ): CharSequence =
-        setTextWithMovementMethod(textView, replaceUrlSpansByClickableSpans(textView.context, html, removeUnderlying, action))
+        setTextWithMovementMethod(replaceUrlSpansByClickableSpans(context, html, removeUnderlying, action))
 
 /**
  * Установить текст с выделенным текстом
@@ -260,44 +248,43 @@ fun replaceUrlSpans(
  * @param str текст
  * @param selection текст для выделения (ищется первое вхождение [selection] в [str]
  */
-fun setTextWithSelection(
-        view: TextView,
+fun TextView.setTextWithSelection(
         text: String,
         @ColorInt highlightColor: Int,
         selection: String,
         spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
 ) {
-    setTextWithMovementMethod(view, createSelectedText(text, highlightColor, selection, spanFlags))
+    setTextWithMovementMethod(createSelectedText(text, highlightColor, selection, spanFlags))
 }
 
-fun setTextWithVisibility(
-        view: TextView,
+fun TextView.setTextWithVisibility(
         text: CharSequence?,
         distinct: Boolean = true,
-        asString: Boolean = true
+        asString: Boolean = true,
+        isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it)}
 ) {
-    if (isEmpty(text)) {
-        view.visibility = View.GONE
+    visibility = if (isEmptyFunc(text)) {
+        this.text = null
+        View.GONE
     } else {
-        setText(view, text, distinct, asString)
-        view.visibility = View.VISIBLE
+        setTextChecked(text, distinct, asString)
+        View.VISIBLE
     }
 }
 
-fun setTextWithSelectionToEnd(
-        edit: EditText,
+fun EditText.setTextWithSelectionToEnd(
         text: CharSequence,
         distinct: Boolean = true,
         asString: Boolean = true
 ) {
-    setText(edit, text, distinct, asString)
+    setTextChecked(text, distinct, asString)
     // после возможных фильтров текст мог измениться
-    setSelectionToEnd(edit)
+    setSelectionToEnd()
 }
 
-fun setInputErrorTextColor(on: TextInputLayout, color: Int) {
+fun TextInputLayout.setInputErrorTextColor(color: Int) {
     try {
-        val view = ReflectionUtils.getFieldValue<TextView, TextInputLayout>(TextInputLayout::class.java, on, "mErrorView")
+        val view = ReflectionUtils.getFieldValue<TextView, TextInputLayout>(TextInputLayout::class.java, this, "mErrorView")
         view?.let {
             it.setTextColor(color)
             it.requestLayout()
@@ -308,8 +295,7 @@ fun setInputErrorTextColor(on: TextInputLayout, color: Int) {
 }
 
 @JvmOverloads
-fun setInputError(
-        til: TextInputLayout,
+fun TextInputLayout.setInputError(
         @StringRes messageResId: Int?,
         errorEnabledByDefault: Boolean = false,
         requestFocusIfError: Boolean = true,
@@ -318,49 +304,46 @@ fun setInputError(
     val message = if (messageResId == null || messageResId == 0) {
         null
     } else {
-        til.resources.getString(messageResId)
+        resources.getString(messageResId)
     }
-    setInputError(til, message, errorEnabledByDefault, requestFocusIfError, distinct)
+    setInputError(message, errorEnabledByDefault, requestFocusIfError, distinct)
 }
 
 @JvmOverloads
-fun setInputError(
-        til: TextInputLayout,
+fun TextInputLayout.setInputError(
         message: CharSequence?,
         errorEnabledByDefault: Boolean = false,
         requestFocusIfError: Boolean = true,
         distinct: Boolean = true
 ) {
-    if (!distinct || til.error != message) {
+    if (!distinct || error != message) {
         val isErrorEnabled = errorEnabledByDefault || !isEmpty(message)
-        til.error = message
-        til.isErrorEnabled = isErrorEnabled
-        til.refreshDrawableState()
+        error = message
+        this.isErrorEnabled = isErrorEnabled
+        refreshDrawableState()
         if (requestFocusIfError && isErrorEnabled) {
-            requestFocus(til)
+            requestFocus(this)
         }
     }
 }
 
-fun clearInputError(til: TextInputLayout, force: Boolean = false) {
-    if (force || til.error != null) {
-        til.error = null
-        til.isErrorEnabled = false
-        til.refreshDrawableState()
+fun TextInputLayout.clearInputError(force: Boolean = false) {
+    if (force || error != null) {
+        error = null
+        isErrorEnabled = false
+        refreshDrawableState()
     }
 }
 
-fun setEditTextHintByError(on: TextInputLayout, hint: String = EMPTY_STRING) {
-    on.editText?.let {
-        it.hint = if (isEmpty(on.error)) null else hint
+fun TextInputLayout.setEditTextHintByError(hint: String = EMPTY_STRING) {
+    editText?.let {
+        it.hint = if (isEmpty(this.error)) null else hint
     }
 }
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-fun setDefaultStatusBarColor(activity: Activity) {
-    setStatusBarColor(activity,
-            getColorFromAttrs(activity.window.context, intArrayOf(R.attr.colorPrimaryDark))
-    )
+fun Activity.setDefaultStatusBarColor() {
+    setStatusBarColor(getColorFromAttrs(window.context, intArrayOf(R.attr.colorPrimaryDark)))
 }
 
 /**
@@ -368,18 +351,18 @@ fun setDefaultStatusBarColor(activity: Activity) {
  * Так же, красит иконки статус бара в серый цвет, если SDK >= 23 и устанавливаемый цвет слишком белый
  */
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-fun setStatusBarColor(activity: Activity, @ColorInt color: Int) {
+fun Activity.setStatusBarColor(@ColorInt color: Int) {
     if (SdkUtils.isAtLeastLollipop()) {
-        activity.window.statusBarColor = color
+        window.statusBarColor = color
         if (SdkUtils.isAtLeastMarshmallow()) {
             // если цвет слишком белый, то красим иконки statusbar'а в серый цвет
             // инчае возвращаем к дефолтному белому
             if (ColorUtils.calculateLuminance(color).compareTo(DEFAULT_DARK_COLOR_RATIO) != -1) {
-                var flags = activity.window.decorView.systemUiVisibility
+                var flags = window.decorView.systemUiVisibility
                 flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                activity.window.decorView.systemUiVisibility = flags
+                window.decorView.systemUiVisibility = flags
             } else {
-                activity.window.decorView.systemUiVisibility = 0
+                window.decorView.systemUiVisibility = 0
             }
         }
     }
@@ -391,12 +374,12 @@ fun setStatusBarColor(activity: Activity, @ColorInt color: Int) {
  * @param v      корневая [View] лейаута
  * @param isLight true тёмные icons, false - светлые
  */
-fun setStatusBarLightColor(v: View, isLight: Boolean) {
+fun View.setStatusBarLightColor(isLight: Boolean) {
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
         try {
-            var flags = v.systemUiVisibility
+            var flags = systemUiVisibility
             flags = if (isLight) flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR else flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
-            v.systemUiVisibility = flags
+            systemUiVisibility = flags
         } catch (e: Exception) {
             logger.e("An exception occurred: ${e.message}", e)
         }
@@ -404,19 +387,17 @@ fun setStatusBarLightColor(v: View, isLight: Boolean) {
 }
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-fun setDefaultNavigationColor(activity: Activity) {
-    setNavigationBarColor(activity,
-            getColorFromAttrs(activity.window.context, intArrayOf(R.attr.colorPrimaryDark))
-    )
+fun Activity.setDefaultNavigationColor() {
+    setNavigationBarColor(getColorFromAttrs(window.context, intArrayOf(R.attr.colorPrimaryDark)))
 }
 
 /**
  * Красит нав бар в указанный цвет
  */
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
-fun setNavigationBarColor(activity: Activity, @ColorInt color: Int) {
+fun Activity.setNavigationBarColor(@ColorInt color: Int) {
     if (SdkUtils.isAtLeastLollipop()) {
-        activity.window.navigationBarColor = color
+        window.navigationBarColor = color
     }
 }
 
@@ -424,14 +405,13 @@ fun setNavigationBarColor(activity: Activity, @ColorInt color: Int) {
  * Выставить [icon] с фильтром [color] в кач-ве background для [View]
  */
 @SuppressLint("ResourceType")
-fun setViewBackgroundTint(
-        view: View,
+fun View.setBackgroundTint(
         @DrawableRes icon: Int,
         @ColorInt color: Int,
         mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ): Drawable? {
-    with(getColoredDrawable(view.context.resources, icon, color, mode)) {
-        view.background = this
+    with(getColoredDrawable(context.resources, icon, color, mode)) {
+        background = this
         return this
     }
 }
@@ -440,14 +420,13 @@ fun setViewBackgroundTint(
  * Выставить [icon] с фильтром [color] в кач-ве src для [ImageView]
  */
 @SuppressLint("ResourceType")
-fun setImageViewTint(
-        view: ImageView,
+fun ImageView.setTint(
         @DrawableRes icon: Int,
         @ColorInt color: Int,
         mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ): Drawable? {
-    with(getColoredDrawable(view.context.resources, icon, color, mode)) {
-        view.setImageDrawable(this)
+    with(getColoredDrawable(context.resources, icon, color, mode)) {
+        setImageDrawable(this)
         return this
     }
 }
@@ -455,50 +434,46 @@ fun setImageViewTint(
 /**
  * Выставить фильтр с [ColorStateList], полученным по [resourceId]
  */
-fun setImageViewTintResource(view: ImageView, resourceId: Int) {
-    setImageViewTint(view, ContextCompat.getColorStateList(view.context, resourceId))
+fun ImageView.setTintResource(resourceId: Int) {
+    setTint(ContextCompat.getColorStateList(context, resourceId))
 }
 
 /**
  * Выставить фильтр с цветом [color] для [ImageView]
  */
-fun setImageViewTint(view: ImageView, @ColorInt color: Int) {
-    setImageViewTint(view, ColorStateList.valueOf(color))
+fun ImageView.setTint(@ColorInt color: Int) {
+    setTint(ColorStateList.valueOf(color))
 }
 
 /**
  * Выставить цветовой фильтр [ColorStateList] для src в [ImageView]
  */
-fun setImageViewTint(
-        view: ImageView,
+fun ImageView.setTint(
         colorStateList: ColorStateList?,
         mode: PorterDuff.Mode = PorterDuff.Mode.SRC_ATOP
 ) {
     if (SdkUtils.isAtLeastLollipop()) {
-        view.imageTintList = colorStateList
-        view.imageTintMode = mode
+        imageTintList = colorStateList
+        imageTintMode = mode
     } else {
-        view.setColorFilter(colorStateList?.defaultColor ?: Color.TRANSPARENT, mode)
+        setColorFilter(colorStateList?.defaultColor ?: Color.TRANSPARENT, mode)
     }
 }
 
+fun ImageView.getContentSize(): Pair<Int, Int> =
+        drawable?.let {  Pair(it.intrinsicWidth, it.intrinsicHeight) } ?: Pair(0, 0)
 
-fun getImageViewContentSize(imageView: ImageView): Pair<Int, Int> {
-    val d = imageView.drawable
-    return if (d != null) Pair(d.intrinsicWidth, d.intrinsicHeight) else Pair(0, 0)
-}
-
-fun getRescaledImageViewSize(imageView: ImageView): Pair<Int?, Int?> {
+fun ImageView.getRescaledImageViewSize(): Pair<Int?, Int?> {
     var measuredWidth: Int
     var measuredHeight: Int
     val intrinsicHeight: Int
     val intrinsicWidth: Int
-    measuredWidth = imageView.measuredWidth //width of imageView
-    measuredHeight = imageView.measuredHeight //height of imageView
-    val dSize = getImageViewContentSize(imageView)
-    intrinsicWidth = dSize.first //original width of underlying image
-    intrinsicHeight = dSize.second //original height of underlying image
-    if (intrinsicHeight != 0 && intrinsicWidth != 0) {
+    measuredWidth = this.measuredWidth //width of imageView
+    measuredHeight = this.measuredHeight //height of imageView
+    val size = getContentSize()
+    intrinsicWidth = size.first //original width of underlying image
+    intrinsicHeight = size.second //original height of underlying image
+    if (intrinsicHeight > 0 && intrinsicWidth > 0) {
         if (measuredHeight / intrinsicHeight <= measuredWidth / intrinsicWidth) {
             measuredWidth = intrinsicWidth * measuredHeight / intrinsicHeight
         } //rescaled width of image within ImageView
@@ -509,45 +484,44 @@ fun getRescaledImageViewSize(imageView: ImageView): Pair<Int?, Int?> {
     return Pair(measuredWidth, measuredHeight)
 }
 
-fun getViewInset(view: View?): Int {
-    if (view == null) {
-        return 0
-    }
-    val statusBarHeight = getStatusBarHeight(view.context)
-    if (statusBarHeight < 0) {
-        return 0
-    }
-    val dm = view.context.resources.displayMetrics
-    if (Build.VERSION.SDK_INT < 21 || view.height == dm.heightPixels || view.height == dm.heightPixels - statusBarHeight) {
-        return 0
-    }
-    try {
-        val infoField = View::class.java.getDeclaredField("mAttachInfo")
-        infoField.isAccessible = true
-        val info = infoField[view]
-        if (info != null) {
-            val insetsField = info.javaClass.getDeclaredField("mStableInsets")
-            insetsField.isAccessible = true
-            val insets = insetsField[info] as Rect
-            return insets.bottom
+fun View.getViewInset(): Int {
+    with(this.context.resources) {
+        val statusBarHeight = getStatusBarHeight()
+        if (statusBarHeight < 0) {
+            return 0
         }
-    } catch (e: Exception) {
-        logger.e("An exception occurred: ${e.message}", e)
+        val dm = displayMetrics
+        if (Build.VERSION.SDK_INT < 21 || this@getViewInset.height == dm.heightPixels || this@getViewInset.height == dm.heightPixels - statusBarHeight) {
+            return 0
+        }
+        try {
+            val infoField = View::class.java.getDeclaredField("mAttachInfo")
+            infoField.isAccessible = true
+            val info = infoField[this@getViewInset]
+            if (info != null) {
+                val insetsField = info.javaClass.getDeclaredField("mStableInsets")
+                insetsField.isAccessible = true
+                val insets = insetsField[info] as Rect
+                return insets.bottom
+            }
+        } catch (e: Exception) {
+            logger.e("An exception occurred: ${e.message}", e)
+        }
     }
     return 0
 }
 
-fun getStatusBarHeight(context: Context): Int {
-    val resourceId = context.resources.getIdentifier("status_bar_height", "dimen", "android")
+fun Resources.getStatusBarHeight(): Int {
+    val resourceId = getIdentifier("status_bar_height", "dimen", "android")
     return if (resourceId > 0) {
-        context.resources.getDimensionPixelSize(resourceId)
+        getDimensionPixelSize(resourceId)
     } else 0
 }
 
 fun getKeyboardHeight(rootView: View, targetView: View): Int {
     val rect = Rect()
     targetView.getWindowVisibleDisplayFrame(rect)
-    val usableViewHeight = rootView.height - (if (rect.top != 0) getStatusBarHeight(rootView.context) else 0) - getViewInset(rootView)
+    val usableViewHeight = rootView.height - (if (rect.top != 0) rootView.context.resources.getStatusBarHeight() else 0) - rootView.getViewInset()
     return usableViewHeight - (rect.bottom - rect.top)
 }
 
@@ -595,15 +569,10 @@ fun isKeyboardShown(view: View?): Boolean {
 
 @JvmOverloads
 fun showKeyboard(
-        activity: Activity?,
-        flags: Int = InputMethodManager.SHOW_IMPLICIT,
-        requestFocus: Boolean = true
-): Boolean {
-    activity?.let {
-        return showKeyboard(activity.currentFocus, flags, requestFocus)
-    }
-    return false
-}
+        activity: Activity,
+        flags: Int = InputMethodManager.SHOW_IMPLICIT
+): Boolean =
+        showKeyboard(activity.currentFocus, flags, false)
 
 @JvmOverloads
 fun showKeyboard(
@@ -621,14 +590,10 @@ fun showKeyboard(
 }
 
 fun hideKeyboard(
-        activity: Activity?,
+        activity: Activity,
         flags: Int = 0,
         clearFocus: Boolean = true
-) {
-    activity?.let {
-        hideKeyboard(activity.currentFocus, flags, clearFocus)
-    }
-}
+) = hideKeyboard(activity.currentFocus, flags, clearFocus)
 
 fun hideKeyboard(
         hostView: View?,
@@ -730,9 +695,8 @@ fun clearFocus(view: View?): Boolean {
 /**
  * @return true if focus cleared, false otherwise
  */
-fun clearFocus(act: Activity?): Boolean {
-    return clearFocus(act?.currentFocus)
-}
+fun clearFocus(act: Activity?): Boolean =
+        clearFocus(act?.currentFocus)
 
 /**
  * Выполнить [action] с проверкой
@@ -780,13 +744,13 @@ fun showToastWithDuration(targetDuration: Long, toastFunc: (() -> Toast)): Count
     }.start()
 }
 
-fun getSelectedIndexInRadioGroup(group: RadioGroup): Int {
-    val radioButtonId = group.checkedRadioButtonId
-    val radioButton = group.findViewById<RadioButton>(radioButtonId) ?: null
-    return radioButton?.let { group.indexOfChild(it) } ?: RecyclerView.NO_POSITION
+fun RadioGroup.getSelectedIndex(): Int {
+    val radioButtonId = checkedRadioButtonId
+    val radioButton = findViewById<RadioButton>(radioButtonId) ?: null
+    return radioButton?.let { indexOfChild(it) } ?: RecyclerView.NO_POSITION
 }
 
-fun collapseToolbar(rootLayout: CoordinatorLayout, coordinatorChild: View, appbarLayout: AppBarLayout) {
+fun collapseToolbar(rootLayout: CoordinatorLayout, coordinatorChild: View, appBarLayout: AppBarLayout) {
     var found = false
     for (i in 0 until rootLayout.childCount) {
         if (rootLayout.getChildAt(i) === coordinatorChild) {
@@ -796,18 +760,18 @@ fun collapseToolbar(rootLayout: CoordinatorLayout, coordinatorChild: View, appba
     require(found) { "view $coordinatorChild is not a child of $rootLayout" }
     val params = coordinatorChild.layoutParams as CoordinatorLayout.LayoutParams
     val behavior = params.behavior as ScrollingViewBehavior?
-    behavior?.onNestedFling(rootLayout, appbarLayout, coordinatorChild, 0f, 10000f, true)
+    behavior?.onNestedFling(rootLayout, appBarLayout, coordinatorChild, 0f, 10000f, true)
 }
 
-fun setBottomSheetHideable(dialog: BottomSheetDialog, toggle: Boolean) {
-    val behavior: BottomSheetBehavior<*>? = ReflectionUtils.getFieldValue<BottomSheetBehavior<*>, BottomSheetDialog>(BottomSheetDialog::class.java, dialog, "mBehavior")
+fun BottomSheetDialog.setHideable(toggle: Boolean) {
+    val behavior: BottomSheetBehavior<*>? = ReflectionUtils.getFieldValue<BottomSheetBehavior<*>, BottomSheetDialog>(BottomSheetDialog::class.java, this, "mBehavior")
     behavior?.let {
         it.isHideable = toggle
     }
 }
 
-fun getViewSize(view: View): Pair<Int, Int> {
-    view.layoutParams.let {
+fun View.getSize(): Pair<Int, Int> {
+    layoutParams.let {
         return Pair(it.width, it.height)
     }
 }
@@ -873,8 +837,7 @@ fun getViewsRotationForDisplay(context: Context, displayRotation: Int): Int {
 }
 
 @JvmOverloads
-fun calculateMaxTextSize(
-        textView: TextView,
+fun TextView.calculateMaxTextSize(
         maxWidthTextLength: Int,
         maxTextSize: Float,
         maxTextSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
@@ -884,33 +847,32 @@ fun calculateMaxTextSize(
     for (i in 0 until maxWidthTextLength) {
         text.append("0")
     }
-    return calculateMaxTextSize(textView, text.toString(), maxTextSize, maxTextSizeUnit, measuredViewWidth)
+    return calculateMaxTextSize(text.toString(), maxTextSize, maxTextSizeUnit, measuredViewWidth)
 }
 
 @JvmOverloads
-fun calculateMaxTextSize(
-        textView: TextView,
+fun TextView.calculateMaxTextSize(
         maxWidthText: CharSequence,
         maxTextSize: Float,
         maxTextSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
         measuredViewWidth: Int = 0
 ): Float {
     if (maxWidthText.isEmpty() || maxTextSize <= 0) return maxTextSize
-    val measuredWidth = if (measuredViewWidth <= 0) textView.width else measuredViewWidth
+    val measuredWidth = if (measuredViewWidth <= 0) width else measuredViewWidth
     if (measuredWidth == 0) return maxTextSize
 
     val maxWidthString = maxWidthText.toString()
     var resultSize = maxTextSize
 
     val paint = Paint()
-    paint.typeface = textView.typeface
+    paint.typeface = typeface
 
-    paint.textSize = convertAnyToPx(resultSize, maxTextSizeUnit, textView.context)
+    paint.textSize = convertAnyToPx(resultSize, maxTextSizeUnit, context)
     var measureText = paint.measureText(maxWidthString)
 
     while (resultSize > 0 && measureText > measuredWidth) {
         resultSize--
-        paint.textSize = convertAnyToPx(resultSize, maxTextSizeUnit, textView.context)
+        paint.textSize = convertAnyToPx(resultSize, maxTextSizeUnit, context)
         measureText = paint.measureText(maxWidthString)
     }
     if (resultSize == 0f) {
@@ -922,51 +884,30 @@ fun calculateMaxTextSize(
 /**
  * @return relative coordinates to the parent
  */
-fun calculateCoordsForChild(childView: View, parent: ViewGroup): Rect {
+fun View.getBoundsByParent(parent: ViewGroup): Rect {
     val offsetViewBounds = Rect();
-    childView.getDrawingRect(offsetViewBounds);
-    parent.offsetDescendantRectToMyCoords(childView, offsetViewBounds);
+    getDrawingRect(offsetViewBounds);
+    parent.offsetDescendantRectToMyCoords(this, offsetViewBounds);
     return offsetViewBounds
 }
 
 @JvmOverloads
-fun setTextDistinct(
-        view: TextView,
-        text: CharSequence?,
-        asString: Boolean = true
-) {
-    if (if (asString) view.text?.toString() != text.toString() else view.text != text) {
-        view.text = text
+fun TextView.setTextDistinct(text: CharSequence?, asString: Boolean = true) {
+    if (if (asString) this.text?.toString() != text.toString() else this.text != text) {
+        this.text = text
     }
 }
 
 @JvmOverloads
-fun setText(
-        view: TextView,
+fun TextView.setTextChecked(
         text: CharSequence?,
         distinct: Boolean = true,
         asString: Boolean = true
 ) {
     if (!distinct) {
-        view.text = text
+        this.text = text
     } else {
-        setTextDistinct(view, text, asString)
-    }
-}
-
-@JvmOverloads
-fun setTextOrHide(
-        view: TextView,
-        text: CharSequence?,
-        distinct: Boolean = true,
-        asString: Boolean = true,
-        isEmptyFunc: (CharSequence?) -> Boolean = { it.isNullOrEmpty() }
-) {
-    if (isEmptyFunc(text)) {
-        view.visibility = View.GONE
-    } else {
-        setText(view, text, distinct, asString)
-        view.visibility = View.VISIBLE
+        setTextDistinct(text, asString)
     }
 }
 
@@ -978,7 +919,6 @@ fun TextView.observePlaceholderOrLabelHint(
         setHintFunc: ((CharSequence) -> Unit)? = null,
         isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
 ) = observePlaceholderOrLabelHint(inputLayout, context.getString(placeholderTextResId), context.getString(labelTextResId), setHintFunc, isForPlaceholderFunc)
-
 
 /**
  * Меняет в динамике hint в зав-ти от текста
@@ -1056,9 +996,9 @@ fun TextView.setupPlaceholderOrLabelHint(
     }
 }
 
-private fun setTextWithMovementMethod(textView: TextView, text: CharSequence): CharSequence {
-    textView.text = text
-    textView.movementMethod = LinkMovementMethod.getInstance()
+private fun TextView.setTextWithMovementMethod(text: CharSequence): CharSequence {
+    this.text = text
+    this.movementMethod = LinkMovementMethod.getInstance()
     return text
 }
 
@@ -1099,7 +1039,7 @@ class DisableErrorTextWatcher(private val layouts: Collection<TextInputLayout>) 
     override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
         for (l in layouts) {
             if (isClearingEnabled) {
-                clearInputError(l)
+                l.clearInputError()
             }
         }
     }

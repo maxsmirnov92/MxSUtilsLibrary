@@ -25,32 +25,30 @@ const val ALL_STATES = 10 // Все состояния
  * Запрашиваем проскрол для отображения вью
  * @return Whether any parent scrolled.
  */
-fun requestScrollOnScreen(view: View) =
-        view.post {
-            val rect = Rect(0, 0, view.width, view.height)
-            view.requestRectangleOnScreen(rect, false)
-        }
+fun View.requestScrollOnScreen() = post {
+    val rect = Rect(0, 0, width, height)
+    requestRectangleOnScreen(rect, false)
+}
 
 /**
  * Определяет возможность скролла у [RecyclerView] с [LinearLayoutManager]
  * @param isFromStart смотреть от начала
  */
 @JvmOverloads
-fun isScrollable(view: RecyclerView, isFromStart: Boolean = false): Boolean? {
-    val layoutManager = view.layoutManager as? LinearLayoutManager ?: return null
-    val adapter = view.adapter ?: return null
+fun RecyclerView.isScrollable(isFromStart: Boolean = false): Boolean? {
+    val layoutManager = this.layoutManager as? LinearLayoutManager ?: return null
+    val adapter = this.adapter ?: return null
     return layoutManager.findLastCompletelyVisibleItemPosition() < adapter.itemCount - 1
             && (isFromStart.not() || layoutManager.findFirstCompletelyVisibleItemPosition() == 0)
 }
 
 @JvmOverloads
-fun setOnScrollChangesListener(
-        view: RecyclerView,
+fun RecyclerView.setOnScrollChangesListener(
         layoutManager: LinearLayoutManager,
         controlState: Int = ALL_STATES,
         listener: ((RecyclerScrollState) -> Unit)
 ) {
-    view.addOnScrollListener(object : RecyclerView.OnScrollListener() {
+    addOnScrollListener(object : RecyclerView.OnScrollListener() {
 
         var previousFirstVisiblePosition: Int? = null
 
@@ -77,22 +75,21 @@ fun setOnScrollChangesListener(
 }
 
 @TargetApi(Build.VERSION_CODES.M)
-fun setOnScrollChangesListener(view: ScrollView, listener: ((ScrollState) -> Unit)) {
-    view.setOnScrollChangeListener { _, scrollX, scrollY, oldScrollX, oldScrollY ->
-        listener.invoke(detectScrollChangesByParams(view, scrollX, scrollY, oldScrollX, oldScrollY))
+fun ScrollView.setOnScrollChangesListener(listener: ((ScrollState) -> Unit)) {
+    setOnScrollChangeListener { _, scrollX, scrollY, oldScrollX, oldScrollY ->
+        listener.invoke(detectScrollChangesByParams(scrollX, scrollY, oldScrollX, oldScrollY))
     }
 }
 
 @TargetApi(Build.VERSION_CODES.M)
-fun setOnScrollChangesListener(view: NestedScrollView, listener: ((ScrollState) -> Unit)) {
-    view.setOnScrollChangeListener { _, scrollX, scrollY, oldScrollX, oldScrollY ->
-        listener.invoke(detectScrollChangesByParams(view, scrollX, scrollY, oldScrollX, oldScrollY))
+fun NestedScrollView.setOnScrollChangesListener(listener: ((ScrollState) -> Unit)) {
+    setOnScrollChangeListener { _, scrollX, scrollY, oldScrollX, oldScrollY ->
+        listener.invoke(detectScrollChangesByParams(scrollX, scrollY, oldScrollX, oldScrollY))
     }
 }
 
 @JvmOverloads
-fun scrollToView(
-        view: ScrollView,
+fun ScrollView.scrollToView(
         activity: Activity?,
         target: View,
         isVertically: Boolean,
@@ -100,7 +97,7 @@ fun scrollToView(
 ) {
     val x: Int
     val y: Int
-    val coords = calculateCoordsForChild(target, view)
+    val coords = target.getBoundsByParent(this)
     if (isVertically) {
         x = 0
         y = coords.top
@@ -108,15 +105,14 @@ fun scrollToView(
         x = coords.left
         y = 0
     }
-    scrollTo(view, activity, x, y, smoothScroll)
+    scrollTo(activity, x, y, smoothScroll)
 }
 
 /**
  * Скролл в указанную позицию (x, y) [ScrollView]
  */
 @JvmOverloads
-fun scrollTo(
-        view: ScrollView,
+fun ScrollView.scrollTo(
         activity: Activity?,
         x: Int,
         y: Int,
@@ -127,15 +123,15 @@ fun scrollTo(
         // если не очистить текущий фокус,
         // может не сработать
         clearFocus(activity)
-        view.fullScroll(View.FOCUS_DOWN)
+        fullScroll(View.FOCUS_DOWN)
     }
     if (smoothScroll) {
-        view.smoothScrollTo(x, y)
+        smoothScrollTo(x, y)
     } else {
-        view.scrollTo(x, y)
+        scrollTo(x, y)
     }
     if (changeFocus) {
-        view.parent.requestChildFocus(view, view)
+        parent.requestChildFocus(this, this)
     }
 }
 
@@ -143,16 +139,12 @@ fun scrollTo(
  * Скролл в указанную позицию [RecyclerView]
  */
 @JvmOverloads
-fun scrollTo(
-        view: RecyclerView,
-        position: Int,
-        smoothScroll: Boolean = true
-) {
+fun RecyclerView.scrollTo(position: Int, smoothScroll: Boolean = true) {
     if (position != RecyclerView.NO_POSITION) {
         if (smoothScroll) {
-            view.smoothScrollToPosition(position)
+            smoothScrollToPosition(position)
         } else {
-            view.scrollToPosition(position)
+            scrollToPosition(position)
         }
     }
 }
@@ -162,13 +154,13 @@ fun scrollTo(
  * прокрутить на указанный [offset] с анимацией или без
  */
 @JvmOverloads
-fun scrollByOffset(layout: AppBarLayout, offset: Int, animationDuration: Long = SCROLL_ANIMATION_DURATION) {
-    val params = layout.layoutParams as CoordinatorLayout.LayoutParams
+fun AppBarLayout.scrollByOffset(offset: Int, animationDuration: Long = SCROLL_ANIMATION_DURATION) {
+    val params = layoutParams as CoordinatorLayout.LayoutParams
     val behavior = params.behavior as AppBarLayout.Behavior?
     behavior?.let {
         val offsetLambda: ((Int) -> Unit) = { offset ->
             behavior.topAndBottomOffset = offset
-            layout.requestLayout()
+            requestLayout()
         }
         if (animationDuration > 0) {
             val valueAnimator = ValueAnimator.ofInt()
@@ -185,13 +177,13 @@ fun scrollByOffset(layout: AppBarLayout, offset: Int, animationDuration: Long = 
     }
 }
 
-private fun detectScrollChangesByParams(v: ViewGroup, scrollX: Int, scrollY: Int, oldScrollX: Int, oldScrollY: Int): ScrollState =
+private fun ViewGroup.detectScrollChangesByParams(scrollX: Int, scrollY: Int, oldScrollX: Int, oldScrollY: Int): ScrollState =
         when {
-            scrollX == (v.getChildAt(0).measuredWidth - v.measuredWidth) && scrollX != oldScrollX -> END
+            scrollX == (getChildAt(0).measuredWidth - measuredWidth) && scrollX != oldScrollX -> END
             scrollX > oldScrollX -> RIGHT
             scrollX < oldScrollX -> LEFT
             scrollX == 0 && oldScrollX != 0 -> START
-            scrollY == (v.getChildAt(0).measuredHeight - v.measuredHeight) && scrollY != oldScrollY -> BOTTOM
+            scrollY == (getChildAt(0).measuredHeight - measuredHeight) && scrollY != oldScrollY -> BOTTOM
             scrollY < oldScrollY -> UP
             scrollY > oldScrollY -> DOWN
             scrollY == 0 && oldScrollY != 0 -> TOP
