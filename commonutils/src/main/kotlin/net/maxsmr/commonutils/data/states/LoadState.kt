@@ -2,6 +2,40 @@ package net.maxsmr.commonutils.data.states
 
 import java.io.Serializable
 
+fun <D> createEmptyState() = null.getOrCreate<D>().first
+
+/**
+ * @return новый или существующий изменённый [LoadState] + флаг факта изменения
+ */
+fun <D> ILoadState<D>?.getOrCreate(
+        data: D? = null,
+        isLoading: Boolean? = null,
+        error: Throwable? = null,
+        createEmptyStateFunc: () -> ILoadState<D> = { LoadState() }
+): Pair<ILoadState<D>, Boolean> {
+    var result = this
+    var hasChanged = false
+    if (result == null) {
+        result = createEmptyStateFunc()
+        hasChanged = true
+    }
+    isLoading?.let {
+        if (result.isLoading != it) {
+            result.isLoading = it
+            hasChanged = true
+        }
+    }
+    if (result.data != data) {
+        result.data = data
+        hasChanged = true
+    }
+    if (result.error != error) {
+        result.error = error
+        hasChanged = true
+    }
+    return Pair(result, hasChanged)
+}
+
 /**
  * Базовый контейнер для состояния загрузки
  */
@@ -12,17 +46,19 @@ interface ILoadState<D> : Serializable {
      */
     var wasLoaded: Boolean
 
+    var isLoading: Boolean
+
     var data: D?
 
     var error: Throwable?
 
-    fun _isLoading(): Boolean
     fun preLoad(): Boolean
     fun successLoad(result: D): Boolean
     fun errorLoad(error: Throwable): Boolean
 
-    fun isSuccessLoad(dataValidator: ((D?) -> Boolean)? = {it != null}) = !_isLoading() && error == null
+    fun isSuccessLoad(dataValidator: ((D?) -> Boolean)? = { it != null }) = !isLoading && error == null
             && (dataValidator == null || dataValidator(data))
+
     fun hasData() = data != null
 }
 
@@ -38,14 +74,12 @@ interface IPgnLoadState<D> : ILoadState<D> {
  * Контейнер для состояния загрузки с флажком загрузки
  */
 data class LoadState<D>(
-        var isLoading: Boolean = false,
+        override var isLoading: Boolean = false,
         override var data: D? = null,
         override var error: Throwable? = null
-): ILoadState<D> {
+) : ILoadState<D> {
 
     override var wasLoaded: Boolean = false
-
-    override fun _isLoading(): Boolean = isLoading
 
     override fun preLoad(): Boolean {
         var hasChanged = false
@@ -101,44 +135,6 @@ data class LoadState<D>(
         }
         return hasChanged
     }
-
-    companion object {
-
-        fun <D> createEmpty() = getOrCreate<D>(null).first
-
-        /**
-         * @return новый или существующий изменённый [LoadState] + флаг факта изменения
-         */
-        fun <D> getOrCreate(
-                state: LoadState<D>?,
-                data: D? = null,
-                isLoading: Boolean? = null,
-                error: Throwable? = null
-        ): Pair<LoadState<D>, Boolean> {
-            var result = state
-            var hasChanged = false
-            if (state == null) {
-                result = LoadState()
-                hasChanged = true
-            }
-            result as LoadState<D>
-            isLoading?.let {
-                if (result.isLoading != it) {
-                    result.isLoading = it
-                    hasChanged = true
-                }
-            }
-            if (result.data != data) {
-                result.data = data
-                hasChanged = true
-            }
-            if (result.error != error) {
-                result.error = error
-                hasChanged = true
-            }
-            return Pair(result, hasChanged)
-        }
-    }
 }
 
 
@@ -146,20 +142,24 @@ data class LoadState<D>(
  * Контейнер для состояния загрузки с [PgnLoading]
  */
 data class PgnLoadState<D>(
-        var loading: PgnLoading = PgnLoading(),
+        var loadingState: PgnLoading = PgnLoading(),
         override var data: D? = null,
         override var error: Throwable? = null
 ) : IPgnLoadState<D> {
 
     override var wasLoaded: Boolean = false
 
-    override fun _isLoading(): Boolean = loading.state.isLoading()
+    override var isLoading: Boolean
+        get() = loadingState.state.isLoading()
+        set(value) {
+            loadingState = PgnLoading(PgnState.MAIN_LOAD)
+        }
 
     override fun preLoad(): Boolean {
         var hasChanged = false
-        val newLoadingState = loading.copy(state = PgnState.MAIN_LOAD)
-        if (loading != newLoadingState) {
-            loading = newLoadingState
+        val newLoadingState = loadingState.copy(state = PgnState.MAIN_LOAD)
+        if (loadingState != newLoadingState) {
+            loadingState = newLoadingState
             hasChanged = true
         }
         if (error != null) {
@@ -171,9 +171,9 @@ data class PgnLoadState<D>(
 
     override fun prePgnLoading(): Boolean {
         var hasChanged = false
-        val newLoadingState = loading.copy(state = PgnState.PGN_LOAD)
-        if (loading != newLoadingState) {
-            loading = newLoadingState
+        val newLoadingState = loadingState.copy(state = PgnState.PGN_LOAD)
+        if (loadingState != newLoadingState) {
+            loadingState = newLoadingState
             hasChanged = true
         }
         if (error != null) {
@@ -189,9 +189,9 @@ data class PgnLoadState<D>(
             wasLoaded = true
             hasChanged = true
         }
-        val newLoadingState = loading.copy(state = PgnState.STANDBY)
-        if (loading != newLoadingState) {
-            loading = newLoadingState
+        val newLoadingState = loadingState.copy(state = PgnState.STANDBY)
+        if (loadingState != newLoadingState) {
+            loadingState = newLoadingState
             hasChanged = true
         }
         if (data != result) {
@@ -211,9 +211,9 @@ data class PgnLoadState<D>(
             wasLoaded = true
             hasChanged = true
         }
-        val newLoadingState = loading.copy(state = PgnState.STANDBY)
-        if (loading != newLoadingState) {
-            loading = newLoadingState
+        val newLoadingState = loadingState.copy(state = PgnState.STANDBY)
+        if (loadingState != newLoadingState) {
+            loadingState = newLoadingState
             hasChanged = true
         }
         if (data != null) {
@@ -227,7 +227,6 @@ data class PgnLoadState<D>(
         return hasChanged
     }
 }
-
 
 
 data class PgnLoading(val state: PgnState = PgnState.STANDBY, val pgnComplete: Boolean = false)

@@ -3,7 +3,9 @@ package net.maxsmr.commonutils.android.livedata
 import android.os.Handler
 import androidx.lifecycle.*
 import net.maxsmr.commonutils.android.livedata.wrappers.NotifyCheckMutableLiveData
+import net.maxsmr.commonutils.data.states.ILoadState
 import net.maxsmr.commonutils.data.states.LoadState
+import net.maxsmr.commonutils.data.states.getOrCreate
 
 /**
  * @return [LiveData] с изменёнными текущими данными из исходного [T] с использованием [changeFunc]
@@ -306,7 +308,7 @@ fun <X, Y> combineLatest(sources: List<LiveData<out X>>, combine: (List<X?>) -> 
 
 // region LoadState
 
-fun <D> NotifyCheckMutableLiveData<LoadState<D>>.setEmptyLoadState(
+fun <D> MutableLiveData<ILoadState<D>>.setEmptyLoadState(
         setOrPost: Boolean = false,
         eagerNotify: Boolean = false
 ) = setLoadState(null, null, null, setOrPost, eagerNotify)
@@ -315,92 +317,99 @@ fun <D> NotifyCheckMutableLiveData<LoadState<D>>.setEmptyLoadState(
  * Поместить изменённый или тот же [LoadState] в [LiveData]
  * @param eagerNotify требуется ли поместить значение даже при отсутствии изменений
  */
-fun <D> NotifyCheckMutableLiveData<LoadState<D>>.setLoadState(
+fun <D> MutableLiveData<ILoadState<D>>.setLoadState(
         data: D? = null,
         isLoading: Boolean? = null,
         error: Throwable? = null,
         setOrPost: Boolean = false,
         eagerNotify: Boolean = false,
         shouldNotify: Boolean = true
-): LoadState<D> {
+): ILoadState<D> {
     val state = value
-    val result = LoadState.getOrCreate(state, data, isLoading, error)
+    val result = state.getOrCreate(data, isLoading, error)
     if (eagerNotify || result.second) {
-        if (setOrPost) {
-            setValue(result.first, shouldNotify)
-        } else {
-            postValue(result.first, shouldNotify)
-        }
+        setOrPost(result.first, setOrPost, shouldNotify)
     }
     return result.first
 }
 
-fun <D> NotifyCheckMutableLiveData<LoadState<D>>.preLoad(
+fun <D> MutableLiveData<ILoadState<D>>.preLoad(
         setOrPost: Boolean = false,
         eagerNotify: Boolean = false,
-        shouldNotify: Boolean = true
-): LoadState<D> {
+        shouldNotify: Boolean = true,
+        createEmptyStateFunc: () -> ILoadState<D> = { LoadState() }
+): ILoadState<D> {
     var hasChanged = false
     var state = value
     if (state == null) {
-        state = LoadState()
+        state = createEmptyStateFunc()
         hasChanged = true
     }
     hasChanged = state.preLoad() || hasChanged
     if (eagerNotify || hasChanged) {
-        if (setOrPost) {
-            setValue(state, shouldNotify)
-        } else {
-            postValue(state, shouldNotify)
-        }
+        setOrPost(state, setOrPost, shouldNotify)
     }
     return state
 }
 
-fun <D> NotifyCheckMutableLiveData<LoadState<D>>.successLoad(
+fun <D> MutableLiveData<ILoadState<D>>.successLoad(
         data: D,
         setOrPost: Boolean = false,
         eagerNotify: Boolean = false,
-        shouldNotify: Boolean = true
-): LoadState<D> {
+        shouldNotify: Boolean = true,
+        createEmptyStateFunc: () -> ILoadState<D> = { LoadState() }
+): ILoadState<D> {
     var hasChanged = false
     var state = value
     if (state == null) {
-        state = LoadState()
+        state = createEmptyStateFunc()
         hasChanged = true
     }
     hasChanged = state.successLoad(data) || hasChanged
     if (eagerNotify || hasChanged) {
-        if (setOrPost) {
-            setValue(state, shouldNotify)
-        } else {
-            postValue(state, shouldNotify)
-        }
+        setOrPost(state, setOrPost, shouldNotify)
     }
     return state
 }
 
-fun <D> NotifyCheckMutableLiveData<LoadState<D>>.errorLoad(
+fun <D> MutableLiveData<ILoadState<D>>.errorLoad(
         error: Throwable,
         setOrPost: Boolean = false,
         eagerNotify: Boolean = false,
-        shouldNotify: Boolean = true
-): LoadState<D> {
+        shouldNotify: Boolean = true,
+        createEmptyStateFunc: () -> ILoadState<D> = { LoadState() }
+): ILoadState<D> {
     var hasChanged = false
     var state = value
     if (state == null) {
-        state = LoadState()
+        state = createEmptyStateFunc()
         hasChanged = true
     }
     hasChanged = state.errorLoad(error) || hasChanged
     if (eagerNotify || hasChanged) {
+        setOrPost(state, setOrPost, shouldNotify)
+    }
+    return state
+}
+
+private fun <D> MutableLiveData<ILoadState<D>>.setOrPost(
+        state: ILoadState<D>,
+        setOrPost: Boolean,
+        shouldNotify: Boolean
+) {
+    if (this is NotifyCheckMutableLiveData<ILoadState<D>>) {
         if (setOrPost) {
             setValue(state, shouldNotify)
         } else {
             postValue(state, shouldNotify)
         }
+    } else {
+        if (setOrPost) {
+            setValue(state)
+        } else {
+            postValue(state)
+        }
     }
-    return state
 }
 
 // endregion
