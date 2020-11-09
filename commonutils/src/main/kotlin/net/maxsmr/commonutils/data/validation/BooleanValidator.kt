@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.data.validation.validators
+package net.maxsmr.commonutils.data.validation
 
 import androidx.lifecycle.MutableLiveData
 import net.maxsmr.commonutils.android.livedata.setValueIfNew

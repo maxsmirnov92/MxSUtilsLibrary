@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.data.validation.validators
+package net.maxsmr.commonutils.data.validation
 
 /**
  * Валидатор данных с типом [T] посредством [validationFunc]

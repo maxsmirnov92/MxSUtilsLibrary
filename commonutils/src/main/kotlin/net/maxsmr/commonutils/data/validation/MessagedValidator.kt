@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.data.validation.validators
+package net.maxsmr.commonutils.data.validation
 
 import androidx.annotation.StringRes
 import androidx.lifecycle.MutableLiveData

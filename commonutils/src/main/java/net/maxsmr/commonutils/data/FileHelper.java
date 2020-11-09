@@ -19,9 +19,9 @@ import androidx.collection.ArraySet;
 import androidx.exifinterface.media.ExifInterface;
 
 import net.maxsmr.commonutils.R;
-import net.maxsmr.commonutils.data.conversion.SizeUnit;
 import net.maxsmr.commonutils.data.collection.sort.BaseOptionalComparator;
 import net.maxsmr.commonutils.data.collection.sort.ISortOption;
+import net.maxsmr.commonutils.data.conversion.SizeUnit;
 import net.maxsmr.commonutils.graphic.GraphicUtils;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -65,11 +65,11 @@ import static net.maxsmr.commonutils.data.CompareUtilsKt.compareLongs;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.compareStrings;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.objectsEqual;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsMatch;
-import static net.maxsmr.commonutils.data.StreamUtils.readBytesFromInputStream;
-import static net.maxsmr.commonutils.data.StreamUtils.readStringFromInputStream;
-import static net.maxsmr.commonutils.data.StreamUtils.readStringsFromInputStream;
-import static net.maxsmr.commonutils.data.StreamUtils.revectorStream;
-import static net.maxsmr.commonutils.data.StreamUtils.writeBytesToOutputStream;
+import static net.maxsmr.commonutils.data.StreamUtilsKt.readBytesFromInputStreamNoThrow;
+import static net.maxsmr.commonutils.data.StreamUtilsKt.readStringFromInputStreamNoThrow;
+import static net.maxsmr.commonutils.data.StreamUtilsKt.readStringsFromInputStreamNoThrow;
+import static net.maxsmr.commonutils.data.StreamUtilsKt.revectorStreamNoThrow;
+import static net.maxsmr.commonutils.data.StreamUtilsKt.writeBytesToOutputStreamNoThrow;
 import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toNotNullLongNoThrow;
 import static net.maxsmr.commonutils.data.conversion.SizeConversionKt.sizeToString;
 import static net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING;
@@ -701,7 +701,7 @@ public final class FileHelper {
         }
 
         try {
-            return readBytesFromInputStream(new FileInputStream(file), true);
+            return readBytesFromInputStreamNoThrow(new FileInputStream(file));
         } catch (FileNotFoundException e) {
             logger.e("a FileNotFoundException occurred", e);
             return null;
@@ -724,7 +724,7 @@ public final class FileHelper {
         }
 
         try {
-            return readStringsFromInputStream(new FileInputStream(file), true);
+            return readStringsFromInputStreamNoThrow(new FileInputStream(file));
         } catch (FileNotFoundException e) {
             logger.e("an IOException occurred", e);
             return lines;
@@ -743,7 +743,7 @@ public final class FileHelper {
     @NotNull
     public static Collection<String> readStringsFromAsset(@NotNull Context context, String assetName) {
         try {
-            return readStringsFromInputStream(context.getAssets().open(assetName), true);
+            return readStringsFromInputStreamNoThrow(context.getAssets().open(assetName));
         } catch (IOException e) {
             logger.e("an IOException occurred during open()", e);
             return Collections.emptyList();
@@ -756,7 +756,7 @@ public final class FileHelper {
     @Nullable
     public static String readStringFromAsset(@NotNull Context context, String assetName) {
         try {
-            return readStringFromInputStream(context.getAssets().open(assetName), true);
+            return readStringFromInputStreamNoThrow(context.getAssets().open(assetName));
         } catch (IOException e) {
             logger.e("an IOException occurred during open()", e);
             return null;
@@ -769,7 +769,7 @@ public final class FileHelper {
     @NotNull
     public static Collection<String> readStringsFromRes(@NotNull Context context, @RawRes int resId) {
         try {
-            return readStringsFromInputStream(context.getResources().openRawResource(resId), true);
+            return readStringsFromInputStreamNoThrow(context.getResources().openRawResource(resId));
         } catch (Resources.NotFoundException e) {
             logger.e("an IOException occurred during openRawResource()", e);
             return Collections.emptyList();
@@ -782,7 +782,7 @@ public final class FileHelper {
     @Nullable
     public static String readStringFromRes(@NotNull Context context, @RawRes int resId) {
         try {
-            return readStringFromInputStream(context.getResources().openRawResource(resId), true);
+            return readStringFromInputStreamNoThrow(context.getResources().openRawResource(resId));
         } catch (Resources.NotFoundException e) {
             logger.e("an IOException occurred during openRawResource()", e);
             return null;
@@ -806,8 +806,9 @@ public final class FileHelper {
             fos = new FileOutputStream(file.getAbsolutePath(), append);
         } catch (FileNotFoundException e) {
             logger.e("an Exception occurred", e);
+            return false;
         }
-        return writeBytesToOutputStream(fos, data);
+        return writeBytesToOutputStreamNoThrow(fos, data);
     }
 
     @Nullable
@@ -821,12 +822,12 @@ public final class FileHelper {
     }
 
     @Nullable
-    public static File writeFromStreamToFile(InputStream data, File targetFile, boolean append, StreamUtils.IStreamNotifier notifier) {
+    public static File writeFromStreamToFile(InputStream data, File targetFile, boolean append, IStreamNotifier notifier) {
         return writeFromStreamToFile(data, targetFile != null ? targetFile.getName() : null, targetFile != null ? targetFile.getParent() : null, append, notifier);
     }
 
     @Nullable
-    public static File writeFromStreamToFile(InputStream data, String fileName, String parentPath, boolean append, StreamUtils.IStreamNotifier notifier) {
+    public static File writeFromStreamToFile(InputStream data, String fileName, String parentPath, boolean append, IStreamNotifier notifier) {
         logger.d("writeFromStreamToFile(), data=" + data + ", fileName=" + fileName + ", parentPath=" + parentPath + ", append=" + append);
 
         final File file = createFile(fileName, parentPath, !append);
@@ -840,7 +841,7 @@ public final class FileHelper {
         }
 
         try {
-            if (revectorStream(data, new FileOutputStream(file), notifier)) {
+            if (revectorStreamNoThrow(data, new FileOutputStream(file), notifier)) {
                 return file;
             }
         } catch (FileNotFoundException e) {
@@ -1008,7 +1009,7 @@ public final class FileHelper {
                     zis = zip.getInputStream(e);
                     fos = new FileOutputStream(path);
 
-                    if (!revectorStream(zis, fos)) {
+                    if (!revectorStreamNoThrow(zis, fos)) {
                         logger.e("revectorStream() failed");
                         return false;
                     }
@@ -1897,7 +1898,7 @@ public final class FileHelper {
         boolean result = false;
 
         if (out != null) {
-            result = revectorStream(ctx.getResources().openRawResource(resId), out);
+            result = revectorStreamNoThrow(ctx.getResources().openRawResource(resId), out);
 
             if (result && mode > 0) {
                 return execProcess(
@@ -1929,7 +1930,7 @@ public final class FileHelper {
         try {
             out = new FileOutputStream(to);
             in = ctx.getAssets().open(assetsPath);
-            return revectorStream(in, out);
+            return revectorStreamNoThrow(in, out);
         } catch (IOException e) {
             logger.e("an IOException occurred", e);
             return false;
@@ -2014,9 +2015,10 @@ public final class FileHelper {
 
         try {
             File finalDestFile = destFile;
-            if (writeFromStreamToFile(new FileInputStream(sourceFile), destFile.getName(), destFile.getParent(), !rewrite, notifier != null ? new StreamUtils.IStreamNotifier() {
+            if (writeFromStreamToFile(new FileInputStream(sourceFile), destFile.getName(), destFile.getParent(), !rewrite, notifier != null ? new IStreamNotifier() {
+
                 @Override
-                public long notifyInterval() {
+                public long getNotifyInterval() {
                     return notifier.notifyInterval();
                 }
 
