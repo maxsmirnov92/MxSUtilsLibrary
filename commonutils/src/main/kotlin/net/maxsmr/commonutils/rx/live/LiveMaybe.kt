@@ -16,8 +16,9 @@ import io.reactivex.disposables.Disposable
  */
 class LiveMaybe<T>(
         private val maybe: Maybe<T>,
+        private val filter: ((T) -> Boolean)? = null,
         observingState: Lifecycle.State = Lifecycle.State.STARTED
-): BaseLiveWrapper(observingState) {
+) : BaseLiveWrapper(observingState) {
 
     fun subscribe(owner: LifecycleOwner, onSuccess: (T) -> Unit) {
         registerDisposable(owner) {
@@ -27,7 +28,10 @@ class LiveMaybe<T>(
 
     private fun createDisposable(owner: LifecycleOwner, onSuccess: (T) -> Unit): Disposable {
         return maybe
-                .filter { owner.lifecycle.currentState.isAtLeast(observingState) }
+                .filter {
+                    owner.lifecycle.currentState.isAtLeast(observingState)
+                            && (filter == null || filter.invoke(it))
+                }
                 .doOnEvent { item, _ ->
                     unsubscribe(owner)
                     item?.let(onSuccess)
@@ -36,5 +40,5 @@ class LiveMaybe<T>(
     }
 }
 
-fun <T> Maybe<T>.toLive(observingState: Lifecycle.State = Lifecycle.State.STARTED): LiveMaybe<T> =
-        LiveMaybe(this, observingState)
+fun <T> Maybe<T>.toLive(filter: ((T) -> Boolean)? = null, observingState: Lifecycle.State = Lifecycle.State.STARTED): LiveMaybe<T> =
+        LiveMaybe(this, filter, observingState)

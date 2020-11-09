@@ -19,6 +19,7 @@ import io.reactivex.subjects.Subject
  */
 class LiveSubject<T>(
         private val observingState: Lifecycle.State = Lifecycle.State.STARTED,
+        private val filter: ((T) -> Boolean)? = null,
         subjectType: SubjectType = SubjectType.PUBLISH
 ) {
 
@@ -34,7 +35,10 @@ class LiveSubject<T>(
     fun subscribe(owner: LifecycleOwner, emitOnce: Boolean = false, onNext: (T) -> Unit) {
         if (observers.containsKey(owner)) return //owner уже подписан
         val disposeObserver = DisposeObserver(owner, subject
-                .filter { owner.lifecycle.currentState.isAtLeast(observingState) }
+                .filter {
+                    owner.lifecycle.currentState.isAtLeast(observingState)
+                            && (filter == null || filter.invoke(it))
+                }
                 .doOnNext {
                     onNext(it)
                 }

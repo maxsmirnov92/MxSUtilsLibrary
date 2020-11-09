@@ -12,6 +12,7 @@ import android.os.Build;
 import android.os.Environment;
 import android.provider.DocumentsContract;
 import android.provider.MediaStore;
+import android.webkit.MimeTypeMap;
 
 import androidx.annotation.RawRes;
 import androidx.collection.ArraySet;
@@ -1039,6 +1040,15 @@ public final class FileHelper {
         }
 
         return true;
+    }
+
+    @NotNull
+    public static String getMimeTypeFromFile(@Nullable File file) {
+        return getMimeTypeFromFile(file != null ? file.getName() : null);
+    }
+
+    public static String getMimeTypeFromFile(String fileName) {
+        return MimeTypeMap.getSingleton().getMimeTypeFromExtension(getFileExtension(fileName));
     }
 
     /**

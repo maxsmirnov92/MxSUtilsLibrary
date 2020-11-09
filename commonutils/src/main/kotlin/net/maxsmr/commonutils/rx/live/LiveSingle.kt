@@ -16,6 +16,7 @@ import io.reactivex.disposables.Disposable
  */
 class LiveSingle<T>(
         private val single: Single<T>,
+        private val filter: ((T) -> Boolean)? = null,
         observingState: Lifecycle.State = Lifecycle.State.STARTED
 ): BaseLiveWrapper(observingState) {
 
@@ -27,7 +28,10 @@ class LiveSingle<T>(
 
     private fun createDisposable(owner: LifecycleOwner, onSuccess: (T) -> Unit): Disposable {
         return single
-                .filter { owner.lifecycle.currentState.isAtLeast(observingState) }
+                .filter {
+                    owner.lifecycle.currentState.isAtLeast(observingState)
+                            && (filter == null || filter.invoke(it))
+                }
                 .doOnEvent { item, _ ->
                     unsubscribe(owner)
                     item?.let(onSuccess)
@@ -36,5 +40,5 @@ class LiveSingle<T>(
     }
 }
 
-fun <T> Single<T>.toLive(observingState: Lifecycle.State = Lifecycle.State.STARTED): LiveSingle<T> =
-        LiveSingle(this, observingState)
+fun <T> Single<T>.toLive(filter: ((T) -> Boolean)? = null, observingState: Lifecycle.State = Lifecycle.State.STARTED): LiveSingle<T> =
+        LiveSingle(this, filter, observingState)

@@ -70,31 +70,68 @@ fun getViewFileIntent(
         shouldUseFileProvider: Boolean,
         flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK
 ): Intent? {
+    val uriAndType = getFileUriAndType(context, file, shouldUseFileProvider) ?: return null
+    return getViewIntent(uriAndType.first, uriAndType.second,
+            if (shouldUseFileProvider) flags or Intent.FLAG_GRANT_READ_URI_PERMISSION else flags)
 
-    var result: Intent? = null
+}
 
-    if (file != null && FileHelper.isFileExists(file)) {
-        result = Intent(Intent.ACTION_VIEW)
+/**
+ * @param shouldUseFileProvider true, if intended to use FileProvider instead of file://
+ */
+fun getShareFileIntent(
+        context: Context,
+        file: File?,
+        subject: String,
+        text: String,
+        shouldUseFileProvider: Boolean,
+        flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK
+): Intent? {
+    val uriAndType = getFileUriAndType(context, file, shouldUseFileProvider) ?: return null
+    return getShareIntent(uriAndType.first, uriAndType.second, subject, text,
+            if (shouldUseFileProvider) flags or Intent.FLAG_GRANT_READ_URI_PERMISSION else flags)
+}
 
-        val fileUri = if (shouldUseFileProvider) {
-            FileProvider.getUriForFile(context,
-                    String.format(PROVIDER_AUTHORITY_FORMAT, context.packageName),
-                    file)
-        } else {
-            Uri.fromFile(file)
-        }
+fun getViewIntent(
+        uri: Uri,
+        mimeType: String,
+        flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK
+): Intent = Intent(Intent.ACTION_VIEW)
+        .setDataAndType(uri, mimeType)
+        .setFlags(flags)
 
-        val ext = FileHelper.getFileExtension(file)
-        val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
-        result.setDataAndType(fileUri, mimeType)
+fun getShareIntent(
+        uri: Uri,
+        subject: String,
+        text: String,
+        mimeType: String,
+        flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK
+): Intent = Intent(Intent.ACTION_SEND)
+        .putExtra(Intent.EXTRA_STREAM, uri)
+        .putExtra(Intent.EXTRA_SUBJECT, subject)
+        .putExtra(Intent.EXTRA_TEXT, text)
+        .setType(mimeType)
+        .setFlags(flags)
 
-        if (flags != 0) {
-            result.flags = flags
-        }
-
-        if (shouldUseFileProvider) {
-            result.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
+private fun getFileUriAndType(
+        context: Context,
+        file: File?,
+        shouldUseFileProvider: Boolean
+): Pair<Uri, String>? {
+    if (file == null || !FileHelper.isFileExists(file)) {
+        return null
     }
-    return result
+
+    val fileUri = if (shouldUseFileProvider) {
+        FileProvider.getUriForFile(context,
+                String.format(PROVIDER_AUTHORITY_FORMAT, context.packageName),
+                file)
+    } else {
+        Uri.fromFile(file)
+    }
+
+    val ext = FileHelper.getFileExtension(file)
+    val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
+
+    return Pair(fileUri, mimeType ?: EMPTY_STRING)
 }

@@ -14,12 +14,12 @@ import androidx.annotation.MainThread
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
-private val logger: BaseLogger = BaseLoggerHolder.getInstance().getLogger(DownloadHelper::class.java)
+private val logger: BaseLogger = BaseLoggerHolder.getInstance().getLogger(DownloadManagerWrapper::class.java)
 
 /**
  * Класс для отслеживания начатых и завершённых, старта новых загрузок через [DownloadManager]
  */
-class DownloadHelper(val context: Context) {
+class DownloadManagerWrapper(private val context: Context) {
 
     /**
      * Мапа текущих файлов для скачивания. Key - id загрузки, Value - урла файла на сервере.
@@ -122,7 +122,7 @@ class DownloadHelper(val context: Context) {
             if (listener == null) {
                 listener = DownloadListener()
             }
-            listener.downloadHelper = this
+            listener.downloadManagerWrapper = this
             listener.downloadId = downloadId
             listener.completeHandler = mainHandler
             listener.requestClass = requestClass
@@ -219,8 +219,8 @@ class DownloadHelper(val context: Context) {
     private fun registerReceiver() {
         unregisterReceiver()
         with(DownloadBroadcastReceiver()) {
-            downloadHelper = this@DownloadHelper
-            registeredListeners = this@DownloadHelper.registeredListeners
+            downloadManagerWrapper = this@DownloadManagerWrapper
+            registeredListeners = this@DownloadManagerWrapper.registeredListeners
             logger.d("Registering common receiver...")
             context.registerReceiver(this, IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE))
             // для DownloadManager'а теперь активен ТОЛЬКО этот receiver
@@ -247,7 +247,7 @@ class DownloadHelper(val context: Context) {
      */
     open class DownloadListener<Request> {
 
-        internal lateinit var downloadHelper: DownloadHelper
+        internal lateinit var downloadManagerWrapper: DownloadManagerWrapper
 
         /**
          * id загрузки из enqueue
@@ -267,13 +267,13 @@ class DownloadHelper(val context: Context) {
             downloadId.let {
                 require(it >= 0) { "Receiver's downloadId cannot be less than zero: $it" }
             }
-            synchronized(downloadHelper) {
-                val fileUri: Uri? = downloadHelper.downloadManager.getUriForDownloadedFile(downloadId)
+            synchronized(downloadManagerWrapper) {
+                val fileUri: Uri? = downloadManagerWrapper.downloadManager.getUriForDownloadedFile(downloadId)
                 val info = DownloadedInfo(isSuccess, downloadUri, fileUri)
-                downloadHelper.downloadedMap[downloadId] = info
-                val request = downloadHelper.currentDownloadsRequestMap[downloadId]
-                downloadHelper.currentDownloads.remove(downloadId)
-                downloadHelper.currentDownloadsRequestMap.remove(downloadId)
+                downloadManagerWrapper.downloadedMap[downloadId] = info
+                val request = downloadManagerWrapper.currentDownloadsRequestMap[downloadId]
+                downloadManagerWrapper.currentDownloads.remove(downloadId)
+                downloadManagerWrapper.currentDownloadsRequestMap.remove(downloadId)
                 with(completeHandler) {
                     requestClass.let {
                         val isAssignable = request != null && it != null && it.isAssignableFrom(request.javaClass)
@@ -293,11 +293,11 @@ class DownloadHelper(val context: Context) {
     }
 
     /**
-     * Основной [BroadcastReceiver] для [DownloadHelper], если выполняется хотя бы одна загрузка
+     * Основной [BroadcastReceiver] для [DownloadManagerWrapper], если выполняется хотя бы одна загрузка
      */
     private class DownloadBroadcastReceiver : BroadcastReceiver() {
 
-        internal lateinit var downloadHelper: DownloadHelper
+        internal lateinit var downloadManagerWrapper: DownloadManagerWrapper
 
         internal lateinit var registeredListeners: Set<DownloadListener<*>>
 
@@ -306,7 +306,7 @@ class DownloadHelper(val context: Context) {
             val id = intent?.getLongExtra(DownloadManager.EXTRA_DOWNLOAD_ID, -1) ?: -1
             logger.d("onReceive, intent=$intent, id=$id")
 
-            synchronized(downloadHelper) {
+            synchronized(downloadManagerWrapper) {
                 try {
                     if (id < 0) {
                         logger.e("Incorrect received downloadId: $id")
@@ -316,12 +316,12 @@ class DownloadHelper(val context: Context) {
                         logger.e("Action {$intent?.action} is not " + DownloadManager.ACTION_DOWNLOAD_COMPLETE)
                         return
                     }
-                    val downloadUri = downloadHelper.currentDownloads[id]
+                    val downloadUri = downloadManagerWrapper.currentDownloads[id]
                     if (downloadUri == null) {
                         logger.e("Download id $id was not found in currentDownloads")
                         return
                     }
-                    val cursor = downloadHelper.downloadManager.query(DownloadManager.Query().setFilterById(id))
+                    val cursor = downloadManagerWrapper.downloadManager.query(DownloadManager.Query().setFilterById(id))
                     if (!cursor.moveToFirst()) {
                         logger.e("Cannot move cursor to first")
                         return
@@ -335,7 +335,7 @@ class DownloadHelper(val context: Context) {
                         }
                     }
                 } finally {
-                    downloadHelper.removeListenerWithUnregister(id)
+                    downloadManagerWrapper.removeListenerWithUnregister(id)
                 }
             }
         }

@@ -178,22 +178,22 @@ fun <T> LiveData<T>.updateEvery(intervalMillis: Long): LiveData<T> {
 /**
  * Присваивает [LiveData] новое значение, только если оно изменилось
  */
-fun <T> MutableLiveData<T>.setValueIfNew(newValue: T, eagerNotify: Boolean = false) {
+fun <T> MutableLiveData<T>.setValueIfNew(newValue: T?, eagerNotify: Boolean = false) {
     if (eagerNotify || this.value != newValue) value = newValue
 }
 
-fun <T> MutableLiveData<T>.postValueIfNew(newValue: T, eagerNotify: Boolean = false) {
+fun <T> MutableLiveData<T>.postValueIfNew(newValue: T?, eagerNotify: Boolean = false) {
     if (eagerNotify || this.value != newValue) postValue(newValue)
 }
 
 /**
  * Присваивает [NotifyCheckMutableLiveData] новое значение, только если оно изменилось
  */
-fun <T> NotifyCheckMutableLiveData<T>.setValueIfNewNotify(newValue: T, eagerNotify: Boolean = false, shouldNotify: Boolean = true) {
+fun <T> NotifyCheckMutableLiveData<T>.setValueIfNewNotify(newValue: T?, eagerNotify: Boolean = false, shouldNotify: Boolean = true) {
     if (eagerNotify || this.value != newValue) setValue(newValue, shouldNotify)
 }
 
-fun <T> NotifyCheckMutableLiveData<T>.postValueIfNewNotify(newValue: T, eagerNotify: Boolean = false, shouldNotify: Boolean = true) {
+fun <T> NotifyCheckMutableLiveData<T>.postValueIfNewNotify(newValue: T?, eagerNotify: Boolean = false, shouldNotify: Boolean = true) {
     if (eagerNotify || this.value != newValue) postValue(newValue, shouldNotify)
 }
 

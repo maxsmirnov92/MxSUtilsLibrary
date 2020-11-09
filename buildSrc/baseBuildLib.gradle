@@ -6,14 +6,7 @@ apply from: "$rootDir/buildSrc/buildUtils.gradle"
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
-
-androidExtensions {
-    // to enable @Parcelize feature
-    experimental = true
-}
-
 
 android {
     signingConfigs {

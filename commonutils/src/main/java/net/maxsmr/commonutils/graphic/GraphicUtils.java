@@ -55,6 +55,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -245,25 +246,33 @@ public final class GraphicUtils {
             return null;
         }
 
-        FileOutputStream fos = null;
         try {
-            fos = new FileOutputStream(file);
-            data.compress(format, quality, fos);
-            fos.flush();
-            return file;
+            if (compressBitmapToOutputStream(new FileOutputStream(file), data, format, quality)) {
+                return file;
+            }
+        } catch (IOException e) {
+            logger.e("an IOException occurred during open stream", e);
+        }
+        return null;
+    }
+
+    public static boolean compressBitmapToOutputStream(OutputStream os, Bitmap data, Bitmap.CompressFormat format, int quality) {
+        try {
+            data.compress(format, quality, os);
+            os.flush();
+            return true;
         } catch (IOException e) {
             logger.e("an IOException occurred", e);
         } finally {
             try {
-                if (fos != null) {
-                    fos.close();
+                if (os != null) {
+                    os.close();
                 }
             } catch (IOException e) {
                 logger.e("an IOException occurred during close", e);
             }
         }
-
-        return null;
+        return false;
     }
 
     @Nullable
@@ -637,6 +646,21 @@ public final class GraphicUtils {
             logger.e("an OutOfMemoryError error occurred during decodeByteArray()", e);
             return null;
         }
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromUri(ContentResolver contentResolver, Uri uri) {
+        return createBitmapFromUri(contentResolver, uri, 1, null);
+    }
+
+    @Nullable
+    public static Bitmap createBitmapFromUri(ContentResolver contentResolver, Uri uri, int scale, @Nullable Bitmap.Config config) {
+        InputStream is = null;
+        try {
+            is = contentResolver.openInputStream(uri);
+        } catch (FileNotFoundException ignored) {
+        }
+        return createBitmapFromStream(is, scale, config);
     }
 
     @Nullable

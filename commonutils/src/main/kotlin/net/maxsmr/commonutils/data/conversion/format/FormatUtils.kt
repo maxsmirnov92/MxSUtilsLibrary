@@ -11,33 +11,26 @@ import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 
 val EMPTY_MASK = createEmptyMask()
 
-/**
- * Убрать из строки перечисленные символы
- */
-fun clearText(text: CharSequence, excludedChars: Collection<Char>): String {
-    var result = text
-    excludedChars.forEach {
-        result = result.replace(it.toString().toRegex(), "")
-    }
-    return result.toString()
-}
+fun getFormattedText(mask: MaskImpl, text: CharSequence): String =
+        getText(mask, text, false)
 
-/**
- * @return неотформатированный [text] по исходной [mask]
- */
-fun clearText(mask: MaskImpl, text: CharSequence): String {
+fun getUnformattedText(mask: MaskImpl, text: CharSequence): String =
+        getText(mask, text, true)
+
+private fun getText(mask: MaskImpl, text: CharSequence, isUnformatted: Boolean): String {
     val copyMask = MaskImpl(mask)
     copyMask.clear()
     copyMask.insertFront(text)
-    return copyMask.toUnformattedString()
+    return if (isUnformatted) copyMask.toUnformattedString() else copyMask.toString()
 }
+
 
 /**
  * Убрать из строки такое кол-во символов, не соответствующих [limitedChars], чтобы общий размер не превышал [targetTextSize]
  * @param checkClearedTextSize необходимость проверки строки после преобразований на соответствие [targetTextSize] (т.к. могло быть превышено за счёт незапретных символов)
  */
 @JvmOverloads
-fun clearText(
+fun removeChars(
         text: CharSequence,
         targetTextSize: Int,
         limitedChars: Collection<Char>,

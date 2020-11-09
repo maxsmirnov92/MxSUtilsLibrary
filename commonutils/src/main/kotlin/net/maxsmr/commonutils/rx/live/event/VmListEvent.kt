@@ -42,13 +42,15 @@ data class VmListEvent<T>(
         list.clear()
     }
 
-    fun new(value: T): VmListEvent<T> =
-            VmListEvent(getAll().apply {
-                add(value)
-            })
+    fun new(value: T): VmListEvent<T> {
+        val event = VmListEvent(getAll())
+        event.add(value)
+        return event
+    }
 
-    fun new(collection: Collection<T>): VmListEvent<T> =
-            VmListEvent(getAll().apply {
-                addAll(collection)
-            })
+    fun new(collection: Collection<T>): VmListEvent<T> {
+        val event = VmListEvent(getAll())
+        addAll(collection)
+        return event
+    }
 }

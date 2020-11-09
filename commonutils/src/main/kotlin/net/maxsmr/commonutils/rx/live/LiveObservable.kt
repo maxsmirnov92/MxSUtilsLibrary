@@ -16,19 +16,31 @@ import io.reactivex.disposables.Disposable
  */
 class LiveObservable<T>(
         private val observable: Observable<T>,
+        private val filter: ((T) -> Boolean)? = null,
         observingState: Lifecycle.State = Lifecycle.State.STARTED
-): BaseLiveWrapper(observingState) {
+) : BaseLiveWrapper(observingState) {
 
     @JvmOverloads
-    fun subscribe(owner: LifecycleOwner, emitOnce: Boolean = false, onNext: (T) -> Unit) {
+    fun subscribe(
+            owner: LifecycleOwner,
+            emitOnce: Boolean = false,
+            onNext: (T) -> Unit
+    ) {
         registerDisposable(owner) {
             createDisposable(owner, emitOnce, onNext)
         }
     }
 
-    private fun createDisposable(owner: LifecycleOwner, emitOnce: Boolean, onNext: (T) -> Unit): Disposable {
+    private fun createDisposable(
+            owner: LifecycleOwner,
+            emitOnce: Boolean,
+            onNext: (T) -> Unit
+    ): Disposable {
         return observable
-                .filter { owner.lifecycle.currentState.isAtLeast(observingState) }
+                .filter {
+                    owner.lifecycle.currentState.isAtLeast(observingState)
+                            && (filter == null || filter.invoke(it))
+                }
                 .doOnNext {
                     onNext(it)
                 }
@@ -46,5 +58,5 @@ class LiveObservable<T>(
  *
  * @param observingState минимальное состояние ЖЦ LifecycleOwner, при котором он должен получать эвенты
  */
-fun <T> Observable<T>.toLive(observingState: Lifecycle.State = Lifecycle.State.STARTED): LiveObservable<T> =
-        LiveObservable(this, observingState)
+fun <T> Observable<T>.toLive(filter: ((T) -> Boolean)? = null, observingState: Lifecycle.State = Lifecycle.State.STARTED): LiveObservable<T> =
+        LiveObservable(this, filter, observingState)

@@ -5,6 +5,7 @@ package net.maxsmr.commonutils.data.gson
 import android.text.TextUtils
 import android.util.Log
 import com.google.gson.*
+import com.google.gson.internal.LazilyParsedNumber
 import com.google.gson.reflect.TypeToken
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.text.isEmpty
@@ -160,8 +161,22 @@ fun <V> getJsonPrimitiveAs(forElement: JsonPrimitive?, clazz: Class<V>, defaultV
     if (forElement != null) {
         if (forElement.isString && String::class.java.isAssignableFrom(clazz)) {
             value = forElement.asString as V
-        } else if (forElement.isNumber && Number::class.java.isAssignableFrom(clazz)) {
-            value = forElement.asNumber as V
+        } else if (forElement.isNumber) {
+            val numberValue = forElement.asNumber
+            if (numberValue is LazilyParsedNumber) {
+                value = when {
+                    Int::class.java.isAssignableFrom(clazz) -> numberValue.toInt() as V
+                    Long::class.java.isAssignableFrom(clazz) -> numberValue.toLong() as V
+                    Long::class.java.isAssignableFrom(clazz) -> numberValue.toShort() as V
+                    Double::class.java.isAssignableFrom(clazz) -> numberValue.toDouble() as V
+                    Float::class.java.isAssignableFrom(clazz) -> numberValue.toFloat() as V
+                    Byte::class.java.isAssignableFrom(clazz) -> numberValue.toByte() as V
+                    Char::class.java.isAssignableFrom(clazz) -> numberValue.toChar() as V
+                    else -> null
+                }
+            } else if (Number::class.java.isAssignableFrom(clazz)) {
+                value = numberValue as V
+            }
         } else if (forElement.isBoolean && Boolean::class.java.isAssignableFrom(clazz)) {
             value = forElement.asBoolean as V
         }

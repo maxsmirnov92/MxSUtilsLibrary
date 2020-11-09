@@ -10,6 +10,7 @@ import ru.tinkoff.decoro.MaskImpl
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 
 const val PHONE_RUS_PLUS_SEVEN_PREFIX = "+7"
+const val PHONE_RUS_EIGHT_PREFIX = "8"
 const val PHONE_RUS_MASK_DEFAULT = "$PHONE_RUS_PLUS_SEVEN_PREFIX (___) ___-__-__"
 const val PHONE_RUS_LENGTH_CLEAR = 10
 const val PHONE_RUS_LENGTH_SEVEN_OR_EIGHT = PHONE_RUS_LENGTH_CLEAR + 1
@@ -24,16 +25,16 @@ private val REG_EX_PHONE_MASK: Regex = Regex("([0-9]|\\+)")
  */
 @JvmOverloads
 fun normalizePhoneNumber(
-        phoneNumber: CharSequence,
+        phoneNumber: CharSequence?,
         prefixReplaceWith: String = PHONE_RUS_PLUS_SEVEN_PREFIX,
         checkDigits: Boolean = true
 ): String {
-    if (phoneNumber.isEmpty()) return EMPTY_STRING
+    if (phoneNumber.isNullOrEmpty()) return EMPTY_STRING
     var prefixReplaceWith = prefixReplaceWith
     var normalized = if (checkDigits) phoneNumber.replace("[^0-9+]".toRegex(), EMPTY_STRING) else phoneNumber.toString()
     val seven = "7"
     val plusSeven = PHONE_RUS_PLUS_SEVEN_PREFIX
-    val eight = "8"
+    val eight = PHONE_RUS_EIGHT_PREFIX
     val nine = "9"
     val replaceSubstring = when {
         seven != prefixReplaceWith && normalized.startsWith(seven) -> {
@@ -65,6 +66,10 @@ fun normalizePhoneNumber(
 }
 
 
+/**
+ * Возвращает номер телефона в виде 71234567890
+ * удаляя (), + и 8 превращая в 7
+ */
 fun normalizePhoneNumberRemovePlus(phoneNumber: CharSequence): String =
         normalizePhoneNumber(phoneNumber).trim('+')
 
@@ -74,16 +79,9 @@ fun normalizePhoneNumberRemovePlus(phoneNumber: CharSequence): String =
 fun getPhoneNumberRusLengthByPrefix(phoneNumber: CharSequence): Int =
         when {
             phoneNumber.startsWith(PHONE_RUS_PLUS_SEVEN_PREFIX) -> PHONE_RUS_LENGTH_PLUS_SEVEN
-            phoneNumber.startsWith("8") || phoneNumber.startsWith("7") -> PHONE_RUS_LENGTH_SEVEN_OR_EIGHT
+            phoneNumber.startsWith(PHONE_RUS_EIGHT_PREFIX) || phoneNumber.startsWith("7") -> PHONE_RUS_LENGTH_SEVEN_OR_EIGHT
             else -> PHONE_RUS_LENGTH_CLEAR
         }
-
-
-/**
- * Убрать символы, которые несовместимы
- * с inputType phone
- */
-fun clearPhone(phoneNumber: String) = clearText(phoneNumber, listOf('-', '*'))
 
 @JvmOverloads
 fun formatPhoneNumber(
@@ -106,6 +104,7 @@ fun formatPhoneNumber(
         PhoneNumberUtils.formatNumber(phoneFormatted)
     }
 }
+
 
 /**
  * Может быть использован в afterTextChanges в динамике;

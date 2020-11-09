@@ -3,13 +3,7 @@ apply from: "$rootDir/buildSrc/buildUtils.gradle"
 
 apply plugin: 'com.android.application'
 apply plugin: 'kotlin-android'
-apply plugin: 'kotlin-android-extensions'
 apply plugin: 'kotlin-kapt'
-
-androidExtensions {
-    // to enable @Parcelize feature
-    experimental = true
-}
 
 android {
 
@@ -78,6 +72,10 @@ android {
 
     kotlinOptions {
         jvmTarget = '1.8'
+    }
+
+    buildFeatures {
+        viewBinding true
     }
 }
 
