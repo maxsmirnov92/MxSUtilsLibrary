@@ -11,12 +11,13 @@ import net.maxsmr.commonutils.android.SdkUtils
 import net.maxsmr.commonutils.android.getBrowseLinkIntent
 import net.maxsmr.commonutils.android.startActivitySafe
 import net.maxsmr.commonutils.android.wrapIntent
+import java.lang.Exception
 
 /**
  * Попытка привести html к Spanned строке с форматированием из html
  */
-@Throws
-fun parseHtmlToSpannedString(html: CharSequence): Spanned =
+@Throws(Exception::class)
+fun parseHtmlToSpannedStringOrThrow(html: CharSequence): Spanned =
         html.let { html.toString().replace("\n", "<br/>") }
                 .let {
                     if (SdkUtils.isAtLeastNougat()) {
@@ -29,9 +30,9 @@ fun parseHtmlToSpannedString(html: CharSequence): Spanned =
                 }
 
 
-fun parseHtmlToSpannedStringNoThrow(text: CharSequence): CharSequence =
+fun parseHtmlToSpannedString(text: CharSequence): CharSequence =
         try {
-            parseHtmlToSpannedString(text)
+            parseHtmlToSpannedStringOrThrow(text)
         } catch (e: Throwable) {
             text
         }
@@ -40,7 +41,7 @@ fun parseHtmlToSpannedStringNoThrow(text: CharSequence): CharSequence =
  * Попытка привести html к строке с потерей части форматирования.
  */
 fun clearHtml(html: String): String =
-        parseHtmlToSpannedStringNoThrow(html).toString()
+        parseHtmlToSpannedString(html).toString()
 
 fun createCustomSpanText(
         text: CharSequence,
@@ -131,7 +132,7 @@ fun replaceUrlSpansByClickableSpans(
         removeUnderlying: Boolean = true,
         action: ((URLSpan) -> Boolean)? = null
 ): CharSequence {
-    val sequence = parseHtmlToSpannedString(html)
+    val sequence = parseHtmlToSpannedStringOrThrow(html)
     val strBuilder = SpannableStringBuilder(sequence)
     val urls = strBuilder.getSpans(0, sequence.length, URLSpan::class.java)
     urls.forEach { span ->

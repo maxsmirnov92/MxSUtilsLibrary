@@ -1,10 +1,9 @@
 package net.maxsmr.commonutils.data
 
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
-import net.maxsmr.commonutils.data.text.NEXT_LINE
-import net.maxsmr.commonutils.data.text.join
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
 import java.io.*
 
 // Вспомогательные методы для чтения из {@link InputStream]
@@ -12,15 +11,34 @@ import java.io.*
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("StreamUtils")
 
-private const val DEFAULT_STREAM_BUF_SIZE = 256
+const val STREAM_BUF_SIZE_DEFAULT = 256
 
-@Throws(IOException::class)
+const val CHARSET_DEFAULT = "UTF-8"
+
 @JvmOverloads
 fun revectorStream(
         `in`: InputStream,
         out: OutputStream,
         notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_STREAM_BUF_SIZE,
+        buffSize: Int = STREAM_BUF_SIZE_DEFAULT,
+        closeInput: Boolean = true,
+        closeOutput: Boolean = true
+): Boolean =
+        try {
+            revectorStreamOrThrow(`in`, out, notifier, buffSize, closeInput, closeOutput)
+            true
+        } catch (e: IOException) {
+            logException(logger, e, "revectorStream")
+            false
+        }
+
+@Throws(IOException::class)
+@JvmOverloads
+fun revectorStreamOrThrow(
+        `in`: InputStream,
+        out: OutputStream,
+        notifier: IStreamNotifier? = null,
+        buffSize: Int = STREAM_BUF_SIZE_DEFAULT,
         closeInput: Boolean = true,
         closeOutput: Boolean = true
 ) {
@@ -40,11 +58,8 @@ fun revectorStream(
             if (notifier != null) {
                 val interval = notifier.notifyInterval
                 if (interval >= 0 && (interval == 0L || lastNotifyTime == 0L || System.currentTimeMillis() - lastNotifyTime >= interval)) {
-                    if (!notifier.onProcessing(
-                                    `in`, out, bytesWriteCount.toLong(),
-                                    if (totalBytesCount > 0 && bytesWriteCount <= totalBytesCount) (totalBytesCount - bytesWriteCount).toLong() else 0.toLong()
-                            )
-                    ) {
+                    if (!notifier.onProcessing(`in`, out, bytesWriteCount.toLong(),
+                                    if (totalBytesCount > 0 && bytesWriteCount <= totalBytesCount) (totalBytesCount - bytesWriteCount).toLong() else 0.toLong())) {
                         throw InterruptedIOException("Revector streams interrupted")
                     }
                     lastNotifyTime = System.currentTimeMillis()
@@ -64,26 +79,17 @@ fun revectorStream(
 }
 
 @JvmOverloads
-fun revectorStreamNoThrow(
-        `in`: InputStream,
-        out: OutputStream,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_STREAM_BUF_SIZE,
-        closeInput: Boolean = true,
-        closeOutput: Boolean = true
-): Boolean =
+fun readBytesFromInputStream(inputStream: InputStream, closeInput: Boolean = true): ByteArray? =
         try {
-            revectorStream(`in`, out, notifier, buffSize, closeInput, closeOutput)
-            true
+            readBytesFromInputStreamOrThrow(inputStream, closeInput)
         } catch (e: IOException) {
-            logger.e("An IOException occurred during revectorStream: " + e.message, e)
-            false
+            logException(logger, e, "readBytesFromInputStream")
+            null
         }
-
 
 @Throws(IOException::class)
 @JvmOverloads
-fun readBytesFromInputStream(inputStream: InputStream, closeInput: Boolean = true): ByteArray {
+fun readBytesFromInputStreamOrThrow(inputStream: InputStream, closeInput: Boolean = true): ByteArray {
     try {
         val data = ByteArray(inputStream.available())
         var readByteCount: Int
@@ -99,13 +105,17 @@ fun readBytesFromInputStream(inputStream: InputStream, closeInput: Boolean = tru
 }
 
 @JvmOverloads
-fun readBytesFromInputStreamNoThrow(inputStream: InputStream, closeInput: Boolean = true): ByteArray? =
-        try {
-            readBytesFromInputStreamNoThrow(inputStream, closeInput)
-        } catch (e: IOException) {
-            logger.e("An IOException occurred during readBytesFromInputStream: " + e.message, e)
-            null
-        }
+fun readStringsFromInputStream(
+        `is`: InputStream,
+        count: Int = 0,
+        closeInput: Boolean = true,
+        charsetName: String = CHARSET_DEFAULT
+): List<String> = try {
+    readStringsFromInputStreamOrThrow(`is`, count, closeInput, charsetName)
+} catch (e: IOException) {
+    logException(logger, e, "readStringsFromInputStream")
+    emptyList()
+}
 
 /**
  * Читает в несколько строк содержимое [inputStream]
@@ -115,11 +125,11 @@ fun readBytesFromInputStreamNoThrow(inputStream: InputStream, closeInput: Boolea
  */
 @Throws(IOException::class)
 @JvmOverloads
-fun readStringsFromInputStream(
+fun readStringsFromInputStreamOrThrow(
         `is`: InputStream,
         count: Int = 0,
         closeInput: Boolean = true,
-        charsetName: String = "UTF-8"
+        charsetName: String = CHARSET_DEFAULT
 ): List<String> {
     val out = mutableListOf<String>()
     var `in`: BufferedReader? = null
@@ -138,52 +148,21 @@ fun readStringsFromInputStream(
 }
 
 @JvmOverloads
-fun readStringsFromInputStreamNoThrow(
-        `is`: InputStream,
-        count: Int = 0,
-        closeInput: Boolean = true,
-        charsetName: String = "UTF-8"
-): List<String> = try {
-    readStringsFromInputStream(`is`, count, closeInput, charsetName)
-} catch (e: IOException) {
-    logger.e("An IOException occurred during readStringsFromInputStream: " + e.message, e)
-    emptyList()
-}
-
-/**
- * Читает в одну строку содержимое [inputStream]
- *
- * @param count       количество исходных строк для чтения
- * @param charsetName имя кодировки
- */
-@Throws(IOException::class)
-@JvmOverloads
-fun readStringFromInputStream(
-        `is`: InputStream,
-        count: Int = 0,
-        closeInput: Boolean = true,
-        charsetName: String = "UTF-8"
-): String? {
-    val strings: Collection<String?> = readStringsFromInputStream(`is`, count, closeInput, charsetName)
-    return if (!strings.isEmpty()) join(NEXT_LINE, strings) else null
-}
-
-@JvmOverloads
-fun readStringFromInputStreamNoThrow(
-        `is`: InputStream,
-        count: Int = 0,
-        closeInput: Boolean = true,
-        charsetName: String = "UTF-8"
-): String? = try {
-    readStringFromInputStream(`is`, count, closeInput, charsetName)
-} catch (e: IOException) {
-    logger.e("An IOException occurred during readStringFromInputStream: " + e.message, e)
-    null
-}
-
-@Throws(IOException::class)
-@JvmOverloads
 fun writeBytesToOutputStream(
+        outputStream: OutputStream,
+        data: ByteArray,
+        closeOutput: Boolean = true
+) = try {
+    writeBytesToOutputStreamOrThrow(outputStream, data, closeOutput)
+    true
+} catch (e: IOException) {
+    logException(logger, e, "writeBytesToOutputStreamOrThrow")
+    false
+}
+
+@Throws(IOException::class)
+@JvmOverloads
+fun writeBytesToOutputStreamOrThrow(
         outputStream: OutputStream,
         data: ByteArray,
         closeOutput: Boolean = true
@@ -199,23 +178,11 @@ fun writeBytesToOutputStream(
 }
 
 @JvmOverloads
-fun writeBytesToOutputStreamNoThrow(
-        outputStream: OutputStream,
-        data: ByteArray,
-        closeOutput: Boolean = true
-) = try {
-    writeBytesToOutputStream(outputStream, data, closeOutput)
-    true
-} catch (e: IOException) {
-    logger.e("An IOException occurred during readStringFromInputStream: " + e.message, e)
-    false
-}
-
-fun convertInputStreamToString(inputStream: InputStream): String? {
+fun convertInputStreamToString(inputStream: InputStream, charsetName: String = CHARSET_DEFAULT): String? {
     val result = ByteArrayOutputStream()
-    revectorStream(inputStream, result)
+    revectorStreamOrThrow(inputStream, result)
     return try {
-        result.toString("UTF-8")
+        result.toString(charsetName)
     } catch (e: UnsupportedEncodingException) {
         logger.e("An UnsupportedEncodingException occurred", e)
         null
@@ -234,5 +201,5 @@ interface IStreamNotifier {
             outputStream: OutputStream,
             bytesWrite: Long,
             bytesLeft: Long
-    ): Boolean
+    ): Boolean = true
 }

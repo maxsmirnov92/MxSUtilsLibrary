@@ -4,10 +4,7 @@ import android.content.Context
 import android.os.Build
 import net.maxsmr.commonutils.android.getPidsByName
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager
-import net.maxsmr.commonutils.data.FileHelper
-import net.maxsmr.commonutils.data.MatchStringOption
-import net.maxsmr.commonutils.data.Predicate
-import net.maxsmr.commonutils.data.stringsMatch
+import net.maxsmr.commonutils.data.*
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.text.isEmpty
 import net.maxsmr.commonutils.logger.BaseLogger
@@ -148,7 +145,7 @@ fun installApk(
         context: Context
 ): Boolean {
 
-    if (!FileHelper.isFileValid(apkFile)) {
+    if (!isFileValid(apkFile)) {
         logger.e("Cannot install: incorrect apk file: $apkFile")
         return false
     }

@@ -551,7 +551,7 @@ public class MaskClickLayout extends FrameLayout {
             if (clickMask.options.scaleToParent) {
                 DisplayMetrics metrics = new DisplayMetrics();
                 ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(metrics);
-                Bitmap scaledBackground = GraphicUtils.createScaledBitmap(background, metrics.widthPixels);
+                Bitmap scaledBackground = GraphicUtils.createScaledBitmap(background, metrics.widthPixels, true);
                 background.recycle();
                 background = scaledBackground;
             }

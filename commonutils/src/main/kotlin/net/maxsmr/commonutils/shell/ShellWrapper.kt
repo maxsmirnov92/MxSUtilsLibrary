@@ -3,14 +3,13 @@ package net.maxsmr.commonutils.shell
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(ShellWrapper::class.java)
 
-class ShellWrapper(
+class ShellWrapper @JvmOverloads constructor(
         var addToCommandsMap: Boolean = true,
-
-        var targetCode: Int = DEFAULT_TARGET_CODE,
 
         var workingDir: String = EMPTY_STRING,
 
@@ -61,10 +60,26 @@ class ShellWrapper(
         isDisposed = true
     }
 
-    fun executeCommand(command: String, useSU: Boolean = false): CommandResult =
-            executeCommand(mutableListOf(command), useSU)
+    @JvmOverloads
+    fun executeCommand(
+            command: String,
+            useSU: Boolean = false,
+            targetCode: Int? = DEFAULT_TARGET_CODE,
+            execTimeout: Long = 0,
+            execTimeoutUnit: TimeUnit = TimeUnit.MILLISECONDS,
+            shellCallback: ShellCallback? = null
+    ): CommandResult =
+            executeCommand(mutableListOf(command), useSU, targetCode, execTimeout, execTimeoutUnit, shellCallback)
 
-    fun executeCommand(commands: List<String>, useSU: Boolean = false): CommandResult {
+    @JvmOverloads
+    fun executeCommand(
+            commands: List<String>,
+            useSU: Boolean = false,
+            targetCode: Int? = DEFAULT_TARGET_CODE,
+            execTimeout: Long = 0,
+            execTimeoutUnit: TimeUnit = TimeUnit.MILLISECONDS,
+            shellCallback: ShellCallback? = null
+    ): CommandResult {
         logger.d("Execute commands: \"$commands\", useSU: $useSU")
 
         checkDisposed()
@@ -89,25 +104,26 @@ class ShellWrapper(
 
         val result = execProcess(commands, workingDir, configurator, targetCode, object : ShellCallback {
 
-            override fun needToLogCommands(): Boolean {
-                return true
-            }
+            override val needToLogCommands: Boolean get() = shellCallback?.needToLogCommands ?: true
 
             override fun shellOut(from: ShellCallback.StreamType, shellLine: String) {
                 logger.d("Output $from: $shellLine")
+                shellCallback?.shellOut(from, shellLine)
             }
 
             override fun processStarted() {
                 logger.d("Command \"" + commandInfo.commandsToRun + "\" started")
+                shellCallback?.processStarted()
             }
 
             override fun processStartFailed(t: Throwable?) {
                 logger.e("Command \"" + commandInfo.commandsToRun + "\" start failed: $t")
 //                commandInfo.setResult(new CommandResult(targetCode, -1, null, null));
+                shellCallback?.processStartFailed(t)
             }
 
             override fun processComplete(exitValue: Int) {
-
+                shellCallback?.processComplete(exitValue)
             }
         }, object : ThreadsCallback {
 
@@ -122,7 +138,7 @@ class ShellWrapper(
                     commandInfo.startedThreads.remove(info)
                 }
             }
-        })
+        }, execTimeout, execTimeoutUnit)
 
         synchronized(commandInfo) {
             commandInfo.result = result

@@ -3,8 +3,9 @@ package net.maxsmr.commonutils.rx.live
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import io.reactivex.Completable
+import io.reactivex.CompletableOperator
+import io.reactivex.MaybeOperator
 import io.reactivex.disposables.Disposable
-
 
 /**
  * Представляет собой lifecycle-aware [Completable].
@@ -14,28 +15,32 @@ import io.reactivex.disposables.Disposable
  *
  * @param observingState минимальное состояние ЖЦ LifecycleOwner, при котором он должен получать эвенты
  */
-class LiveCompletable(
+class LiveCompletable @JvmOverloads constructor(
         private val completable: Completable,
-        observingState: Lifecycle.State = Lifecycle.State.STARTED
+        observingState: Lifecycle.State? = Lifecycle.State.STARTED
 ): BaseLiveWrapper(observingState) {
 
-    fun subscribe(owner: LifecycleOwner, onComplete: () -> Unit) {
+    fun subscribe(owner: LifecycleOwner, operator: CompletableOperator? = null, onComplete: () -> Unit) {
         registerDisposable(owner) {
-            createDisposable(owner, onComplete)
+            createDisposable(owner, operator, onComplete)
         }
     }
 
-    private fun createDisposable(owner: LifecycleOwner, onComplete: () -> Unit): Disposable {
-        return completable
+    private fun createDisposable(owner: LifecycleOwner, operator: CompletableOperator? = null, onComplete: () -> Unit): Disposable {
+        val completable = completable
                 .doOnComplete {
-                    if (owner.lifecycle.currentState.isAtLeast(observingState)) {
+                    if (observingState == null || owner.lifecycle.currentState.isAtLeast(observingState)) {
                         onComplete()
                     }
                     unsubscribe(owner)
                 }
-                .subscribe()
+        return if (operator == null) {
+            completable.subscribe()
+        } else {
+            completable.lift(operator).subscribe()
+        }
     }
 }
 
-fun Completable.toLive(observingState: Lifecycle.State = Lifecycle.State.STARTED): LiveCompletable =
+fun Completable.toLive(observingState: Lifecycle.State? = Lifecycle.State.STARTED): LiveCompletable =
         LiveCompletable(this, observingState)

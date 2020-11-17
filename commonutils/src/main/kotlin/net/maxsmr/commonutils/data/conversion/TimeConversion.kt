@@ -1,7 +1,5 @@
 package net.maxsmr.commonutils.data.conversion
 
-import net.maxsmr.commonutils.R
-import net.maxsmr.commonutils.data.text.join
 import net.maxsmr.commonutils.data.collection.toSortedSetExclude
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.*
@@ -13,47 +11,6 @@ private const val TIME_UNIT_C3 = 1000000000L
 private const val TIME_UNIT_C4 = 60000000000L
 private const val TIME_UNIT_C5 = 3600000000000L
 private const val TIME_UNIT_C6 = 86400000000000L
-
-/**
- * @param timeUnit           unit for time
- * @param timeUnitsToExclude list of units to avoid in result string
- */
-fun timeToString(
-        time: Long,
-        timeUnit: TimeUnit,
-        timeUnitsToExclude: Set<TimeUnit> = setOf(),
-        stringsProvider: (Int, Long?) -> String
-): String {
-    val result = mutableListOf<String>()
-    val map = timeToMap(time, timeUnit, timeUnitsToExclude)
-    val timeFormat = stringsProvider(R.string.time_format, null)
-    map.forEach {
-        when (it.key) {
-            NANOSECONDS -> {
-                result.add(String.format(timeFormat, it.value, stringsProvider(R.plurals.time_suffix_nanos, it.value)))
-            }
-            MICROSECONDS -> {
-                result.add(String.format(timeFormat, it.value, stringsProvider(R.plurals.time_suffix_micros, it.value)))
-            }
-            MILLISECONDS -> {
-                result.add(String.format(timeFormat, it.value, stringsProvider(R.plurals.time_suffix_millis, it.value)))
-            }
-            SECONDS -> {
-                result.add(String.format(timeFormat, it.value, stringsProvider(R.plurals.time_suffix_seconds, it.value)))
-            }
-            MINUTES -> {
-                result.add(String.format(timeFormat, it.value, stringsProvider(R.plurals.time_suffix_minutes, it.value)))
-            }
-            HOURS -> {
-                result.add(String.format(timeFormat, it.value, stringsProvider(R.plurals.time_suffix_hours, it.value)))
-            }
-            DAYS -> {
-                result.add(String.format(timeFormat, it.value, stringsProvider(R.plurals.time_suffix_days, it.value)))
-            }
-        }
-    }
-    return join(", ", result)
-}
 
 @JvmOverloads
 fun timeToMap(

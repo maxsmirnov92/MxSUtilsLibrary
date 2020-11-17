@@ -13,6 +13,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 
+import static net.maxsmr.commonutils.data.FileUtilsKt.isFileValid;
+import static net.maxsmr.commonutils.data.FileUtilsKt.readBytesFromFile;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public final class ChecksumHelper {
@@ -66,6 +68,6 @@ public final class ChecksumHelper {
     }
 
     public static String md5Hash(File file) {
-        return FileHelper.isFileValid(file)? md5Hash(FileHelper.readBytesFromFile(file)) : null;
+        return isFileValid(file)? md5Hash(readBytesFromFile(file)) : null;
     }
 }

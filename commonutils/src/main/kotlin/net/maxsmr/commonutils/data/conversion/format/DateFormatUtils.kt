@@ -5,16 +5,16 @@ import java.text.ParseException
 import java.text.SimpleDateFormat
 import java.util.*
 
-fun parseDateNoThrow(
+fun parseDate(
         dateText: String,
         pattern: String,
         dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
 ): Date? {
     if (pattern.isEmpty()) return null
-    return parseDateNoThrow(dateText, SimpleDateFormat(pattern, Locale.getDefault()), dateFormatConfigurator)
+    return parseDate(dateText, SimpleDateFormat(pattern, Locale.getDefault()), dateFormatConfigurator)
 }
 
-fun parseDateNoThrow(
+fun parseDate(
         dateText: String,
         dateFormat: SimpleDateFormat,
         dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
@@ -29,16 +29,16 @@ fun parseDateNoThrow(
     }
 }
 
-fun formatDateNoThrow(
+fun formatDate(
         date: Date,
         pattern: String,
         dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
 ): String {
     if (pattern.isEmpty()) return EMPTY_STRING
-    return formatDateNoThrow(date, SimpleDateFormat(pattern, Locale.getDefault()), dateFormatConfigurator)
+    return formatDate(date, SimpleDateFormat(pattern, Locale.getDefault()), dateFormatConfigurator)
 }
 
-fun formatDateNoThrow(
+fun formatDate(
         date: Date,
         dateFormat: SimpleDateFormat,
         dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
@@ -73,4 +73,5 @@ fun getMonthsCount(
     return getMonthsCount(firstCalendar, secondCalendar)
 }
 
-fun getMonthsCount(firstCalendar: Calendar, secondCalendar: Calendar) = firstCalendar.get(Calendar.MONTH) - secondCalendar.get(Calendar.MONTH) + 1 + (firstCalendar.get(Calendar.YEAR) - secondCalendar.get(Calendar.YEAR)) * 12
+fun getMonthsCount(firstCalendar: Calendar, secondCalendar: Calendar) =
+        firstCalendar.get(Calendar.MONTH) - secondCalendar.get(Calendar.MONTH) + 1 + (firstCalendar.get(Calendar.YEAR) - secondCalendar.get(Calendar.YEAR)) * 12

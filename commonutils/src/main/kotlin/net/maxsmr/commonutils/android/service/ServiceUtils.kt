@@ -8,11 +8,8 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.os.Build
 import android.text.TextUtils
-import android.util.Log
 import net.maxsmr.commonutils.android.*
-import net.maxsmr.commonutils.android.analytics.AnalyticsHelper
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
@@ -148,7 +145,7 @@ private fun <S : Service> startNoCheck(context: Context, serviceClass: Class<S>,
     if (shouldCheckSdk && isOreo) {
         context.startForegroundService(i)
     } else {
-        if (!isOreo || !isSelfAppInBackground(context)) {
+        if (!isOreo || !isSelfAppInBackgroundOrThrow(context)) {
             context.startService(i)
         } else {
             logger.e("Cannot start service with intent $i: app is not in background")

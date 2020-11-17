@@ -2,8 +2,6 @@ package net.maxsmr.testapp;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import net.maxsmr.commonutils.data.FileHelper;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
@@ -12,6 +10,9 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
+import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getExternalFilesDirs;
+import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getFilteredExternalFilesDirs;
+
 @RunWith(AndroidJUnit4.class)
 public class ExternalStorageTest extends LoggerTest {
 
@@ -19,13 +20,13 @@ public class ExternalStorageTest extends LoggerTest {
     @Override
     public void test() {
         Set<File> dirs;
-        dirs = FileHelper.getExternalFilesDirs(context);
+        dirs = getExternalFilesDirs(context);
         logger.d("external files dirs: " + dirs);
-        dirs = FileHelper.getExternalFilesDirs(context, "1");
+        dirs = getExternalFilesDirs(context, "1");
         logger.d("external files dirs with type: " + dirs);
-        dirs = FileHelper.getFilteredExternalFilesDirs(context, true, true, false);
+        dirs = getFilteredExternalFilesDirs(context, true, true, false);
         logger.d("external files dirs filtered: " + dirs);
-        dirs = FileHelper.getFilteredExternalFilesDirs(context, "1", true, true, false);
+        dirs = getFilteredExternalFilesDirs(context, "1", true, true, false);
         logger.d("external files dirs filtered with type: " + dirs);
         dirs = new LinkedHashSet<>(Arrays.asList(context.getObbDirs()));
         logger.d("obb dirs: " + dirs);

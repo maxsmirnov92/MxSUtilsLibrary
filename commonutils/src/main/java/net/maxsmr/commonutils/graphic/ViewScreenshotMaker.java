@@ -4,7 +4,6 @@ import android.graphics.Bitmap;
 import android.view.View;
 import android.view.Window;
 
-import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -13,6 +12,8 @@ import org.jetbrains.annotations.Nullable;
 
 import java.io.File;
 import java.io.FileOutputStream;
+
+import static net.maxsmr.commonutils.data.FileUtilsKt.createFile;
 
 public final class ViewScreenshotMaker {
 
@@ -24,7 +25,7 @@ public final class ViewScreenshotMaker {
     @Nullable
     public static File makeScreenshot(String folderName, String fileName, @NotNull Bitmap.CompressFormat format, @NotNull Window window) {
 
-        final File destFile = FileHelper.createNewFile(fileName, folderName);
+        final File destFile = createFile(fileName, folderName);
 
         if (destFile == null) {
             logger.e("can't create file: " + folderName + File.separator + fileName);

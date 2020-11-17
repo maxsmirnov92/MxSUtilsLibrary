@@ -11,7 +11,8 @@ import java.util.*
 fun objectsEqual(one: Any?, another: Any?): Boolean =
         if (one != null) one == another else another == null
 
-fun charsEqual(one: Char?, another: Char?, ignoreCase: Boolean): Boolean {
+@JvmOverloads
+fun charsEqual(one: Char?, another: Char?, ignoreCase: Boolean = false): Boolean {
     var one = one
     var another = another
     if (ignoreCase) {
@@ -21,46 +22,53 @@ fun charsEqual(one: Char?, another: Char?, ignoreCase: Boolean): Boolean {
     return if (one != null) one == another else another == null
 }
 
-fun stringsEqual(one: String?, another: String?, ignoreCase: Boolean): Boolean =
-        if (one != null) {
-            if (!ignoreCase) objectsEqual(one, another) else one.equals(another, ignoreCase = true)
-        } else {
-            another == null
-        }
+@JvmOverloads
+fun stringsEqual(one: String?, another: String?, ignoreCase: Boolean = false): Boolean =
+        if (!ignoreCase) objectsEqual(one, another) else one.equals(another, ignoreCase = true)
 
+@JvmOverloads
 fun compareForNull(lhs: Any?, rhs: Any?, ascending: Boolean = true): Int =
         if (ascending) if (lhs != null) if (rhs != null) 0 else 1 else if (rhs == null) 0 else -1 else if (lhs != null) if (rhs != null) 0 else -1 else if (rhs == null) 0 else 1
 
+@JvmOverloads
 fun <C : Comparable<C>?> compareObjects(one: C?, another: C?, ascending: Boolean = true): Int =
         if (one != null) if (another != null) if (ascending) one.compareTo(another) else another.compareTo(one) else 1 else if (another == null) 0 else -1
 
+@JvmOverloads
 fun compareNumbers(one: Number?, another: Number?, ascending: Boolean = true): Int =
         compareDoubles(one?.toDouble(), another?.toDouble(), ascending)
 
+@JvmOverloads
 fun compareInts(one: Int?, another: Int?, ascending: Boolean = true): Int =
         compareLongs(one?.toLong(), another?.toLong(), ascending)
 
+@JvmOverloads
 fun compareLongs(one: Long?, another: Long?, ascending: Boolean = true): Int =
         compareObjects(one, another, ascending)
 
+@JvmOverloads
 fun compareFloats(one: Float?, another: Float?, ascending: Boolean = true): Int =
         compareDoubles(one?.toDouble(), another?.toDouble(), ascending)
 
+@JvmOverloads
 fun compareDoubles(one: Double?, another: Double?, ascending: Boolean = true): Int =
         compareObjects(one, another, ascending)
 
-fun compareChars(one: Char?, another: Char?, ascending: Boolean = true, ignoreCase: Boolean): Int {
+@JvmOverloads
+fun compareChars(one: Char?, another: Char?, ascending: Boolean = true, ignoreCase: Boolean = false): Int {
     val one = if (ignoreCase) one?.toLowerCase() else one
     val another = if (ignoreCase) another?.toLowerCase() else another
     return compareDoubles(one?.toDouble(), another?.toDouble())
 }
 
-fun compareStrings(one: String?, another: String?, ascending: Boolean = true, ignoreCase: Boolean): Int {
+@JvmOverloads
+fun compareStrings(one: String?, another: String?, ascending: Boolean = true, ignoreCase: Boolean = false): Int {
     val one = if (ignoreCase) one?.toLowerCase(Locale.getDefault()) else one
     val another = if (ignoreCase) another?.toLowerCase(Locale.getDefault()) else another
     return compareObjects(one, another, ascending)
 }
 
+@JvmOverloads
 fun compareDates(one: Date?, another: Date?, ascending: Boolean = true): Int =
         compareLongs(one?.time ?: 0, another?.time ?: 0, ascending)
 

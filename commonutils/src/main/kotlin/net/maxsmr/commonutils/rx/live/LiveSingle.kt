@@ -2,9 +2,10 @@ package net.maxsmr.commonutils.rx.live
 
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
+import io.reactivex.MaybeOperator
 import io.reactivex.Single
+import io.reactivex.SingleOperator
 import io.reactivex.disposables.Disposable
-
 
 /**
  * Представляет собой lifecycle-aware [Single].
@@ -14,31 +15,38 @@ import io.reactivex.disposables.Disposable
  *
  * @param observingState минимальное состояние ЖЦ LifecycleOwner, при котором он должен получать эвенты
  */
-class LiveSingle<T>(
+class LiveSingle<T> @JvmOverloads constructor(
         private val single: Single<T>,
         private val filter: ((T) -> Boolean)? = null,
-        observingState: Lifecycle.State = Lifecycle.State.STARTED
-): BaseLiveWrapper(observingState) {
+        observingState: Lifecycle.State? = Lifecycle.State.STARTED
+) : BaseLiveWrapper(observingState) {
 
-    fun subscribe(owner: LifecycleOwner, onSuccess: (T) -> Unit) {
+    fun subscribe(owner: LifecycleOwner, operator: MaybeOperator<T, T>? = null, onSuccess: (T) -> Unit) {
         registerDisposable(owner) {
-            createDisposable(owner, onSuccess)
+            createDisposable(owner, operator, onSuccess)
         }
     }
 
-    private fun createDisposable(owner: LifecycleOwner, onSuccess: (T) -> Unit): Disposable {
-        return single
+    private fun createDisposable(owner: LifecycleOwner, operator: MaybeOperator<T, T>? = null, onSuccess: (T) -> Unit): Disposable {
+        val single = single
                 .filter {
-                    owner.lifecycle.currentState.isAtLeast(observingState)
+                    (observingState == null || owner.lifecycle.currentState.isAtLeast(observingState))
                             && (filter == null || filter.invoke(it))
                 }
                 .doOnEvent { item, _ ->
                     unsubscribe(owner)
                     item?.let(onSuccess)
                 }
-                .subscribe()
+        return if (operator == null) {
+            single.subscribe()
+        } else {
+            single.lift<Any>(operator).subscribe()
+        }
     }
 }
 
-fun <T> Single<T>.toLive(filter: ((T) -> Boolean)? = null, observingState: Lifecycle.State = Lifecycle.State.STARTED): LiveSingle<T> =
+fun <T> Single<T>.toLive(
+        filter: ((T) -> Boolean)? = null,
+        observingState: Lifecycle.State? = Lifecycle.State.STARTED
+): LiveSingle<T> =
         LiveSingle(this, filter, observingState)

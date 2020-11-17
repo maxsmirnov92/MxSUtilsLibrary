@@ -1,7 +1,5 @@
 package net.maxsmr.commonutils.graphic;
 
-
-import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CmdThreadInfo;
@@ -17,6 +15,7 @@ import java.util.LinkedHashSet;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static net.maxsmr.commonutils.data.FileUtilsKt.createFile;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcessAsync;
 
@@ -54,7 +53,7 @@ public final class ShScreenshotMaker {
             return false;
         }
 
-        final File destFile = FileHelper.createNewFile(fileName, folderName);
+        final File destFile = createFile(fileName, folderName);
 
         if (destFile == null) {
             logger.e("can't create file: " + folderName + File.separator + fileName);
@@ -82,7 +81,7 @@ public final class ShScreenshotMaker {
             return null;
         }
 
-        final File destFile = FileHelper.createNewFile(fileName, folderName);
+        final File destFile = createFile(fileName, folderName);
 
         if (destFile == null) {
             logger.e("can't create file: " + folderName + File.separator + fileName);

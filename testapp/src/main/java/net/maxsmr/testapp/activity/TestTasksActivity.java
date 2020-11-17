@@ -11,7 +11,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.snackbar.Snackbar;
 
-import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.GetMode;
 import net.maxsmr.commonutils.data.Pair;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -37,6 +37,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static net.maxsmr.commonutils.data.FileUtilsKt.DEPTH_UNLIMITED;
+import static net.maxsmr.commonutils.data.FileUtilsKt.getFiles;
 import static net.maxsmr.commonutils.data.number.RandomUtilsKt.randInt;
 
 public class TestTasksActivity extends AppCompatActivity implements AbstractSyncStorage.IStorageListener, TaskRunnableExecutor.Callbacks<TestRunnableInfo, Void, Boolean, TestTaskRunnable>, TaskRunnable.Callbacks<TestRunnableInfo, Void, Boolean, TaskRunnable<TestRunnableInfo, Void, Boolean>> {
@@ -117,7 +119,7 @@ public class TestTasksActivity extends AppCompatActivity implements AbstractSync
     }
 
     private void assertFiles(int currentSize) {
-        Set<File> storageFiles = FileHelper.getFiles(Collections.singletonList(storage.getStorageDirPath()), FileHelper.GetMode.FILES, null, null, FileHelper.DEPTH_UNLIMITED);
+        Set<File> storageFiles = getFiles(storage.getStorageDirPath(), GetMode.FILES, null);
         final int filesCount = storageFiles.size();
         if (filesCount != currentSize) {
             throw new IllegalStateException("storage files count " + filesCount + " is not equals current size " + currentSize);

@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.shell
 
+import net.maxsmr.commonutils.data.isDirExists
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
-import net.maxsmr.commonutils.data.FileHelper
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.shell.ShellCallback.StreamType
@@ -13,72 +13,7 @@ import kotlin.collections.ArrayList
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("ShellUtils")
 
-private fun createAndStartProcess(
-        commands: List<String>,
-        workingDir: String,
-        configurator: IProcessBuilderConfigurator?,
-        sc: ShellCallback?,
-        tc: ThreadsCallback?,
-        latch: CountDownLatch?
-): Process? {
-
-    val commands = commands.toMutableList()
-
-    for (i in commands.indices) {
-        commands[i] = String.format(Locale.US, "%s", commands[i])
-    }
-
-    val pb = ProcessBuilder(commands)
-
-    if (workingDir.isNotEmpty()) {
-        val workingDirFile = File(workingDir)
-        if (FileHelper.isDirExists(workingDirFile)) {
-            pb.directory(workingDirFile)
-        } else {
-            logger.e("working directory $workingDir not exists")
-        }
-    }
-
-    if (sc != null && sc.needToLogCommands()) {
-        val cmdLog = StringBuilder()
-        for (cmd in commands) {
-            cmdLog.append(cmd)
-            cmdLog.append(' ')
-        }
-        sc.shellOut(StreamType.CMD, cmdLog.toString())
-    }
-
-    configurator?.configure(pb)
-
-    var process: Process? = null
-    var startEx: IOException? = null
-
-    try {
-        process = pb.start()
-    } catch (e: IOException) {
-        startEx = e
-    }
-
-    if (process == null) {
-        sc?.processStartFailed(startEx)
-        return null
-    } else {
-        sc?.processStarted()
-    }
-
-    val outThreadInfo = CmdThreadInfo(commands, workingDir, StreamType.OUT)
-    val outThread = StreamConsumeThread(outThreadInfo, process.inputStream, sc, tc, latch)
-    outThread.start()
-    tc?.onThreadStarted(outThreadInfo, outThread)
-
-    val errThreadInfo = CmdThreadInfo(commands, workingDir, StreamType.ERR)
-    val errThread = StreamConsumeThread(errThreadInfo, process.errorStream, sc, tc, latch)
-    errThread.start()
-    tc?.onThreadStarted(errThreadInfo, errThread)
-
-    return process
-}
-
+@JvmOverloads
 fun execProcessAsync(
         cmd: String,
         workingDir: String = EMPTY_STRING,
@@ -90,6 +25,7 @@ fun execProcessAsync(
 /**
  * @return true if started successfully, false - otherwise
  */
+@JvmOverloads
 fun execProcessAsync(
         cmds: List<String>,
         workingDir: String = EMPTY_STRING,
@@ -107,7 +43,7 @@ fun execProcessAsync(
     return false
 }
 
-
+@JvmOverloads
 fun execProcess(
         cmd: String,
         workingDir: String = EMPTY_STRING,
@@ -122,6 +58,7 @@ fun execProcess(
 /**
  * @return result code; -1 if start failed or interrupted
  */
+@JvmOverloads
 fun execProcess(
         cmds: List<String>,
         workingDir: String = EMPTY_STRING,
@@ -168,7 +105,79 @@ fun execProcess(
     return CommandResult(targetExitCode, exitCode, stdOutLines, stdErrLines)
 }
 
-private class StreamConsumeThread internal constructor(private val threadInfo: CmdThreadInfo, internal val `is`: InputStream, internal val sc: ShellCallback?, internal val tc: ThreadsCallback?, internal val latch: CountDownLatch?) : Thread() {
+private fun createAndStartProcess(
+        commands: List<String>,
+        workingDir: String,
+        configurator: IProcessBuilderConfigurator?,
+        sc: ShellCallback?,
+        tc: ThreadsCallback?,
+        latch: CountDownLatch?
+): Process? {
+
+    val commands = commands.toMutableList()
+
+    for (i in commands.indices) {
+        commands[i] = String.format(Locale.US, "%s", commands[i])
+    }
+
+    val pb = ProcessBuilder(commands)
+
+    if (workingDir.isNotEmpty()) {
+        val workingDirFile = File(workingDir)
+        if (isDirExists(workingDirFile)) {
+            pb.directory(workingDirFile)
+        } else {
+            logger.e("working directory $workingDir not exists")
+        }
+    }
+
+    if (sc != null && sc.needToLogCommands) {
+        val cmdLog = StringBuilder()
+        for (cmd in commands) {
+            cmdLog.append(cmd)
+            cmdLog.append(' ')
+        }
+        sc.shellOut(StreamType.CMD, cmdLog.toString())
+    }
+
+    configurator?.configure(pb)
+
+    var process: Process? = null
+    var startEx: IOException? = null
+
+    try {
+        process = pb.start()
+    } catch (e: IOException) {
+        startEx = e
+    }
+
+    if (process == null) {
+        sc?.processStartFailed(startEx)
+        return null
+    } else {
+        sc?.processStarted()
+    }
+
+    val outThreadInfo = CmdThreadInfo(commands, workingDir, StreamType.OUT)
+    val outThread = StreamConsumeThread(outThreadInfo, process.inputStream, sc, tc, latch)
+    outThread.start()
+    tc?.onThreadStarted(outThreadInfo, outThread)
+
+    val errThreadInfo = CmdThreadInfo(commands, workingDir, StreamType.ERR)
+    val errThread = StreamConsumeThread(errThreadInfo, process.errorStream, sc, tc, latch)
+    errThread.start()
+    tc?.onThreadStarted(errThreadInfo, errThread)
+
+    return process
+}
+
+private class StreamConsumeThread(
+        private val threadInfo: CmdThreadInfo,
+        private val `is`: InputStream,
+        private val sc: ShellCallback?,
+        private val tc: ThreadsCallback?,
+        private val latch: CountDownLatch?
+) : Thread() {
 
     init {
         this.name = threadInfo.type.name
@@ -258,15 +267,15 @@ interface ShellCallback {
         CMD("cmd"), OUT("out"), ERR("err")
     }
 
-    fun needToLogCommands(): Boolean
+    val needToLogCommands: Boolean
 
-    fun shellOut(from: StreamType, shellLine: String)
+    fun shellOut(from: StreamType, shellLine: String) {}
 
-    fun processStarted()
+    fun processStarted() {}
 
-    fun processStartFailed(t: Throwable?)
+    fun processStartFailed(t: Throwable?) {}
 
-    fun processComplete(exitValue: Int)
+    fun processComplete(exitValue: Int) {}
 }
 
 interface ThreadsCallback {
@@ -290,9 +299,7 @@ private class WrappedShellCallback(
     var wasStarted: Boolean = false
     var isFinished: Boolean = false
 
-    override fun needToLogCommands(): Boolean {
-        return sc != null && sc.needToLogCommands()
-    }
+    override val needToLogCommands: Boolean get() = sc != null && sc.needToLogCommands
 
     override fun shellOut(from: StreamType, shellLine: String) {
         when (from) {

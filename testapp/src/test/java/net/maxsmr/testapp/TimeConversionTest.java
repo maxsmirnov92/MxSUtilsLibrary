@@ -11,7 +11,7 @@ import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toIntSafe;
-import static net.maxsmr.commonutils.data.conversion.TimeConversionKt.timeToString;
+import static net.maxsmr.commonutils.data.conversion.format.TimeFormatUtilsKt.timeToString;
 import static org.junit.Assert.assertFalse;
 
 @RunWith(AndroidJUnit4.class)

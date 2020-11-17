@@ -1,6 +1,6 @@
 package net.maxsmr.devicewatchers.storage;
 
-import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.GetMode;
 import net.maxsmr.commonutils.data.conversion.SizeUnit;
 
 import org.jetbrains.annotations.NotNull;
@@ -11,6 +11,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static net.maxsmr.commonutils.data.FileUtilsKt.checkDir;
+import static net.maxsmr.commonutils.data.FileUtilsKt.getPartitionSpace;
 
 public class StorageWatchSettings {
 
@@ -57,7 +59,7 @@ public class StorageWatchSettings {
     public final String targetPath;
 
     @Nullable
-    public final Map<String, FileHelper.GetMode> deleteOptionMap;
+    public final Map<String, GetMode> deleteOptionMap;
 
     @NotNull
     public final Comparator<? super File> comparator;
@@ -68,9 +70,9 @@ public class StorageWatchSettings {
      * @param targetPath path to watch and clean if necessary
      * @param deleteOptionMap map with absolute paths and delete modes for them
      */
-    public StorageWatchSettings(@NotNull ThresholdWhat what, double value, @NotNull String targetPath, @Nullable Map<String, FileHelper.GetMode> deleteOptionMap, @NotNull Comparator<? super File> comparator) {
+    public StorageWatchSettings(@NotNull ThresholdWhat what, double value, @NotNull String targetPath, @Nullable Map<String, GetMode> deleteOptionMap, @NotNull Comparator<? super File> comparator) {
 
-        FileHelper.checkDir(targetPath);
+        checkDir(targetPath);
         this.targetPath = targetPath;
         this.comparator = comparator;
 
@@ -90,7 +92,7 @@ public class StorageWatchSettings {
 
             case SIZE:
 
-                double totalKb = FileHelper.getPartitionTotalSpace(targetPath, SizeUnit.KBYTES);
+                double totalKb = getPartitionSpace(targetPath, null, SizeUnit.KBYTES, true);
 
                 if ((value < DEFAULT_PARTITION_MIN_SIZE_KB || value >= totalKb) && value != SIZE_AUTO) {
                     throw new IllegalArgumentException("incorrect value: " + value);
@@ -124,7 +126,7 @@ public class StorageWatchSettings {
     static class DeleteOptionPair {
 
         @NotNull
-        public final FileHelper.GetMode mode;
+        public final GetMode mode;
 
         @NotNull
         public final String path;
@@ -133,7 +135,7 @@ public class StorageWatchSettings {
          *
          * @param path relative path above specified target path
          */
-        public DeleteOptionPair(@NotNull FileHelper.GetMode mode, @NotNull String path) {
+        public DeleteOptionPair(@NotNull GetMode mode, @NotNull String path) {
             this.mode = mode;
             this.path = path;
         }

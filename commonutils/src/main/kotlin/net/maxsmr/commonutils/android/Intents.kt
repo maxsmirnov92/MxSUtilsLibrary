@@ -8,7 +8,8 @@ import android.text.TextUtils
 import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
 import androidx.core.content.FileProvider
-import net.maxsmr.commonutils.data.FileHelper
+import net.maxsmr.commonutils.data.getFileExtension
+import net.maxsmr.commonutils.data.isFileExists
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import java.io.File
 
@@ -118,7 +119,7 @@ private fun getFileUriAndType(
         file: File?,
         shouldUseFileProvider: Boolean
 ): Pair<Uri, String>? {
-    if (file == null || !FileHelper.isFileExists(file)) {
+    if (file == null || !isFileExists(file)) {
         return null
     }
 
@@ -130,7 +131,7 @@ private fun getFileUriAndType(
         Uri.fromFile(file)
     }
 
-    val ext = FileHelper.getFileExtension(file)
+    val ext = getFileExtension(file)
     val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
 
     return Pair(fileUri, mimeType ?: EMPTY_STRING)

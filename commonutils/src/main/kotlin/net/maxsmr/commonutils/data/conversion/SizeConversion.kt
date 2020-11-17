@@ -6,6 +6,8 @@ import net.maxsmr.commonutils.data.text.join
 import net.maxsmr.commonutils.data.collection.toSortedSetExclude
 import java.math.BigDecimal
 
+private const val FORMAT_SIZE = "%s %s"
+
 enum class SizeUnit {
     BYTES {
         override fun toBytes(s: Double): Long {
@@ -312,7 +314,6 @@ enum class SizeUnit {
                 MBYTES -> from.toMBytes(what.toDouble())
                 GBITS -> from.toGBits(what.toDouble())
                 GBYTES -> from.toGBytes(what.toDouble())
-                else -> 0
             }
         }
     }
@@ -332,20 +333,19 @@ fun sizeToString(
 ): String {
     val result = mutableListOf<String>()
     val map = sizeToMap(size, sizeUnit, sizeUnitsToExclude, precision)
-    val timeFormat = stringsProvider(R.string.size_format, null)
     map.forEach {
         when (it.key) {
             SizeUnit.BYTES -> {
-                result.add(String.format(timeFormat, it.value, stringsProvider(R.plurals.size_suffix_bytes, it.value)))
+                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_suffix_bytes, it.value)))
             }
             SizeUnit.KBYTES -> {
-                result.add(String.format(timeFormat, it.value, stringsProvider(R.plurals.size_suffix_kbytes, it.value)))
+                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_suffix_kbytes, it.value)))
             }
             SizeUnit.MBYTES -> {
-                result.add(String.format(timeFormat, it.value, stringsProvider(R.plurals.size_suffix_mbytes, it.value)))
+                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_suffix_mbytes, it.value)))
             }
             SizeUnit.GBYTES -> {
-                result.add(String.format(timeFormat, it.value, stringsProvider(R.plurals.size_suffix_gbytes, it.value)))
+                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_suffix_gbytes, it.value)))
             }
             else -> {
                 // do noting

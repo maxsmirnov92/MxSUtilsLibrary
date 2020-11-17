@@ -163,9 +163,9 @@ public abstract class AbstractSQLiteTableProvider<P extends AbstractSQLiteConten
 
 
     @Nullable
-    public static AbstractSQLiteTableProvider findSQLiteTableProvider(Collection<AbstractSQLiteTableProvider> providers, String tableName) {
+    public static AbstractSQLiteTableProvider<?> findSQLiteTableProvider(Collection<AbstractSQLiteTableProvider<?>> providers, String tableName) {
         if (providers != null) {
-            for (AbstractSQLiteTableProvider provider : providers) {
+            for (AbstractSQLiteTableProvider<?> provider : providers) {
                 if (provider != null && provider.getTableName().equalsIgnoreCase(tableName)) {
                     return provider;
                 }

@@ -1,8 +1,4 @@
 <resources>
     <string name="app_name">Common Utils</string>
     <string name="empty_data">No data</string>
-
-    <string name="time_format">%s %s</string>
-    <string name="size_format">%s %s</string>
-    <string name="file_size_format">%s: %s</string>
 </resources>

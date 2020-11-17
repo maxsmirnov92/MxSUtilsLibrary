@@ -26,9 +26,10 @@ import java.util.regex.Pattern;
 import static net.maxsmr.commonutils.android.AppUtilsKt.getApplicationInfo;
 import static net.maxsmr.commonutils.android.processmanager.model.ProcessInfo.ProcessState.S;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
-import static net.maxsmr.commonutils.data.FileHelper.isFileExists;
+import static net.maxsmr.commonutils.data.FileUtilsKt.isFileExists;
+import static net.maxsmr.commonutils.data.FileUtilsKt.isFileExistsOrThrow;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
-import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toNotNullIntNoThrow;
+import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toIntNotNull;
 import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
 import static net.maxsmr.commonutils.shell.RootShellCommandsKt.isRootAvailable;
 
@@ -36,7 +37,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
 
     private static final Pattern PACKAGE_PATTERN = Pattern.compile("^[a-z][a-z0-9_]*(\\.[a-z0-9_]+)+[0-9a-z_]$");
 
-    protected final ShellWrapper shellWrapper = new ShellWrapper(false, DEFAULT_TARGET_CODE, net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING, null);
+    protected final ShellWrapper shellWrapper = new ShellWrapper(false);
 
     @Nullable
     private String[] cachedCommands;
@@ -63,7 +64,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
 
         final List<String> commands = Arrays.asList(cachedCommands);
 
-        CommandResult commandResult = shellWrapper.executeCommand(commands, useSuForCommands(commands));
+        CommandResult commandResult = shellWrapper.executeCommand(commands, useSuForCommands(commands), DEFAULT_TARGET_CODE);
 
         if (!commandResult.isSuccessful()) {
             logger.e("Processes get failed: cannot execute command: " + commands + "; exit code: " + commandResult.getExitCode() +
@@ -322,11 +323,11 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
         final int statIndex = getValueIndex(columnNames, indexMap, Column.STAT, fields);
 
         final String user = isValueIndexValid(userIndex, fields) ? fields[userIndex].trim() : null;
-        final int userId = toNotNullIntNoThrow(user);
-        final int pid = toNotNullIntNoThrow(isValueIndexValid(pidIndex, fields) ? fields[pidIndex].trim() : null);
-        final int pPid = toNotNullIntNoThrow(isValueIndexValid(pPidIndex, fields) ? fields[pPidIndex].trim() : null);
-        final int vSize = toNotNullIntNoThrow(isValueIndexValid(vSizeIndex, fields) ? fields[vSizeIndex].trim() : null);
-        final int rss = toNotNullIntNoThrow(isValueIndexValid(rssIndex, fields) ? fields[rssIndex].trim() : null);
+        final int userId = toIntNotNull(user);
+        final int pid = toIntNotNull(isValueIndexValid(pidIndex, fields) ? fields[pidIndex].trim() : null);
+        final int pPid = toIntNotNull(isValueIndexValid(pPidIndex, fields) ? fields[pPidIndex].trim() : null);
+        final int vSize = toIntNotNull(isValueIndexValid(vSizeIndex, fields) ? fields[vSizeIndex].trim() : null);
+        final int rss = toIntNotNull(isValueIndexValid(rssIndex, fields) ? fields[rssIndex].trim() : null);
 
         final ProcessInfo.PCY pcy = ProcessInfo.PCY.fromName(isValueIndexValid(pcyIndex, fields) ? fields[pcyIndex].trim() : null);
         final ProcessInfo.ProcessState state = ProcessInfo.ProcessState.fromName(isValueIndexValid(statIndex, fields) ? fields[statIndex].trim() : null);

@@ -3,8 +3,8 @@ package net.maxsmr.commonutils.rx.live
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleOwner
 import io.reactivex.Observable
+import io.reactivex.ObservableOperator
 import io.reactivex.disposables.Disposable
-
 
 /**
  * Представляет собой lifecycle-aware [Observable].
@@ -14,49 +14,19 @@ import io.reactivex.disposables.Disposable
  *
  * @param observingState минимальное состояние ЖЦ LifecycleOwner, при котором он должен получать эвенты
  */
-class LiveObservable<T>(
-        private val observable: Observable<T>,
-        private val filter: ((T) -> Boolean)? = null,
-        observingState: Lifecycle.State = Lifecycle.State.STARTED
-) : BaseLiveWrapper(observingState) {
-
-    @JvmOverloads
-    fun subscribe(
-            owner: LifecycleOwner,
-            emitOnce: Boolean = false,
-            onNext: (T) -> Unit
-    ) {
-        registerDisposable(owner) {
-            createDisposable(owner, emitOnce, onNext)
-        }
-    }
-
-    private fun createDisposable(
-            owner: LifecycleOwner,
-            emitOnce: Boolean,
-            onNext: (T) -> Unit
-    ): Disposable {
-        return observable
-                .filter {
-                    owner.lifecycle.currentState.isAtLeast(observingState)
-                            && (filter == null || filter.invoke(it))
-                }
-                .doOnNext {
-                    onNext(it)
-                }
-                .doAfterNext {
-                    if (emitOnce) {
-                        unsubscribe(owner)
-                    }
-                }
-                .subscribe()
-    }
-}
+class LiveObservable<T> @JvmOverloads constructor(
+        override val observable: Observable<T>,
+        filter: ((T) -> Boolean)? = null,
+        observingState: Lifecycle.State? = Lifecycle.State.STARTED
+) : BaseLiveObservable<T>(filter, observingState)
 
 /**
  * Конвертирует Rx Observable в [LiveObservable] с автоотпиской
  *
  * @param observingState минимальное состояние ЖЦ LifecycleOwner, при котором он должен получать эвенты
  */
-fun <T> Observable<T>.toLive(filter: ((T) -> Boolean)? = null, observingState: Lifecycle.State = Lifecycle.State.STARTED): LiveObservable<T> =
+fun <T> Observable<T>.toLive(
+        filter: ((T) -> Boolean)? = null,
+        observingState: Lifecycle.State? = Lifecycle.State.STARTED
+): LiveObservable<T> =
         LiveObservable(this, filter, observingState)

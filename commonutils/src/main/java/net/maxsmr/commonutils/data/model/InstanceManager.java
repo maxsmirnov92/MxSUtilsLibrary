@@ -1,32 +1,20 @@
 package net.maxsmr.commonutils.data.model;
 
-import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.ObjectInput;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutput;
-import java.io.ObjectOutputStream;
-import java.io.OutputStream;
-import java.io.Serializable;
-import java.nio.file.Paths;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedHashMap;
+import java.util.Collections;
 import java.util.List;
-import java.util.Map;
+
+import static net.maxsmr.commonutils.data.FileUtilsKt.createFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.readBytesFromFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.readStringsFromFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.writeBytesToFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.writeStringsToFile;
 
 public abstract class InstanceManager<T> {
 
@@ -34,8 +22,8 @@ public abstract class InstanceManager<T> {
 
     protected final File file;
 
-    public InstanceManager(String fileName) {
-        FileHelper.checkFile(file = new File(fileName));
+    public InstanceManager(@NotNull String fileName, @Nullable String parentPath) {
+        file = createFile(fileName, parentPath, false);
     }
 
     @Nullable
@@ -50,17 +38,17 @@ public abstract class InstanceManager<T> {
     @Nullable
     protected abstract T deserializeFromString(String data);
 
-    public void saveAsByteArray(@NotNull T inst) {
-        FileHelper.writeBytesToFile(file, serializeAsByteArray(inst), false);
+    public void saveAsByteArray(@NotNull T instance) {
+        writeBytesToFile(file, serializeAsByteArray(instance), false);
     }
 
-    public void saveAsString(@NotNull T inst) {
-        FileHelper.writeStringToFile(file, serializeAsString(inst), false);
+    public void saveAsString(@NotNull T instance) {
+        writeStringsToFile(file, Collections.singleton(serializeAsString(instance)), false);
     }
 
     @Nullable
     public T loadFromByteArray() {
-        byte[] data = FileHelper.readBytesFromFile(file);
+        byte[] data = readBytesFromFile(file);
         if (data != null && data.length > 0) {
             return deserializeFromByteArray(data);
         }
@@ -69,13 +57,10 @@ public abstract class InstanceManager<T> {
 
     @Nullable
     public T loadFromString() {
-        List<String> data = FileHelper.readStringsFromFile(file);
+        List<String> data = readStringsFromFile(file);
         if (data.size() > 0) {
             return deserializeFromString(data.get(0));
         }
         return null;
     }
-
-
-
 }

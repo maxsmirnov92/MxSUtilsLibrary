@@ -14,7 +14,10 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import net.maxsmr.commonutils.android.disableFileUriStrictMode
 import net.maxsmr.commonutils.android.gui.fragments.dialogs.TypedDialogFragment
-import net.maxsmr.commonutils.data.FileHelper
+import net.maxsmr.commonutils.android.media.getPath
+import net.maxsmr.commonutils.data.createFile
+import net.maxsmr.commonutils.data.deleteFile
+import net.maxsmr.commonutils.data.isFileExists
 import java.io.File
 
 const val TAG_PICK_FILE_CHOICE = "pick_file_choice"
@@ -32,8 +35,8 @@ open class FilePickerDialogFragmentsHolder(tags: Collection<String>) : DialogFra
 
     override fun onSetOtherEventListener(forFragment: DialogFragment, owner: LifecycleOwner) {
         if (forFragment is TypedDialogFragment<*>) {
-            buttonClickEvents()
-            buttonClickEvents(forFragment.tag).subscribe(owner)  {
+            buttonClickLiveEvents()
+            buttonClickLiveEvents(forFragment.tag).subscribe(owner)  {
                 onDialogButtonClick(forFragment, it.value)
             }
         }
@@ -49,7 +52,7 @@ open class FilePickerDialogFragmentsHolder(tags: Collection<String>) : DialogFra
                     result = cameraPictureFile!!.absolutePath
                 }
             } else if (requestCode == filePickerConfigurator.pickFromGalleryRequestCode || requestCode == filePickerConfigurator.pickFileRequestCode) {
-                result = if (data != null && data.data != null) FileHelper.getPath(context, data.data) else null
+                result = if (data != null && data.data != null) getPath(context, data.data) else null
             }
         }
         return result
@@ -93,7 +96,7 @@ open class FilePickerDialogFragmentsHolder(tags: Collection<String>) : DialogFra
 
     fun deleteCameraPictureFile() {
         cameraPictureFile?.let {
-            FileHelper.deleteFile(it)
+            deleteFile(it)
             cameraPictureFile = null
         }
     }
@@ -138,7 +141,7 @@ open class FilePickerDialogFragmentsHolder(tags: Collection<String>) : DialogFra
         checkNotNull(filePickerConfigurator) { "IFilePickerConfigurator is not specified" }
         val shouldRecreate = filePickerConfigurator.shouldDeletePreviousFile()
         with(cameraPictureFile) {
-            val exists = FileHelper.isFileExists(this)
+            val exists = isFileExists(this)
             if (exists) {
                 if (shouldRecreate) {
                     deleteCameraPictureFile()
@@ -162,7 +165,7 @@ open class FilePickerDialogFragmentsHolder(tags: Collection<String>) : DialogFra
             if (!filePickerConfigurator.onBeforePickPictureFromCamera(intent)) {
                 return
             }
-            val cameraPictureFile = FileHelper.createNewFile(name, parent, true)
+            val cameraPictureFile = createFile(name, parent, true)
             if (cameraPictureFile == null) {
                 logger.e("Cannot create file \"$cameraPictureFile\"")
                 return

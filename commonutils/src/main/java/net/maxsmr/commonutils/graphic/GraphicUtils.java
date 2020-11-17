@@ -6,7 +6,6 @@ import android.content.ContentResolver;
 import android.content.Context;
 import android.content.res.ColorStateList;
 import android.content.res.XmlResourceParser;
-import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
@@ -27,7 +26,6 @@ import android.graphics.drawable.Drawable;
 import android.graphics.drawable.StateListDrawable;
 import android.net.Uri;
 import android.os.Build;
-import android.provider.MediaStore;
 import android.renderscript.Allocation;
 import android.renderscript.Element;
 import android.renderscript.RenderScript;
@@ -40,8 +38,6 @@ import androidx.annotation.XmlRes;
 import androidx.exifinterface.media.ExifInterface;
 import androidx.palette.graphics.Palette;
 
-import net.maxsmr.commonutils.android.media.MetadataRetriever;
-import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -82,9 +78,21 @@ import static androidx.exifinterface.media.ExifInterface.TAG_MAKE;
 import static androidx.exifinterface.media.ExifInterface.TAG_MODEL;
 import static androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION;
 import static androidx.exifinterface.media.ExifInterface.TAG_WHITE_BALANCE;
-import static net.maxsmr.commonutils.android.gui.GuiUtilsKt.getCorrectedDisplayRotation;
+import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getExifOrientationByRotationAngle;
+import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getOrientation;
+import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getPath;
+import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getRotationAngleByExifOrientation;
+import static net.maxsmr.commonutils.android.media.MetadataRetrieverKt.extractFramesFromFile;
+import static net.maxsmr.commonutils.android.media.MetadataRetrieverKt.extractMediaDurationFromFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.checkFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.createFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.getFileExtension;
+import static net.maxsmr.commonutils.data.FileUtilsKt.isFileValid;
+import static net.maxsmr.commonutils.data.FileUtilsKt.removeFileExtension;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
+// TODO konvert to kotlin
 public final class GraphicUtils {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(GraphicUtils.class);
@@ -197,7 +205,7 @@ public final class GraphicUtils {
             return null;
         }
 
-        final Map<Long, Bitmap> videoFrames = MetadataRetriever.extractFrames(videoFile, gridSize * gridSize);
+        final Map<Long, Bitmap> videoFrames = extractFramesFromFile(videoFile, gridSize * gridSize);
         if (videoFrames.isEmpty()) {
             logger.e("videoFrames is empty");
             return null;
@@ -206,7 +214,7 @@ public final class GraphicUtils {
         final Bitmap resultImage = combineImagesToOne(videoFrames.values(), gridSize, true);
 
         if (writeDuration) {
-            return writeTextOnBitmap(resultImage, "duration: " + MetadataRetriever.extractMediaDuration(videoFile) + " ms", Color.WHITE);
+            return writeTextOnBitmap(resultImage, "duration: " + extractMediaDurationFromFile(videoFile) + " ms", Color.WHITE);
         }
 
         return resultImage;
@@ -236,10 +244,10 @@ public final class GraphicUtils {
 
         if (isEmpty(ext)) {
             logger.e("unknown format: " + format);
-            ext = FileHelper.getFileExtension(file.getName());
+            ext = getFileExtension(file.getName());
         }
 
-        file = FileHelper.createNewFile(FileHelper.removeFileExtension(file.getName()) + "." + ext, file.getParent());
+        file = createFile(removeFileExtension(file.getName()) + "." + ext, file.getParent());
 
         if (file == null) {
             logger.e("file was not created");
@@ -344,13 +352,13 @@ public final class GraphicUtils {
 
             if (!result && currentLength > 0 && maxRetries > 0) {
 
-                if (FileHelper.checkFileNoThrow(compressedImageFile)) {
+                if (checkFile(compressedImageFile)) {
 
                     final Bitmap bm = createBitmapFromFile(imageFile, 1, config);
 
                     if (bm != null) {
 
-                        FileHelper.deleteFile(compressedImageFile);
+                        deleteFile(compressedImageFile);
 
                         int currentTry = 0;
                         int currentQuality = 100;
@@ -371,12 +379,11 @@ public final class GraphicUtils {
         }
 
         if (result) {
-            return FileHelper.isFileValid(compressedImageFile) ? compressedImageFile : imageFile;
+            return isFileValid(compressedImageFile) ? compressedImageFile : imageFile;
         } else {
             return imageFile;
         }
     }
-
 
     /**
      * @param gridSize number of width or height chunks in result image
@@ -727,7 +734,7 @@ public final class GraphicUtils {
     }
 
 
-    public static Bitmap createScaledBitmap(Bitmap bm, int newWidth) {
+    public static Bitmap createScaledBitmap(Bitmap bm, int newWidth, boolean filter) {
 
         if (bm == null) {
             return null;
@@ -748,7 +755,7 @@ public final class GraphicUtils {
         float scale = (float) newWidth / (float) width;
         int newHeight = (int) ((float) height * scale);
 
-        return Bitmap.createScaledBitmap(bm, newWidth, newHeight, false);
+        return Bitmap.createScaledBitmap(bm, newWidth, newHeight, filter);
     }
 
     public static boolean canDecodeImage(byte[] data) {
@@ -762,7 +769,7 @@ public final class GraphicUtils {
     }
 
     public static boolean canDecodeImage(File file) {
-        if (!FileHelper.isFileValid(file)) {
+        if (!isFileValid(file)) {
             return false;
         }
         BitmapFactory.Options options = new BitmapFactory.Options();
@@ -772,72 +779,14 @@ public final class GraphicUtils {
     }
 
     public static boolean canDecodeVideo(File file) {
-        return FileHelper.isFileValid(file) && MetadataRetriever.extractMediaDuration(file) > 0;
+        return isFileValid(file) && extractMediaDurationFromFile(file) != null;
     }
 
-    /**
-     * Определяет поворот картинки
-     */
-    public static int getOrientation(@NotNull Context context, Uri photoUri) {
-        /* it's on the external media. */
-        Cursor cursor = context.getContentResolver().query(photoUri,
-                new String[]{MediaStore.Images.ImageColumns.ORIENTATION}, null, null, null);
-
-        int orientation;
-        try {
-            if (cursor == null || cursor.getCount() != 1) {
-                orientation = -1;
-            } else {
-                cursor.moveToFirst();
-                orientation = cursor.getInt(0);
-            }
-        } finally {
-            if (cursor != null) {
-                cursor.close();
-            }
-        }
-        return orientation;
-    }
-
-
-    /**
-     * Определяем угол для поворота http://sylvana.net/jpegcrop/exif_orientation.html
-     */
-    public static int getRotationAngleByExifOrientation(int orientation) {
-        switch (orientation) {
-            case ExifInterface.ORIENTATION_ROTATE_90:
-                return 90;
-            case ExifInterface.ORIENTATION_ROTATE_180:
-                return 180;
-            case ExifInterface.ORIENTATION_ROTATE_270:
-                return 270;
-            default:
-                return 0;
-        }
-    }
-
-    public static int getExifOrientationByRotationAngle(int degrees) {
-        int orientation = getCorrectedDisplayRotation(degrees);
-        switch (orientation) {
-            case 90:
-                orientation = ExifInterface.ORIENTATION_ROTATE_90;
-                break;
-            case 180:
-                orientation = ExifInterface.ORIENTATION_ROTATE_180;
-                break;
-            case 270:
-                orientation = ExifInterface.ORIENTATION_ROTATE_270;
-                break;
-            default:
-                orientation = ExifInterface.ORIENTATION_NORMAL;
-        }
-        return orientation;
-    }
 
     public static Bitmap getCorrectlyOrientedImage(@NotNull Context context, Uri uri, Bitmap sourceBitmap) {
         if (isBitmapCorrect(sourceBitmap)) {
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
-                final String path = FileHelper.getPath(context, uri);
+                final String path = getPath(context, uri);
                 if (!isEmpty(path)) {
                     ExifInterface exif = null;
                     try {
@@ -847,7 +796,10 @@ public final class GraphicUtils {
                     }
                     if (exif != null) {
                         int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-                        int rotateAngle = getRotationAngleByExifOrientation(orientation);
+                        Integer rotateAngle = getRotationAngleByExifOrientation(orientation);
+                        if (rotateAngle == null) {
+                            rotateAngle = 0;
+                        }
                         return rotateBitmap(sourceBitmap, rotateAngle);
                     }
                 } else {
@@ -870,7 +822,10 @@ public final class GraphicUtils {
             is.close();
 
         int rotatedWidth, rotatedHeight;
-        int orientation = getOrientation(context, photoUri);
+        Integer orientation = getOrientation(context, photoUri);
+        if (orientation == null) {
+            orientation =0;
+        }
 
         if (orientation == 90 || orientation == 270) {
             rotatedWidth = dbo.outHeight;

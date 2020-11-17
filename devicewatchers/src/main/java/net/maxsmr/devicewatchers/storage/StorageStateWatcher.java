@@ -1,7 +1,10 @@
 package net.maxsmr.devicewatchers.storage;
 
 
-import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.FileComparator;
+import net.maxsmr.commonutils.data.GetMode;
+import net.maxsmr.commonutils.data.IDeleteNotifier;
+import net.maxsmr.commonutils.data.IGetListNotifier;
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.data.conversion.SizeUnit;
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -23,6 +26,11 @@ import java.util.Map;
 import java.util.Set;
 
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.data.FileUtilsKt.DEPTH_UNLIMITED;
+import static net.maxsmr.commonutils.data.FileUtilsKt.delete;
+import static net.maxsmr.commonutils.data.FileUtilsKt.getFiles;
+import static net.maxsmr.commonutils.data.FileUtilsKt.getPartitionSpace;
+import static net.maxsmr.commonutils.data.FileUtilsKt.isDirExists;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 
@@ -30,7 +38,7 @@ public final class StorageStateWatcher {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(StorageStateWatcher.class);
 
-    public static final Comparator<File> DEFAULT_FILE_COMPARATOR = new FileHelper.FileComparator(Collections.singletonMap(FileHelper.FileComparator.SortOption.LAST_MODIFIED, true));
+    public static final Comparator<File> DEFAULT_FILE_COMPARATOR = new FileComparator(Collections.singletonMap(FileComparator.SortOption.LAST_MODIFIED, true));
 
     public static final int DEFAULT_WATCH_INTERVAL = 20000;
 
@@ -134,8 +142,8 @@ public final class StorageStateWatcher {
         private void doStateWatch(boolean notify) {
             logger.d("doStateWatch(), notify=" + notify);
 
-            final long totalKb = (long) FileHelper.getPartitionTotalSpace(settings.targetPath, SizeUnit.KBYTES);
-            final long freeKb = (long) FileHelper.getPartitionFreeSpace(settings.targetPath, SizeUnit.KBYTES);
+            final long totalKb = (long) getPartitionSpace(settings.targetPath, null, SizeUnit.KBYTES, true);
+            final long freeKb = (long) getPartitionSpace(settings.targetPath, null, SizeUnit.KBYTES, false);
             final long usedKb = totalKb - freeKb;
 
             logger.i("=== storage total space: " + totalKb + " kB, free: " + freeKb + " kB, used: " + usedKb + " kB ===");
@@ -210,7 +218,7 @@ public final class StorageStateWatcher {
                 if (settings.deleteOptionMap != null) {
 
                     if (mapping.isEmpty()) {
-                        for (Map.Entry<String, FileHelper.GetMode> entry : settings.deleteOptionMap.entrySet()) {
+                        for (Map.Entry<String, GetMode> entry : settings.deleteOptionMap.entrySet()) {
 
                             if (!isEnabled) {
                                 logger.e(StorageStateWatcher.class.getSimpleName() + " is disabled");
@@ -221,23 +229,13 @@ public final class StorageStateWatcher {
                             if (isEmpty(deletePath)) {
                                 throw new RuntimeException("deletePath is empty");
                             }
-                            if (FileHelper.isDirExists(deletePath)) {
-                                final Set<File> filesSet = FileHelper.getFiles(Collections.singleton(new File(deletePath)), entry.getValue(), settings.comparator, new FileHelper.IGetNotifier() {
+                            if (isDirExists(deletePath)) {
+                                final Set<File> filesSet = getFiles(new File(deletePath), entry.getValue(), settings.comparator, DEPTH_UNLIMITED, 0, new IGetListNotifier() {
                                     @Override
-                                    public boolean onProcessing(@NotNull File current, @NotNull Set<File> collected, int currentLevel) {
+                                    public boolean shouldProceed(@NotNull File current, @NotNull Set<? extends File> collected, int currentLevel, boolean wasAdded) {
                                         return isEnabled;
                                     }
-
-                                    @Override
-                                    public boolean onGetFile(@NotNull File file) {
-                                        return true;
-                                    }
-
-                                    @Override
-                                    public boolean onGetFolder(@NotNull File folder) {
-                                        return true;
-                                    }
-                                }, FileHelper.DEPTH_UNLIMITED);
+                                });
                                 mapping.put(new StorageWatchSettings.DeleteOptionPair(entry.getValue(), entry.getKey()), filesSet);
                             }
                         }
@@ -245,7 +243,7 @@ public final class StorageStateWatcher {
 
                     int deletedCount = 0;
 
-                    for (Map.Entry<String, FileHelper.GetMode> entry : settings.deleteOptionMap.entrySet()) {
+                    for (Map.Entry<String, GetMode> entry : settings.deleteOptionMap.entrySet()) {
 
                         if (!isEnabled) {
                             logger.e(StorageStateWatcher.class.getSimpleName() + " is disabled");
@@ -289,33 +287,34 @@ public final class StorageStateWatcher {
                                         }
 
                                         if (allowDelete) {
-                                            deletedCount += FileHelper.delete(file, true, null, null, new FileHelper.IDeleteNotifier() {
+                                            deletedCount += delete(file, true, null, null, DEPTH_UNLIMITED, 0, new IDeleteNotifier() {
+
                                                 @Override
-                                                public boolean onProcessing(@NotNull File current, @NotNull Set<File> deleted, int currentLevel) {
+                                                public boolean shouldProceed(@NotNull File current, @NotNull Set<? extends File> deleted, int currentLevel) {
                                                     return isEnabled;
                                                 }
 
                                                 @Override
-                                                public boolean confirmDeleteFile(File file) {
-                                                    return pair.mode == FileHelper.GetMode.FILES || pair.mode == FileHelper.GetMode.ALL;
+                                                public boolean confirmDeleteFile(@NotNull File file) {
+                                                    return pair.mode == GetMode.FILES || pair.mode == GetMode.ALL;
                                                 }
 
                                                 @Override
-                                                public boolean confirmDeleteFolder(File folder) {
-                                                    return pair.mode == FileHelper.GetMode.FOLDERS || pair.mode == FileHelper.GetMode.ALL;
+                                                public boolean confirmDeleteFolder(@NotNull File folder) {
+                                                    return pair.mode == GetMode.FOLDERS || pair.mode == GetMode.ALL;
                                                 }
 
                                                 @Override
-                                                public void onDeleteFileFailed(File file) {
+                                                public void onDeleteFileFailed(@NotNull File file) {
                                                     logger.e("onDeleteFileFailed(), file=" + file);
                                                 }
 
                                                 @Override
-                                                public void onDeleteFolderFailed(File folder) {
+                                                public void onDeleteFolderFailed(@NotNull File folder) {
                                                     logger.e("onDeleteFolderFailed(), folder=" + folder);
                                                 }
 
-                                            }, FileHelper.DEPTH_UNLIMITED).size();
+                                            }).size();
                                         }
 
                                         if (deletedCount > 0) {

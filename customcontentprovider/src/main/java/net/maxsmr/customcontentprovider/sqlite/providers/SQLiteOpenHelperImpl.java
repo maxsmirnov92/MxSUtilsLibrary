@@ -4,25 +4,27 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-
-import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.Observable;
 
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.io.File;
 import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.data.FileUtilsKt.checkPath;
+import static net.maxsmr.commonutils.data.FileUtilsKt.createFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.createFileOrThrow;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
 
     @NotNull
-    private final Set<AbstractSQLiteTableProvider> tableProviders = new LinkedHashSet<>();
+    private final Set<AbstractSQLiteTableProvider<?>> tableProviders = new LinkedHashSet<>();
 
     @NotNull
     private final CallbacksObservable callbacksObservable = new CallbacksObservable();
@@ -31,7 +33,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
     private SQLiteDatabase sqLiteDatabase;
 
     private SQLiteOpenHelperImpl(Context context, String databaseName, int databaseVersion,
-                                 Set<? extends AbstractSQLiteTableProvider> tableProviders) {
+                                 Set<? extends AbstractSQLiteTableProvider<?>> tableProviders) {
         super(context, databaseName, null, databaseVersion);
         this.tableProviders.addAll(tableProviders);
     }
@@ -40,7 +42,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
     public void onCreate(SQLiteDatabase db) {
         db.beginTransactionNonExclusive();
         try {
-            for (AbstractSQLiteTableProvider table : tableProviders) {
+            for (AbstractSQLiteTableProvider<?> table : tableProviders) {
                 if (stringsEqual(db.getPath(), table.getTableName(), false)) {
                     table.onCreate(db);
                 }
@@ -58,7 +60,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
     public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion) {
         db.beginTransactionNonExclusive();
         try {
-            for (AbstractSQLiteTableProvider table : tableProviders) {
+            for (AbstractSQLiteTableProvider<?> table : tableProviders) {
                 if (stringsEqual(db.getPath(), table.getTableName(), false)) {
                     table.onUpgrade(db, oldVersion, newVersion);
                 }
@@ -72,7 +74,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
     }
 
     @NotNull
-    public Set<AbstractSQLiteTableProvider> getTableProviders() {
+    public Set<AbstractSQLiteTableProvider<?>> getTableProviders() {
         return new LinkedHashSet<>(tableProviders);
     }
 
@@ -99,7 +101,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
             @NotNull String databaseName,
             @Nullable String databasePath,
             int databaseVersion,
-            @NotNull Set<? extends AbstractSQLiteTableProvider> tableProviders) {
+            @NotNull Set<? extends AbstractSQLiteTableProvider<?>> tableProviders) {
 
         if (isEmpty(databaseName))
             throw new IllegalArgumentException("databaseName is not specified");
@@ -117,7 +119,7 @@ public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
         String targetName;
 
         if (!isEmpty(databasePath)) {
-            targetName = FileHelper.checkPath(databasePath, databaseName).getAbsolutePath();
+            targetName = new File(databasePath, databaseName).getAbsolutePath();
         } else {
             targetName = databaseName;
         }

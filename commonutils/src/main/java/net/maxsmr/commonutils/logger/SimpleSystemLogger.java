@@ -1,5 +1,7 @@
 package net.maxsmr.commonutils.logger;
 
+import net.maxsmr.commonutils.data.conversion.format.DateFormatUtilsKt;
+
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -7,7 +9,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import static net.maxsmr.commonutils.data.conversion.format.DateFormatUtilsKt.formatDateNoThrow;
+import static net.maxsmr.commonutils.data.conversion.format.DateFormatUtilsKt.formatDate;
 
 public class SimpleSystemLogger extends BaseTagLogger {
 
@@ -164,7 +166,7 @@ public class SimpleSystemLogger extends BaseTagLogger {
         @Override
         @NotNull
         public String toString() {
-            return "[" + formatDateNoThrow(new Date(timestamp), SDF, null) + "] " + level.name() + " " + tag + ": " + message;
+            return "[" + DateFormatUtilsKt.formatDate(new Date(timestamp), SDF, null) + "] " + level.name() + " " + tag + ": " + message;
         }
     }
 }

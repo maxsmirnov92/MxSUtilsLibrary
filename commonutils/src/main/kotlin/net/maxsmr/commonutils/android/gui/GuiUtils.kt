@@ -17,11 +17,13 @@ import android.text.*
 import android.text.method.LinkMovementMethod
 import android.text.style.CharacterStyle
 import android.text.style.URLSpan
+import android.util.Base64
 import android.util.TypedValue
 import android.view.*
 import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.inputmethod.EditorInfo
 import android.view.inputmethod.InputMethodManager
+import android.webkit.WebView
 import android.widget.*
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
@@ -47,6 +49,7 @@ import net.maxsmr.commonutils.data.ReflectionUtils
 import net.maxsmr.commonutils.data.text.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import java.nio.charset.Charset
 import java.util.concurrent.TimeUnit
 
 private const val DEFAULT_DARK_COLOR_RATIO = 0.7
@@ -185,7 +188,7 @@ fun TextView.removeUnderlineTextView(): CharSequence =
  * Установить html текст в TextView
  */
 fun TextView.setHtmlText(text: CharSequence): CharSequence =
-        setTextWithMovementMethod(parseHtmlToSpannedStringNoThrow(text))
+        setTextWithMovementMethod(parseHtmlToSpannedString(text))
 
 
 fun TextView.setHtmlText(@StringRes resId: Int) =
@@ -994,6 +997,11 @@ fun TextView.setupPlaceholderOrLabelHint(
             setHint(hint)
         }
     }
+}
+
+@JvmOverloads
+fun WebView.loadDataBase64(value: String, charset: Charset = Charsets.UTF_8) {
+    loadData(Base64.encodeToString(value.toByteArray(charset), Base64.DEFAULT), "text/html; charset=${charset}", "base64")
 }
 
 private fun TextView.setTextWithMovementMethod(text: CharSequence): CharSequence {

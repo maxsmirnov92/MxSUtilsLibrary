@@ -1,10 +1,7 @@
 package net.maxsmr.networkutils.loadutil.managers;
 
+import net.maxsmr.commonutils.data.IStreamNotifier;
 import net.maxsmr.commonutils.data.Pair;
-
-
-import net.maxsmr.commonutils.data.FileHelper;
-import net.maxsmr.commonutils.data.StreamUtils;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -28,6 +25,11 @@ import java.io.RandomAccessFile;
 import java.net.InetAddress;
 
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.data.FileUtilsKt.checkDir;
+import static net.maxsmr.commonutils.data.FileUtilsKt.checkFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.isFileValid;
+import static net.maxsmr.commonutils.data.StreamUtilsKt.revectorStream;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toIntSafe;
 
@@ -194,7 +196,7 @@ public class FtpConnectionManager {
 
     public synchronized boolean connect(boolean needToLogin, int connectionTimeoutMs, int soTimeoutMs, int dataTimeoutMs,
                                         int controlKeepAliveTimeout, int retryCount, long retryDelay) {
-        logger.d("connect(), needToLogin=" + needToLogin);
+        logger.d("connect, needToLogin=" + needToLogin);
 
 
         if (isConnected()) {
@@ -349,7 +351,7 @@ public class FtpConnectionManager {
 
     @Nullable
     public synchronized Pair<InputStream, Long> retrieveFtpFileData(String workingDir, String fileName, FileType fileType) {
-        logger.d("retrieveFtpFileData(), workingDir=" + workingDir + ", fileName=" + fileName + ", fileType=" + fileType);
+        logger.d("retrieveFtpFileData, workingDir=" + workingDir + ", fileName=" + fileName + ", fileType=" + fileType);
 
         if (isEmpty(workingDir) || isEmpty(fileName)) {
             logger.e("incorrect remote working directory name or remote file name");
@@ -428,11 +430,11 @@ public class FtpConnectionManager {
     @SuppressWarnings("ConstantConditions")
     @Nullable
     public synchronized File downloadFtpFile(String localWorkingDir, String workingDir, String fileName, FileType fileType,
-                                             boolean deleteOnSuccess, boolean withRestart, final StreamUtils.IStreamNotifier notifier) {
-        logger.d("downloadFtpFileWithRestart(), localWorkingDir=" + localWorkingDir + ", workingDir=" + workingDir + ", fileName=" + fileName
+                                             boolean deleteOnSuccess, boolean withRestart, final IStreamNotifier notifier) {
+        logger.d("downloadFtpFileWithRestart, localWorkingDir=" + localWorkingDir + ", workingDir=" + workingDir + ", fileName=" + fileName
                 + ", fileType=" + fileType + ", deleteOnSuccess=" + deleteOnSuccess);
 
-        if (!FileHelper.checkDirNoThrow(localWorkingDir)) {
+        if (!checkDir(localWorkingDir)) {
             logger.e("incorrect local working directory: " + localWorkingDir);
             return null;
         }
@@ -448,7 +450,7 @@ public class FtpConnectionManager {
 
                 File localFile = new File(localWorkingDir, fileName);
 
-                if (FileHelper.checkFileNoThrow(localFile)) {
+                if (checkFile(localFile)) {
 
                     ftpClient.setBufferSize(BUFFER_SIZE);
 
@@ -474,10 +476,10 @@ public class FtpConnectionManager {
 
                     ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
 
-                    if (StreamUtils.revectorStream(inStream.first, dataStream, notifier != null? new StreamUtils.IStreamNotifier() {
+                    if (revectorStream(inStream.first, dataStream, notifier != null? new IStreamNotifier() {
                         @Override
-                        public long notifyInterval() {
-                            return notifier.notifyInterval();
+                        public long getNotifyInterval() {
+                            return notifier.getNotifyInterval();
                         }
 
                         @Override
@@ -546,15 +548,15 @@ public class FtpConnectionManager {
         return null;
     }
 
-    public synchronized boolean uploadLocalFile(String workingDir, String fileName, File localFile, FileType fileType, boolean deleteOnSuccess, @NotNull WriteMode writeMode, final StreamUtils.IStreamNotifier notifier) {
-        logger.d("uploadLocalFile(), workingDir=" + workingDir + ", fileName=" + fileName + ", localFile=" + localFile + ", fileType=" + fileType + ", deleteOnSuccess=" + deleteOnSuccess + ", notifier=" + notifier);
+    public synchronized boolean uploadLocalFile(String workingDir, String fileName, File localFile, FileType fileType, boolean deleteOnSuccess, @NotNull WriteMode writeMode, final IStreamNotifier notifier) {
+        logger.d("uploadLocalFile, workingDir=" + workingDir + ", fileName=" + fileName + ", localFile=" + localFile + ", fileType=" + fileType + ", deleteOnSuccess=" + deleteOnSuccess + ", notifier=" + notifier);
 
         if (workingDir == null || workingDir.length() == 0 || fileName == null || fileName.length() == 0) {
             logger.e("incorrect remote working directory name or remote file name");
             return false;
         }
 
-        if (!FileHelper.isFileValid(localFile)) {
+        if (!isFileValid(localFile)) {
             logger.e("incorrect local file: " + localFile);
             return false;
         }
@@ -643,11 +645,11 @@ public class FtpConnectionManager {
 
                 final long localFileSize = localFile.length();
 
-                if (StreamUtils.revectorStream(localStream, outputStream, notifier != null? new StreamUtils.IStreamNotifier() {
+                if (revectorStream(localStream, outputStream, notifier != null? new IStreamNotifier() {
 
                     @Override
-                    public long notifyInterval() {
-                        return notifier.notifyInterval();
+                    public long getNotifyInterval() {
+                        return notifier.getNotifyInterval();
                     }
 
                     @Override
@@ -657,7 +659,7 @@ public class FtpConnectionManager {
                 } : null)) {
 
                     if (deleteOnSuccess) {
-                        if (!FileHelper.deleteFile(localFile)) {
+                        if (!deleteFile(localFile)) {
                             logger.e("cannot delete local file " + localFile);
                         }
                     }

@@ -1,6 +1,5 @@
 package net.maxsmr.commonutils.data.model;
 
-import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -11,7 +10,6 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -25,6 +23,13 @@ import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static net.maxsmr.commonutils.data.FileUtilsKt.checkFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.resetFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.toFis;
+import static net.maxsmr.commonutils.data.FileUtilsKt.toFos;
+import static net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException;
+
+// TODO kotlin conversion, orThrow methods variation
 public final class SerializationUtils {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(SerializationUtils.class);
@@ -48,19 +53,19 @@ public final class SerializationUtils {
                     }
                 }
             } catch (Exception e) {
-                logger.e(e);
+                logException(logger, e);
             } finally {
                 try {
                     bis.close();
                 } catch (IOException e) {
-                    logger.e(e);
+                    logException(logger, e, "close");
                 }
                 try {
                     if (in != null) {
                         in.close();
                     }
                 } catch (IOException e) {
-                    logger.e(e);
+                    logException(logger, e, "close");
                 }
             }
         }
@@ -81,14 +86,14 @@ public final class SerializationUtils {
                     }
                 }
             } catch (Exception e) {
-                logger.e(e);
+                logException(logger, e);
             } finally {
                 try {
                     if (objectInput != null) {
                         objectInput.close();
                     }
                 } catch (IOException e) {
-                    logger.e(e);
+                    logException(logger, e, "close");
                 }
             }
         }
@@ -98,14 +103,7 @@ public final class SerializationUtils {
     @SuppressWarnings("unchecked")
     @Nullable
     public static <T extends Serializable> T fromFile(@NotNull Class<T> clazz, @Nullable File file) {
-        FileInputStream stream = null;
-        if (file != null) {
-            try {
-                stream = new FileInputStream(file);
-            } catch (FileNotFoundException e) {
-                logger.e("A " + FileNotFoundException.class.getSimpleName() + "occurred during FileInputStream():" + e.getMessage(), e);
-            }
-        }
+        FileInputStream stream = toFis(file);
         return fromInputStream(clazz, stream);
     }
 
@@ -119,25 +117,24 @@ public final class SerializationUtils {
                 out.writeObject(object);
                 return bos.toByteArray();
             } catch (IOException e) {
-                logger.e(e);
+                logException(logger, e);
             } finally {
                 try {
                     if (out != null) {
                         out.close();
                     }
                 } catch (IOException e) {
-                    logger.e(e);
+                    logException(logger, e, "close");
                 }
                 try {
                     bos.close();
                 } catch (IOException e) {
-                    logger.e(e);
+                    logException(logger, e, "close");
                 }
             }
         }
         return null;
     }
-
 
     @NotNull
     public static <T extends Serializable> Map<T, byte[]> toByteArray(@Nullable Collection<T> listOfObjects) {
@@ -175,7 +172,7 @@ public final class SerializationUtils {
                 bos.writeTo(outputStream);
                 return true;
             } catch (IOException e) {
-                logger.e(e);
+                logException(logger, e);
             } finally {
                 try {
                     if (objectOutput != null) {
@@ -183,7 +180,7 @@ public final class SerializationUtils {
                     }
                     bos.close();
                 } catch (IOException e) {
-                    logger.e(e);
+                    logException(logger, e, "close");
                 }
             }
         }
@@ -195,17 +192,12 @@ public final class SerializationUtils {
     }
 
     public static <T extends Serializable> boolean toFile(@Nullable T object, @Nullable File file, boolean resetOnFail) {
-        if (FileHelper.checkFileNoThrow(file)) {
-            FileOutputStream stream = null;
-            try {
-                stream = new FileOutputStream(file);
-            } catch (FileNotFoundException e) {
-                logger.e("A " + FileNotFoundException.class.getSimpleName() + "occurred during FileOutputStream():" + e.getMessage(), e);
-            }
+        if (checkFile(file)) {
+            FileOutputStream stream = toFos(file);
             if (toOutputStream(object, stream)) {
                 return true;
             } else if (resetOnFail) {
-                FileHelper.resetFile(file);
+                resetFile(file);
             }
         }
         return false;

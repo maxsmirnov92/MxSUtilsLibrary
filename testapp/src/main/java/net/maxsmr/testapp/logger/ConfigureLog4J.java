@@ -1,12 +1,13 @@
 package net.maxsmr.testapp.logger;
 
-import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.conversion.SizeUnit;
 
 import org.apache.log4j.Level;
 import org.jetbrains.annotations.Nullable;
 
 import de.mindpipe.android.logging.log4j.LogConfigurator;
+
+import static net.maxsmr.commonutils.data.FileUtilsKt.checkFile;
 
 public class ConfigureLog4J {
 
@@ -68,7 +69,7 @@ public class ConfigureLog4J {
             if (maxBackupSize < 0)
                 throw new IllegalArgumentException("incorrect maxBackupSize: " + maxBackupSize);
 
-            FileHelper.checkFile(filePath);
+            checkFile(filePath);
 
             logConfigurator.setUseFileAppender(true);
 

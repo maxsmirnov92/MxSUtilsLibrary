@@ -3,8 +3,6 @@ package net.maxsmr.networkutils.loadutil.managers;
 import android.net.Uri;
 import android.os.Handler;
 
-import net.maxsmr.commonutils.data.FileHelper;
-
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.loadutil.managers.base.BaseNetworkLoadManager;
@@ -41,6 +39,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+import static net.maxsmr.commonutils.data.FileUtilsKt.checkDir;
+import static net.maxsmr.commonutils.data.FileUtilsKt.createFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFile;
+import static net.maxsmr.commonutils.data.FileUtilsKt.getFileExtension;
+import static net.maxsmr.commonutils.data.FileUtilsKt.isFileExists;
+import static net.maxsmr.commonutils.data.FileUtilsKt.isFileValid;
+import static net.maxsmr.commonutils.data.FileUtilsKt.removeFileExtension;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.join;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.ContentType.MULTIPART_FORM_DATA;
@@ -269,7 +274,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                                 if (!((LoadRunnableInfo.FilesBody) rInfo.body).ignoreIncorrect) {
                                     for (File uploadFile : lastUploadFiles) {
-                                        if (!FileHelper.isFileValid(uploadFile)) {
+                                        if (!isFileValid(uploadFile)) {
                                             isFileReasonFail = true;
                                             throw new RuntimeException("incorrect source upload file" + uploadFile);
                                         } else if (!uploadFile.canRead()) {
@@ -368,7 +373,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     }
 
 
-                    if (rInfo.settings.readBodyMode == FILE && rInfo.settings.downloadWriteMode == RESUME_DOWNLOAD && FileHelper.isFileValid(lastDownloadFile)) {
+                    if (rInfo.settings.readBodyMode == FILE && rInfo.settings.downloadWriteMode == RESUME_DOWNLOAD && isFileValid(lastDownloadFile)) {
                         currentLoadInfo.downloadedBytesCount = (int) lastDownloadFile.length();
                         connection.setRequestProperty("Range", "bytes=" + currentLoadInfo.downloadedBytesCount + "-");
                     }
@@ -709,11 +714,11 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                     }
 
 //                    if (uploadLock != null) {
-//                        FileHelper.releaseLockNoThrow(uploadLock);
+//                        releaseLock(uploadLock);
 //                    }
 //
 //                    if (downloadLock != null) {
-//                        FileHelper.releaseLockNoThrow(downloadLock);
+//                        releaseLock(downloadLock);
 //                    }
 
                     if (connection != null) {
@@ -732,7 +737,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                     for (File uploadFile : lastUploadFiles) {
                                         if (uploadFile != null) {
                                             logger.i("deleting successfully uploaded file: " + uploadFile + "...");
-                                            if (!FileHelper.deleteFile(uploadFile)) {
+                                            if (!deleteFile(uploadFile)) {
                                                 logger.e("can't delete successfully uploaded file: " + uploadFile);
                                             }
                                         }
@@ -746,9 +751,9 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                         if (!success) {
 
                             if (lastDownloadFile != null) {
-                                if (rInfo.settings.allowDeleteDownloadFile && FileHelper.isFileExists(lastDownloadFile.getAbsolutePath())) {
+                                if (rInfo.settings.allowDeleteDownloadFile && isFileExists(lastDownloadFile.getAbsolutePath())) {
                                     logger.i("deleting unfinished download file: " + lastDownloadFile + "...");
-                                    if (!FileHelper.deleteFile(lastDownloadFile)) {
+                                    if (!deleteFile(lastDownloadFile)) {
                                         logger.e("can't delete unfinished download file: " + lastDownloadFile);
                                     }
                                 }
@@ -819,13 +824,13 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                         if (downloadDirectory != null) {
 
-                            if (FileHelper.checkDirNoThrow(downloadDirectory.getAbsolutePath())) {
+                            if (checkDir(downloadDirectory.getAbsolutePath())) {
 
                                 String headerFileName = Utils.extractFileNameFromHeaders(lastResponse.headers);
                                 if (isEmpty(headerFileName)) {
                                     headerFileName = Uri.parse(rInfo.getUrlString()).getLastPathSegment();
                                 }
-                                lastDownloadFile = FileHelper.createNewFile(headerFileName, downloadDirectory.getAbsolutePath());
+                                lastDownloadFile = createFile(headerFileName, downloadDirectory.getAbsolutePath());
 
                                 if (lastDownloadFile != null) {
                                     handled = true;
@@ -870,7 +875,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                 switch (writeMode) {
 
                                     case OVERWRITE:
-                                        if (FileHelper.createNewFile(lastDownloadFile.getName(), lastDownloadFile.getParent(), true) == null) {
+                                        if (createFile(lastDownloadFile.getName(), lastDownloadFile.getParent(), true) == null) {
                                             throw new RuntimeException("can't overwrite download file: " + lastDownloadFile);
                                         } else {
                                             handled = true;
@@ -881,15 +886,15 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                         int it = 1;
                                         while (lastDownloadFile.exists()) {
                                             String newName = lastDownloadFile.getName();
-                                            String ext = FileHelper.getFileExtension(newName);
+                                            String ext = getFileExtension(newName);
                                             if (!isEmpty(ext)) {
-                                                newName = FileHelper.removeFileExtension(newName) + " (" + it + ")." + ext;
+                                                newName = removeFileExtension(newName) + " (" + it + ")." + ext;
                                             } else {
                                                 newName += " (" + it + ")";
                                             }
                                             lastDownloadFile = new File(lastDownloadFile.getParent(), newName);
                                             if (!lastDownloadFile.exists()) {
-                                                if (FileHelper.createNewFile(lastDownloadFile.getName(), lastDownloadFile.getParent()) == null) {
+                                                if (createFile(lastDownloadFile.getName(), lastDownloadFile.getParent()) == null) {
                                                     throw new RuntimeException("can't create download file: " + lastDownloadFile);
                                                 } else {
                                                     handled = true;
@@ -914,7 +919,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
                             String name = lastDownloadFile.getName();
                             String parent = lastDownloadFile.getParent();
-                            lastDownloadFile = FileHelper.createNewFile(name, parent);
+                            lastDownloadFile = createFile(name, parent);
 
                             if (lastDownloadFile == null) {
                                 throw new RuntimeException("can't create download file: " + parent + File.separator + name);
@@ -941,7 +946,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
             if (!handled) {
                 currentLoadInfo.totalDownloadBytesCount = 0;
-            } else if (FileHelper.isFileValid(lastDownloadFile)) {
+            } else if (isFileValid(lastDownloadFile)) {
                 currentLoadInfo.totalDownloadBytesCount = lastDownloadFile.length();
             }
 
@@ -1003,7 +1008,7 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
 
             for (File file : uploadFiles.keySet()) {
 
-                if (!FileHelper.isFileValid(file) || !file.canRead()) {
+                if (!isFileValid(file) || !file.canRead()) {
                     logger.e("incorrect upload file: " + file);
                     if (!ignoreIncorrect) {
                         logger.e("aborting adding file parts...");

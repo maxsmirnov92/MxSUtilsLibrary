@@ -2,7 +2,7 @@ package net.maxsmr.commonutils.data.text
 
 import net.maxsmr.commonutils.data.CompareCondition
 import net.maxsmr.commonutils.data.Predicate
-import net.maxsmr.commonutils.data.conversion.toDoubleNoThrow
+import net.maxsmr.commonutils.data.conversion.toDouble
 import net.maxsmr.commonutils.data.number.isZeroOrNull
 import java.util.*
 
@@ -36,7 +36,7 @@ fun split(text: String, expression: String): Array<String?>? {
 fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): Boolean =
         s == null || s == EMPTY_STRING || shouldCheckNullString && "null".equals(s.toString(), ignoreCase = true)
 
-fun isZeroOrNull(value: CharSequence?) = value.toDoubleNoThrow().isZeroOrNull()
+fun isZeroOrNull(value: CharSequence?) = value.toDouble().isZeroOrNull()
 
 fun isNotZeroOrNull(value: CharSequence?) = !isZeroOrNull(value)
 
@@ -97,30 +97,30 @@ fun replaceSubstrings(
     return result
 }
 
-fun replaceRange(s: CharSequence, start: Int, end: Int, replacement: CharSequence): String {
+fun replaceRangeOrThrow(s: CharSequence, start: Int, end: Int, replacement: CharSequence): String {
     checkArgs(s, start, end)
     val sb = StringBuilder(s)
     sb.replace(start, end, replacement.toString())
     return sb.toString()
 }
 
-fun replaceRangeNoThrow(s: CharSequence, start: Int, end: Int, replacement: CharSequence): CharSequence =
+fun replaceRange(s: CharSequence, start: Int, end: Int, replacement: CharSequence): CharSequence =
         try {
-            replaceRange(s, start, end, replacement)
+            replaceRangeOrThrow(s, start, end, replacement)
         } catch (e: IllegalArgumentException) {
             s
         }
 
-fun removeRange(s: CharSequence, start: Int, end: Int): String {
+fun removeRangeOrThrow(s: CharSequence, start: Int, end: Int): String {
     checkArgs(s, start, end)
     val sb = StringBuilder(s)
     sb.delete(start, end)
     return sb.toString()
 }
 
-fun removeRangeNoThrow(s: CharSequence, start: Int, end: Int): CharSequence =
+fun removeRange(s: CharSequence, start: Int, end: Int): CharSequence =
         try {
-            removeRange(s, start, end)
+            removeRangeOrThrow(s, start, end)
         } catch (e: IllegalArgumentException) {
             s
         }

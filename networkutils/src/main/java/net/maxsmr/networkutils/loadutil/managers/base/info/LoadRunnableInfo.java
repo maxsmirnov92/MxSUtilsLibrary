@@ -2,7 +2,6 @@ package net.maxsmr.networkutils.loadutil.managers.base.info;
 
 import com.google.gson.JsonElement;
 
-import net.maxsmr.commonutils.data.FileHelper;
 import net.maxsmr.commonutils.data.model.IBuilder;
 import net.maxsmr.commonutils.data.text.TextUtilsKt;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
@@ -23,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import static net.maxsmr.commonutils.data.FileUtilsKt.isFileValid;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableInfo {
@@ -458,7 +458,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         public boolean hasCorrectSourceFiles() {
             boolean has = false;
             for (File f : sourceFiles) {
-                if (FileHelper.isFileValid(f)) {
+                if (isFileValid(f)) {
                     has = true;
                     break;
                 }
@@ -469,7 +469,7 @@ public class LoadRunnableInfo<B extends LoadRunnableInfo.Body> extends RunnableI
         public boolean hasIncorrectSourceFiles() {
             boolean has = false;
             for (File f : sourceFiles) {
-                if (!FileHelper.isFileValid(f)) {
+                if (!isFileValid(f)) {
                     has = true;
                     break;
                 }

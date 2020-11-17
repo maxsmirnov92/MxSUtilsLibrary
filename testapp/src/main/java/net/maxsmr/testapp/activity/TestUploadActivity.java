@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.snackbar.Snackbar;
 
-import net.maxsmr.commonutils.data.FileHelper;
+import net.maxsmr.commonutils.data.GetMode;
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;
 import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static android.os.Environment.DIRECTORY_PICTURES;
+import static net.maxsmr.commonutils.data.FileUtilsKt.getFiles;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.RETRY_LIMIT_NONE;
 
 public class TestUploadActivity extends AppCompatActivity implements AbstractSyncStorage.IStorageListener, LoadListener<LoadRunnableInfo<LoadRunnableInfo.FileBody>> {
@@ -90,7 +91,7 @@ public class TestUploadActivity extends AppCompatActivity implements AbstractSyn
     }
 
     private void enqueueLoads(boolean viaRequest) {
-        Set<File> filesToUpload = FileHelper.getFiles(DATA_DIRECTORY, FileHelper.GetMode.FILES, null, null, 0);
+        Set<File> filesToUpload = getFiles(DATA_DIRECTORY, GetMode.FILES, null);
         for (File f : filesToUpload) {
             LoadRunnableInfo.LoadSettings.Builder settingsBuilder = new LoadRunnableInfo.LoadSettings.Builder();
             settingsBuilder.connectionTimeout(TimeUnit.SECONDS.toMillis(30));

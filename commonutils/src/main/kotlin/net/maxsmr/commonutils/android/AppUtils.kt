@@ -93,7 +93,7 @@ fun getArchivePackageInfo(
         apkFile: File?,
         flags: Int = 0
 ): PackageInfo? {
-    if (apkFile != null && FileHelper.isFileValid(apkFile)) {
+    if (apkFile != null && isFileValid(apkFile)) {
         val packageManager = context.packageManager
         return packageManager.getPackageArchiveInfo(apkFile.absolutePath, flags)
     }
@@ -273,18 +273,44 @@ fun getApplicationUid(context: Context, packageName: String): Int? {
     return info?.uid
 }
 
-fun isSelfAppInBackground(context: Context): Boolean {
-    val result = isAppInBackground(context, context.packageName)
-    return result
-            ?: throw RuntimeException("Self package ${context.packageName} not found")
+fun isSelfAppInBackground(
+        context: Context,
+        manager: AbstractProcessManager,
+        includeSystemPackages: Boolean
+): Boolean? = isAppInBackground(context.packageName, manager, includeSystemPackages)
+
+/**
+ * @return null if not found
+ */
+fun isAppInBackground(
+        packageName: String,
+        manager: AbstractProcessManager,
+        includeSystemPackages: Boolean
+): Boolean? {
+    var isInBackground: Boolean? = null
+    if (!isEmpty(packageName)) {
+        for (info in manager.getProcesses(includeSystemPackages)) {
+            if (stringsEqual(info.packageName, packageName, false)) {
+                isInBackground = info.isForeground != null && !info.isForeground
+                break
+            }
+        }
+    }
+    return isInBackground
 }
 
-fun isSelfAppInBackgroundNoThrow(context: Context): Boolean? {
+fun isSelfAppInBackground(context: Context): Boolean? {
     return try {
-        isSelfAppInBackground(context)
+        isSelfAppInBackgroundOrThrow(context)
     } catch (e: RuntimeException) {
         null
     }
+}
+
+@Throws(RuntimeException::class)
+fun isSelfAppInBackgroundOrThrow(context: Context): Boolean {
+    val result = isAppInBackground(context, context.packageName)
+    return result ?: throw RuntimeException("Self package ${context.packageName} not found")
 }
 
 /**
@@ -301,33 +327,6 @@ fun isAppInBackground(context: Context, packageName: String): Boolean? {
                 if (packageName == processInfo.processName) {
                     isInBackground = processInfo.importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
                 }
-            }
-        }
-    }
-    return isInBackground
-}
-
-fun isSelfAppInBackground(
-        context: Context,
-        manager: AbstractProcessManager,
-        includeSystemPackages: Boolean
-): Boolean? =
-        isAppInBackground(context.packageName, manager, includeSystemPackages)
-
-/**
- * @return null if not found
- */
-fun isAppInBackground(
-        packageName: String,
-        manager: AbstractProcessManager,
-        includeSystemPackages: Boolean
-): Boolean? {
-    var isInBackground: Boolean? = null
-    if (!isEmpty(packageName)) {
-        for (info in manager.getProcesses(includeSystemPackages)) {
-            if (stringsEqual(info.packageName, packageName, false)) {
-                isInBackground = info.isForeground != null && !info.isForeground
-                break
             }
         }
     }
@@ -462,7 +461,7 @@ fun isTabletUI(con: Context): Boolean {
 
 @JvmOverloads
 @Throws(RuntimeException::class)
-fun Context.fragmentActivity(maxDepth: Int = 20): FragmentActivity {
+fun Context.fragmentActivityOrThrow(maxDepth: Int = 20): FragmentActivity {
     require(maxDepth > 0) { "Incorrect maxDepth: $maxDepth"}
     var curContext = this
     var depth = maxDepth
@@ -478,15 +477,15 @@ fun Context.fragmentActivity(maxDepth: Int = 20): FragmentActivity {
 }
 
 @JvmOverloads
-fun Context.fragmentActivityNoThrow(maxDepth: Int = 20): FragmentActivity? = try {
-    fragmentActivity(maxDepth)
+fun Context.fragmentActivity(maxDepth: Int = 20): FragmentActivity? = try {
+    fragmentActivityOrThrow(maxDepth)
 } catch (e: RuntimeException) {
     null
 }
 
 @JvmOverloads
 @Throws(RuntimeException::class)
-fun Context.lifecycleOwner(maxDepth: Int = 20): LifecycleOwner {
+fun Context.lifecycleOwnerOrThrow(maxDepth: Int = 20): LifecycleOwner {
     require(maxDepth > 0) { "Incorrect maxDepth: $maxDepth"}
     var curContext = this
     var depth = maxDepth
@@ -501,8 +500,8 @@ fun Context.lifecycleOwner(maxDepth: Int = 20): LifecycleOwner {
 }
 
 @JvmOverloads
-fun Context.lifecycleOwnerNoThrow(maxDepth: Int = 20): LifecycleOwner? = try {
-    lifecycleOwner(maxDepth)
+fun Context.lifecycleOwner(maxDepth: Int = 20): LifecycleOwner? = try {
+    lifecycleOwnerOrThrow(maxDepth)
 } catch (e: RuntimeException) {
     null
 }

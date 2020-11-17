@@ -1,5 +1,6 @@
 ext {
     sourceCompatibilityVersion = JavaVersion.VERSION_1_8
+    jvmDefaultArg = "-Xjvm-default=compatibility"
 
     bintrayGradleVersion = "1+"
     mavenGradleVersion = "1+"

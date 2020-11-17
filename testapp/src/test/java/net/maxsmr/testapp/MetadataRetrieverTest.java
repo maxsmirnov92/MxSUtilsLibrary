@@ -5,13 +5,14 @@ import android.os.Environment;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import net.maxsmr.commonutils.android.media.MetadataRetriever;
-
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
 import java.io.File;
 import java.util.Map;
+
+import static net.maxsmr.commonutils.android.media.MetadataRetrieverKt.extractFrames;
+import static net.maxsmr.commonutils.android.media.MetadataRetrieverKt.extractFramesFromFile;
 
 @RunWith(AndroidJUnit4.class)
 public class MetadataRetrieverTest extends LoggerTest {
@@ -31,7 +32,7 @@ public class MetadataRetrieverTest extends LoggerTest {
 //            e.printStackTrace();
 //        }
 
-        Map<Long, Bitmap> frames = MetadataRetriever.extractFrames(new File(Environment.getExternalStorageDirectory() + File.separator + "Download", "SampleVideo_1280x720_1mb.mp4"), 5);
+        Map<Long, Bitmap> frames = extractFramesFromFile(new File(Environment.getExternalStorageDirectory() + File.separator + "Download", "SampleVideo_1280x720_1mb.mp4"), 5);
 
         logger.i("frames: " + frames);
     }

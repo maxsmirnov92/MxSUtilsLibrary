@@ -9,8 +9,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.provider.BaseColumns;
 
-import net.maxsmr.commonutils.data.FileHelper;
-
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.customcontentprovider.sqlite.ISQLiteOperation;
@@ -26,6 +24,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
+import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getTableName;
+import static net.maxsmr.commonutils.data.FileUtilsKt.checkDir;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.customcontentprovider.sqlite.providers.AbstractSQLiteTableProvider.Order.ASC;
 
@@ -59,7 +59,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         this.databasePath = databasePath;
         this.databaseVersion = databaseVer;
         this.tablesProvider = tablesProvider;
-        checkFields();
+        checkFieldsOrThrow();
     }
 
     @Override
@@ -75,9 +75,9 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
 
         switch (matchResult) {
             case MATCH_ALL:
-                return MIME_DIR + ProviderUtils.getTableName(uri);
+                return MIME_DIR + getTableName(uri);
             case MATCH_ID:
-                return MIME_ITEM + ProviderUtils.getTableName(uri);
+                return MIME_ITEM + getTableName(uri);
             default:
                 throw new SQLiteException("Unknown URI: " + uri);
         }
@@ -93,7 +93,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
             throw new RuntimeException("context is null");
         }
 
-        checkFields();
+        checkFieldsOrThrow();
 
         uriMatcher = new SQLiteUriMatcher(makeUriMatcherPairs());
         sqLiteHelper = SQLiteOpenHelperImpl.createFrom(context, databaseName, databasePath, databaseVersion, tablesProvider.provide());
@@ -115,8 +115,8 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         if (matchResult == UriMatch.NO_MATCH)
             throw new SQLiteException("Unknown URI: " + uri);
 
-        final String tableName = ProviderUtils.getTableName(uri);
-        final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(sqLiteHelper.getTableProviders(), tableName);
+        final String tableName = getTableName(uri);
+        final AbstractSQLiteTableProvider<?> tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(sqLiteHelper.getTableProviders(), tableName);
 
         if (tableProvider == null)
             throw new SQLiteException("No such table " + tableName + " specified in schema");
@@ -164,7 +164,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         if (matchResult == UriMatch.NO_MATCH)
             throw new SQLiteException("Unknown URI: " + uri);
 
-        final String tableName = ProviderUtils.getTableName(uri);
+        final String tableName = getTableName(uri);
         final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(sqLiteHelper.getTableProviders(), tableName);
 
         if (tableProvider == null)
@@ -206,7 +206,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         if (matchResult == UriMatch.NO_MATCH)
             throw new SQLiteException("Unknown URI: " + uri);
 
-        final String tableName = ProviderUtils.getTableName(uri);
+        final String tableName = getTableName(uri);
         final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(sqLiteHelper.getTableProviders(), tableName);
 
         if (tableProvider == null)
@@ -258,7 +258,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         if (matchResult == UriMatch.NO_MATCH)
             throw new SQLiteException("Unknown URI: " + uri);
 
-        final String tableName = ProviderUtils.getTableName(uri);
+        final String tableName = getTableName(uri);
         final AbstractSQLiteTableProvider tableProvider = AbstractSQLiteTableProvider.findSQLiteTableProvider(sqLiteHelper.getTableProviders(), tableName);
 
         if (tableProvider == null)
@@ -307,9 +307,9 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         return databaseVersion;
     }
 
-    protected final boolean checkFieldsNoThrow() {
+    protected final boolean checkFields() {
         try {
-            checkFields();
+            checkFieldsOrThrow();
             return true;
         } catch (RuntimeException e) {
             logger.e("a RuntimeException occurred during checkFields()", e);
@@ -317,12 +317,12 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         }
     }
 
-    protected void checkFields() throws RuntimeException {
+    protected void checkFieldsOrThrow() throws RuntimeException {
 
         if (isEmpty(databaseName))
             throw new RuntimeException("databaseName is empty");
 
-        FileHelper.checkDir(databasePath);
+        checkDir(databasePath);
 
         if (databaseVersion < 1)
             throw new RuntimeException("incorrect databaseVersion: " + databaseVersion);
@@ -337,7 +337,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         if (authorities.isEmpty())
             throw new RuntimeException("no authorities for this ContentProvider : " + getClass());
 
-        final Set<AbstractSQLiteTableProvider> tableProviders = sqLiteHelper.getTableProviders();
+        final Set<AbstractSQLiteTableProvider<?>> tableProviders = sqLiteHelper.getTableProviders();
 
         if (tableProviders.isEmpty())
             throw new RuntimeException("no tableProviders specified");
@@ -349,7 +349,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
             if (isEmpty(authority))
                 continue;
 
-            for (AbstractSQLiteTableProvider provider : tableProviders) {
+            for (AbstractSQLiteTableProvider<?> provider : tableProviders) {
 
                 if (provider == null)
                     continue;
@@ -364,7 +364,7 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
         return uriMatcherPairs;
     }
 
-    private int updateInternal(Uri uri, AbstractSQLiteTableProvider tableProvider, ContentValues values, String where, String[] whereArgs) {
+    private int updateInternal(Uri uri, AbstractSQLiteTableProvider<?> tableProvider, ContentValues values, String where, String[] whereArgs) {
 
         final Context context = getContext();
 
@@ -385,6 +385,6 @@ public abstract class AbstractSQLiteContentProvider extends ContentProvider {
     public interface ITableProvidersProvider {
 
         @NotNull
-        Set<? extends AbstractSQLiteTableProvider> provide();
+        Set<? extends AbstractSQLiteTableProvider<?>> provide();
     }
 }

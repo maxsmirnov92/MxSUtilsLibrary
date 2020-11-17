@@ -11,10 +11,7 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleObserver
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.OnLifecycleEvent
-import io.reactivex.Completable
-import io.reactivex.Maybe
-import io.reactivex.Observable
-import io.reactivex.Single
+import io.reactivex.*
 import io.reactivex.functions.Predicate
 import io.reactivex.subjects.BehaviorSubject
 import net.maxsmr.commonutils.android.gui.actions.EmptyAction
@@ -35,6 +32,8 @@ private val RESTRICTED_STATES = setOf(Lifecycle.Event.ON_ANY, Lifecycle.Event.ON
  * @param allowedTags fragment tags, which this Holder should handle, include after restore
  * (will not show or apply after restore dialog if new tag is not in this set)
  * or empty - if allow any tag
+ *
+ * Note: use methods returning Observable, Maybe, Single, Completable to subscribe on ViewModel / Presenter; and use Live-wrappers to subscibe on views
  */
 @MainThread
 open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : LifecycleObserver {
@@ -149,32 +148,43 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             }
         }
 
-    /**
-     * @param tag тэг, с которым был стартован диалог, может быть пустым
-     * @param eventsMapper функция, извлекающая из диалога указанного типа требуемый Observable, эмитящий эвенты
-     * @return [LiveObservable] с конкретным типом эвента с автоматической отпиской в onDestroy
-     */
+    @JvmOverloads
     fun <T, D : DialogFragment> eventsObservable(
             tag: String? = null,
             dialogClass: Class<D>,
             eventsFilter: Predicate<T>? = null,
             eventsMapper: (D) -> Observable<T>
-    ): LiveObservable<T> =
+    ): Observable<T> =
             showDialogEvents(tag, dialogClass)
                     .switchMap { eventsMapper(it) } // целевой observable из диалога
                     .filter {
                         // данные, выбрасываемые из него, удовлетворяют условию
                         eventsFilter?.test(it) ?: true
                     }
-                    .toLive()
 
-    // FIXME not working
+    /**
+     * @param tag тэг, с которым был стартован диалог, может быть пустым
+     * @param eventsMapper функция, извлекающая из диалога указанного типа требуемый Observable, эмитящий эвенты
+     * @return [LiveObservable] с конкретным типом эвента с автоматической отпиской в onDestroy
+     */
+    @JvmOverloads
+    fun <T, D : DialogFragment> eventsLiveObservable(
+            tag: String? = null,
+            dialogClass: Class<D>,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
+            eventsFilter: Predicate<T>? = null,
+            eventsMapper: (D) -> Observable<T>
+    ): LiveObservable<T> =
+            eventsObservable(tag, dialogClass, eventsFilter, eventsMapper)
+                    .toLive(observingState = observingState)
+
+    @JvmOverloads
     fun <T, D : DialogFragment> eventsSingle(
             tag: String? = null,
             dialogClass: Class<D>,
             eventsFilter: Predicate<T>? = null,
             eventsMapper: (D) -> Single<T>
-    ): LiveSingle<T> =
+    ): Single<T> =
             Single.fromObservable(showDialogEvents(tag, dialogClass)
                     .switchMap { dialog ->
                         eventsMapper(dialog).toObservable()
@@ -182,14 +192,26 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                     .filter {
                         eventsFilter?.test(it) ?: true
                     })
-                    .toLive()
 
+    // FIXME not working
+    @JvmOverloads
+    fun <T, D : DialogFragment> eventsLiveSingle(
+            tag: String? = null,
+            dialogClass: Class<D>,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
+            eventsFilter: Predicate<T>? = null,
+            eventsMapper: (D) -> Single<T>
+    ): LiveSingle<T> =
+            eventsSingle(tag, dialogClass, eventsFilter, eventsMapper)
+                    .toLive(observingState = observingState)
+
+    @JvmOverloads
     fun <T, D : DialogFragment> eventsMaybe(
             tag: String? = null,
             dialogClass: Class<D>,
             eventsFilter: Predicate<T>? = null,
             eventsMapper: (D) -> Maybe<T>
-    ): LiveMaybe<T> =
+    ): Maybe<T> =
             showDialogEvents(tag, dialogClass)
                     .switchMap { dialog ->
                         eventsMapper(dialog).toObservable()
@@ -198,32 +220,56 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                         eventsFilter?.test(it) ?: true
                     }
                     .firstElement()
-                    .toLive()
 
-    // FIXME not working
+    @JvmOverloads
+    fun <T, D : DialogFragment> eventsLiveMaybe(
+            tag: String? = null,
+            dialogClass: Class<D>,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
+            eventsFilter: Predicate<T>? = null,
+            eventsMapper: (D) -> Maybe<T>
+    ): LiveMaybe<T> =
+            eventsMaybe(tag, dialogClass, eventsFilter, eventsMapper)
+                    .toLive(observingState = observingState)
+
+    @JvmOverloads
     fun <D : DialogFragment> eventsCompletable(
             tag: String? = null,
             dialogClass: Class<D>,
             eventsMapper: (D) -> Completable
-    ): LiveCompletable {
+    ): Completable {
         return showDialogEvents(tag, dialogClass)
                 .switchMap { dialog ->
                     eventsMapper(dialog).andThen(Observable.just(EmptyAction))
                 }
                 .ignoreElements()
-                .toLive()
     }
 
+    // FIXME not working
+    @JvmOverloads
+    fun <D : DialogFragment> eventsLiveCompletable(
+            tag: String? = null,
+            dialogClass: Class<D>,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
+            eventsMapper: (D) -> Completable
+    ): LiveCompletable {
+        return eventsCompletable(tag, dialogClass, eventsMapper)
+                .toLive(observingState = observingState)
+    }
 
+    // FIXME not working
     @Suppress("UNCHECKED_CAST")
     @JvmOverloads
-    fun <D : Dialog> createdEventsOnce(
+    fun <D : Dialog> createdLiveEventsOnce(
             tag: String? = null,
             clazz: Class<TypedDialogFragment<D>> = TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>,
-            eventsFilter: Predicate<TypedAction<D>>? = null): LiveSingle<TypedAction<D>> =
-            eventsSingle(
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
+            eventsFilter: Predicate<TypedAction<D>>? = null
+    ): LiveSingle<TypedAction<D>> =
+            eventsLiveSingle(
                     tag,
                     clazz,
+                    observingState,
                     eventsFilter
             ) {
                 it.createdSingle()
@@ -231,26 +277,26 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
 
     @Suppress("UNCHECKED_CAST")
     @JvmOverloads
-    fun <D : Dialog> createdEvents(
+    fun <D : Dialog> createdLiveEvents(
             tag: String? = null,
             clazz: Class<TypedDialogFragment<D>> = TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
             eventsFilter: Predicate<TypedAction<D>>? = null
     ): LiveObservable<TypedAction<D>> =
-            eventsObservable(
+            eventsLiveObservable(
                     tag,
                     clazz,
+                    observingState,
                     eventsFilter
             ) {
                 it.createdSingle().toObservable()
             }
 
-    fun buttonClickEvents(vararg buttons: Int) = buttonClickEvents(buttons = buttons.toList())
-
-    @JvmOverloads
-    fun buttonClickEvents(
+    fun buttonClickLiveEvents(
             tag: String? = null,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
             buttons: Collection<Int> = listOf()
-    ): LiveObservable<TypedAction<Int>> = buttonClickEvents(tag, TypedDialogFragment::class.java, buttons)
+    ): LiveObservable<TypedAction<Int>> = buttonClickLiveEvents(tag, TypedDialogFragment::class.java, observingState, buttons)
 
     /**
      * Подписка на клики по кнопкам диалога
@@ -259,15 +305,18 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
      * @param buttons типы кнопок, за которыми наблюдаем (см. [android.content.DialogInterface]), или
      * пустой список, если наблюдаем за всеми
      */
-    fun buttonClickEvents(
+    @JvmOverloads
+    fun buttonClickLiveEvents(
             tag: String? = null,
             clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
             buttons: Collection<Int> = listOf()
     ): LiveObservable<TypedAction<Int>> =
-            eventsObservable(
+            eventsLiveObservable(
                     tag,
                     clazz,
-                    Predicate {
+                    observingState,
+                    {
                         buttons.isEmpty() || it.value in buttons
                     }
             ) {
@@ -275,47 +324,55 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             }
 
     @JvmOverloads
-    fun keyActionEvents(
+    fun keyActionLiveEvents(
             tag: String? = null,
             clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
             vararg keyCodes: Int
     ): LiveObservable<TypedDialogFragment.KeyAction> =
-            keyActionEvents(tag, clazz, Predicate { keyCodes.isEmpty() || it.keyCode in keyCodes })
+            keyActionLiveEvents(tag, clazz, observingState, { keyCodes.isEmpty() || it.keyCode in keyCodes })
 
     @JvmOverloads
-    fun keyActionEvents(
+    fun keyActionLiveEvents(
             tag: String? = null,
             clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
             keyEventFilter: Predicate<TypedDialogFragment.KeyAction>
     ): LiveObservable<TypedDialogFragment.KeyAction> =
-            eventsObservable(
+            eventsLiveObservable(
                     tag,
                     clazz,
+                    observingState,
                     keyEventFilter
             ) {
                 it.keyActionObservable()
             }
 
+    // FIXME not working
     @JvmOverloads
-    fun dismissEventsOnce(
+    fun dismissLiveEventsOnce(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
     ): LiveCompletable =
-            eventsCompletable(
+            eventsLiveCompletable(
                     tag,
-                    clazz
+                    clazz,
+                    observingState
             ) {
                 it.dismissCompletable()
             }
 
     @JvmOverloads
-    fun dismissEvents(
+    fun dismissLiveEvents(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
     ): LiveObservable<EmptyAction> =
-            eventsObservable(
+            eventsLiveObservable(
                     tag,
-                    clazz
+                    clazz,
+                    observingState
             ) { fragment ->
                 fragment.dismissCompletable().andThen(Observable.just(EmptyAction))
                 // то же самое по смыслу:
@@ -327,14 +384,17 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
 //                }
             }
 
+    // FIXME not working
     @JvmOverloads
     fun cancelEventsOnce(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
     ): LiveCompletable =
-            eventsCompletable(
+            eventsLiveCompletable(
                     tag,
-                    clazz
+                    clazz,
+                    observingState,
             ) {
                 it.cancelCompletable()
             }
@@ -342,11 +402,13 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @JvmOverloads
     fun cancelEvents(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
     ): LiveObservable<EmptyAction> =
-            eventsObservable(
+            eventsLiveObservable(
                     tag,
-                    clazz
+                    clazz,
+                    observingState
             ) {
                 it.cancelCompletable().andThen(Observable.just(EmptyAction))
             }
@@ -595,7 +657,8 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
         with(currentOwner) {
             checkNotNull(this) { "LifecycleOwner is not attached" }
             if (forFragment is TypedDialogFragment<*>) {
-                dismissEvents(forFragment.tag).subscribe(this, true) {
+                // должен прилетать в любых стейтах, чтобы отслеживать здесь
+                dismissLiveEvents(forFragment.tag, observingState = null).subscribe(this, emitOnce = true) {
                     onDialogDismiss(forFragment)
                 }
             }

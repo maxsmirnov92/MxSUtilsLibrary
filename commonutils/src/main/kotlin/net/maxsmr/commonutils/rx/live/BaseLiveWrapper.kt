@@ -7,7 +7,7 @@ import androidx.lifecycle.OnLifecycleEvent
 import io.reactivex.disposables.Disposable
 
 abstract class BaseLiveWrapper(
-        protected val observingState: Lifecycle.State = Lifecycle.State.STARTED
+        protected val observingState: Lifecycle.State? = Lifecycle.State.STARTED
 ) {
 
     protected val observers: MutableMap<LifecycleOwner, DisposeObserver> = mutableMapOf()

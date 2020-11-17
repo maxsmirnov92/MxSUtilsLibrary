@@ -36,10 +36,6 @@ public final class ProviderUtils {
         throw new AssertionError("no instances.");
     }
 
-    public static boolean isCorrectUri(@Nullable Uri uri) {
-        return uri != null && !isEmpty(uri.getScheme()) && uri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_CONTENT);
-    }
-
     @Nullable
     public static <P extends ContentProvider> ProviderInfo getProviderInfo(@NotNull Context context, @Nullable String packageName, @NotNull Class<P> providerClass) {
         return getProviderInfo(context, packageName,  providerClass,0);
@@ -85,61 +81,6 @@ public final class ProviderUtils {
             Uri.Builder uriBuilder = contentProviderUri.buildUpon();
             uriBuilder.appendEncodedPath(tableName);
             return uriBuilder.build();
-        }
-        return null;
-    }
-
-    @Nullable
-    public static String getTableName(Uri uri) {
-        if (isCorrectUri(uri)) {
-            return uri.getPathSegments().get(0);
-        }
-        return null;
-    }
-
-    @NotNull
-    public static List<String> getAllExistingColumns(Uri uri, Context ctx) {
-        if (isCorrectUri(uri)) {
-            Cursor c = ctx.getContentResolver().query(uri, null, null, null, BaseColumns._ID
-                    + " " + AbstractSQLiteTableProvider.Order.ASC);
-            if (c != null) {
-                try {
-                    return new ArrayList<>(Arrays.asList(c.getColumnNames()));
-                } finally {
-                    c.close();
-                }
-            }
-        }
-        return new ArrayList<>();
-    }
-
-    @SuppressWarnings("unchecked")
-    @Nullable
-    public static <V> V getDataFromCursor(@Nullable Cursor c, @Nullable String columnName, @NotNull Class<V> dataClass) {
-        if (c != null && !c.isClosed() && c.getCount() > 0) {
-            if (!isEmpty(columnName)) {
-                columnName = columnName.toLowerCase(Locale.getDefault());
-                if (c.getPosition() == -1) {
-                    c.moveToFirst();
-                }
-                try {
-                    if (dataClass.isAssignableFrom(String.class)) {
-                        return (V) c.getString(c.getColumnIndex(columnName));
-                    } else if (dataClass.isAssignableFrom(Integer.class)) {
-                        return (V) Integer.valueOf(c.getInt(c.getColumnIndex(columnName)));
-                    } else if (dataClass.isAssignableFrom(Long.class)) {
-                        return (V) Long.valueOf(c.getLong(c.getColumnIndex(columnName)));
-                    } else if (dataClass.isAssignableFrom(Float.class)) {
-                        return (V) Float.valueOf(c.getFloat(c.getColumnIndex(columnName)));
-                    } else if (dataClass.isAssignableFrom(byte[].class)) {
-                        return (V) c.getBlob(c.getColumnIndex(columnName));
-                    } else {
-                        throw new UnsupportedOperationException("incorrect data class: " + dataClass);
-                    }
-                } catch (ClassCastException e) {
-                    logger.e("a ClassCastException occurred: " + e.getMessage(), e);
-                }
-            }
         }
         return null;
     }
