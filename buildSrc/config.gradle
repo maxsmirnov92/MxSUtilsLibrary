@@ -5,7 +5,7 @@ ext {
     bintrayGradleVersion = "1+"
     mavenGradleVersion = "1+"
 
-    sdkVersion = 29
+    sdkVersion = 30
     minSdkVersion = 17
 
     gradlePluginVersion = '4.0.1'

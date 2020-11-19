@@ -35,9 +35,10 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import static net.maxsmr.commonutils.android.SdkVersionsKt.isAtLeastLollipop;
+import static net.maxsmr.commonutils.android.SdkVersionsKt.isAtLeastOreo;
 import static net.maxsmr.commonutils.data.conversion.format.DateFormatUtilsKt.formatDate;
 import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
-import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 
 public final class DeviceUtils {
 
@@ -85,7 +86,7 @@ public final class DeviceUtils {
     public static PowerManager.WakeLock acquireWakeLockDefault(@NotNull Context context, @NotNull String name, long timeoutMillis) {
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         if (pm == null) {
-            throw new RuntimeException(PowerManager.class.getSimpleName() + " is null");
+            throw new RuntimeException("PowerManager is null");
         }
         PowerManager.WakeLock wakeLock = pm.newWakeLock(PowerManager.FULL_WAKE_LOCK | PowerManager
                 .ACQUIRE_CAUSES_WAKEUP | PowerManager
@@ -153,7 +154,7 @@ public final class DeviceUtils {
         if (telephonyManager == null) {
             throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null, cannot get IMEI");
         }
-        return Build.VERSION.SDK_INT >= Build.VERSION_CODES.O ? telephonyManager.getImei() : telephonyManager.getDeviceId();
+        return isAtLeastOreo() ? telephonyManager.getImei() : telephonyManager.getDeviceId();
     }
 
     /**
@@ -175,7 +176,7 @@ public final class DeviceUtils {
     public static boolean isScreenOn(@NotNull Context context) {
         PowerManager pm = (PowerManager) context.getSystemService(Context.POWER_SERVICE);
         if (pm == null) {
-            throw new RuntimeException(PowerManager.class.getSimpleName() + " is null");
+            throw new RuntimeException("PowerManager is null");
         }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT_WATCH) {
             return pm.isInteractive();
@@ -345,10 +346,9 @@ public final class DeviceUtils {
      * Get CPU ABI
      */
     private static String getAbi() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+        if (isAtLeastLollipop()) {
             return Build.SUPPORTED_ABIS[0];
         } else {
-            //noinspection deprecation
             return Build.CPU_ABI;
         }
     }

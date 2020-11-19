@@ -3,7 +3,6 @@ package net.maxsmr.commonutils.android.hardware;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
 import android.os.Bundle;
 import android.provider.Telephony;
 import android.telephony.SmsMessage;
@@ -17,6 +16,8 @@ import java.io.Serializable;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Set;
+
+import static net.maxsmr.commonutils.android.SdkVersionsKt.isAtLeastMarshmallow;
 
 public class SmsBroadcastReceiver extends BroadcastReceiver {
 
@@ -63,7 +64,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
             if (pdus != null) {
                 final SmsMessage[] messages = new SmsMessage[pdus.length];
                 for (int i = 0; i < pdus.length; i++) {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    if (isAtLeastMarshmallow()) {
                         messages[i] = SmsMessage.createFromPdu((byte[]) pdus[i], intent.getStringExtra("format"));
                     } else {
                         //noinspection deprecation

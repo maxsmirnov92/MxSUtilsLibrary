@@ -93,7 +93,7 @@ fun setDrawableColor(
         color: ColorStateList,
         mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ) {
-    if (SdkUtils.isAtLeastLollipop()) {
+    if (isAtLeastLollipop()) {
         DrawableCompat.setTintList(drawable, color)
         DrawableCompat.setTintMode(drawable, mode)
     } else {
@@ -144,7 +144,7 @@ fun readStringsFromAsset(
 ): List<String> = try {
     readStringsFromAssetOrThrow(context, assetName, count, charsetName)
 } catch (e: RuntimeException) {
-    logException(logger, e, "readStringsFromAsset")
+    logger.e(e)
     emptyList()
 }
 
@@ -180,7 +180,7 @@ fun readStringsFromRes(
 ): List<String> = try {
     readStringsFromResOrThrow(context, resId, count, charsetName)
 } catch (e: RuntimeException) {
-    logException(logger, e, "readStringsFromRes")
+    logger.e(e)
     emptyList()
 }
 
@@ -214,12 +214,12 @@ fun copyFromAssets(
         targetFile: File?,
         rewrite: Boolean = true,
         notifier: IStreamNotifier? = null,
-        buffSize: Int = STREAM_BUF_SIZE_DEFAULT
+        buffSize: Int = DEFAULT_BUFFER_SIZE
 ) = try {
     copyFromAssetsOrThrow(context, assetName, targetFile, rewrite, notifier, buffSize)
     true
 } catch (e: RuntimeException) {
-    logException(logger, e, "copyFromAssetsOrThrow")
+    logger.e(e)
     false
 }
 
@@ -231,7 +231,7 @@ fun copyFromAssetsOrThrow(
         targetFile: File?,
         rewrite: Boolean = true,
         notifier: IStreamNotifier? = null,
-        buffSize: Int = STREAM_BUF_SIZE_DEFAULT
+        buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
     if (targetFile == null) {
         throw NullPointerException("targetFile is null")
@@ -242,7 +242,7 @@ fun copyFromAssetsOrThrow(
     } catch (e: IOException) {
         throw RuntimeException("An IOException occurred during open", e)
     }
-    revectorStreamOrThrow(assetStream, targetFile.toFosOrThrow(), notifier, buffSize)
+    copyStreamOrThrow(assetStream, targetFile.toFosOrThrow(), notifier, buffSize)
 }
 
 @JvmOverloads
@@ -252,11 +252,11 @@ fun copyFromRawRes(
         targetFile: File?,
         mode: Int = 0,
         notifier: IStreamNotifier? = null,
-        buffSize: Int = STREAM_BUF_SIZE_DEFAULT
+        buffSize: Int = DEFAULT_BUFFER_SIZE
 ) = try {
     copyFromRawResOrThrow(context, resId, targetFile, mode, notifier, buffSize)
 } catch (e: RuntimeException) {
-    logException(logger, e, "copyFromRawRes")
+    logger.e(e)
     false
 }
 
@@ -274,7 +274,7 @@ fun copyFromRawResOrThrow(
         targetFile: File?,
         mode: Int = 0,
         notifier: IStreamNotifier? = null,
-        buffSize: Int = STREAM_BUF_SIZE_DEFAULT
+        buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
     if (targetFile == null) {
         throw NullPointerException("targetFile is null")
@@ -285,7 +285,7 @@ fun copyFromRawResOrThrow(
     } catch (e: IOException) {
         throw RuntimeException("An IOException occurred during openRawResource", e)
     }
-    revectorStreamOrThrow(rawStream, targetFile.toFosOrThrow(), notifier, buffSize)
+    copyStreamOrThrow(rawStream, targetFile.toFosOrThrow(), notifier, buffSize)
     if (mode > 0) {
         if (!execProcess(listOf("chmod", mode.toString(), destFilePath),
                         EMPTY_STRING,

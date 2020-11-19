@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
+import android.provider.Settings
 import android.text.TextUtils
 import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
@@ -15,6 +16,7 @@ import java.io.File
 
 const val PROVIDER_AUTHORITY_FORMAT = "%s.provider"
 
+@JvmOverloads
 fun wrapIntent(
         intent: Intent,
         title: String = EMPTY_STRING,
@@ -22,7 +24,7 @@ fun wrapIntent(
 ): Intent {
     with(intent) {
         if (flags != 0) {
-            this.flags = flags
+            this.addFlags(flags)
         }
         return if (title.isNotEmpty()) {
             Intent.createChooser(this, title)
@@ -32,6 +34,15 @@ fun wrapIntent(
     }
 }
 
+@JvmOverloads
+fun getAppSettingsIntent(context: Context, packageName: String = context.packageName): Intent {
+    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+    val uri = Uri.fromParts("package", packageName, null)
+    intent.data = uri
+    return intent
+}
+
+@JvmOverloads
 fun getBrowseLinkIntent(url: String = EMPTY_STRING, withType: Boolean = true): Intent {
     val result = Intent(Intent.ACTION_VIEW)
     val uri = Uri.parse(url)
@@ -47,7 +58,7 @@ fun getBrowseLinkIntent(url: String = EMPTY_STRING, withType: Boolean = true): I
 }
 
 @RequiresApi(Build.VERSION_CODES.KITKAT)
-fun getOpenDocumentIntent(type: String?, mimeTypes: Array<String?>?): Intent {
+fun getOpenDocumentIntent(type: String?, mimeTypes: List<String>?): Intent {
     with(Intent(Intent.ACTION_OPEN_DOCUMENT)) {
         addCategory(Intent.CATEGORY_OPENABLE)
         this.type = if (!TextUtils.isEmpty(type)) {
@@ -56,7 +67,7 @@ fun getOpenDocumentIntent(type: String?, mimeTypes: Array<String?>?): Intent {
             "*/*"
         }
         if (mimeTypes != null && mimeTypes.isNotEmpty()) {
-            putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes)
+            putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
         }
         return this
     }
@@ -65,54 +76,63 @@ fun getOpenDocumentIntent(type: String?, mimeTypes: Array<String?>?): Intent {
 /**
  * @param shouldUseFileProvider true, if intended to use FileProvider instead of file://
  */
+@JvmOverloads
 fun getViewFileIntent(
         context: Context,
         file: File?,
-        shouldUseFileProvider: Boolean,
-        flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK
+        shouldUseFileProvider: Boolean = true
 ): Intent? {
     val uriAndType = getFileUriAndType(context, file, shouldUseFileProvider) ?: return null
-    return getViewIntent(uriAndType.first, uriAndType.second,
-            if (shouldUseFileProvider) flags or Intent.FLAG_GRANT_READ_URI_PERMISSION else flags)
-
+    return getViewIntent(uriAndType.first, uriAndType.second).apply {
+        if (!shouldUseFileProvider) {
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+    }
 }
 
 /**
- * @param shouldUseFileProvider true, if intended to use FileProvider instead of file://
+ * @param shouldUseFileProvider true, if intended to use FileProvider (content://) instead of file://
  */
+@JvmOverloads
 fun getShareFileIntent(
         context: Context,
         file: File?,
         subject: String,
         text: String,
-        shouldUseFileProvider: Boolean,
-        flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK
+        shouldUseFileProvider: Boolean = true
 ): Intent? {
     val uriAndType = getFileUriAndType(context, file, shouldUseFileProvider) ?: return null
-    return getShareIntent(uriAndType.first, uriAndType.second, subject, text,
-            if (shouldUseFileProvider) flags or Intent.FLAG_GRANT_READ_URI_PERMISSION else flags)
+    return getShareIntent(subject, text, uriAndType.second, uriAndType.first, isMultiple = false).apply {
+        if (!shouldUseFileProvider) {
+            flags = Intent.FLAG_GRANT_READ_URI_PERMISSION
+        }
+    }
 }
 
-fun getViewIntent(
-        uri: Uri,
-        mimeType: String,
-        flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK
-): Intent = Intent(Intent.ACTION_VIEW)
+fun getViewIntent(uri: Uri, mimeType: String, ): Intent = Intent(Intent.ACTION_VIEW)
         .setDataAndType(uri, mimeType)
-        .setFlags(flags)
 
+@JvmOverloads
 fun getShareIntent(
-        uri: Uri,
         subject: String,
         text: String,
         mimeType: String,
-        flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK
-): Intent = Intent(Intent.ACTION_SEND)
-        .putExtra(Intent.EXTRA_STREAM, uri)
-        .putExtra(Intent.EXTRA_SUBJECT, subject)
-        .putExtra(Intent.EXTRA_TEXT, text)
-        .setType(mimeType)
-        .setFlags(flags)
+        uri: Uri? = null,
+        recipients: List<String>? = null,
+        isMultiple: Boolean = uri == null
+): Intent = Intent(
+        if (isMultiple) Intent.ACTION_SEND_MULTIPLE else Intent.ACTION_SEND
+).apply {
+    putExtra(Intent.EXTRA_SUBJECT, subject)
+    putExtra(Intent.EXTRA_TEXT, text)
+    uri?.let {
+        putExtra(Intent.EXTRA_STREAM, uri)
+    }
+    if (recipients != null && recipients.isNotEmpty()) {
+        putExtra(Intent.EXTRA_EMAIL, recipients.toTypedArray())
+    }
+    type = mimeType
+}
 
 private fun getFileUriAndType(
         context: Context,

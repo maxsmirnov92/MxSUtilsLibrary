@@ -6,9 +6,8 @@ import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
-import android.os.Build
-import android.os.Build.VERSION_CODES
 import android.provider.MediaStore
+import net.maxsmr.commonutils.android.isAtLeastMarshmallow
 import net.maxsmr.commonutils.data.conversion.toInt
 import net.maxsmr.commonutils.data.conversion.toLong
 import net.maxsmr.commonutils.data.isFileValid
@@ -19,7 +18,6 @@ import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.io.File
 import java.io.FileDescriptor
-import java.lang.NullPointerException
 import java.util.concurrent.TimeUnit
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("MetadataRetriever")
@@ -129,7 +127,7 @@ fun extractMetadata(retriever: MediaMetadataRetriever): MediaMetadata {
             extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_BITRATE, Int::class.java),
             extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_LOCATION, String::class.java),
             extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_VIDEO_ROTATION, Int::class.java),
-            if (Build.VERSION.SDK_INT >= VERSION_CODES.M) {
+            if (isAtLeastMarshmallow()) {
                 extractMetadataField(retriever, MediaMetadataRetriever.METADATA_KEY_CAPTURE_FRAMERATE, Int::class.java)
             } else {
                 null
@@ -221,7 +219,7 @@ fun <M> extractMetadataField(
  * @param contentUri must have scheme "content://"
  */
 fun extractAlbumArt(context: Context, contentUri: Uri?): Bitmap? {
-    val albumId = getCursorProperty(context, contentUri, Long::class.java, arrayOf(MediaStore.Audio.Media.ALBUM_ID))
+    val albumId = queryUriFirst(context, contentUri, Long::class.java, listOf(MediaStore.Audio.Media.ALBUM_ID))
     if (albumId != null) {
         val coverUri = Uri.parse("content://media/external/audio/albumart")
         val trackCoverUri = ContentUris.withAppendedId(coverUri, albumId)

@@ -1,9 +1,9 @@
 package net.maxsmr.commonutils.data
 
+import android.util.Log
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
 import java.io.*
 
 // Вспомогательные методы для чтения из {@link InputStream]
@@ -11,56 +11,59 @@ import java.io.*
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("StreamUtils")
 
-const val STREAM_BUF_SIZE_DEFAULT = 256
-
 const val CHARSET_DEFAULT = "UTF-8"
 
+/**
+ * @return amount of bytes copied
+ */
 @JvmOverloads
-fun revectorStream(
+fun copyStream(
         `in`: InputStream,
         out: OutputStream,
         notifier: IStreamNotifier? = null,
-        buffSize: Int = STREAM_BUF_SIZE_DEFAULT,
+        buffSize: Int = DEFAULT_BUFFER_SIZE,
         closeInput: Boolean = true,
         closeOutput: Boolean = true
-): Boolean =
-        try {
-            revectorStreamOrThrow(`in`, out, notifier, buffSize, closeInput, closeOutput)
-            true
-        } catch (e: IOException) {
-            logException(logger, e, "revectorStream")
-            false
-        }
+): Int? = try {
+    copyStreamOrThrow(`in`, out, notifier, buffSize, closeInput, closeOutput)
+} catch (e: IOException) {
+    logger.e(e)
+    null
+}
 
+/**
+ * @return amount of bytes copied
+ */
 @Throws(IOException::class)
 @JvmOverloads
-fun revectorStreamOrThrow(
+fun copyStreamOrThrow(
         `in`: InputStream,
         out: OutputStream,
         notifier: IStreamNotifier? = null,
-        buffSize: Int = STREAM_BUF_SIZE_DEFAULT,
+        buffSize: Int = DEFAULT_BUFFER_SIZE,
         closeInput: Boolean = true,
         closeOutput: Boolean = true
-) {
+): Int {
     require(buffSize > 0) { "buffSize" }
+
+    var bytesWriteCount = 0
 
     try {
         val buff = ByteArray(buffSize)
-        var bytesWriteCount = 0
-        var totalBytesCount = 0
-        try {
-            totalBytesCount = `in`.available()
-        } catch (e: IOException) {
-        }
+        val totalBytesCount = `in`.available()
+
         var len: Int
         var lastNotifyTime: Long = 0
         while (`in`.read(buff).also { len = it } > 0) {
             if (notifier != null) {
                 val interval = notifier.notifyInterval
                 if (interval >= 0 && (interval == 0L || lastNotifyTime == 0L || System.currentTimeMillis() - lastNotifyTime >= interval)) {
-                    if (!notifier.onProcessing(`in`, out, bytesWriteCount.toLong(),
-                                    if (totalBytesCount > 0 && bytesWriteCount <= totalBytesCount) (totalBytesCount - bytesWriteCount).toLong() else 0.toLong())) {
-                        throw InterruptedIOException("Revector streams interrupted")
+                    if (!notifier.onProcessing(
+                                    `in`, out, bytesWriteCount.toLong(),
+                                    if (totalBytesCount > 0 && bytesWriteCount <= totalBytesCount) (totalBytesCount - bytesWriteCount).toLong() else 0.toLong()
+                            )
+                    ) {
+                        throw InterruptedIOException("Copying streams interrupted")
                     }
                     lastNotifyTime = System.currentTimeMillis()
                 }
@@ -76,6 +79,7 @@ fun revectorStreamOrThrow(
             out.close()
         }
     }
+    return bytesWriteCount
 }
 
 @JvmOverloads
@@ -83,7 +87,7 @@ fun readBytesFromInputStream(inputStream: InputStream, closeInput: Boolean = tru
         try {
             readBytesFromInputStreamOrThrow(inputStream, closeInput)
         } catch (e: IOException) {
-            logException(logger, e, "readBytesFromInputStream")
+            logger.e(e)
             null
         }
 
@@ -113,7 +117,7 @@ fun readStringsFromInputStream(
 ): List<String> = try {
     readStringsFromInputStreamOrThrow(`is`, count, closeInput, charsetName)
 } catch (e: IOException) {
-    logException(logger, e, "readStringsFromInputStream")
+    logger.e(e)
     emptyList()
 }
 
@@ -156,7 +160,7 @@ fun writeBytesToOutputStream(
     writeBytesToOutputStreamOrThrow(outputStream, data, closeOutput)
     true
 } catch (e: IOException) {
-    logException(logger, e, "writeBytesToOutputStreamOrThrow")
+    logger.e(e)
     false
 }
 
@@ -180,7 +184,7 @@ fun writeBytesToOutputStreamOrThrow(
 @JvmOverloads
 fun convertInputStreamToString(inputStream: InputStream, charsetName: String = CHARSET_DEFAULT): String? {
     val result = ByteArrayOutputStream()
-    revectorStreamOrThrow(inputStream, result)
+    copyStreamOrThrow(inputStream, result)
     return try {
         result.toString(charsetName)
     } catch (e: UnsupportedEncodingException) {
@@ -196,6 +200,7 @@ interface IStreamNotifier {
     /**
      * @return true if should proceed
      */
+    @JvmDefault
     fun onProcessing(
             inputStream: InputStream,
             outputStream: OutputStream,

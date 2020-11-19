@@ -22,6 +22,7 @@ import org.jetbrains.annotations.Nullable;
 import java.net.InetAddress;
 import java.util.concurrent.TimeUnit;
 
+import static net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException;
 import static net.maxsmr.commonutils.shell.RootShellCommandsKt.reboot;
 import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 
@@ -603,7 +604,7 @@ public class NetworkWatcher {
                         Thread.sleep(rInfo.networkTypeSwitchPostWait);
                     } catch (InterruptedException e) {
                         Thread.currentThread().interrupt();
-                        logger.e("an InterruptedException exception occurred during sleep(): " + e.getMessage());
+                        logException(logger, e, "sleep");
                     }
                 }
             }
@@ -625,7 +626,7 @@ public class NetworkWatcher {
                         try {
                             Thread.sleep(rInfo.airplaneModeTime);
                         } catch (InterruptedException e) {
-                            logger.e("an InterruptedException occurred during sleep(): " + e.getMessage());
+                            logException(logger, e, "sleep");
                             Thread.currentThread().interrupt();
                         }
                     }
@@ -638,7 +639,7 @@ public class NetworkWatcher {
                         try {
                             Thread.sleep(rInfo.airplaneModePostWait);
                         } catch (InterruptedException e) {
-                            logger.e("an InterruptedException occurred during sleep(): " + e.getMessage());
+                            logException(logger, e, "sleep");
                             Thread.currentThread().interrupt();
                         }
                     }
@@ -652,7 +653,6 @@ public class NetworkWatcher {
                     logger.w("trying to reboot phone by shell...");
                     if (!reboot()) {
                         logger.e("reboot failed");
-
                         rebootListeners.notifyRebootFailed();
                     }
 

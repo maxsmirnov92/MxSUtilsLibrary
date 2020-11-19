@@ -3,10 +3,7 @@ package net.maxsmr.commonutils.android
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
-import android.os.Build
-import android.os.Build.VERSION.SDK_INT
 import android.os.SystemClock
-import android.util.Log
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
@@ -41,16 +38,15 @@ fun setAlarm(context: Context, pIntent: PendingIntent, triggerTime: Long, alarmT
         }
     }
 
-    if (SDK_INT < Build.VERSION_CODES.KITKAT) {
+    if (isPreKitkat()) {
         alarmManager.set(alarmType.type, triggerTime, pIntent)
-    } else if (SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+    } else if (isPreLollipop()) {
         alarmManager.setExact(alarmType.type, triggerTime, pIntent)
-    } else if (SDK_INT < Build.VERSION_CODES.M) {
+    } else if (isPreMarshmallow()) {
         alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(triggerTime, null), pIntent)
     } else {
         alarmManager.setExactAndAllowWhileIdle(alarmType.type, triggerTime, pIntent)
     }
-
     return true
 }
 

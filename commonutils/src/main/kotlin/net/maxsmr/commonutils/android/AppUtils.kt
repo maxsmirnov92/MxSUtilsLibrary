@@ -12,6 +12,7 @@ import android.os.StrictMode
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.WindowManager
+import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LifecycleOwner
 import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager
@@ -138,7 +139,7 @@ fun launchSelf(context: Context, flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK or I
  */
 fun disableFileUriStrictMode(): Boolean {
     var result = true
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+    if (isAtLeastNougat()) {
         result = false
         var disableMethod: Method? = null
         try {
@@ -361,7 +362,7 @@ fun getVersionName(info: PackageInfo?): String {
 
 fun getVersionCode(info: PackageInfo?): Long? {
     return if (info != null) {
-        if (SdkUtils.isAtLeastPie()) {
+        if (isAtLeastPie()) {
             info.longVersionCode
         } else {
             @Suppress("DEPRECATION")
@@ -460,6 +461,13 @@ fun isTabletUI(con: Context): Boolean {
 }
 
 @JvmOverloads
+fun Context.fragmentActivity(maxDepth: Int = 20): FragmentActivity? = try {
+    fragmentActivityOrThrow(maxDepth)
+} catch (e: RuntimeException) {
+    null
+}
+
+@JvmOverloads
 @Throws(RuntimeException::class)
 fun Context.fragmentActivityOrThrow(maxDepth: Int = 20): FragmentActivity {
     require(maxDepth > 0) { "Incorrect maxDepth: $maxDepth"}
@@ -477,8 +485,8 @@ fun Context.fragmentActivityOrThrow(maxDepth: Int = 20): FragmentActivity {
 }
 
 @JvmOverloads
-fun Context.fragmentActivity(maxDepth: Int = 20): FragmentActivity? = try {
-    fragmentActivityOrThrow(maxDepth)
+fun Context.lifecycleOwner(maxDepth: Int = 20): LifecycleOwner? = try {
+    lifecycleOwnerOrThrow(maxDepth)
 } catch (e: RuntimeException) {
     null
 }
@@ -499,11 +507,46 @@ fun Context.lifecycleOwnerOrThrow(maxDepth: Int = 20): LifecycleOwner {
     }
 }
 
-@JvmOverloads
-fun Context.lifecycleOwner(maxDepth: Int = 20): LifecycleOwner? = try {
-    lifecycleOwnerOrThrow(maxDepth)
-} catch (e: RuntimeException) {
+fun Any.asContext(): Context? = try {
+    asContextOrThrow()
+} catch (e: ClassCastException) {
     null
+}
+
+@Throws(ClassCastException::class)
+fun Any.asContextOrThrow(): Context {
+    return when (this) {
+        is Context -> {
+            this
+        }
+        is Fragment -> {
+            this.requireContext()
+        }
+        else -> {
+            throw ClassCastException("Cannot cast to Context")
+        }
+    }
+}
+
+fun Any.asActivity(): Activity? = try {
+    asActivityOrThrow()
+} catch (e: ClassCastException) {
+    null
+}
+
+@Throws(ClassCastException::class)
+fun Any.asActivityOrThrow(): Activity {
+    return when (this) {
+        is Activity -> {
+            this
+        }
+        is Fragment -> {
+            this.requireActivity()
+        }
+        else -> {
+            throw ClassCastException("Cannot cast to Activity")
+        }
+    }
 }
 
 enum class DeviceType {

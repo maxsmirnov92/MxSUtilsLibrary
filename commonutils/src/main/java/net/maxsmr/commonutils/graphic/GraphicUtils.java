@@ -78,6 +78,8 @@ import static androidx.exifinterface.media.ExifInterface.TAG_MAKE;
 import static androidx.exifinterface.media.ExifInterface.TAG_MODEL;
 import static androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION;
 import static androidx.exifinterface.media.ExifInterface.TAG_WHITE_BALANCE;
+import static net.maxsmr.commonutils.android.SdkVersionsKt.isPreKitkat;
+import static net.maxsmr.commonutils.android.SdkVersionsKt.isPreMarshmallow;
 import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getExifOrientationByRotationAngle;
 import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getOrientation;
 import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getPath;
@@ -92,7 +94,7 @@ import static net.maxsmr.commonutils.data.FileUtilsKt.isFileValid;
 import static net.maxsmr.commonutils.data.FileUtilsKt.removeFileExtension;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
-// TODO konvert to kotlin
+// TODO convert to kotlin
 public final class GraphicUtils {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(GraphicUtils.class);
@@ -785,7 +787,7 @@ public final class GraphicUtils {
 
     public static Bitmap getCorrectlyOrientedImage(@NotNull Context context, Uri uri, Bitmap sourceBitmap) {
         if (isBitmapCorrect(sourceBitmap)) {
-            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            if (isPreMarshmallow()) {
                 final String path = getPath(context, uri);
                 if (!isEmpty(path)) {
                     ExifInterface exif = null;
@@ -857,12 +859,14 @@ public final class GraphicUtils {
          * if the orientation is not 0 (or -1, which means we don't know), we
          * have to do a rotation.
          */
-        if (orientation > 0 && Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+        if (orientation > 0 && isPreMarshmallow()) {
             return rotateBitmap(srcBitmap, orientation);
         }
 
         return srcBitmap;
     }
+
+    // TODO ExifInterface to MediaUtils
 
     public static int getRotationAngleFromExif(File imageFile) {
         if (GraphicUtils.canDecodeImage(imageFile)) {
@@ -1047,7 +1051,7 @@ public final class GraphicUtils {
     public static int getBitmapByteCount(Bitmap b) {
         if (b == null)
             return 0;
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT) {
+        if (isPreKitkat()) {
             return b.getByteCount();
         } else {
             return b.getAllocationByteCount();

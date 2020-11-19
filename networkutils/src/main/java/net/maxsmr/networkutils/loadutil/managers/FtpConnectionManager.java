@@ -29,7 +29,7 @@ import static net.maxsmr.commonutils.data.FileUtilsKt.checkDir;
 import static net.maxsmr.commonutils.data.FileUtilsKt.checkFile;
 import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFile;
 import static net.maxsmr.commonutils.data.FileUtilsKt.isFileValid;
-import static net.maxsmr.commonutils.data.StreamUtilsKt.revectorStream;
+import static net.maxsmr.commonutils.data.StreamUtilsKt.copyStream;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toIntSafe;
 
@@ -476,7 +476,7 @@ public class FtpConnectionManager {
 
                     ByteArrayOutputStream dataStream = new ByteArrayOutputStream();
 
-                    if (revectorStream(inStream.first, dataStream, notifier != null? new IStreamNotifier() {
+                    if (copyStream(inStream.first, dataStream, notifier != null? new IStreamNotifier() {
                         @Override
                         public long getNotifyInterval() {
                             return notifier.getNotifyInterval();
@@ -486,7 +486,7 @@ public class FtpConnectionManager {
                         public boolean onProcessing(@NotNull InputStream inputStream, @NotNull OutputStream outputStream, long bytesWrite, long bytesLeft) {
                             return notifier.onProcessing(inputStream, outputStream, bytesWrite, inStream.second != null && inStream.second > bytesWrite? inStream.second - bytesWrite : bytesLeft);
                         }
-                    } : null)) {
+                    } : null) != null) {
 
                         randomAccessLocalFile.write(dataStream.toByteArray(), toIntSafe(randomAccessLocalFile.length()),
                                 dataStream.size());
@@ -645,7 +645,7 @@ public class FtpConnectionManager {
 
                 final long localFileSize = localFile.length();
 
-                if (revectorStream(localStream, outputStream, notifier != null? new IStreamNotifier() {
+                if (copyStream(localStream, outputStream, notifier != null? new IStreamNotifier() {
 
                     @Override
                     public long getNotifyInterval() {
@@ -656,7 +656,7 @@ public class FtpConnectionManager {
                     public boolean onProcessing(@NotNull InputStream inputStream, @NotNull OutputStream outputStream, long bytesWrite, long bytesLeft) {
                         return notifier.onProcessing(inputStream, outputStream, bytesWrite, localFileSize > bytesWrite? localFileSize - bytesWrite : bytesLeft);
                     }
-                } : null)) {
+                } : null) != null) {
 
                     if (deleteOnSuccess) {
                         if (!deleteFile(localFile)) {

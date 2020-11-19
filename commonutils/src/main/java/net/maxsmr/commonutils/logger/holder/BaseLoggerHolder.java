@@ -11,6 +11,7 @@ import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
+import static net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
 
 public abstract class BaseLoggerHolder {
@@ -115,7 +116,7 @@ public abstract class BaseLoggerHolder {
 
     public static String formatException(@NotNull Exception e, @Nullable String description) {
         return "A(n) " + e.getClass().getSimpleName() + " occurred"
-                + (TextUtils.isEmpty(description)? "" : " during " + description) + ": " + e.getMessage();
+                + (TextUtils.isEmpty(description)? EMPTY_STRING : " during " + description) + ": " + e.getMessage();
     }
 
     public static void throwRuntimeException(@NotNull Exception e) throws RuntimeException {

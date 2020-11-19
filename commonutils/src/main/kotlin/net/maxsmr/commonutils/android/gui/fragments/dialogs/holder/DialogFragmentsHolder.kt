@@ -19,6 +19,7 @@ import net.maxsmr.commonutils.android.gui.actions.TypedAction
 import net.maxsmr.commonutils.android.gui.fragments.dialogs.TypedDialogFragment
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
 import net.maxsmr.commonutils.rx.live.*
 import org.jetbrains.annotations.Nullable
 
@@ -488,7 +489,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             try {
                 fragment.show(fragmentManager, tag)
             } catch (e: Exception) {
-                logger.e("An Exception occurred during show(): " + e.message, e)
+                logException(logger, e, "show")
                 targetFragmentsToShow[tag] = Pair(fragment, reshow)
                 return ShowResult.Failed(ShowResult.Failed.Reason.EXCEPTION)
             }
@@ -528,7 +529,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                         fragment.dismiss()
                         result = HideResult.DISMISSED
                     } catch (e: Exception) {
-                        logger.e("An Exception occurred during dismiss(): " + e.message, e)
+                        logException(logger, e, "dismiss")
                         targetFragmentsToHide.add(tag)
                     }
                 } else {

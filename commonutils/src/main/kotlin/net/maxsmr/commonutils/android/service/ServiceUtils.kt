@@ -141,7 +141,7 @@ private fun <S : Service> stopNoCheck(context: Context, serviceClass: Class<S>) 
 @SuppressLint("NewApi")
 private fun <S : Service> startNoCheck(context: Context, serviceClass: Class<S>, args: Intent?, shouldCheckSdk: Boolean = false) {
     val i = createServiceIntent(context.packageName, serviceClass, args)
-    val isOreo = SdkUtils.isAtLeastOreo()
+    val isOreo = isAtLeastOreo()
     if (shouldCheckSdk && isOreo) {
         context.startForegroundService(i)
     } else {

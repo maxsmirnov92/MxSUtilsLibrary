@@ -40,10 +40,7 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputLayout
 import net.maxsmr.commonutils.R
-import net.maxsmr.commonutils.android.SdkUtils
-import net.maxsmr.commonutils.android.convertAnyToPx
-import net.maxsmr.commonutils.android.getColorFromAttrs
-import net.maxsmr.commonutils.android.getColoredDrawable
+import net.maxsmr.commonutils.android.*
 import net.maxsmr.commonutils.data.Pair
 import net.maxsmr.commonutils.data.ReflectionUtils
 import net.maxsmr.commonutils.data.text.*
@@ -355,9 +352,9 @@ fun Activity.setDefaultStatusBarColor() {
  */
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 fun Activity.setStatusBarColor(@ColorInt color: Int) {
-    if (SdkUtils.isAtLeastLollipop()) {
+    if (isAtLeastLollipop()) {
         window.statusBarColor = color
-        if (SdkUtils.isAtLeastMarshmallow()) {
+        if (isAtLeastMarshmallow()) {
             // если цвет слишком белый, то красим иконки statusbar'а в серый цвет
             // инчае возвращаем к дефолтному белому
             if (ColorUtils.calculateLuminance(color).compareTo(DEFAULT_DARK_COLOR_RATIO) != -1) {
@@ -378,7 +375,7 @@ fun Activity.setStatusBarColor(@ColorInt color: Int) {
  * @param isLight true тёмные icons, false - светлые
  */
 fun View.setStatusBarLightColor(isLight: Boolean) {
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+    if (isAtLeastMarshmallow()) {
         try {
             var flags = systemUiVisibility
             flags = if (isLight) flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR else flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
@@ -399,7 +396,7 @@ fun Activity.setDefaultNavigationColor() {
  */
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 fun Activity.setNavigationBarColor(@ColorInt color: Int) {
-    if (SdkUtils.isAtLeastLollipop()) {
+    if (isAtLeastLollipop()) {
         window.navigationBarColor = color
     }
 }
@@ -455,7 +452,7 @@ fun ImageView.setTint(
         colorStateList: ColorStateList?,
         mode: PorterDuff.Mode = PorterDuff.Mode.SRC_ATOP
 ) {
-    if (SdkUtils.isAtLeastLollipop()) {
+    if (isAtLeastLollipop()) {
         imageTintList = colorStateList
         imageTintMode = mode
     } else {
@@ -494,7 +491,7 @@ fun View.getViewInset(): Int {
             return 0
         }
         val dm = displayMetrics
-        if (Build.VERSION.SDK_INT < 21 || this@getViewInset.height == dm.heightPixels || this@getViewInset.height == dm.heightPixels - statusBarHeight) {
+        if (isPreLollipop() || this@getViewInset.height == dm.heightPixels || this@getViewInset.height == dm.heightPixels - statusBarHeight) {
             return 0
         }
         try {

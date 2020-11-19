@@ -7,10 +7,7 @@ import android.text.style.*
 import android.view.View
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
-import net.maxsmr.commonutils.android.SdkUtils
-import net.maxsmr.commonutils.android.getBrowseLinkIntent
-import net.maxsmr.commonutils.android.startActivitySafe
-import net.maxsmr.commonutils.android.wrapIntent
+import net.maxsmr.commonutils.android.*
 import java.lang.Exception
 
 /**
@@ -20,7 +17,7 @@ import java.lang.Exception
 fun parseHtmlToSpannedStringOrThrow(html: CharSequence): Spanned =
         html.let { html.toString().replace("\n", "<br/>") }
                 .let {
-                    if (SdkUtils.isAtLeastNougat()) {
+                    if (isAtLeastNougat()) {
                         @Suppress("NewApi")
                         Html.fromHtml(it, Html.FROM_HTML_MODE_COMPACT)
                     } else {
@@ -115,7 +112,7 @@ fun appendClickableImage(
         s.setSpan(imageSpan, s.length - 1, s.length, spanFlags)
         s.setSpan(object : ClickableSpan() {
             override fun onClick(widget: View) {
-                if (!SdkUtils.isPreLollipop()) {
+                if (!isPreLollipop()) {
                     widget.cancelPendingInputEvents()
                 }
                 clickFunc.invoke()

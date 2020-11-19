@@ -3,7 +3,6 @@
 package net.maxsmr.commonutils.data.gson
 
 import android.text.TextUtils
-import android.util.Log
 import com.google.gson.*
 import com.google.gson.internal.LazilyParsedNumber
 import com.google.gson.reflect.TypeToken
@@ -11,6 +10,7 @@ import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.text.isEmpty
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
 import org.json.JSONArray
 import org.json.JSONObject
 import java.lang.reflect.Type
@@ -45,7 +45,7 @@ fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, typeToken: TypeTok
 fun <T> fromJsonArrayString(gson: Gson, jsonString: String?, type: Class<Array<T>?>): List<T> {
     val array: Array<T>? = fromJsonObjectString(gson, jsonString, type)
     return if (array != null) {
-        ArrayList(listOf(*array))
+        listOf(*array)
     } else {
         emptyList()
     }
@@ -61,7 +61,7 @@ fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, type: Type): T? {
         try {
             return gson.fromJson(jsonString, type)
         } catch (e: JsonParseException) {
-            logger.e("A JsonParseException occurred during fromJson(): " + e.message, e)
+            logException(logger, e, "fromJson")
         }
     }
     return null
@@ -80,7 +80,7 @@ fun <T: Any> toJsonString(
     try {
         return gson.toJson(obj, type)
     } catch (e: JsonParseException) {
-        logger.e("an JsonParseException occurred during toJson(): " + e.message, e)
+        logException(logger, e, "toJson")
     }
     return EMPTY_STRING
 }
@@ -195,17 +195,14 @@ fun <V> getJsonPrimitive(jsonElement: JsonElement?, memberName: String?, clazz: 
     return getJsonPrimitiveAs(getJsonElement(jsonElement, memberName, JsonPrimitive::class.java), clazz, defaultValue)
 }
 
-fun <J : JsonElement?> asJsonElement(
-        parser: JsonParser = JsonParser(),
-        string: String?,
-        clazz: Class<J>
+fun <J : JsonElement?> asJsonElement(string: String?, clazz: Class<J>
 ): J? {
     var element: JsonElement? = null
     if (!isEmpty(string)) {
         try {
-            element = parser.parse(string)
+            element = JsonParser.parseString(string)
         } catch (e: JsonParseException) {
-            logger.e("an JsonParseException occurred during parse(): " + e.message, e)
+            logException(logger, e, "parse")
         }
     }
     return if (element != null && clazz.isInstance(element)) {
@@ -221,9 +218,7 @@ fun convertJSONObject(obj: Any?): JsonElement {
         is JSONObject -> {
             value = JsonObject().apply {
                 obj.keys().forEach { key ->
-                    obj.get(key)?.let {
-                        add(key, convertJSONObject(it))
-                    }
+                    add(key, convertJSONObject(obj.get(key)))
                 }
             }
         }

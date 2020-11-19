@@ -32,6 +32,9 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import static net.maxsmr.commonutils.android.SdkVersionsKt.isAtLeastLollipop;
+import static net.maxsmr.commonutils.android.SdkVersionsKt.isAtLeastMarshmallow;
+
 public class TouchWebView extends WebView implements Handler.Callback {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(TouchWebView.class);
@@ -397,7 +400,7 @@ public class TouchWebView extends WebView implements Handler.Callback {
 
     public static String WebResourceRequestToString(WebResourceRequest request) {
         if (request != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (isAtLeastLollipop()) {
                 return "uri=" +
                         request.getUrl() +
                         ", isForMainFrame=" +
@@ -417,7 +420,7 @@ public class TouchWebView extends WebView implements Handler.Callback {
 
     public static String WebResourceErrorToString(WebResourceError error) {
         if (error != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (isAtLeastMarshmallow()) {
                 return "errorCode=" +
                         error.getErrorCode() +
                         ", description=" +
@@ -431,7 +434,7 @@ public class TouchWebView extends WebView implements Handler.Callback {
 
     public static String WebResourceResponseToString(WebResourceResponse response) {
         if (response != null) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            if (isAtLeastLollipop()) {
                 return "statusCode=" +
                         response.getStatusCode() +
                         ", reasonPhrase=" +
