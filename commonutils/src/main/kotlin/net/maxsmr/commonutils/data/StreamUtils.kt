@@ -1,9 +1,10 @@
 package net.maxsmr.commonutils.data
 
-import android.util.Log
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
+import net.maxsmr.commonutils.data.text.NEXT_LINE
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
 import java.io.*
 
 // Вспомогательные методы для чтения из {@link InputStream]
@@ -27,7 +28,7 @@ fun copyStream(
 ): Int? = try {
     copyStreamOrThrow(`in`, out, notifier, buffSize, closeInput, closeOutput)
 } catch (e: IOException) {
-    logger.e(e)
+    logException(logger, e, "copyStream")
     null
 }
 
@@ -87,7 +88,7 @@ fun readBytesFromInputStream(inputStream: InputStream, closeInput: Boolean = tru
         try {
             readBytesFromInputStreamOrThrow(inputStream, closeInput)
         } catch (e: IOException) {
-            logger.e(e)
+            logException(logger, e, "readBytesFromInputStream")
             null
         }
 
@@ -117,7 +118,7 @@ fun readStringsFromInputStream(
 ): List<String> = try {
     readStringsFromInputStreamOrThrow(`is`, count, closeInput, charsetName)
 } catch (e: IOException) {
-    logger.e(e)
+    logException(logger, e, "readStringsFromInputStream")
     emptyList()
 }
 
@@ -151,6 +152,22 @@ fun readStringsFromInputStreamOrThrow(
     }
 }
 
+fun readStringFromInputStream(inputStream: InputStream, charsetName: String = CHARSET_DEFAULT): String? = try {
+    readStringFromInputStreamOrThrow(inputStream, charsetName)
+} catch (e: IOException) {
+    logException(logger, e, "readStringFromInputStream")
+    null
+}
+
+
+@Throws(IOException::class)
+@JvmOverloads
+fun readStringFromInputStreamOrThrow(inputStream: InputStream, charsetName: String = CHARSET_DEFAULT): String? {
+    val result = ByteArrayOutputStream()
+    copyStreamOrThrow(inputStream, result)
+    return result.toString(charsetName)
+}
+
 @JvmOverloads
 fun writeBytesToOutputStream(
         outputStream: OutputStream,
@@ -160,7 +177,7 @@ fun writeBytesToOutputStream(
     writeBytesToOutputStreamOrThrow(outputStream, data, closeOutput)
     true
 } catch (e: IOException) {
-    logger.e(e)
+    logException(logger, e, "writeBytesToOutputStream")
     false
 }
 
@@ -182,20 +199,43 @@ fun writeBytesToOutputStreamOrThrow(
 }
 
 @JvmOverloads
-fun convertInputStreamToString(inputStream: InputStream, charsetName: String = CHARSET_DEFAULT): String? {
-    val result = ByteArrayOutputStream()
-    copyStreamOrThrow(inputStream, result)
-    return try {
-        result.toString(charsetName)
-    } catch (e: UnsupportedEncodingException) {
-        logger.e("An UnsupportedEncodingException occurred", e)
-        null
+fun writeStringToOutputStreamWriter(
+        writer: OutputStreamWriter,
+        data: Collection<String>?,
+        closeOutput: Boolean = true
+) = try {
+    writeStringToOutputStreamWriterOrThrow(writer, data, closeOutput)
+    true
+} catch (e: IOException) {
+    logException(logger, e, "writeStringToOutputStreamWriter")
+    false
+}
+
+@Throws(IOException::class)
+@JvmOverloads
+fun writeStringToOutputStreamWriterOrThrow(
+        writer: OutputStreamWriter,
+        data: Collection<String>?,
+        closeOutput: Boolean = true
+) {
+    val bw = BufferedWriter(writer)
+    try {
+        for (line in (data ?: emptyList())) {
+            bw.append(line)
+            bw.append(NEXT_LINE)
+            bw.flush()
+        }
+    } finally {
+        if (closeOutput) {
+            bw.close()
+        }
     }
 }
 
 interface IStreamNotifier {
 
-    val notifyInterval: Long
+    @JvmDefault
+    val notifyInterval: Long get() = 0
 
     /**
      * @return true if should proceed

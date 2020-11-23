@@ -14,6 +14,7 @@ import android.os.Build
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
+import android.provider.OpenableColumns
 import android.text.TextUtils
 import android.webkit.MimeTypeMap
 import androidx.collection.ArraySet
@@ -27,9 +28,12 @@ import net.maxsmr.commonutils.data.text.isEmpty
 import net.maxsmr.commonutils.graphic.GraphicUtils
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.throwRuntimeException
 import java.io.File
 import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.util.*
 import kotlin.math.abs
 
@@ -124,20 +128,75 @@ fun getMimeTypeFromFile(fileName: String?): String =
         MimeTypeMap.getSingleton().getMimeTypeFromExtension(getFileExtension(fileName))
                 ?: EMPTY_STRING
 
-fun isResourceExists(context: Context, uri: Uri?): Boolean {
-    if (uri == null) return false
+@JvmOverloads
+fun isResourceExists(
+        context: Context,
+        uri: Uri?,
+        checkBySize: Boolean = true
+): Boolean = try {
+    isResourceExistsOrThrow(context, uri, checkBySize)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    false
+}
+
+@Throws(RuntimeException::class)
+@JvmOverloads
+fun isResourceExistsOrThrow(
+        context: Context,
+        uri: Uri?,
+        checkBySize: Boolean = true
+): Boolean {
+    if (checkBySize) {
+        return getResourceSizeOrThrow(context, uri) > 0
+    }
+    if (uri == null) {
+        throw NullPointerException("uri is null")
+    }
     val path = uri.path ?: throw RuntimeException("uri path is null")
     when {
         uri.isFileScheme() -> {
-            return isFileExists(path)
+            return isFileExistsOrThrow(path)
         }
         uri.isContentScheme() -> {
-            queryUri(context, uri)?.use {
-                return it.count > 0
-            }
+            queryUriOrThrow(context, uri, checkCursorEmpty = false).count > 0
+        }
+        else -> {
+            throw RuntimeException("Incorrect uri scheme: ${uri.path}")
         }
     }
     return false
+}
+
+fun getResourceSize(context: Context, uri: Uri?): Long = try {
+    getResourceSizeOrThrow(context, uri)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    0
+}
+
+@Throws(RuntimeException::class)
+fun getResourceSizeOrThrow(context: Context, uri: Uri?): Long {
+    if (uri == null) {
+        throw NullPointerException("uri is null")
+    }
+    val path = uri.path ?: throw RuntimeException("uri path is null")
+    return when {
+        uri.isFileScheme() -> {
+            getFileLengthOrThrow(path)
+        }
+        uri.isContentScheme() -> {
+            queryUriFirstOrThrow(
+                    context,
+                    uri,
+                    Long::class.java,
+                    listOf(OpenableColumns.SIZE)
+            )
+        }
+        else -> {
+            throw RuntimeException("Incorrect uri scheme: ${uri.path}")
+        }
+    }
 }
 
 fun deleteResource(
@@ -162,7 +221,7 @@ fun deleteResourceOrThrow(
     if (uri == null) {
         throw NullPointerException("uri is null")
     }
-    if (!isResourceExists(context, uri)) {
+    if (!isResourceExistsOrThrow(context, uri, false)) {
         if (throwIfNotExists) {
             throw Resources.NotFoundException("Resource $uri not found")
         }
@@ -175,6 +234,33 @@ fun deleteResourceOrThrow(
         uri.isContentScheme() -> {
             context.contentResolver.delete(uri, null, null)
         }
+        else -> {
+            throw RuntimeException("Incorrect uri scheme: ${uri.path}")
+        }
+    }
+}
+
+fun getInputStreamFromResource(context: Context, uri: Uri?): InputStream? = try {
+    getInputStreamFromResourceOrThrow(context, uri)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+@Throws(RuntimeException::class)
+fun getInputStreamFromResourceOrThrow(context: Context, uri: Uri?): InputStream {
+    if (uri == null) {
+        throw NullPointerException("uri is null")
+    }
+    val path = uri.path ?: throw RuntimeException("uri path is null")
+    return when {
+        uri.isFileScheme() -> {
+            File(path).toFisOrThrow()
+        }
+        uri.isContentScheme() -> {
+            uri.openInputStreamOrThrow(context.contentResolver)
+        }
+        else -> throw RuntimeException("Incorrect uri scheme: ${uri.path}")
     }
 }
 
@@ -204,11 +290,9 @@ fun copyToExternalOrThrow(
         notifier: IStreamNotifier? = null,
         buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
-
     if (file == null) {
         throw NullPointerException("file is null")
     }
-
     val values = ContentValues().apply {
         if (useRelativePath) {
             file.parentFile?.name?.let {
@@ -224,12 +308,11 @@ fun copyToExternalOrThrow(
     val targetUri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
 
     resolver.insert(targetUri, values)?.let { item ->
+        val out = item.openOutputStreamOrThrow(context.contentResolver)
         try {
-            val out = resolver.openOutputStream(item)
-                    ?: throw RuntimeException("Cannot open stream on $item")
             copyStreamOrThrow(file.toFisOrThrow(), out, notifier, buffSize)
         } catch (e: IOException) {
-            throwRuntimeException(e)
+            throwRuntimeException(e, "copyStream")
         }
     } ?: throw RuntimeException("Insert to $targetUri failed")
 }
@@ -371,55 +454,36 @@ fun readExifLocationOrThrow(imageFile: File?): Location {
     if (imageFile == null || !GraphicUtils.canDecodeImage(imageFile)) {
         throw RuntimeException("Incorrect image file: $imageFile")
     }
-    return try {
-        val exif = ExifInterface(imageFile.absolutePath)
-        val provider = exif.getAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD)
-        val result = Location(provider)
-        var value: String?
-        var latitude = 0.0
-        try {
-            value = exif.getAttribute(ExifInterface.TAG_GPS_LATITUDE)
-            if (value != null) {
-                latitude = Location.convert(value)
+
+    fun getLocationAttr(exif: ExifInterface, attrName: String): Double {
+        val value = exif.getAttribute(attrName)
+        if (value != null) {
+            try {
+                return Location.convert(value)
+            } catch (e: IllegalArgumentException) {
+                throw RuntimeException(formatException(e, "convert"), e)
             }
-        } catch (e: IllegalArgumentException) {
-            throw RuntimeException("An IllegalArgumentException occurred", e)
         }
-        var longitude = 0.0
-        try {
-            value = exif.getAttribute(ExifInterface.TAG_GPS_LONGITUDE)
-            if (value != null) {
-                longitude = Location.convert(value)
-            }
-        } catch (e: NumberFormatException) {
-            throw RuntimeException("An IllegalArgumentException occurred", e)
-        }
-        var altitude = 0.0
-        try {
-            value = exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE)
-            if (value != null) {
-                altitude = Location.convert(value)
-            }
-        } catch (e: NumberFormatException) {
-            throw RuntimeException("An IllegalArgumentException occurred", e)
-        }
-        var timestamp = 0L
-        try {
-            value = exif.getAttribute(ExifInterface.TAG_GPS_ALTITUDE)
-            if (value != null) {
-                timestamp = value.toLong()
-            }
-        } catch (e: NumberFormatException) {
-            throw RuntimeException("A NumberFormatException occurred", e)
-        }
-        result.latitude = latitude
-        result.longitude = longitude
-        result.altitude = altitude
-        result.time = timestamp
-        result
-    } catch (e: IOException) {
-        throw RuntimeException("An IOException occurred", e)
+        return 0.0
     }
+
+    val exif = createExitOrThrow(imageFile.absolutePath)
+    val provider = exif.getAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD)
+    val result = Location(provider)
+    val latitude = getLocationAttr(exif, ExifInterface.TAG_GPS_LATITUDE)
+    val longitude = getLocationAttr(exif, ExifInterface.TAG_GPS_LONGITUDE)
+    val altitude = getLocationAttr(exif, ExifInterface.TAG_GPS_ALTITUDE)
+    var timestamp = 0L
+    exif.getAttribute(ExifInterface.TAG_GPS_TIMESTAMP)?.let { value ->
+        value.toLongOrNull()?.let {
+            timestamp = it
+        }
+    }
+    result.latitude = latitude
+    result.longitude = longitude
+    result.altitude = altitude
+    result.time = timestamp
+    return result
 }
 
 fun writeExifLocation(imageFile: File?, location: Location?) = try {
@@ -438,27 +502,25 @@ fun writeExifLocationOrThrow(imageFile: File?, location: Location?) {
     if (location == null) {
         throw NullPointerException("location is null")
     }
-    try {
-        val exif = ExifInterface(imageFile.absolutePath)
-        val latitude = location.latitude
-        exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertLocationDoubleToString(latitude))
-        exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, if (latitude > 0) "N" else "S")
-        val longitude = location.longitude
-        exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertLocationDoubleToString(longitude))
-        exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, if (longitude > 0) "E" else "W")
-        exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, convertLocationDoubleToString(location.altitude))
-        exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, location.time.toString())
-        location.provider?.let {
-            exif.setAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD, it.toString())
-        }
-        exif.saveAttributes()
-    } catch (e: IOException) {
-        throw RuntimeException("an IOException occurred", e)
+    val exif = createExitOrThrow(imageFile.absolutePath)
+
+    val latitude = location.latitude
+    exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertLocationDoubleToString(latitude))
+    exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, if (latitude > 0) "N" else "S")
+    val longitude = location.longitude
+    exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertLocationDoubleToString(longitude))
+    exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, if (longitude > 0) "E" else "W")
+    exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, convertLocationDoubleToString(location.altitude))
+    exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, location.time.toString())
+    location.provider?.let {
+        exif.setAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD, it)
     }
+    exif.saveAttributes()
+
 }
 
-fun convertLocationDoubleToString(value: Double): String? {
-    var result: String? = null
+fun convertLocationDoubleToString(value: Double): String {
+    var result: String = EMPTY_STRING
     val aValue = abs(value)
     val dms = Location.convert(aValue, Location.FORMAT_SECONDS)
     val splits = dms.split(":").toTypedArray()
@@ -474,6 +536,14 @@ fun convertLocationDoubleToString(value: Double): String? {
     }
     return result
 }
+
+@Throws(RuntimeException::class)
+private fun createExitOrThrow(path: String) = try {
+    ExifInterface(path)
+} catch (e: IOException) {
+    throw RuntimeException(formatException(e, "create ExifInterface"), e)
+}
+
 
 /**
  * Определяет поворот картинки
@@ -544,6 +614,7 @@ fun <T> queryUriFirstOrThrow(
     }
 }
 
+@JvmOverloads
 fun <T : Any> queryUri(
         context: Context,
         uri: Uri?,
@@ -561,6 +632,7 @@ fun <T : Any> queryUri(
 }
 
 @Throws(RuntimeException::class)
+@JvmOverloads
 fun <T : Any> queryUriOrThrow(
         context: Context,
         uri: Uri?,
@@ -573,33 +645,37 @@ fun <T : Any> queryUriOrThrow(
 ): List<T> {
     queryUriOrThrow(context, uri, projection, selection, selectionArgs, sortOrder).use { cursor ->
         return cursor.mapToList {
-            cursor.getColumnValueOrThrow(columnType, columnIndexFunc = columnIndexFunc)
+            cursor.getColumnValueOrThrow(columnType, columnIndexFunc)
         }
     }
 }
 
+@JvmOverloads
 fun queryUri(
         context: Context,
         uri: Uri?,
         projection: List<String>? = null,
         selection: String? = null,
         selectionArgs: List<String>? = null,
-        sortOrder: String? = null
+        sortOrder: String? = null,
+        checkCursorEmpty: Boolean = true
 ): Cursor? = try {
-    queryUriOrThrow(context, uri, projection, selection, selectionArgs, sortOrder)
+    queryUriOrThrow(context, uri, projection, selection, selectionArgs, sortOrder, checkCursorEmpty)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
 }
 
 @Throws(RuntimeException::class)
+@JvmOverloads
 fun queryUriOrThrow(
         context: Context,
         uri: Uri?,
         projection: List<String>? = null,
         selection: String? = null,
         selectionArgs: List<String>? = null,
-        sortOrder: String? = null
+        sortOrder: String? = null,
+        checkCursorEmpty: Boolean = true
 ): Cursor {
     if (uri == null) {
         throw NullPointerException("uri is null")
@@ -612,7 +688,8 @@ fun queryUriOrThrow(
             selectionArgs?.toTypedArray() ?: arrayOf(),
             sortOrder
     )
-    if (cursor == null || !cursor.isValid()) {
+    if (cursor == null
+            || (if (checkCursorEmpty) !cursor.isNonEmpty() else !cursor.isValid())) {
         throw RuntimeException("cursor is null or empty or closed")
     }
     return cursor
@@ -666,7 +743,6 @@ private fun <T : Any> Cursor.mapToList(predicate: (Cursor) -> T?): List<T> =
         generateSequence { if (moveToNext()) predicate(this) else null }
                 .toList()
 
-
 fun getColumnNames(context: Context, uri: Uri?): List<String> {
     if (uri != null && uri.isContentScheme()) {
         val c = context.contentResolver.query(uri, null, null, null, null)
@@ -700,4 +776,36 @@ fun Uri?.getTableName(): String? {
     } else null
 }
 
-fun Cursor?.isValid() = this != null && !this.isClosed && this.count > 0
+fun Cursor?.isValid() = this != null && !this.isClosed
+
+fun Cursor?.isNonEmpty() = this != null && !this.isClosed && this.count > 0
+
+fun Uri.openInputStream(resolver: ContentResolver): InputStream? = try {
+    openInputStreamOrThrow(resolver)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+@Throws(RuntimeException::class)
+fun Uri.openInputStreamOrThrow(resolver: ContentResolver): InputStream =
+        try {
+            resolver.openInputStream(this)
+        } catch (e: IOException) {
+            throw RuntimeException(formatException(e, "openInputStream"), e)
+        } ?: throw NullPointerException("Cannot open InputStream on $this")
+
+fun Uri.openOutputStream(resolver: ContentResolver): OutputStream? = try {
+    openOutputStreamOrThrow(resolver)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+@Throws(RuntimeException::class)
+fun Uri.openOutputStreamOrThrow(resolver: ContentResolver): OutputStream =
+        try {
+            resolver.openOutputStream(this)
+        } catch (e: IOException) {
+            throw RuntimeException(formatException(e, "openOutputStream"), e)
+        } ?: throw NullPointerException("Cannot open OutputStream on $this")

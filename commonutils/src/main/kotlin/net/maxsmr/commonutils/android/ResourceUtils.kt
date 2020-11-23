@@ -242,7 +242,11 @@ fun copyFromAssetsOrThrow(
     } catch (e: IOException) {
         throw RuntimeException("An IOException occurred during open", e)
     }
-    copyStreamOrThrow(assetStream, targetFile.toFosOrThrow(), notifier, buffSize)
+    try {
+        copyStreamOrThrow(assetStream, targetFile.toFosOrThrow(), notifier, buffSize)
+    } catch (e: IOException) {
+        throwRuntimeException(e, "copyStream")
+    }
 }
 
 @JvmOverloads
@@ -285,7 +289,11 @@ fun copyFromRawResOrThrow(
     } catch (e: IOException) {
         throw RuntimeException("An IOException occurred during openRawResource", e)
     }
-    copyStreamOrThrow(rawStream, targetFile.toFosOrThrow(), notifier, buffSize)
+    try {
+        copyStreamOrThrow(rawStream, targetFile.toFosOrThrow(), notifier, buffSize)
+    } catch (e: IOException) {
+        throwRuntimeException(e, "copyStream")
+    }
     if (mode > 0) {
         if (!execProcess(listOf("chmod", mode.toString(), destFilePath),
                         EMPTY_STRING,
