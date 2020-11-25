@@ -6,6 +6,9 @@ import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
 import java.io.*
+import java.util.zip.ZipEntry
+import java.util.zip.ZipInputStream
+import java.util.zip.ZipOutputStream
 
 // Вспомогательные методы для чтения из {@link InputStream]
 // и записи в {@link OutputStream}
@@ -232,10 +235,102 @@ fun writeStringToOutputStreamWriterOrThrow(
     }
 }
 
+@JvmOverloads
+fun compressStreamsToZip(
+        inputStreams: Map<String, InputStream>,
+        outputStream: OutputStream,
+        buffSize: Int = DEFAULT_BUFFER_SIZE,
+        notifier: IStreamNotifier? = null,
+        closeInput: Boolean = true,
+        closeOutput: Boolean = true
+): Int = try {
+    compressStreamsToZipOrThrow(inputStreams, outputStream, buffSize, notifier, closeInput, closeOutput)
+} catch (e: IOException) {
+    logException(logger, e, "compressStreamsToZip")
+    0
+}
+
+@Throws(IOException::class)
+@JvmOverloads
+fun compressStreamsToZipOrThrow(
+        inputStreams: Map<String, InputStream>,
+        outputStream: OutputStream,
+        buffSize: Int = DEFAULT_BUFFER_SIZE,
+        notifier: IStreamNotifier? = null,
+        closeInput: Boolean = true,
+        closeOutput: Boolean = true
+): Int {
+    val zos = ZipOutputStream(BufferedOutputStream(outputStream))
+
+    var count = 0
+
+    val copyStreamsMap = inputStreams.toMutableMap()
+
+    try {
+        for (name in copyStreamsMap.keys.toMutableList()) {
+            val stream = copyStreamsMap[name] ?: continue
+            val entry = ZipEntry(name)
+            zos.putNextEntry(entry)
+            copyStreamOrThrow(stream, zos, notifier, buffSize, closeInput = closeInput, closeOutput = false)
+            zos.closeEntry()
+            copyStreamsMap.remove(name)
+            count++
+        }
+    } finally {
+        zos.close()
+        if (closeOutput) {
+            outputStream.close()
+        }
+        if (closeInput) {
+            copyStreamsMap.values.forEach {
+                it.close()
+            }
+        }
+    }
+    return count
+}
+
+@Throws(IOException::class)
+@JvmOverloads
+fun unzipStreamOrThrow(
+        inputStream: InputStream,
+        saveDirHierarchy: Boolean = true,
+        buffSize: Int = DEFAULT_BUFFER_SIZE,
+        notifier: IStreamNotifier? = null,
+        closeInput: Boolean = true,
+        closeOutput: Boolean = true,
+        createDirFunc: (String) -> Unit,
+        createOutputStream: (String) -> OutputStream
+) {
+    val zis = ZipInputStream(inputStream)
+    val zipEntry = zis.nextEntry
+    try {
+        while (zipEntry != null) {
+            val isDirectory = zipEntry.isDirectory
+            if (isDirectory && !saveDirHierarchy) {
+                continue
+            }
+            val parts = zipEntry.name.split(File.separator).toTypedArray()
+            val entryName = if (!saveDirHierarchy && parts.isNotEmpty()) parts[parts.size - 1] else zipEntry.name
+            if (isDirectory) {
+                createDirFunc(entryName)
+            } else {
+                copyStreamOrThrow(zis, createOutputStream(entryName), notifier, buffSize, false, closeOutput)
+            }
+            zis.closeEntry()
+        }
+    } finally {
+        if (closeInput) {
+            zis.close()
+        }
+    }
+}
+
 interface IStreamNotifier {
 
     @JvmDefault
-    val notifyInterval: Long get() = 0
+    val notifyInterval: Long
+        get() = 0
 
     /**
      * @return true if should proceed

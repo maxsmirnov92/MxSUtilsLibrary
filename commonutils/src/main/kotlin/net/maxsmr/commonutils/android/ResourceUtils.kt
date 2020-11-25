@@ -14,13 +14,11 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import net.maxsmr.commonutils.R
 import net.maxsmr.commonutils.data.*
-import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.*
-import net.maxsmr.commonutils.shell.execProcess
 import java.io.File
 import java.io.IOException
-import java.util.concurrent.TimeUnit
+import java.io.InputStream
 
 const val EMPTY_ID = 0
 const val INVALID_ATTRIBUTE = 0
@@ -159,15 +157,10 @@ fun readStringsFromAssetOrThrow(
         count: Int = 0,
         charsetName: String = CHARSET_DEFAULT
 ): List<String> {
-    val assetStream = try {
-        context.assets.open(assetName)
-    } catch (e: IOException) {
-        throw RuntimeException("An IOException occurred during open", e)
-    }
     return try {
-        readStringsFromInputStreamOrThrow(assetStream, count, charsetName = charsetName)
+        readStringsFromInputStreamOrThrow(openAssetStreamOrThrow(context, assetName), count, charsetName = charsetName)
     } catch (e: IOException) {
-        throw RuntimeException("An IOException occurred during readStringsFromInputStream", e)
+        throw RuntimeException(formatException(e, "readStringsFromInputStream"))
     }
 }
 
@@ -195,15 +188,10 @@ fun readStringsFromResOrThrow(
         count: Int = 0,
         charsetName: String = CHARSET_DEFAULT
 ): List<String> {
-    val stream = try {
-        context.resources.openRawResource(resId)
-    } catch (e: IOException) {
-        throw RuntimeException("An IOException occurred during openRawResource", e)
-    }
     return try {
-        readStringsFromInputStreamOrThrow(stream, count, charsetName = charsetName)
+        readStringsFromInputStreamOrThrow(openRawResourceOrThrow(context, resId), count, charsetName = charsetName)
     } catch (e: IOException) {
-        throw RuntimeException("An IOException occurred during readStringsFromInputStream", e)
+        throw RuntimeException(formatException(e, "readStringsFromInputStream"))
     }
 }
 
@@ -237,13 +225,8 @@ fun copyFromAssetsOrThrow(
         throw NullPointerException("targetFile is null")
     }
     createFileOrThrow(targetFile.name, targetFile.parent, rewrite)
-    val assetStream = try {
-        context.assets.open(assetName)
-    } catch (e: IOException) {
-        throw RuntimeException("An IOException occurred during open", e)
-    }
     try {
-        copyStreamOrThrow(assetStream, targetFile.toFosOrThrow(), notifier, buffSize)
+        copyStreamOrThrow(openAssetStreamOrThrow(context, assetName), targetFile.toFosOrThrow(!rewrite), notifier, buffSize)
     } catch (e: IOException) {
         throwRuntimeException(e, "copyStream")
     }
@@ -254,11 +237,11 @@ fun copyFromRawRes(
         context: Context,
         @RawRes resId: Int,
         targetFile: File?,
-        mode: Int = 0,
+        rewrite: Boolean = true,
         notifier: IStreamNotifier? = null,
         buffSize: Int = DEFAULT_BUFFER_SIZE
 ) = try {
-    copyFromRawResOrThrow(context, resId, targetFile, mode, notifier, buffSize)
+    copyFromRawResOrThrow(context, resId, targetFile, rewrite, notifier, buffSize)
 } catch (e: RuntimeException) {
     logger.e(e)
     false
@@ -276,35 +259,46 @@ fun copyFromRawResOrThrow(
         context: Context,
         @RawRes resId: Int,
         targetFile: File?,
-        mode: Int = 0,
+        rewrite: Boolean = true,
         notifier: IStreamNotifier? = null,
         buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
     if (targetFile == null) {
         throw NullPointerException("targetFile is null")
     }
-    val destFilePath = targetFile.absolutePath
-    val rawStream = try {
-        context.resources.openRawResource(resId)
-    } catch (e: IOException) {
-        throw RuntimeException("An IOException occurred during openRawResource", e)
-    }
+    val targetFilePath = targetFile.absolutePath
+    createFileOrThrow(targetFile.name, targetFile.parent, rewrite)
     try {
-        copyStreamOrThrow(rawStream, targetFile.toFosOrThrow(), notifier, buffSize)
+        copyStreamOrThrow(openRawResourceOrThrow(context, resId), targetFile.toFosOrThrow(!rewrite), notifier, buffSize)
     } catch (e: IOException) {
         throwRuntimeException(e, "copyStream")
     }
-    if (mode > 0) {
-        if (!execProcess(listOf("chmod", mode.toString(), destFilePath),
-                        EMPTY_STRING,
-                        null,
-                        null,
-                        null,
-                        null,
-                        0,
-                        TimeUnit.SECONDS
-                ).isSuccessful) {
-            throw RuntimeException("Cannot chmod with $mode on $destFilePath")
-        }
-    }
+}
+
+fun openAssetStream(context: Context, assetName: String): InputStream? = try {
+    openAssetStreamOrThrow(context, assetName)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+@Throws(RuntimeException::class)
+fun openAssetStreamOrThrow(context: Context, assetName: String): InputStream = try {
+    context.assets.open(assetName)
+} catch (e: IOException) {
+    throw RuntimeException(formatException(e, "open"))
+}
+
+fun openRawResource(context: Context, @RawRes resId: Int): InputStream? = try {
+    openRawResourceOrThrow(context, resId)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+@Throws(RuntimeException::class)
+fun openRawResourceOrThrow(context: Context, @RawRes resId: Int): InputStream = try {
+    context.resources.openRawResource(resId)
+} catch (e: IOException) {
+    throw RuntimeException(formatException(e, "openRawResource"))
 }

@@ -260,7 +260,7 @@ fun getInputStreamFromResourceOrThrow(context: Context, uri: Uri?): InputStream 
         uri.isContentScheme() -> {
             uri.openInputStreamOrThrow(context.contentResolver)
         }
-        else -> throw RuntimeException("Incorrect uri scheme: ${uri.path}")
+        else -> throw RuntimeException("Incorrect uri scheme: ${uri.scheme}")
     }
 }
 
@@ -610,7 +610,7 @@ fun <T> queryUriFirstOrThrow(
         if (cursor.position == -1) {
             cursor.moveToFirst()
         }
-        return cursor.getColumnValueOrThrow(columnType, columnIndexFunc = columnIndexFunc)
+        return cursor.getColumnValueOrThrow(columnType, columnIndexFunc)
     }
 }
 
@@ -765,7 +765,7 @@ fun Uri?.isFileScheme(): Boolean {
 
 fun Uri?.isContentScheme(): Boolean {
     if (this != null) {
-        ContentResolver.SCHEME_CONTENT.equals(this.scheme, true)
+        return ContentResolver.SCHEME_CONTENT.equals(this.scheme, true)
     }
     return false
 }

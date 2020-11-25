@@ -9,7 +9,6 @@ import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.text.isEmpty
 import net.maxsmr.commonutils.data.text.replaceRangeOrThrow
 import net.maxsmr.commonutils.logger.BaseLogger
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.*
 import net.maxsmr.commonutils.shell.DEFAULT_TARGET_CODE
 import net.maxsmr.commonutils.shell.ShellCallback
@@ -20,9 +19,6 @@ import java.nio.channels.FileLock
 import java.nio.channels.OverlappingFileLockException
 import java.util.*
 import java.util.concurrent.TimeUnit
-import java.util.zip.ZipEntry
-import java.util.zip.ZipFile
-import java.util.zip.ZipOutputStream
 import java.io.FileWriter as FileWriter1
 
 const val DEPTH_UNLIMITED = -1
@@ -850,11 +846,46 @@ fun writeFromStreamToFileOrThrow(
         throw RuntimeException("Cannot write to file: '$file'")
     }
     try {
-        copyStreamOrThrow(inputStream, file.toFosOrThrow(), notifier, buffSize)
+        copyStreamOrThrow(inputStream, file.toFosOrThrow(append), notifier, buffSize)
     } catch (e: IOException) {
         throwRuntimeException(e, "copyStream")
     }
     return file
+}
+
+@JvmOverloads
+fun writeToStreamFromFile(
+        outputStream: OutputStream?,
+        file: File?,
+        notifier: IStreamNotifier? = null,
+        buffSize: Int = DEFAULT_BUFFER_SIZE
+): Boolean = try{
+    writeToStreamFromFileOrThrow(outputStream, file, notifier, buffSize)
+    true
+} catch (e: RuntimeException) {
+    logger.e(e)
+    false
+}
+
+@Throws(RuntimeException::class)
+@JvmOverloads
+fun writeToStreamFromFileOrThrow(
+        outputStream: OutputStream?,
+        file: File?,
+        notifier: IStreamNotifier? = null,
+        buffSize: Int = DEFAULT_BUFFER_SIZE
+) {
+    if (outputStream == null) {
+        throw NullPointerException("outputStreamv is null")
+    }
+    if (!isFileAccessibleOrThrow(file, forWrite = false)) {
+        throw RuntimeException("Cannot read from file: '$file'")
+    }
+    try {
+        copyStreamOrThrow(file.toFisOrThrow(), outputStream, notifier, buffSize)
+    } catch (e: IOException) {
+        throwRuntimeException(e, "copyStream")
+    }
 }
 
 @JvmOverloads
@@ -1687,8 +1718,6 @@ fun delete(
     return result
 }
 
-// TODO common method to StreamUtils
-
 @JvmOverloads
 fun compressFilesToZip(
         srcFiles: Collection<File>?,
@@ -1707,7 +1736,7 @@ fun compressFilesToZip(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun compressFilesToZipOrThrow(
-        srcFiles: Collection<File>?,
+        sourceFiles: Collection<File>?,
         destZipName: String?,
         destZipParent: String?,
         recreate: Boolean = true,
@@ -1716,95 +1745,65 @@ fun compressFilesToZipOrThrow(
 ): File {
     val zipFile = createFileOrThrow(destZipName, destZipParent, recreate)
 
+    val streams = mutableMapOf<String, InputStream>()
+
     val os = zipFile.toFosOrThrow()
-    val zos = try {
-        ZipOutputStream(BufferedOutputStream(os))
-    } catch (e: Exception) {
-        throw RuntimeException(formatException(e, "create OutputStream"))
+
+    for (sourceFile in (sourceFiles ?: emptyList())) {
+        streams[sourceFile.name] = sourceFile.toFisOrThrow()
     }
 
     try {
-        var zippedFiles = 0
-        for (srcFile in (srcFiles ?: emptyList())) {
-            if (!isFileValidOrThrow(srcFile)) {
-                logger.w("Invalid file to zip: '$srcFile', skipping...")
-                continue
-            }
-            val entry = ZipEntry(srcFile.name)
-            zos.putNextEntry(entry)
-            copyStreamOrThrow(srcFile.toFisOrThrow(), zos, notifier, buffSize, closeInput = true, closeOutput = false)
-            zos.closeEntry()
-            zippedFiles++
-        }
-        if (zippedFiles > 0) {
-            return File(destZipName as String)
-        } else {
-            throw RuntimeException("Nothing zipped")
-        }
-    } catch (e: Exception) {
-        if (e !is RuntimeException) {
-            throw RuntimeException(formatException(e))
-        } else {
-            throw e
-        }
-    } finally {
-        try {
-            zos.close()
-            os.close()
-        } catch (e: IOException) {
-            logException(logger, e, "close")
-        }
+        compressStreamsToZipOrThrow(streams, os, buffSize, notifier)
+    } catch (e: IOException) {
+        throwRuntimeException(e, "compressStreamsTo")
     }
+    return zipFile
+}
+
+@JvmOverloads
+fun unzipFile(
+        zipFile: File?,
+        destPath: String?,
+        saveDirHierarchy: Boolean = true,
+        recreate: Boolean = true,
+        buffSize: Int = DEFAULT_BUFFER_SIZE,
+        notifier: IStreamNotifier? = null
+) = try {
+    unzipFileOrThrow(zipFile, destPath, saveDirHierarchy, recreate, buffSize, notifier)
+    true
+} catch (e: RuntimeException) {
+    logger.e(e)
+    false
 }
 
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun unzipFileOrThrow(
-        zipFile: File,
-        destPath: File?,
+        zipFile: File?,
+        destPath: String?,
         saveDirHierarchy: Boolean = true,
         recreate: Boolean = true,
-        notifier: IStreamNotifier? = null,
         buffSize: Int = DEFAULT_BUFFER_SIZE,
+        notifier: IStreamNotifier? = null
 ) {
     if (!isFileValidOrThrow(zipFile)) {
         throw IllegalArgumentException("Invalid zip file: '$zipFile'")
     }
-    if (destPath == null) {
-        throw NullPointerException("destPath is null")
-    }
-    val zip: ZipFile = try {
-        ZipFile(zipFile)
-    } catch (e: IOException) {
-        throw RuntimeException(formatException(e, "create ZipFile"))
+    if (destPath.isNullOrEmpty()) {
+        throw IllegalArgumentException("destPath is null or empty")
     }
     try {
-        for (e in zip.entries()) {
-            val isDirectory = e.isDirectory
-            if (isDirectory && !saveDirHierarchy) {
-                continue
-            }
-            val parts = e.name.split(File.separator).toTypedArray()
-            val entryName = if (!saveDirHierarchy && parts.isNotEmpty()) parts[parts.size - 1] else e.name
-            if (isDirectory) {
-                createDirOrThrow(entryName, destPath.absolutePath)
-            } else {
-                createFileOrThrow(entryName, destPath.absolutePath, recreate)
-                copyStreamOrThrow(zip.getInputStream(e), File(destPath, entryName).toFosOrThrow(!recreate), notifier, buffSize)
-            }
-        }
-    } catch (e: Exception) {
-        if (e !is RuntimeException) {
-            throwRuntimeException(e)
-        } else {
-            throw e
-        }
-    } finally {
-        try {
-            zip.close()
-        } catch (e: IOException) {
-            logException(logger, e, "close")
-        }
+        unzipStreamOrThrow(
+                zipFile.toFisOrThrow(),
+                saveDirHierarchy,
+                buffSize,
+                notifier,
+                createDirFunc = { createDirOrThrow(it, destPath) },
+                createOutputStream = { createFileOrThrow(it, destPath, recreate).toFosOrThrow(!recreate) }
+        )
+    } catch (e: IOException) {
+        throwRuntimeException(e, "unzipStream")
     }
 }
 
@@ -2114,8 +2113,9 @@ fun File?.toFisOrThrow(): FileInputStream = try {
     throw RuntimeException(formatException(e, "create FileInputStream"))
 }
 
-fun File?.toFos(): FileOutputStream? = try {
-    toFosOrThrow()
+@JvmOverloads
+fun File?.toFos(append: Boolean = false): FileOutputStream? = try {
+    toFosOrThrow(append)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
@@ -2142,5 +2142,5 @@ private fun toFile(
     if (fileName.isNullOrEmpty() || (checkSeparators && fileName.contains(File.separatorChar))) {
         return null
     }
-    return if (parentPath == null) File(fileName) else File(parentPath, fileName)
+    return if (parentPath.isNullOrEmpty()) File(fileName) else File(parentPath, fileName)
 }

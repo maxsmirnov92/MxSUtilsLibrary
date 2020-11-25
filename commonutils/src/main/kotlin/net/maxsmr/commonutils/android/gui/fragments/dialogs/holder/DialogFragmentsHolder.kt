@@ -354,7 +354,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     fun dismissLiveEventsOnce(
             tag: String? = null,
             clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
-            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED
     ): LiveCompletable =
             eventsLiveCompletable(
                     tag,
@@ -368,7 +368,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     fun dismissLiveEvents(
             tag: String? = null,
             clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
-            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED
     ): LiveObservable<EmptyAction> =
             eventsLiveObservable(
                     tag,
@@ -390,12 +390,12 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     fun cancelEventsOnce(
             tag: String? = null,
             clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
-            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED
     ): LiveCompletable =
             eventsLiveCompletable(
                     tag,
                     clazz,
-                    observingState,
+                    observingState
             ) {
                 it.cancelCompletable()
             }
@@ -404,7 +404,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     fun cancelEvents(
             tag: String? = null,
             clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
-            observingState: Lifecycle.State? = Lifecycle.State.STARTED,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED
     ): LiveObservable<EmptyAction> =
             eventsLiveObservable(
                     tag,
@@ -637,7 +637,8 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
         detachCurrentOwner()
     }
 
-    private fun attachOwner(owner: LifecycleOwner, fragmentManager: FragmentManager) {
+    @CallSuper
+    protected open fun attachOwner(owner: LifecycleOwner, fragmentManager: FragmentManager) {
         if (currentOwner != owner) {
             detachCurrentOwner()
             owner.lifecycle.addObserver(this)
