@@ -4,12 +4,12 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
-import net.maxsmr.commonutils.android.prefs.PreferencesHolder.PrefType
+import net.maxsmr.commonutils.android.prefs.SharedPrefsHolder.PrefType
 import net.maxsmr.commonutils.data.Observable
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.text.isEmpty
 
-class PreferencesManager @JvmOverloads constructor(
+class SharedPrefsManager @JvmOverloads constructor(
         context: Context,
         preferencesName: String = EMPTY_STRING,
         mode: Int = Context.MODE_PRIVATE
@@ -17,6 +17,7 @@ class PreferencesManager @JvmOverloads constructor(
 
     private val preferences: SharedPreferences =
             getSharedPreferences(context, preferencesName, mode)
+
     private val preferencesName: String =
             if (!isEmpty(preferencesName)) preferencesName else context.packageName + "_preferences"
 
@@ -32,7 +33,7 @@ class PreferencesManager @JvmOverloads constructor(
     }
 
     @Synchronized
-    fun hasKey(key: String) = PreferencesHolder.hasKey(preferences, key)
+    fun hasKey(key: String) = SharedPrefsHolder.hasKey(preferences, key)
 
     fun <V> getOrCreateValue(
             key: String,
@@ -61,7 +62,7 @@ class PreferencesManager @JvmOverloads constructor(
             key: String,
             type: PrefType,
             defaultValue: V? = null
-    ): V? = PreferencesHolder.getValue(preferences, key, type, defaultValue)
+    ): V? = SharedPrefsHolder.getValue(preferences, key, type, defaultValue)
 
     /**
      * @return true if successfully saved
@@ -71,7 +72,7 @@ class PreferencesManager @JvmOverloads constructor(
             key: String,
             value: V?,
             async: Boolean = true
-    ): Boolean = PreferencesHolder.setValue(preferences, key, value) {
+    ): Boolean = SharedPrefsHolder.setValue(preferences, key, value) {
         changeObservable.dispatchChanged(preferencesName, key, it, value)
     }
 
@@ -80,7 +81,7 @@ class PreferencesManager @JvmOverloads constructor(
      */
     @Synchronized
     fun removeKey(key: String, async: Boolean = true): Boolean {
-        if (PreferencesHolder.removeKey(preferences, key, async)) {
+        if (SharedPrefsHolder.removeKey(preferences, key, async)) {
             changeObservable.dispatchRemoved<Any>(preferencesName, key)
             return true
         }
@@ -93,7 +94,7 @@ class PreferencesManager @JvmOverloads constructor(
     @SuppressLint("CommitPrefEdits")
     @Synchronized
     fun clear(async: Boolean = true): Boolean {
-        if (PreferencesHolder.clear(preferences, async)) {
+        if (SharedPrefsHolder.clear(preferences, async)) {
             changeObservable.dispatchAllRemoved(preferencesName)
             return true
         }

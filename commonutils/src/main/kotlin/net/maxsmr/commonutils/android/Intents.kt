@@ -90,6 +90,9 @@ fun getViewFileIntent(
     }
 }
 
+fun getViewIntent(uri: Uri, mimeType: String): Intent = Intent(Intent.ACTION_VIEW)
+        .setDataAndType(uri, mimeType)
+
 /**
  * @param shouldUseFileProvider true, if intended to use FileProvider (content://) instead of file://
  */
@@ -108,9 +111,6 @@ fun getShareFileIntent(
         }
     }
 }
-
-fun getViewIntent(uri: Uri, mimeType: String, ): Intent = Intent(Intent.ACTION_VIEW)
-        .setDataAndType(uri, mimeType)
 
 @JvmOverloads
 fun getShareIntent(

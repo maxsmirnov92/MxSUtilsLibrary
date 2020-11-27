@@ -1,5 +1,6 @@
 package net.maxsmr.tasksutils.storage.sync.collection;
 
+import net.maxsmr.commonutils.data.FileUtilsKt;
 import net.maxsmr.commonutils.data.GetMode;
 import net.maxsmr.commonutils.data.IDeleteNotifier;
 import net.maxsmr.commonutils.data.text.TextUtilsKt;
@@ -19,7 +20,7 @@ import java.util.Set;
 
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
 import static net.maxsmr.commonutils.data.FileUtilsKt.checkDir;
-import static net.maxsmr.commonutils.data.FileUtilsKt.delete;
+import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFiles;
 import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFile;
 import static net.maxsmr.commonutils.data.FileUtilsKt.getFileExtension;
 import static net.maxsmr.commonutils.data.FileUtilsKt.getFiles;
@@ -199,7 +200,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
 
     @Override
     protected boolean deleteAllSerializedRunnableInfos() {
-        delete(new File(storageDirPath), false, null, null, 1, 0, new IDeleteNotifier() {
+        FileUtilsKt.deleteFiles(new File(storageDirPath), false, null, 1, 0, new IDeleteNotifier() {
             @Override
             public boolean confirmDeleteFile(@NotNull File file) {
                 return stringsEqual(extension, getFileExtension(file.getName()), true);

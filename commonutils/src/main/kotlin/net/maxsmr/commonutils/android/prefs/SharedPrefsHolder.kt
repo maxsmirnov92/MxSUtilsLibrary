@@ -2,12 +2,12 @@ package net.maxsmr.commonutils.android.prefs
 
 import android.annotation.SuppressLint
 import android.content.SharedPreferences
-import net.maxsmr.commonutils.android.prefs.PreferencesHolder.PrefType.*
+import net.maxsmr.commonutils.android.prefs.SharedPrefsHolder.PrefType.*
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(PreferencesHolder::class.java)
+private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(SharedPrefsHolder::class.java)
 
 const val EMPTY_BOOLEAN_SETTING = false
 const val EMPTY_INT_SETTING = -1
@@ -22,7 +22,7 @@ val EMPTY_STRING_SETTING = EMPTY_STRING
  * contains wrapped modifying methods
  */
 @Suppress("UNCHECKED_CAST")
-object PreferencesHolder {
+object SharedPrefsHolder {
 
     private val sharedPreferencesEditorMap = mutableMapOf<SharedPreferences, SharedPreferences.Editor>()
 

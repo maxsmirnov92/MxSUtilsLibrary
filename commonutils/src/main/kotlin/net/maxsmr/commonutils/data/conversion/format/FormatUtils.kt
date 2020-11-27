@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.data.conversion.format
 
 import android.widget.TextView
-import net.maxsmr.commonutils.android.gui.setTextChecked
+import net.maxsmr.commonutils.android.gui.setTextDistinct
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import ru.tinkoff.decoro.MaskImpl
 import ru.tinkoff.decoro.parser.UnderscoreDigitSlotsParser
@@ -79,12 +79,13 @@ fun containsMasked(text: CharSequence) = if (text.contains("*")) EMPTY_STRING el
 
 /**
  * @param applyWatcher применять на постоянной основе или одноразовое форматирование
- * @param isDistinct перед выставлением окончательного результата проверять на уникальность, чтобы не сбивался курор
+ * @param isDistinct перед выставлением окончательного результата проверять на уникальность, чтобы не сбивался курсор
  */
 @JvmOverloads
 fun TextView.setFormattedText(
         text: CharSequence,
         mask: MaskImpl,
+        prefix: String = EMPTY_STRING,
         applyWatcher: Boolean = true,
         isDistinct: Boolean = true,
         textValidator: ((String) -> Boolean)? = null
@@ -97,6 +98,9 @@ fun TextView.setFormattedText(
                     // watcher пересоздаётся
                     MaskFormatWatcher(mask).apply {
                         installOn(this@setFormattedText)
+                        if (prefix.isNotEmpty()) {
+                            this@setFormattedText.text = prefix
+                        }
                     }
                 } else {
                     null
@@ -104,7 +108,11 @@ fun TextView.setFormattedText(
         val newText = formatText(currentText,
                 mask,
                 watcher)
-        setTextChecked(newText, isDistinct)
+        if (isDistinct) {
+            setTextDistinct(newText)
+        } else {
+            this.text = newText
+        }
         return watcher
     }
     return null
@@ -114,10 +122,11 @@ fun TextView.setFormattedText(
 fun applyToMask(
         text: CharSequence,
         mask: MaskImpl,
-        watcher: MaskFormatWatcher? = null
+        watcher: MaskFormatWatcher? = null,
+        hideHardcodedHead: Boolean = true
 ): MaskImpl {
     mask.clear()
-    mask.isHideHardcodedHead = true
+    mask.isHideHardcodedHead = hideHardcodedHead
     mask.insertFront(text.toString())
     watcher?.setMask(mask)
     return mask
@@ -127,14 +136,9 @@ fun applyToMask(
 fun formatText(
         text: CharSequence,
         mask: MaskImpl,
-        watcher: MaskFormatWatcher? = null
-) = applyToMask(text, mask, watcher).toString()
-
-@JvmOverloads
-fun createMask(slots: Collection<Slot>, isTerminated: Boolean = true) =
-        with(slots.toTypedArray()) {
-            if (isTerminated) MaskImpl.createTerminated(this) else MaskImpl.createNonTerminated(this)
-        }
+        watcher: MaskFormatWatcher? = null,
+        hideHardcodedHead: Boolean = true
+) = applyToMask(text, mask, watcher, hideHardcodedHead).toString()
 
 /**
  * @return маска, в которой "_" будет заменено на цифру
@@ -146,9 +150,7 @@ fun createDigitsMask(
         hideHardcodedHead: Boolean = false
 ): MaskImpl {
     val slots = UnderscoreDigitSlotsParser().parseSlots(pattern)
-    return if (isTerminated) MaskImpl.createTerminated(slots) else MaskImpl.createNonTerminated(slots).apply {
-        isHideHardcodedHead = hideHardcodedHead
-    }
+    return createMask(slots.toList(), isTerminated, hideHardcodedHead)
 }
 
 @JvmOverloads
@@ -159,6 +161,16 @@ fun createDigitsWatcher(
 ): MaskFormatWatcher =
         MaskFormatWatcher(createDigitsMask(pattern, isTerminated, hideHardcodedHead))
 
-private fun createEmptyMask(): MaskImpl {
-    return MaskImpl.createNonTerminated(arrayOf(PredefinedSlots.any()))
+@JvmOverloads
+fun createMask(
+        slots: Collection<Slot>,
+        isTerminated: Boolean = true,
+        hideHardcodedHead: Boolean = false
+) =  with(slots.toTypedArray()) {
+    if (isTerminated) MaskImpl.createTerminated(this) else MaskImpl.createNonTerminated(this).apply {
+        isHideHardcodedHead = hideHardcodedHead
+    }
 }
+
+private fun createEmptyMask(): MaskImpl =
+        createMask(listOf(PredefinedSlots.any()), false, true)

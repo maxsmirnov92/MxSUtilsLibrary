@@ -6,11 +6,12 @@ import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.GrantPermissionRule;
 
 import net.maxsmr.commonutils.data.FileComparator;
+import net.maxsmr.commonutils.data.FileUtilsKt;
 import net.maxsmr.commonutils.data.GetMode;
 import net.maxsmr.commonutils.data.IDeleteNotifier;
-import net.maxsmr.commonutils.data.IGetListNotifier;
+import net.maxsmr.commonutils.data.IGetNotifier;
 import net.maxsmr.commonutils.data.IMultipleCopyNotifier;
-import net.maxsmr.commonutils.data.IShellGetListNotifier;
+import net.maxsmr.commonutils.data.IShellGetNotifier;
 import net.maxsmr.commonutils.data.ISingleCopyNotifier;
 import net.maxsmr.commonutils.data.MatchStringOption;
 
@@ -30,11 +31,11 @@ import java.util.concurrent.TimeUnit;
 import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getFilteredExternalFilesDirs;
 import static net.maxsmr.commonutils.data.FileUtilsKt.DEPTH_UNLIMITED;
 import static net.maxsmr.commonutils.data.FileUtilsKt.checkFilesWithStat;
-import static net.maxsmr.commonutils.data.FileUtilsKt.copyFilesWithBuffering;
+import static net.maxsmr.commonutils.data.FileUtilsKt.copyFiles;
 import static net.maxsmr.commonutils.data.FileUtilsKt.createDir;
 import static net.maxsmr.commonutils.data.FileUtilsKt.createFile;
 import static net.maxsmr.commonutils.data.FileUtilsKt.createFileOrThrow;
-import static net.maxsmr.commonutils.data.FileUtilsKt.delete;
+import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFiles;
 import static net.maxsmr.commonutils.data.FileUtilsKt.getFiles;
 import static net.maxsmr.commonutils.data.FileUtilsKt.searchByName;
 import static net.maxsmr.commonutils.data.FileUtilsKt.writeBytesToFile;
@@ -84,7 +85,7 @@ public class FileHelperTest extends LoggerTest {
 
     @Test
     public void testGet() {
-        Set<File> result = getFiles(sourceDir, GetMode.ALL, null, 0, DEPTH_UNLIMITED, new IGetListNotifier() {
+        Set<File> result = getFiles(sourceDir, GetMode.ALL, null, 0, DEPTH_UNLIMITED, new IGetNotifier() {
             @Override
             public boolean shouldProceed(@NotNull File current, @NotNull Set<? extends File> collected, int currentLevel, boolean wasAdded) {
                 System.out.println("get file=" + current + ", currentLevel=" + currentLevel);
@@ -109,7 +110,7 @@ public class FileHelperTest extends LoggerTest {
         Set<File> result = checkFilesWithStat(SEARCH_PREFIX, Collections.singleton(sourceDir), true, 0,
                 new FileComparator(Collections.singletonMap(FileComparator.SortOption.NAME, true)),
 
-                new IShellGetListNotifier() {
+                new IShellGetNotifier() {
                     @Override
                     public boolean shouldProceed(@NotNull File current, @NotNull Set<? extends File> collected, int currentLevel, boolean wasAdded) {
                         System.out.println("stat current=" + current + ", currentLevel=" + currentLevel);
@@ -121,15 +122,13 @@ public class FileHelperTest extends LoggerTest {
 
     @Test
     public void testCopy() {
-        copyFilesWithBuffering(
+        copyFiles(
                 sourceDir,
                 destinationDir,
                 null,
                 true,
                 true,
-                true,
                 DEPTH_UNLIMITED,
-                null,
                 new ISingleCopyNotifier() {
                     @Override
                     public long getNotifyInterval() {
@@ -156,7 +155,7 @@ public class FileHelperTest extends LoggerTest {
                 GetMode.ALL,
                 new FileComparator(Collections.singletonMap(FileComparator.SortOption.LAST_MODIFIED, false)),
                 1,
-                new IGetListNotifier() {
+                new IGetNotifier() {
 
                     @Override
                     public boolean shouldProceed(@NotNull File current, @NotNull Set<? extends File> collected, int currentLevel, boolean wasAdded) {
@@ -168,7 +167,7 @@ public class FileHelperTest extends LoggerTest {
     }
 
     private void deleteTest(File dir) {
-        Set<File> result = delete(dir, true, null, null, DEPTH_UNLIMITED, 0, new IDeleteNotifier() {
+        Set<File> result = FileUtilsKt.deleteFiles(dir, true, null, DEPTH_UNLIMITED, 0, new IDeleteNotifier() {
             @Override
             public boolean shouldProceed(@NotNull File current, @NotNull Set<? extends File> deleted, int currentLevel) {
                 System.out.println("delete current=" + current + ", currentLevel=" + currentLevel);

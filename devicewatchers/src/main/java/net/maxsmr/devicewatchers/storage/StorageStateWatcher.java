@@ -2,9 +2,10 @@ package net.maxsmr.devicewatchers.storage;
 
 
 import net.maxsmr.commonutils.data.FileComparator;
+import net.maxsmr.commonutils.data.FileUtilsKt;
 import net.maxsmr.commonutils.data.GetMode;
 import net.maxsmr.commonutils.data.IDeleteNotifier;
-import net.maxsmr.commonutils.data.IGetListNotifier;
+import net.maxsmr.commonutils.data.IGetNotifier;
 import net.maxsmr.commonutils.data.Predicate;
 import net.maxsmr.commonutils.data.conversion.SizeUnit;
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -27,7 +28,7 @@ import java.util.Set;
 
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
 import static net.maxsmr.commonutils.data.FileUtilsKt.DEPTH_UNLIMITED;
-import static net.maxsmr.commonutils.data.FileUtilsKt.delete;
+import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFiles;
 import static net.maxsmr.commonutils.data.FileUtilsKt.getFiles;
 import static net.maxsmr.commonutils.data.FileUtilsKt.getPartitionSpace;
 import static net.maxsmr.commonutils.data.FileUtilsKt.isDirExists;
@@ -230,7 +231,7 @@ public final class StorageStateWatcher {
                                 throw new RuntimeException("deletePath is empty");
                             }
                             if (isDirExists(deletePath)) {
-                                final Set<File> filesSet = getFiles(new File(deletePath), entry.getValue(), settings.comparator, DEPTH_UNLIMITED, 0, new IGetListNotifier() {
+                                final Set<File> filesSet = getFiles(new File(deletePath), entry.getValue(), settings.comparator, DEPTH_UNLIMITED, 0, new IGetNotifier() {
                                     @Override
                                     public boolean shouldProceed(@NotNull File current, @NotNull Set<? extends File> collected, int currentLevel, boolean wasAdded) {
                                         return isEnabled;
@@ -287,7 +288,7 @@ public final class StorageStateWatcher {
                                         }
 
                                         if (allowDelete) {
-                                            deletedCount += delete(file, true, null, null, DEPTH_UNLIMITED, 0, new IDeleteNotifier() {
+                                            deletedCount += FileUtilsKt.deleteFiles(file, true, null, DEPTH_UNLIMITED, 0, new IDeleteNotifier() {
 
                                                 @Override
                                                 public boolean shouldProceed(@NotNull File current, @NotNull Set<? extends File> deleted, int currentLevel) {

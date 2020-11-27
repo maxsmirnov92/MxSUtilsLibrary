@@ -5,6 +5,15 @@ import java.io.Serializable
 fun <D> createEmptyState() = null.getOrCreate<D>().first
 
 /**
+ * Статус ресурса
+ */
+enum class Status {
+    SUCCESS,
+    ERROR,
+    LOADING
+}
+
+/**
  * @return новый или существующий изменённый [LoadState] + флаг факта изменения
  */
 fun <D> ILoadState<D>?.getOrCreate(
@@ -56,9 +65,19 @@ interface ILoadState<D> : Serializable {
     fun successLoad(result: D): Boolean
     fun errorLoad(error: Throwable): Boolean
 
-    fun isSuccessLoad(dataValidator: ((D?) -> Boolean)? = { it != null }) = !isLoading && error == null
-            && (dataValidator == null || dataValidator(data))
+    @JvmDefault
+    fun isSuccessLoad(dataValidator: ((D?) -> Boolean)? = { it != null }) =
+            !isLoading && error == null
+                    && (dataValidator == null || dataValidator(data))
 
+    @JvmDefault
+    fun getStatus(dataValidator: ((D?) -> Boolean)? = { it != null }): Status = when {
+            isLoading -> Status.LOADING
+            isSuccessLoad(dataValidator) -> Status.SUCCESS
+            else -> Status.ERROR
+        }
+
+    @JvmDefault
     fun hasData() = data != null
 }
 
@@ -152,7 +171,7 @@ data class PgnLoadState<D>(
     override var isLoading: Boolean
         get() = loadingState.state.isLoading()
         set(value) {
-            loadingState = PgnLoading(PgnState.MAIN_LOAD)
+            loadingState = if (value) PgnLoading(PgnState.MAIN_LOAD) else PgnLoading()
         }
 
     override fun preLoad(): Boolean {

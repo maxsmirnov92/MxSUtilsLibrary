@@ -296,7 +296,7 @@ fun isFileAccessibleOrThrow(
         }
         isAccessible
     } catch (e: SecurityException) {
-        throw RuntimeException(formatException(e, "canRead / canWrite on file '$file'"))
+        throw RuntimeException(formatException(e, "canRead / canWrite on file '$file'"), e)
     }
 }
 
@@ -382,7 +382,7 @@ fun isDirEmptyOrThrow(dir: File?): Boolean {
                 try {
                     dir.listFiles()
                 } catch (e: SecurityException) {
-                    throw RuntimeException(formatException(e, "listFiles on dir $dir"))
+                    throw RuntimeException(formatException(e, "listFiles on dir '$dir'"), e)
                 }
         return files == null || files.isEmpty()
     }
@@ -419,7 +419,7 @@ fun checkDirOrThrow(dirName: String?, parentPath: String? = null, createIfNotExi
 @Throws(IllegalArgumentException::class)
 @JvmOverloads
 fun checkDirOrThrow(dir: File?, createIfNotExists: Boolean = true) {
-    require(checkDir(dir, createIfNotExists)) { "Incorrect file: $dir" }
+    require(checkDir(dir, createIfNotExists)) { "Incorrect file: '$dir'" }
 }
 
 @JvmOverloads
@@ -492,13 +492,13 @@ fun createFileOrThrow(
     if (!isFileExistsOrThrow(newFile)) {
         try {
             if (!newFile.createNewFile()) {
-                throw RuntimeException("Cannot create new file: $newFile")
+                throw RuntimeException("Cannot create new file: '$newFile'")
             }
             if (!isFileExistsOrThrow(newFile)) {
-                throw RuntimeException("File still not exists: $newFile")
+                throw RuntimeException("File still not exists: '$newFile'")
             }
         } catch (e: Exception) {
-            throwRuntimeException(e, "createNewFile on $newFile")
+            throwRuntimeException(e, "createNewFile on '$newFile'")
         }
     }
     return newFile
@@ -530,17 +530,17 @@ fun createDirOrThrow(
             ?: throw RuntimeException("Incorrect dirName or parentPath")
     if (isDirExistsOrThrow(dir)) {
         if (throwIfExists) {
-            throw RuntimeException("Cannot create dir $dir: already exists")
+            throw RuntimeException("Cannot create dir '$dir': already exists")
         }
         return dir
     }
     val created = try {
         dir.mkdirs()
     } catch (e: SecurityException) {
-        throw RuntimeException(formatException(e, "mkdirs on $dir"), e)
+        throw RuntimeException(formatException(e, "mkdirs on '$dir'"), e)
     }
     if (!created || !isDirExistsOrThrow(dir)) {
-        throw RuntimeException("Cannot create new dir $dir")
+        throw RuntimeException("Cannot create new dir '$dir'")
     }
     return dir
 }
@@ -562,7 +562,7 @@ fun deleteEmptyDirOrThrow(dir: File?, throwIfNotExists: Boolean = false) {
     }
     if (!isDirExists(dir)) {
         if (throwIfNotExists) {
-            throw RuntimeException("Cannot delete dir $dir: already not exists")
+            throw RuntimeException("Cannot delete dir '$dir': already not exists")
         }
         return
     }
@@ -574,7 +574,7 @@ fun deleteEmptyDirOrThrow(dir: File?, throwIfNotExists: Boolean = false) {
             throw RuntimeException("delete on dir failed (false)")
         }
     } catch (e: SecurityException) {
-        throwRuntimeException(e, "delete dir $dir")
+        throwRuntimeException(e, "delete dir '$dir'")
     }
 }
 
@@ -595,7 +595,7 @@ fun deleteFileOrThrow(file: File?, throwIfNotExists: Boolean = false) {
     }
     if (!isFileExistsOrThrow(file)) {
         if (throwIfNotExists) {
-            throw RuntimeException("Cannot delete file $file: already not exists")
+            throw RuntimeException("Cannot delete file '$file': already not exists")
         }
         return
     }
@@ -787,7 +787,7 @@ fun writeStringsToFileOrThrow(
     val writer: FileWriter1 = try {
         FileWriter1(file, append)
     } catch (e: IOException) {
-        throw RuntimeException(formatException(e, "create FileWriter"))
+        throw RuntimeException(formatException(e, "create FileWriter"), e)
     }
     try {
         writeStringToOutputStreamWriterOrThrow(writer, data)
@@ -859,7 +859,7 @@ fun writeToStreamFromFile(
         file: File?,
         notifier: IStreamNotifier? = null,
         buffSize: Int = DEFAULT_BUFFER_SIZE
-): Boolean = try{
+): Boolean = try {
     writeToStreamFromFileOrThrow(outputStream, file, notifier, buffSize)
     true
 } catch (e: RuntimeException) {
@@ -917,7 +917,11 @@ fun moveFile(
                 null
             }
         }
-        deleteFile(sourceFile)
+        try {
+            deleteFileOrThrow(sourceFile)
+        } catch (e: RuntimeException) {
+            notifier?.onExceptionOccurred(e)
+        }
     }
     return targetFile
 }
@@ -938,7 +942,7 @@ fun renameFile(
 @Throws(RuntimeException::class)
 fun renameFileOrThrow(
         sourceFile: File?,
-        destinationDir: String?,
+        targetDir: String?,
         newFileName: String?,
         deleteIfExists: Boolean,
         deleteEmptyDirs: Boolean
@@ -947,39 +951,44 @@ fun renameFileOrThrow(
         throw NullPointerException("sourceFile is null")
     }
     if (!isFileExistsOrThrow(sourceFile)) {
-        throw RuntimeException("Source file not exists: $sourceFile")
+        throw RuntimeException("Source file not exists: '$sourceFile'")
     }
     if (newFileName.isNullOrEmpty()) {
         throw RuntimeException("File name for new file is not specified")
     }
     val newFile: File
-    val newDir = createDir(destinationDir)
+    val newDir = createDir(targetDir)
     if (newDir != null) {
         newFile = File(newDir, newFileName)
         if (newFile != sourceFile) {
             if (isFileExistsOrThrow(newFile)) {
-                logger.d("Target file $newFile already exists")
+                logger.d("Target file '$newFile' already exists")
                 if (deleteIfExists) {
                     if (!deleteFile(newFile)) {
-                        throw RuntimeException("Delete file $newFile failed")
+                        throw RuntimeException("Delete file '$newFile' failed")
                     }
                 } else {
-                    throw RuntimeException("File $newFile exists, not deleting")
+                    throw RuntimeException("File '$newFile' exists, not deleting")
                 }
             }
-            if (sourceFile.renameTo(newFile)) {
+            val renamed = try {
+                sourceFile.renameTo(newFile)
+            } catch (e: SecurityException) {
+                throw RuntimeException(formatException(e, "rename '$sourceFile' to '$newFile'"), e)
+            }
+            if (renamed) {
                 val sourceParentDir = sourceFile.parentFile
                 if (deleteEmptyDirs) {
-                    deleteEmptyDirOrThrow(sourceParentDir)
+                    deleteEmptyDir(sourceParentDir)
                 }
             } else {
-                throw RuntimeException("Rename $sourceFile to $newFile failed")
+                throw RuntimeException("Rename '$sourceFile' to '$newFile' failed")
             }
         } else {
-            logger.w("New file $newFile is same as source file")
+            logger.w("New file '$newFile' is same as source file")
         }
     } else {
-        throw RuntimeException("Create new dir: '$destinationDir' failed")
+        throw RuntimeException("Create new dir: '$targetDir' failed")
     }
     return newFile
 }
@@ -1014,13 +1023,13 @@ fun copyFileWithBuffering(
                 return null
             }
     ) {
-        notifier?.onExceptionOccurred(RuntimeException("Source file not exists: $sourceFile"))
+        notifier?.onExceptionOccurred(RuntimeException("Source file not exists: '$sourceFile'"))
         return null
     }
     val targetName = if (targetName.isNullOrEmpty()) sourceFile.name else targetName
     val targetFile = if (targetDir != null && !isEmpty(targetName)) File(targetDir, targetName) else null
     if (targetFile == null || targetFile == sourceFile) {
-        notifier?.onExceptionOccurred(RuntimeException("Incorrect destination file: '$targetDir' (source file: $sourceFile)"))
+        notifier?.onExceptionOccurred(RuntimeException("Incorrect destination file: '$targetDir' (source file: '$sourceFile')"))
         return null
     }
     val fis = try {
@@ -1088,7 +1097,7 @@ fun copyFileOrThrow(
         preserveFileDate: Boolean = true
 ): File {
     if (sourceFile == null || !isFileValidOrThrow(sourceFile)) {
-        throw RuntimeException("Source file is not valid: $sourceFile")
+        throw RuntimeException("Source file is not valid: '$sourceFile'")
     }
     val targetName = if (targetName.isNullOrEmpty()) sourceFile.name else targetName
     val targetFile = createFileOrThrow(targetName, targetDir, rewrite)
@@ -1144,7 +1153,7 @@ fun setLastModifiedOrThrow(file: File?, timestamp: Long) {
 fun getSize(
         fromFiles: List<File>?,
         depth: Int = DEPTH_UNLIMITED,
-        notifier: IGetSizeNotifier? = null,
+        notifier: IGetNotifier? = null,
 ): Long {
     var result: Long = 0
     if (fromFiles != null) {
@@ -1160,26 +1169,15 @@ fun getSize(
         fromFile: File?,
         depth: Int = DEPTH_UNLIMITED,
         currentLevel: Int = 0,
-        notifier: IGetSizeNotifier? = null,
+        notifier: IGetNotifier? = null,
 ): Long {
     var size: Long = 0
-    if (fromFile != null) {
-        if (fromFile.isDirectory && (notifier == null || notifier.onGetFolder(fromFile, size, currentLevel))) {
-            val files = fromFile.listFiles()
-            if (files != null && files.isNotEmpty()) {
-                for (file in files) {
-                    if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
-                        size += getSize(file, depth, currentLevel + 1)
-                    }
-                }
-            }
-        } else if (fromFile.isFile && (notifier == null || notifier.onGetFile(fromFile, size, currentLevel))) {
-            size = try {
-                getFileLengthOrThrow(fromFile)
-            } catch (e: RuntimeException) {
-                notifier?.onExceptionOccurred(e)
-                0
-            }
+    for (f in getFiles(fromFile, GetMode.FILES, depth= depth, currentLevel= currentLevel, notifier = notifier)) {
+        size = try {
+            getFileLengthOrThrow(fromFile)
+        } catch (e: RuntimeException) {
+            notifier?.onExceptionOccurred(e)
+            0
         }
     }
     return size
@@ -1189,9 +1187,9 @@ fun getSize(
 fun getFiles(
         fromFiles: Collection<File>?,
         mode: GetMode = GetMode.ALL,
-        comparator: Comparator<in File>?,
+        comparator: Comparator<in File>? = null,
         depth: Int = DEPTH_UNLIMITED,
-        notifier: IGetListNotifier?,
+        notifier: IGetNotifier?,
 ): Set<File> {
     val result = mutableSetOf<File>()
     if (fromFiles != null) {
@@ -1210,29 +1208,28 @@ fun getFiles(
 fun getFiles(
         fromFile: File?,
         mode: GetMode = GetMode.ALL,
-        comparator: Comparator<in File>?,
+        comparator: Comparator<in File>? = null,
         depth: Int = DEPTH_UNLIMITED,
         currentLevel: Int = 0,
-        notifier: IGetListNotifier? = null
+        notifier: IGetNotifier? = null
 ): Set<File> {
     val result = mutableSetOf<File>()
     if (depth != DEPTH_UNLIMITED && currentLevel > depth - 1) {
-        logger.w("Collect depth was reached: $depth")
+        notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.DEPTH_REACHED, "Collect depth was reached: $depth"))
         return result
     }
     if (fromFile == null) {
         notifier?.onExceptionOccurred(NullPointerException("fromFile is null"))
         return result
     }
-    if (fromFile.exists()) {
-        logger.w("file '$fromFile' not exists")
-        return result
-    }
     if (!fromFile.isFile && !fromFile.isDirectory) {
-        logger.w("Invalid file or folder: '$fromFile'")
+        notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_VALID, "Invalid file or folder: '$fromFile'"))
         return result
     }
-
+    if (fromFile.exists()) {
+        notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_EXISTS, "File '$fromFile' not exists"))
+        return result
+    }
     var wasAdded = false
 
     if (mode === GetMode.ALL || if (fromFile.isFile) mode === GetMode.FILES else mode === GetMode.FOLDERS) {
@@ -1248,6 +1245,8 @@ fun getFiles(
                 })) {
             result.add(fromFile)
             wasAdded = true
+        } else {
+            notifier.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_CONFIRMED, "File '$fromFile' collecting is not confirmed"))
         }
     }
     if (notifier == null || notifier.shouldProceed(fromFile, Collections.unmodifiableSet(result), currentLevel, wasAdded)) {
@@ -1267,7 +1266,7 @@ fun getFiles(
             }
         }
     } else {
-        logger.w("Collecting files from $fromFile was interrupted")
+        notifier.onExceptionOccurred(FileIterationException(FileIterationException.Type.INTERRUPTED_BY_USER, "Collecting files from $fromFile was interrupted"))
     }
     comparator?.let {
         return result.sortedWith(it).toSet()
@@ -1284,7 +1283,7 @@ fun searchByName(
         mode: GetMode = GetMode.ALL,
         comparator: Comparator<in File>? = null,
         depth: Int = DEPTH_UNLIMITED,
-        notifier: IGetListNotifier? = null,
+        notifier: IGetNotifier? = null,
 ): Set<File> = searchByName(name, if (searchFile != null) listOf(searchFile) else null, searchFlags, searchFirst, mode, comparator, depth, notifier)
 
 /**
@@ -1300,8 +1299,8 @@ fun searchByName(
         mode: GetMode = GetMode.ALL,
         comparator: Comparator<in File>? = null,
         depth: Int = DEPTH_UNLIMITED,
-        notifier: IGetListNotifier? = null,
-): Set<File> = getFiles(searchFiles, mode, comparator, depth, notifier = object : IGetListNotifier {
+        notifier: IGetNotifier? = null,
+): Set<File> = getFiles(searchFiles, mode, comparator, depth, notifier = object : IGetNotifier {
 
     override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean =
             (notifier == null || notifier.onGetFile(file, collected, currentLevel)) && check(file)
@@ -1345,17 +1344,56 @@ fun sortFiles(files: Collection<File>?, comparator: Comparator<in File>): List<F
 }
 
 @JvmOverloads
-fun copyFilesWithBuffering(
+fun moveFiles(
         sourceFile: File,
         targetDir: File?,
         comparator: Comparator<in File>? = null,
         preserveFileDate: Boolean = true,
-        tryToMoveFirst: Boolean = true,
         copyWithBuffering: Boolean = true,
         depth: Int = DEPTH_UNLIMITED,
-        exclusionList: Collection<File>? = null,
         singleCopyNotifier: ISingleCopyNotifier? = null,
-        multipleCopyNotifier: IMultipleCopyNotifier? = null,
+        multipleCopyNotifier: IMultipleCopyNotifier? = null
+) = moveOrCopyFiles(true,
+        sourceFile,
+        targetDir,
+        comparator,
+        preserveFileDate,
+        copyWithBuffering,
+        depth,
+        singleCopyNotifier,
+        multipleCopyNotifier)
+
+
+@JvmOverloads
+fun copyFiles(
+        sourceFile: File,
+        targetDir: File?,
+        comparator: Comparator<in File>? = null,
+        preserveFileDate: Boolean = true,
+        copyWithBuffering: Boolean = true,
+        depth: Int = DEPTH_UNLIMITED,
+        singleCopyNotifier: ISingleCopyNotifier? = null,
+        multipleCopyNotifier: IMultipleCopyNotifier? = null
+) = moveOrCopyFiles(false,
+        sourceFile,
+        targetDir,
+        comparator,
+        preserveFileDate,
+        copyWithBuffering,
+        depth,
+        singleCopyNotifier,
+        multipleCopyNotifier)
+
+private fun moveOrCopyFiles(
+        moveOrCopy: Boolean,
+        sourceFile: File,
+        targetDir: File?,
+        comparator: Comparator<in File>? = null,
+        preserveFileDate: Boolean = true,
+        copyWithBuffering: Boolean = true,
+        depth: Int = DEPTH_UNLIMITED,
+        singleCopyNotifier: ISingleCopyNotifier? = null,
+        multipleCopyNotifier: IMultipleCopyNotifier? = null
 ): Set<File>? {
     val result = mutableSetOf<File>()
     if (targetDir == null) {
@@ -1372,7 +1410,7 @@ fun copyFilesWithBuffering(
         multipleCopyNotifier?.onExceptionOccurred(RuntimeException("Destination directory '$targetDir' is same as source directory/file '$sourceFile'"))
         return result
     }
-    val files: Set<File> = getFiles(sourceFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetListNotifier {
+    val files: Set<File> = getFiles(sourceFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetNotifier {
 
         override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean {
             return multipleCopyNotifier.onCollecting(file, collected, currentLevel)
@@ -1382,17 +1420,22 @@ fun copyFilesWithBuffering(
             return multipleCopyNotifier.onCollecting(folder, collected, currentLevel)
         }
 
+        override fun onExceptionOccurred(e: RuntimeException) {
+            multipleCopyNotifier.onExceptionOccurred(e)
+        }
+
     } else null)
 
     val totalFilesCount = files.size.toLong()
     var filesProcessed = 0
     for (f in files) {
-        if (!isFileExistsOrThrow(f)) {
-            logger.w("File '$f' not exists, skipping...")
+
+        if (!f.isFile) {
+            multipleCopyNotifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_VALID, "File '$f' not file, skipping..."))
             continue
         }
-        if (exclusionList != null && exclusionList.contains(f)) {
-            logger.w("File '$f' is on exclusion list, skipping...")
+        if (!f.exists()) {
+            multipleCopyNotifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_EXISTS, "File '$f' not exists, skipping..."))
             continue
         }
         var currentDestDir: File? = null
@@ -1410,23 +1453,24 @@ fun copyFilesWithBuffering(
         }
         if (multipleCopyNotifier != null) {
             if (!multipleCopyNotifier.shouldProceed(f, currentDestDir, Collections.unmodifiableSet(result), filesProcessed.toLong(), totalFilesCount)) {
-                logger.w("Copying from '$sourceFile' to '$targetDir' was interrupted")
+                multipleCopyNotifier.onExceptionOccurred(FileIterationException(FileIterationException.Type.INTERRUPTED_BY_USER, "Copying from '$sourceFile' to '$targetDir' was interrupted"))
                 break
             }
         }
         var targetFile: File? = null
         var confirmCopy = true
         if (multipleCopyNotifier != null) {
-            confirmCopy = multipleCopyNotifier.confirmCopy(f, currentDestDir)
+            confirmCopy = multipleCopyNotifier.confirmMoveOrCopy(f, currentDestDir)
         }
         if (confirmCopy) {
             if (multipleCopyNotifier != null) {
-                targetFile = multipleCopyNotifier.onBeforeCopy(f, currentDestDir)
+                targetFile = multipleCopyNotifier.onBeforeMoveOrCopy(f, currentDestDir)
             }
             val isSameFile = targetFile == f
             if (targetFile == null || isSameFile) {
                 if (isSameFile) {
-                    logger.w("Target file cannot be equals to source file ('$targetFile')!")
+                    multipleCopyNotifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NAME_INVALID,
+                            "Target file cannot be equals to source file ('$targetFile')!"))
                 }
                 targetFile = File(currentDestDir, f.name)
             }
@@ -1437,11 +1481,11 @@ fun copyFilesWithBuffering(
             val shouldReplace = replaceOptions.enableReplace
                     || !replaceOptions.enableReplace && replaceOptions.enableAppend
             if (!shouldReplace) {
-                logger.w("Replace disabled for file $targetFile, skipping...")
+                multipleCopyNotifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.REPLACE_DISABLED, "Replace disabled for file '$targetFile', skipping..."))
                 continue
             }
             val resultFile =
-                    if (tryToMoveFirst) {
+                    if (moveOrCopy) {
                         moveFile(f, targetFile, !replaceOptions.enableAppend, false, preserveFileDate, copyWithBuffering, singleCopyNotifier)
                     } else {
                         if (copyWithBuffering) {
@@ -1462,6 +1506,8 @@ fun copyFilesWithBuffering(
             } else {
                 multipleCopyNotifier?.onFailed(f, currentDestDir)
             }
+        } else {
+            multipleCopyNotifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_CONFIRMED, "File '$f' move/copy is not confirmed"))
         }
         filesProcessed++
     }
@@ -1474,7 +1520,7 @@ fun copyFilesWithBuffering(
 /**
  * @param fromFile file or directory
  */
-@Deprecated("use copyFilesWithBuffering")
+@Deprecated("use copyFiles")
 @JvmOverloads
 fun copyFilesWithBufferingLegacy(
         fromFile: File?,
@@ -1500,7 +1546,7 @@ fun copyFilesWithBufferingLegacy(
     if (fromFile != null && fromFile.exists()) {
         isValid = true
         if (currentLevel == 0) {
-            totalFilesCount = getFiles(fromFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetListNotifier {
+            totalFilesCount = getFiles(fromFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetNotifier {
 
                 override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean {
                     multipleCopyNotifier.onCalculatingSize(file, collected, currentLevel)
@@ -1606,18 +1652,17 @@ fun copyFilesWithBufferingLegacy(
 }
 
 @JvmOverloads
-fun delete(
+fun deleteFiles(
         fromFiles: Collection<File>?,
         deleteEmptyDirs: Boolean = true,
-        exclusionList: Collection<File>? = null,
-        comparator: Comparator<in File>?,
+        comparator: Comparator<in File>? = null,
         depth: Int = DEPTH_UNLIMITED,
         notifier: IDeleteNotifier? = null
 ): Set<File> {
     val result: MutableSet<File> = LinkedHashSet()
     if (fromFiles != null) {
         for (file in fromFiles) {
-            result.addAll(delete(file, deleteEmptyDirs, exclusionList, comparator, depth, notifier = notifier))
+            result.addAll(deleteFiles(file, deleteEmptyDirs, comparator, depth, notifier = notifier))
         }
     }
     return result
@@ -1627,11 +1672,10 @@ fun delete(
  * @param depth кол-во уровней вложенености (номер последней итерации == depth - 1)
  */
 @JvmOverloads
-fun delete(
+fun deleteFiles(
         fromFile: File?,
         deleteEmptyDirs: Boolean = true,
-        exclusionList: Collection<File>? = null,
-        comparator: Comparator<in File>?,
+        comparator: Comparator<in File>? = null,
         depth: Int = DEPTH_UNLIMITED,
         currentLevel: Int = 0,
         notifier: IDeleteNotifier? = null
@@ -1639,8 +1683,13 @@ fun delete(
 
     val result = mutableSetOf<File>()
 
+    if (depth != DEPTH_UNLIMITED && depth < 0) {
+        notifier?.onExceptionOccurred(IllegalArgumentException("Incorrect depth: $depth"))
+        return result
+    }
+
     if (depth != DEPTH_UNLIMITED && currentLevel > depth - 1) {
-        logger.w("Delete depth was reached: $depth")
+        notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.DEPTH_REACHED, "Delete depth was reached: $depth"))
         return result
     }
 
@@ -1662,17 +1711,12 @@ fun delete(
     }
 
     if (notifier != null && !notifier.shouldProceed(fromFile, Collections.unmodifiableSet(result), currentLevel)) {
-        logger.w("Deleting from '$fromFile' was interrupted")
+        notifier.onExceptionOccurred(FileIterationException(FileIterationException.Type.INTERRUPTED_BY_USER, "Deleting from '$fromFile' was interrupted"))
         return result
     }
 
     if (!fromFile.exists()) {
-        logger.w("File '$fromFile' not exists")
-        return result
-    }
-
-    if (exclusionList != null && exclusionList.contains(fromFile)) {
-        logger.w("File '$fromFile' is on exclusion list, skipping...")
+        notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_EXISTS, "File '$fromFile' not exists"))
         return result
     }
 
@@ -1700,7 +1744,7 @@ fun delete(
 //                    }
 //                }
 //            }
-            result.addAll(delete(f, deleteEmptyDirs, exclusionList, comparator, depth, if (f.isDirectory) currentLevel + 1 else currentLevel, notifier))
+            result.addAll(deleteFiles(f, deleteEmptyDirs, comparator, depth, if (f.isDirectory) currentLevel + 1 else currentLevel, notifier))
         }
         deleteEmptyDirChecked(fromFile)
     } else if (fromFile.isFile) {
@@ -1710,11 +1754,12 @@ fun delete(
             } else {
                 notifier?.onDeleteFileFailed(fromFile)
             }
+        } else {
+            notifier.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_CONFIRMED, "File '$fromFile' deletion is not confirmed"))
         }
     } else {
-        logger.w("Invalid file or folder: '$fromFile'")
+        notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_VALID, "Invalid file or folder: '$fromFile'"))
     }
-
     return result
 }
 
@@ -1818,7 +1863,7 @@ fun checkFilesWithStat(
         useSU: Boolean = true,
         execTimeout: Long = 0,
         comparator: Comparator<in File>? = null,
-        notifier: IShellGetListNotifier? = null
+        notifier: IShellGetNotifier? = null
 ): Set<File> {
     val result = mutableSetOf<File>()
     for (file in paths?.toList() ?: emptyList()) {
@@ -1861,7 +1906,7 @@ fun getFilesWithLs(
         useSU: Boolean = true,
         execTimeout: Long = 0,
         comparator: Comparator<in File>? = null,
-        notifier: IShellGetListNotifier? = null
+        notifier: IShellGetNotifier? = null
 ): Map<File, Long> {
     val collectedMap = mutableMapOf<File, Long>()
     val collected = mutableSetOf<File>()
@@ -1945,15 +1990,7 @@ interface IFsNotifier {
     }
 }
 
-interface IGetSizeNotifier : IFsNotifier {
-    @JvmDefault
-    fun onGetFile(file: File, currentSize: Long, currentLevel: Int): Boolean = true
-
-    @JvmDefault
-    fun onGetFolder(folder: File, currentSize: Long, currentLevel: Int): Boolean = true
-}
-
-interface IGetListNotifier : IFsNotifier {
+interface IGetNotifier : IFsNotifier {
     /**
      * @return false if client code doesn't want to append this file to result
      */
@@ -1997,13 +2034,13 @@ interface IMultipleCopyNotifier : IFsNotifier {
      * true if copying confirmed by client code, false to cancel
      */
     @JvmDefault
-    fun confirmCopy(currentFile: File, targetDir: File): Boolean = true
+    fun confirmMoveOrCopy(currentFile: File, targetDir: File): Boolean = true
 
     /**
      * @return target file to copy in or null for default
      */
     @JvmDefault
-    fun onBeforeCopy(currentFile: File, targetDir: File): File? = null
+    fun onBeforeMoveOrCopy(currentFile: File, targetDir: File): File? = null
 
     /**
      * @return true if specified destination file is should be replaced (it currently exists)
@@ -2036,7 +2073,6 @@ interface IMultipleCopyNotifierLegacy : IFsNotifier {
 }
 
 interface IDeleteNotifier : IFsNotifier {
-
     /**
      * @return false to interrupt collecting
      */
@@ -2064,7 +2100,7 @@ interface IDeleteNotifier : IFsNotifier {
     }
 }
 
-interface IShellGetListNotifier : IGetListNotifier {
+interface IShellGetNotifier : IGetNotifier {
     @JvmDefault
     fun onStartFailed(t: Throwable?, forFile: File) {
     }
@@ -2108,9 +2144,9 @@ fun File?.toFisOrThrow(): FileInputStream = try {
     }
     FileInputStream(this)
 } catch (e: FileNotFoundException) {
-    throw RuntimeException("File $this not found", e)
+    throw RuntimeException("File '$this' not found", e)
 } catch (e: SecurityException) {
-    throw RuntimeException(formatException(e, "create FileInputStream"))
+    throw RuntimeException(formatException(e, "create FileInputStream"), e)
 }
 
 @JvmOverloads
@@ -2129,9 +2165,9 @@ fun File?.toFosOrThrow(append: Boolean = false): FileOutputStream = try {
     }
     FileOutputStream(this, append)
 } catch (e: FileNotFoundException) {
-    throw RuntimeException("File $this not found", e)
+    throw RuntimeException("File '$this' not found", e)
 } catch (e: SecurityException) {
-    throw RuntimeException(formatException(e, "create FileOutputStream"))
+    throw RuntimeException(formatException(e, "create FileOutputStream"), e)
 }
 
 private fun toFile(
@@ -2143,4 +2179,21 @@ private fun toFile(
         return null
     }
     return if (parentPath.isNullOrEmpty()) File(fileName) else File(parentPath, fileName)
+}
+
+class FileIterationException(
+        val type: Type,
+        message: String,
+        cause: Throwable? = null
+) : RuntimeException(message, cause) {
+
+    enum class Type {
+        INTERRUPTED_BY_USER,
+        NOT_EXISTS,
+        NOT_VALID,
+        NOT_CONFIRMED,
+        DEPTH_REACHED,
+        REPLACE_DISABLED,
+        NAME_INVALID
+    }
 }
