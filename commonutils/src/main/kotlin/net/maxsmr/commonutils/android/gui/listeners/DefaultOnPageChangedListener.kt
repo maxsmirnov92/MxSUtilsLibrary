@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.android.gui
+package net.maxsmr.commonutils.android.gui.listeners
 
 import androidx.viewpager.widget.ViewPager
 

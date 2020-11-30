@@ -23,7 +23,7 @@ fun join(delimiter: CharSequence, tokens: Iterable<*>): String {
     }
     return sb.toString()
 }
-fun split(text: String, expression: String): Array<String?>? {
+fun split(text: String, expression: String): Array<String> {
     return if (text.isEmpty()) {
         arrayOf()
     } else {

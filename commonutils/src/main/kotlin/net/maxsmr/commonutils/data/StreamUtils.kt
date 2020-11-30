@@ -144,7 +144,7 @@ fun readStringsFromInputStreamOrThrow(
     try {
         `in` = BufferedReader(InputStreamReader(`is`, charsetName))
         var line: String = EMPTY_STRING
-        while ((count <= 0 || out.size < count) && `in`.readLine().also { line = it } != null) {
+        while ((count <= 0 || out.size < count) && `in`.readLine().also { line = it ?: EMPTY_STRING } != null) {
             out.add(line)
         }
         return out

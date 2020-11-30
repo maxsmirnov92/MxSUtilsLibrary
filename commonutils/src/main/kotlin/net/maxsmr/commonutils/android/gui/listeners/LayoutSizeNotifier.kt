@@ -1,8 +1,9 @@
-package net.maxsmr.commonutils.android.gui
+package net.maxsmr.commonutils.android.gui.listeners
 
 import android.util.DisplayMetrics
 import android.view.View
 import android.view.ViewTreeObserver
+import net.maxsmr.commonutils.android.gui.getKeyboardHeight
 
 const val SIZE_UNKNOWN = -1
 

@@ -3,6 +3,7 @@ package net.maxsmr.commonutils.data.conversion.format
 import android.widget.TextView
 import net.maxsmr.commonutils.android.gui.setTextDistinct
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
+import ru.tinkoff.decoro.Mask
 import ru.tinkoff.decoro.MaskImpl
 import ru.tinkoff.decoro.parser.UnderscoreDigitSlotsParser
 import ru.tinkoff.decoro.slots.PredefinedSlots
@@ -11,19 +12,23 @@ import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 
 val EMPTY_MASK = createEmptyMask()
 
-fun getFormattedText(mask: MaskImpl, text: CharSequence): String =
+fun getFormattedText(mask: Mask, text: CharSequence?): String =
         getText(mask, text, false)
 
-fun getUnformattedText(mask: MaskImpl, text: CharSequence): String =
+fun getUnformattedText(mask: Mask, text: CharSequence?): String =
         getText(mask, text, true)
 
-private fun getText(mask: MaskImpl, text: CharSequence, isUnformatted: Boolean): String {
-    val copyMask = MaskImpl(mask)
-    copyMask.clear()
+private fun getText(mask: Mask, text: CharSequence?, isUnformatted: Boolean): String {
+    val copyMask: Mask
+    if (mask is MaskImpl) {
+        copyMask = MaskImpl(mask)
+        copyMask.clear()
+    } else {
+        copyMask = mask
+    }
     copyMask.insertFront(text)
     return if (isUnformatted) copyMask.toUnformattedString() else copyMask.toString()
 }
-
 
 /**
  * Убрать из строки такое кол-во символов, не соответствующих [limitedChars], чтобы общий размер не превышал [targetTextSize]
@@ -86,6 +91,7 @@ fun TextView.setFormattedText(
         text: CharSequence,
         mask: MaskImpl,
         prefix: String = EMPTY_STRING,
+        installOnAndFill: Boolean = false,
         applyWatcher: Boolean = true,
         isDistinct: Boolean = true,
         textValidator: ((String) -> Boolean)? = null
@@ -93,18 +99,21 @@ fun TextView.setFormattedText(
     this.text = text
     val currentText = this.text?.toString() ?: EMPTY_STRING
     if (textValidator == null || textValidator(currentText)) {
-        val watcher =
-                if (applyWatcher) {
-                    // watcher пересоздаётся
-                    MaskFormatWatcher(mask).apply {
-                        installOn(this@setFormattedText)
-                        if (prefix.isNotEmpty()) {
-                            this@setFormattedText.text = prefix
-                        }
-                    }
+        val watcher = if (applyWatcher) {
+            // watcher пересоздаётся
+            createWatcher(mask).apply {
+                if (!installOnAndFill) {
+                    installOn(this@setFormattedText)
                 } else {
-                    null
+                    installOnAndFill(this@setFormattedText)
                 }
+                if (prefix.isNotEmpty()) {
+                    this@setFormattedText.text = prefix
+                }
+            }
+        } else {
+            null
+        }
         val newText = formatText(currentText,
                 mask,
                 watcher)
@@ -137,8 +146,7 @@ fun formatText(
         text: CharSequence,
         mask: MaskImpl,
         watcher: MaskFormatWatcher? = null,
-        hideHardcodedHead: Boolean = true
-) = applyToMask(text, mask, watcher, hideHardcodedHead).toString()
+) = applyToMask(text, mask, watcher).toString()
 
 /**
  * @return маска, в которой "_" будет заменено на цифру
@@ -157,20 +165,36 @@ fun createDigitsMask(
 fun createDigitsWatcher(
         pattern: String,
         isTerminated: Boolean = true,
-        hideHardcodedHead: Boolean = false
+        hideHardcodedHead: Boolean = false,
+        maskConfigurator: ((MaskImpl) -> Unit)? = null
 ): MaskFormatWatcher =
-        MaskFormatWatcher(createDigitsMask(pattern, isTerminated, hideHardcodedHead))
+        createWatcher(createDigitsMask(pattern, isTerminated, hideHardcodedHead), maskConfigurator)
 
 @JvmOverloads
 fun createMask(
         slots: Collection<Slot>,
         isTerminated: Boolean = true,
-        hideHardcodedHead: Boolean = false
-) =  with(slots.toTypedArray()) {
+        hideHardcodedHead: Boolean = false,
+) = with(slots.toTypedArray()) {
     if (isTerminated) MaskImpl.createTerminated(this) else MaskImpl.createNonTerminated(this).apply {
         isHideHardcodedHead = hideHardcodedHead
     }
 }
+
+@JvmOverloads
+fun createWatcher(
+        slots: Collection<Slot>,
+        isTerminated: Boolean = true,
+        hideHardcodedHead: Boolean = false,
+        maskConfigurator: ((MaskImpl) -> Unit)? = null
+): MaskFormatWatcher = createWatcher(createMask(slots, isTerminated, hideHardcodedHead), maskConfigurator)
+
+
+@JvmOverloads
+fun createWatcher(mask: MaskImpl, maskConfigurator: ((MaskImpl) -> Unit)? = null): MaskFormatWatcher =
+        MaskFormatWatcher(mask.apply {
+            maskConfigurator?.invoke(this)
+        })
 
 private fun createEmptyMask(): MaskImpl =
         createMask(listOf(PredefinedSlots.any()), false, true)

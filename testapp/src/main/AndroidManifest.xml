@@ -17,7 +17,7 @@
         android:theme="@style/AppTheme">
 
         <activity
-            android:name="net.maxsmr.testapp.activity.TestTasksActivity"
+            android:name="net.maxsmr.testapp.activity.TestAnyActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -26,6 +26,8 @@
         </activity>
 
         <activity android:name=".activity.TestUploadActivity" />
+
+        <activity android:name=".activity.TestTasksActivity" />
     </application>
 
 </manifest>

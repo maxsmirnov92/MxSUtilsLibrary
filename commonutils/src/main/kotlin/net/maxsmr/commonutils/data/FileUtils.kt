@@ -743,7 +743,7 @@ fun writeBytesToFileOrThrow(
         throw NullPointerException("data is null")
     }
     if (!isFileExistsOrThrow(file)) {
-        createFileOrThrow(file.name, file.absolutePath, !append)
+        createFileOrThrow(file.name, file.parent, !append)
     }
     if (!isFileAccessibleOrThrow(file, forRead = false)) {
         throw RuntimeException("Cannot write to file: '$file'")
@@ -779,7 +779,7 @@ fun writeStringsToFileOrThrow(
         throw NullPointerException("file is null")
     }
     if (!isFileExistsOrThrow(file)) {
-        createFileOrThrow(file.name, file.absolutePath, !append)
+        createFileOrThrow(file.name, file.parent, !append)
     }
     if (!isFileAccessibleOrThrow(file, forRead = false)) {
         throw RuntimeException("Cannot write to file: '$file'")
