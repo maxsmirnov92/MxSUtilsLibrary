@@ -10,6 +10,7 @@ import android.graphics.Color
 import android.graphics.Paint
 import android.graphics.PorterDuff
 import android.graphics.Rect
+import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.CountDownTimer
@@ -33,6 +34,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
+import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
 import com.google.android.material.appbar.AppBarLayout.ScrollingViewBehavior
@@ -42,6 +44,8 @@ import com.google.android.material.textfield.TextInputLayout
 import net.maxsmr.commonutils.R
 import net.maxsmr.commonutils.android.*
 import net.maxsmr.commonutils.android.gui.listeners.DefaultTextWatcher
+import net.maxsmr.commonutils.android.gui.listeners.OnTextWatcher
+import net.maxsmr.commonutils.android.livedata.setValueIfNew
 import net.maxsmr.commonutils.data.Pair
 import net.maxsmr.commonutils.data.ReflectionUtils
 import net.maxsmr.commonutils.data.text.*
@@ -52,7 +56,20 @@ import java.util.concurrent.TimeUnit
 
 private const val DEFAULT_DARK_COLOR_RATIO = 0.7
 
+private const val POPUP_HEIGHT_CORRECTION = 24f
+
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("GuiUtils")
+
+private val defaultWindowConfigurator: (PopupWindow, Context) -> Unit = { window, context ->
+    with(window) {
+        width = ViewGroup.LayoutParams.WRAP_CONTENT
+        height = ViewGroup.LayoutParams.WRAP_CONTENT
+        setBackgroundDrawable(ColorDrawable(ContextCompat.getColor(context, android.R.color.transparent)))
+        isFocusable = true
+        isTouchable = true
+        isOutsideTouchable = true
+    }
+}
 
 fun Activity.setFullScreen(toggle: Boolean) {
     with(window) {
@@ -163,6 +180,22 @@ fun EditText.clearMaxLength() {
     filters = filters
             .filterNot { it is InputFilter.LengthFilter }
             .toTypedArray()
+}
+
+fun TextView.bindTo(field: MutableLiveData<String>) = bindTo(field) {
+    it.toString()
+}
+
+fun <D> TextView.bindTo(field: MutableLiveData<D>, fieldMapper: (CharSequence) -> D) {
+    addTextChangedListener(OnTextWatcher { s: CharSequence?, start: Int, before: Int, count: Int ->
+        field.setValueIfNew(fieldMapper(s?.toString() ?: EMPTY_STRING))
+    })
+}
+
+fun CompoundButton.bindTo(field: MutableLiveData<Boolean>) {
+    setOnCheckedChangeListener { _, isChecked ->
+        field.setValueIfNew(isChecked)
+    }
 }
 
 /**
@@ -1000,6 +1033,135 @@ fun TextView.setupPlaceholderOrLabelHint(
 @JvmOverloads
 fun WebView.loadDataBase64(value: String, charset: Charset = Charsets.UTF_8) {
     loadData(Base64.encodeToString(value.toByteArray(charset), Base64.DEFAULT), "text/html; charset=${charset}", "base64")
+}
+
+/**
+ * @param onDismissed - true, если дальнейший показ не требуется
+ * @return показанный с 0-ой высотой [PopupWindow]
+ */
+@JvmOverloads
+fun showWindowPopupWithObserver(
+        context: Context,
+        currentPopup: PopupWindow?,
+        anchorView: View,
+        gravity: Int = Gravity.TOP,
+        contentViewCreator: (View) -> View,
+        onDismissed: ((PopupWindow) -> Boolean)? = null,
+        onShowed: ((PopupWindow) -> Unit)? = null,
+        windowConfigurator: (PopupWindow, Context) -> Unit = defaultWindowConfigurator
+): PopupWindow? {
+    val contentViewCreatorListener: (ViewReadyListener) -> View = {
+        val contentView = contentViewCreator(anchorView)
+        observeViewReady(contentView, it)
+    }
+    return showWindowPopup(
+            context,
+            currentPopup,
+            anchorView,
+            gravity,
+            contentViewCreatorListener,
+            onDismissed,
+            onShowed,
+            windowConfigurator
+    )
+}
+
+@JvmOverloads
+fun showWindowPopup(
+        context: Context,
+        currentPopup: PopupWindow?,
+        anchorView: View,
+        gravity: Int = Gravity.TOP,
+        contentViewCreator: (ViewReadyListener) -> View,
+        onDismissed: ((PopupWindow) -> Boolean)? = null,
+        onShowed: ((PopupWindow) -> Unit)? = null,
+        windowConfigurator: (PopupWindow, Context) -> Unit = defaultWindowConfigurator
+): PopupWindow? {
+    var popup = currentPopup
+    if (popup != null) {
+        popup.dismiss()
+        if (onDismissed?.invoke(popup) == true) {
+            return null
+        }
+    }
+    val listener = object : ViewReadyListener {
+        override fun onViewReady(width: Int, height: Int) {
+            popup?.let {
+                // Костыль. Нужно знать высоту попапа перед показом для определения правильной позиции,
+                // но по какой-то причине она определяется некорректно (при вызове measure и обращении к measuredWidth, measuredHeight)
+                // поэтому быстро показываем его дважды: после первого показа забираем корректные ширину и высоту,
+                // и показываем еще раз уже в нужном месте
+                it.show(anchorView, height, gravity)
+                onShowed?.invoke(it)
+                popup?.setOnDismissListener {
+                    onDismissed?.invoke(it)
+                }
+            }
+        }
+    }
+    popup = createWindowPopup(context, contentViewCreator(listener), windowConfigurator)
+    // первый показ, когда высота неизвестна
+    popup.show(anchorView, 0, gravity)
+    return popup
+}
+
+fun observeViewReady(contentView: View, listener: ViewReadyListener): View {
+    return contentView.apply {
+        viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                if (viewTreeObserver.isAlive) {
+                    viewTreeObserver.removeOnGlobalLayoutListener(this)
+                }
+                listener.onViewReady(width, height)
+            }
+        })
+    }
+}
+
+/**
+ * Возвращает текущие экранные координаты View
+ */
+fun View.screenLocation(): Rect {
+    return IntArray(2).let {
+        getLocationOnScreen(it)
+        Rect().apply {
+            left = it[0]
+            top = it[1]
+            right = left + width
+            bottom = top + height
+        }
+    }
+}
+
+@JvmOverloads
+fun PopupWindow.show(
+        anchor: View,
+        popupContentHeight: Int,
+        gravity: Int = Gravity.TOP
+) {
+    dismiss()
+    if (popupContentHeight < 0) {
+        return
+    }
+    val hCorrection = TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, POPUP_HEIGHT_CORRECTION, anchor.context.resources.displayMetrics).toInt()
+    val anchorLocation = anchor.screenLocation()
+    val y = anchorLocation.top - popupContentHeight + hCorrection
+    showAtLocation(anchor, gravity, 0, y)
+}
+
+private fun createWindowPopup(
+        context: Context,
+        contentView: View,
+        configurator: (PopupWindow, Context) -> Unit
+): PopupWindow = with(PopupWindow(context)) {
+    configurator(this, context)
+    this.contentView = contentView
+    return this
+}
+
+interface ViewReadyListener {
+
+    fun onViewReady(width: Int, height: Int)
 }
 
 private fun TextView.setTextWithMovementMethod(text: CharSequence): CharSequence {

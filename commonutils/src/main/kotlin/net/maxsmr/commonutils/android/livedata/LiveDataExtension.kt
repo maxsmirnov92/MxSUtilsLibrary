@@ -6,6 +6,7 @@ import net.maxsmr.commonutils.android.livedata.wrappers.NotifyCheckMutableLiveDa
 import net.maxsmr.commonutils.data.states.ILoadState
 import net.maxsmr.commonutils.data.states.LoadState
 import net.maxsmr.commonutils.data.states.getOrCreate
+import net.maxsmr.commonutils.data.validation.BaseValidator
 
 /**
  * @return [LiveData] с изменёнными текущими данными из исходного [T] с использованием [changeFunc]
@@ -390,6 +391,12 @@ fun <D> MutableLiveData<ILoadState<D>>.errorLoad(
         setOrPost(state, setOrPost, shouldNotify)
     }
     return state
+}
+
+fun <D> MutableLiveData<D>.bindToValidator(validator: BaseValidator<D>) {
+    observeForever {
+        validator.validate(it)
+    }
 }
 
 private fun <D> MutableLiveData<ILoadState<D>>.setOrPost(
