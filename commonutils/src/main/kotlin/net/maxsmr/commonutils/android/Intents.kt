@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils.android
 
+import android.annotation.TargetApi
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
@@ -35,12 +36,16 @@ fun wrapIntent(
 }
 
 @JvmOverloads
-fun getAppSettingsIntent(context: Context, packageName: String = context.packageName): Intent {
-    val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
-    val uri = Uri.fromParts("package", packageName, null)
-    intent.data = uri
-    return intent
-}
+fun getAppSettingsIntent(context: Context, packageName: String = context.packageName): Intent =
+        Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
+                .setData(Uri.parse("package:$packageName"))
+
+@TargetApi(Build.VERSION_CODES.M)
+@JvmOverloads
+fun getAppManageSettingsIntent(context: Context, packageName: String = context.packageName) =
+        Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
+                .setData(Uri.parse("package:$packageName"))
+
 
 @JvmOverloads
 fun getBrowseLinkIntent(url: String = EMPTY_STRING, withType: Boolean = true): Intent {

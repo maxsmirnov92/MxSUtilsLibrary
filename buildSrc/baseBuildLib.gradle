@@ -94,6 +94,9 @@ dependencies {
     // libs/*.jar
     api fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
 
+    // Jetbrains annotations
+    api "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
+
     // Kotlin
     implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
     implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"

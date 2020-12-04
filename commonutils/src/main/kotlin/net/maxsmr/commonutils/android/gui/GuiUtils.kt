@@ -201,6 +201,7 @@ fun CompoundButton.bindTo(field: MutableLiveData<Boolean>) {
 /**
  * Добавить кликабельную картинку вместо последнего символа в строке
  */
+@JvmOverloads
 fun TextView.appendClickableImageTextView(
         @DrawableRes drawableResId: Int,
         spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
@@ -282,6 +283,7 @@ fun TextView.replaceUrlSpans(
  * @param str текст
  * @param selection текст для выделения (ищется первое вхождение [selection] в [str]
  */
+@JvmOverloads
 fun TextView.setTextWithSelection(
         text: String,
         @ColorInt highlightColor: Int,
@@ -291,21 +293,24 @@ fun TextView.setTextWithSelection(
     setTextWithMovementMethod(createSelectedText(text, highlightColor, selection, spanFlags))
 }
 
+@JvmOverloads
 fun TextView.setTextWithVisibility(
         text: CharSequence?,
+        isGoneOrInvisible: Boolean = true,
         distinct: Boolean = true,
         asString: Boolean = true,
         isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it)}
 ) {
     visibility = if (isEmptyFunc(text)) {
-        this.text = null
-        View.GONE
+        this.text = EMPTY_STRING
+        if (isGoneOrInvisible) View.GONE else View.INVISIBLE
     } else {
         setTextChecked(text, distinct, asString)
         View.VISIBLE
     }
 }
 
+@JvmOverloads
 fun EditText.setTextWithSelectionToEnd(
         text: CharSequence,
         distinct: Boolean = true,
@@ -369,7 +374,7 @@ fun TextInputLayout.clearInputError(force: Boolean = false) {
     }
 }
 
-fun TextInputLayout.setEditTextHintByError(hint: String = EMPTY_STRING) {
+fun TextInputLayout.setEditTextHintByError(hint: String) {
     editText?.let {
         it.hint = if (isEmpty(this.error)) null else hint
     }
@@ -438,6 +443,7 @@ fun Activity.setNavigationBarColor(@ColorInt color: Int) {
 /**
  * Выставить [icon] с фильтром [color] в кач-ве background для [View]
  */
+@JvmOverloads
 @SuppressLint("ResourceType")
 fun View.setBackgroundTint(
         @DrawableRes icon: Int,
@@ -453,6 +459,7 @@ fun View.setBackgroundTint(
 /**
  * Выставить [icon] с фильтром [color] в кач-ве src для [ImageView]
  */
+@JvmOverloads
 @SuppressLint("ResourceType")
 fun ImageView.setTint(
         @DrawableRes icon: Int,
@@ -482,6 +489,7 @@ fun ImageView.setTint(@ColorInt color: Int) {
 /**
  * Выставить цветовой фильтр [ColorStateList] для src в [ImageView]
  */
+@JvmOverloads
 fun ImageView.setTint(
         colorStateList: ColorStateList?,
         mode: PorterDuff.Mode = PorterDuff.Mode.SRC_ATOP
@@ -623,12 +631,14 @@ fun showKeyboard(
     return imm.showSoftInput(hostView, flags)
 }
 
+@JvmOverloads
 fun hideKeyboard(
         activity: Activity,
         flags: Int = 0,
         clearFocus: Boolean = true
 ) = hideKeyboard(activity.currentFocus, flags, clearFocus)
 
+@JvmOverloads
 fun hideKeyboard(
         hostView: View?,
         flags: Int = 0,
@@ -685,6 +695,7 @@ private fun toggleAboveLockscreen(window: Window, wakeScreen: Boolean, toggle: B
 /**
  * Запросить фокус или показать клавиатуру в зав-ти от состояния view
  */
+@JvmOverloads
 fun toggleFocusOrKeyboardState(view: View, activity: Activity, toggle: Boolean = true) {
     if (toggle) {
         if (!view.isFocused) {
@@ -822,8 +833,7 @@ fun getCurrentDisplayOrientation(context: Context): Int {
     val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager?
             ?: throw NullPointerException(WindowManager::class.java.simpleName + " is null")
     var degrees = 0
-    val rotation = windowManager.defaultDisplay.rotation
-    when (rotation) {
+    when (windowManager.defaultDisplay.rotation) {
         Surface.ROTATION_90 -> degrees = 90
         Surface.ROTATION_180 -> degrees = 180
         Surface.ROTATION_270 -> degrees = 270
