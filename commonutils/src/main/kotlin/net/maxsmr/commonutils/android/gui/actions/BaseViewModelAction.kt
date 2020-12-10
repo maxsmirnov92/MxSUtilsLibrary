@@ -15,6 +15,8 @@ abstract class BaseViewModelAction<Actor> {
 
     @CallSuper
     open fun doAction(actor: Actor) {
-        actorSubject.onNext(actor)
+        actor?.let {
+            actorSubject.onNext(it)
+        }
     }
 }

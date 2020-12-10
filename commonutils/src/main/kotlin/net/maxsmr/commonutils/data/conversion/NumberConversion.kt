@@ -6,10 +6,10 @@ import java.math.BigDecimal
 fun CharSequence?.toByteNotNull(
         radix: Int = 10,
         exceptionAction: ((NumberFormatException) -> Unit)? = null
-): Byte = this.toByte(radix, exceptionAction) ?: 0
+): Byte = this.toByteOrNull(radix, exceptionAction) ?: 0
 
 @JvmOverloads
-fun CharSequence?.toByte(
+fun CharSequence?.toByteOrNull(
         radix: Int = 10,
         exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Byte? = toNumberOrThrow(Byte::class.java, radix, exceptionAction)
@@ -18,10 +18,10 @@ fun CharSequence?.toByte(
 fun CharSequence?.toIntNotNull(
         radix: Int = 10,
         exceptionAction: ((NumberFormatException) -> Unit)? = null
-): Int = this.toInt(radix, exceptionAction) ?: 0
+): Int = this.toIntOrNull(radix, exceptionAction) ?: 0
 
 @JvmOverloads
-fun CharSequence?.toInt(
+fun CharSequence?.toIntOrNull(
         radix: Int = 10,
         exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Int? = toNumberOrThrow(Int::class.java, radix, exceptionAction)
@@ -30,10 +30,10 @@ fun CharSequence?.toInt(
 fun CharSequence?.toLongNotNull(
         radix: Int = 10,
         exceptionAction: ((NumberFormatException) -> Unit)? = null
-): Long = toLong(radix, exceptionAction) ?: 0L
+): Long = toLongOrNull(radix, exceptionAction) ?: 0L
 
 @JvmOverloads
-fun CharSequence?.toLong(
+fun CharSequence?.toLongOrNull(
         radix: Int = 10,
         exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Long? = toNumberOrThrow(Long::class.java, radix, exceptionAction)
@@ -41,20 +41,20 @@ fun CharSequence?.toLong(
 @JvmOverloads
 fun CharSequence?.toFloatNotNull(
         exceptionAction: ((NumberFormatException) -> Unit)? = null
-): Float = toFloat(exceptionAction) ?: 0f
+): Float = toFloatOrNull(exceptionAction) ?: 0f
 
 @JvmOverloads
-fun CharSequence?.toFloat(
+fun CharSequence?.toFloatOrNull(
         exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Float? = toNumberOrThrow(Float::class.java, 10, exceptionAction)
 
 @JvmOverloads
 fun CharSequence?.toDoubleNotNull(
         exceptionAction: ((NumberFormatException) -> Unit)? = null
-): Double = toDouble(exceptionAction) ?: 0.0
+): Double = toDoubleOrNull(exceptionAction) ?: 0.0
 
 @JvmOverloads
-fun CharSequence?.toDouble(
+fun CharSequence?.toDoubleOrNull(
         exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Double? = toNumberOrThrow(Double::class.java, 10, exceptionAction)
 

@@ -40,7 +40,7 @@ abstract class ContentPickerDialogFragmentsHolder(
             val positiveButton = this.getPickFromGalleryAlertButtonName(context)
             val neutralButton = this.getPickFromFileAlertButtonName(context)
             val negativeButton = this.getPickFromCameraAlertButtonName(context)
-            val builder = TypedDialogFragment.DefaultTypedDialogBuilder(context)
+            val builder = TypedDialogFragment.DefaultTypedDialogBuilder()
             setupDialogBuilder(builder)
             show(
                 TAG_PICK_CONTENT_CHOICE, builder.setButtons(

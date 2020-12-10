@@ -5,6 +5,7 @@ import android.content.DialogInterface
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 
+@Deprecated("use DialogFragmentShowMessageAction")
 data class AlertDialogMessageAction(
         @StringRes
         val titleResId: Int = 0,
@@ -25,12 +26,12 @@ data class AlertDialogMessageAction(
         val positiveClickListener: (() -> Unit)? = null,
         val neutralClickListener: (() -> Unit)? = null,
         val negativeClickListener: (() -> Unit)? = null
-) : BaseMessageAction<DialogInterface>() {
+) : BaseMessageAction<DialogInterface, Context>() {
 
-    override fun show(context: Context): DialogInterface {
-        val builder = AlertDialog.Builder(context)
+    override fun show(actor: Context): DialogInterface {
+        val builder = AlertDialog.Builder(actor)
         val title = if (titleResId != 0) {
-            context.getString(titleResId)
+            actor.getString(titleResId)
         } else {
             title
         }
@@ -38,7 +39,7 @@ data class AlertDialogMessageAction(
             builder.setTitle(title)
         }
         val message = if (messageResId != 0) {
-            context.getString(messageResId)
+            actor.getString(messageResId)
         } else {
             message
         }
@@ -48,17 +49,17 @@ data class AlertDialogMessageAction(
         builder.setCancelable(isCancelable)
 
         val positiveClickText = if (positiveClickTextResId != 0) {
-            context.getString(positiveClickTextResId)
+            actor.getString(positiveClickTextResId)
         } else {
             positiveClickText
         }
         val neutralClickText = if (neutralClickTextResId != 0) {
-            context.getString(neutralClickTextResId)
+            actor.getString(neutralClickTextResId)
         } else {
             neutralClickText
         }
         val negativeClickText = if (negativeClickTextResId != 0) {
-            context.getString(negativeClickTextResId)
+            actor.getString(negativeClickTextResId)
         } else {
             negativeClickText
         }

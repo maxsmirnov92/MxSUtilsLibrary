@@ -2,7 +2,7 @@ package net.maxsmr.commonutils.data.text
 
 import net.maxsmr.commonutils.data.CompareCondition
 import net.maxsmr.commonutils.data.Predicate
-import net.maxsmr.commonutils.data.conversion.toDouble
+import net.maxsmr.commonutils.data.conversion.toDoubleOrNull
 import net.maxsmr.commonutils.data.number.isZeroOrNull
 import java.util.*
 
@@ -36,7 +36,7 @@ fun split(text: String, expression: String): Array<String> {
 fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): Boolean =
         s == null || s == EMPTY_STRING || shouldCheckNullString && "null".equals(s.toString(), ignoreCase = true)
 
-fun isZeroOrNull(value: CharSequence?) = value.toDouble().isZeroOrNull()
+fun isZeroOrNull(value: CharSequence?) = value.toDoubleOrNull().isZeroOrNull()
 
 fun isNotZeroOrNull(value: CharSequence?) = !isZeroOrNull(value)
 

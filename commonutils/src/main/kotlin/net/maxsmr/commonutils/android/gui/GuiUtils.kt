@@ -918,70 +918,58 @@ fun WebView.loadDataBase64(value: String, charset: Charset = Charsets.UTF_8) {
  * @param onDismissed - true, если дальнейший показ не требуется
  * @return показанный с 0-ой высотой [PopupWindow]
  */
-@JvmOverloads
-fun showWindowPopupWithObserver(
+fun showPopupWindowWithObserver(
         context: Context,
         currentPopup: PopupWindow?,
-        anchorView: View,
-        gravity: Int = Gravity.TOP,
-        contentViewCreator: (View) -> View,
-        onDismissed: ((PopupWindow) -> Boolean)? = null,
-        onShowed: ((PopupWindow) -> Unit)? = null,
-        windowConfigurator: (PopupWindow, Context) -> Unit = defaultWindowConfigurator
+        params: PopupParams,
+        contentViewCreator: (View) -> View
 ): PopupWindow? {
     val contentViewCreatorListener: (ViewReadyListener) -> View = {
-        val contentView = contentViewCreator(anchorView)
+        val contentView = contentViewCreator(params.anchorView)
         observeViewReady(contentView, it)
     }
-    return showWindowPopup(
+    return showPopupWindow(
             context,
             currentPopup,
-            anchorView,
-            gravity,
-            contentViewCreatorListener,
-            onDismissed,
-            onShowed,
-            windowConfigurator
+            params,
+            contentViewCreatorListener
     )
 }
 
-@JvmOverloads
-fun showWindowPopup(
+fun showPopupWindow(
         context: Context,
         currentPopup: PopupWindow?,
-        anchorView: View,
-        gravity: Int = Gravity.TOP,
+        params: PopupParams,
         contentViewCreator: (ViewReadyListener) -> View,
-        onDismissed: ((PopupWindow) -> Boolean)? = null,
-        onShowed: ((PopupWindow) -> Unit)? = null,
-        windowConfigurator: (PopupWindow, Context) -> Unit = defaultWindowConfigurator
 ): PopupWindow? {
-    var popup = currentPopup
-    if (popup != null) {
-        popup.dismiss()
-        if (onDismissed?.invoke(popup) == true) {
-            return null
+    with(params) {
+        var popup = currentPopup
+        if (popup != null && params.dismissIfShowed) {
+            popup.dismiss()
+            if (onDismissed?.invoke(popup) == true) {
+                return null
+            }
         }
-    }
-    val listener = object : ViewReadyListener {
-        override fun onViewReady(width: Int, height: Int) {
-            popup?.let {
-                // Костыль. Нужно знать высоту попапа перед показом для определения правильной позиции,
-                // но по какой-то причине она определяется некорректно (при вызове measure и обращении к measuredWidth, measuredHeight)
-                // поэтому быстро показываем его дважды: после первого показа забираем корректные ширину и высоту,
-                // и показываем еще раз уже в нужном месте
-                it.show(anchorView, height, gravity)
-                onShowed?.invoke(it)
-                popup?.setOnDismissListener {
-                    onDismissed?.invoke(it)
+        val listener = object : ViewReadyListener {
+            override fun onViewReady(view: View) {
+                popup?.let {
+                    // Костыль. Нужно знать высоту попапа перед показом для определения правильной позиции,
+                    // но по какой-то причине она определяется некорректно (при вызове measure и обращении к measuredWidth, measuredHeight)
+                    // поэтому быстро показываем его дважды: после первого показа забираем корректные ширину и высоту,
+                    // и показываем еще раз уже в нужном месте
+                    it.show(anchorView, view.height, gravity)
+                    onShowed?.invoke(it)
+                    popup?.setOnDismissListener {
+                        onDismissed?.invoke(it)
+                    }
                 }
             }
         }
+        popup = createPopupWindow(context, contentViewCreator(listener), windowConfigurator)
+        // первый показ, когда высота неизвестна
+        popup.show(anchorView, 0, gravity)
+        return popup
     }
-    popup = createWindowPopup(context, contentViewCreator(listener), windowConfigurator)
-    // первый показ, когда высота неизвестна
-    popup.show(anchorView, 0, gravity)
-    return popup
 }
 
 fun observeViewReady(contentView: View, listener: ViewReadyListener): View {
@@ -991,7 +979,7 @@ fun observeViewReady(contentView: View, listener: ViewReadyListener): View {
                 if (viewTreeObserver.isAlive) {
                     viewTreeObserver.removeOnGlobalLayoutListener(this)
                 }
-                listener.onViewReady(width, height)
+                listener.onViewReady(this@apply)
             }
         })
     }
@@ -1028,7 +1016,7 @@ fun PopupWindow.show(
     showAtLocation(anchor, gravity, 0, y)
 }
 
-private fun createWindowPopup(
+private fun createPopupWindow(
         context: Context,
         contentView: View,
         configurator: (PopupWindow, Context) -> Unit
@@ -1040,7 +1028,7 @@ private fun createWindowPopup(
 
 interface ViewReadyListener {
 
-    fun onViewReady(width: Int, height: Int)
+    fun onViewReady(view: View)
 }
 
 private fun TextView.setTextWithMovementMethod(text: CharSequence): CharSequence {
@@ -1123,3 +1111,12 @@ class EditTextKeyLimiter(private val et: EditText, private val linesLimit: Int) 
         require(linesLimit > 0) { "incorrect linesLimit: $linesLimit" }
     }
 }
+
+data class PopupParams @JvmOverloads constructor(
+        val anchorView: View,
+        val gravity: Int = Gravity.TOP,
+        val dismissIfShowed: Boolean = true,
+        val onDismissed: ((PopupWindow) -> Boolean)? = null,
+        val onShowed: ((PopupWindow) -> Unit)? = null,
+        val windowConfigurator: (PopupWindow, Context) -> Unit = defaultWindowConfigurator
+)

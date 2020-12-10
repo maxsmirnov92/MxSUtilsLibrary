@@ -8,8 +8,6 @@ import android.media.MediaMetadataRetriever
 import android.net.Uri
 import android.provider.MediaStore
 import net.maxsmr.commonutils.android.isAtLeastMarshmallow
-import net.maxsmr.commonutils.data.conversion.toInt
-import net.maxsmr.commonutils.data.conversion.toLong
 import net.maxsmr.commonutils.data.isFileValid
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.text.isEmpty
@@ -197,9 +195,9 @@ fun <M> extractMetadataField(
         if (clazz.isAssignableFrom(String::class.java)) {
             if (!isEmpty) value as M else defaultValue
         } else if (clazz.isAssignableFrom(Long::class.java)) {
-            value.toLong() as M?
+            value.toLongOrNull() as M? ?: defaultValue
         } else if (clazz.isAssignableFrom(Int::class.java)) {
-            value.toInt() as M?
+            value.toIntOrNull() as M? ?: defaultValue
         } else if (clazz.isAssignableFrom(Boolean::class.java)) {
             if (!isEmpty) value.toBoolean() as M? else defaultValue
         } else {

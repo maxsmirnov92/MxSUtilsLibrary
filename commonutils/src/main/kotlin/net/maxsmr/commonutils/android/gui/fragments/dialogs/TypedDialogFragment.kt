@@ -158,7 +158,7 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
         return builder
     }
 
-    abstract class Builder<F : TypedDialogFragment<*>>(protected val context: Context) {
+    abstract class Builder<F : TypedDialogFragment<*>>() {
 
         protected var title: String? = null
         protected var message: String? = null
@@ -180,7 +180,7 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             return this
         }
 
-        fun setTitle(@StringRes titleResId: Int): Builder<*> {
+        fun setTitle(context: Context, @StringRes titleResId: Int): Builder<*> {
             this.title = context.getString(titleResId)
             return this
         }
@@ -190,7 +190,7 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             return this
         }
 
-        fun setMessage(@StringRes messageResId: Int): Builder<*> {
+        fun setMessage(context: Context, @StringRes messageResId: Int): Builder<*> {
             this.message = context.getString(messageResId)
             return this
         }
@@ -227,7 +227,12 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             return this
         }
 
-        fun setButtons(@StringRes positiveResId: Int?, @StringRes neutralResId: Int?, @StringRes negativeResId: Int?): Builder<*> {
+        fun setButtons(
+                context: Context,
+                       @StringRes positiveResId: Int?,
+                @StringRes neutralResId: Int?,
+                @StringRes negativeResId: Int?
+        ): Builder<*> {
             buttonPositive =  positiveResId?.let { context.getString(it) } ?: EMPTY_STRING
             buttonNeutral =  neutralResId?.let { context.getString(it) } ?: EMPTY_STRING
             buttonNegative = negativeResId?.let { context.getString(it) } ?: EMPTY_STRING
@@ -275,7 +280,7 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             val event: KeyEvent?
     )
 
-    class DefaultTypedDialogBuilder(context: Context) : Builder<TypedDialogFragment<AlertDialog>>(context) {
+    class DefaultTypedDialogBuilder : Builder<TypedDialogFragment<AlertDialog>>() {
 
         override fun build(): TypedDialogFragment<AlertDialog> {
             return newInstance(createArgs())
