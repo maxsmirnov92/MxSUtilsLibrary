@@ -21,9 +21,7 @@ import android.text.style.URLSpan
 import android.util.Base64
 import android.util.TypedValue
 import android.view.*
-import android.view.ViewTreeObserver.OnGlobalLayoutListener
 import android.view.inputmethod.EditorInfo
-import android.view.inputmethod.InputMethodManager
 import android.webkit.WebView
 import android.widget.*
 import androidx.annotation.ColorInt
@@ -560,117 +558,6 @@ fun Resources.getStatusBarHeight(): Int {
     } else 0
 }
 
-fun getKeyboardHeight(rootView: View, targetView: View): Int {
-    val rect = Rect()
-    targetView.getWindowVisibleDisplayFrame(rect)
-    val usableViewHeight = rootView.height - (if (rect.top != 0) rootView.context.resources.getStatusBarHeight() else 0) - rootView.getViewInset()
-    return usableViewHeight - (rect.bottom - rect.top)
-}
-
-/**
- * Добавление слушателя [OnSoftInputStateListener] на состояние клавиатуры
- *
- * @param rootView корневай [View] на экране
- */
-fun addSoftInputStateListener(
-        rootView: View,
-        openedAction: () -> Unit,
-        closedAction: () -> Unit
-): OnGlobalLayoutListener {
-    val listener = object : OnGlobalLayoutListener {
-        private val HEIGHT_ROOT_THRESHOLD = 100
-        override fun onGlobalLayout() {
-            val heightDiff = rootView.rootView.height - rootView.height
-            if (heightDiff > HEIGHT_ROOT_THRESHOLD) {
-                openedAction()
-            } else {
-                closedAction()
-            }
-        }
-    }
-    rootView.viewTreeObserver.addOnGlobalLayoutListener(listener)
-    return listener
-}
-
-fun isKeyboardShown(activity: Activity): Boolean =
-        isKeyboardShown(activity.currentFocus)
-
-fun isKeyboardShown(view: View?): Boolean {
-    if (view == null) {
-        return false
-    }
-    try {
-        val inputManager = view.context.getSystemService(Context.INPUT_METHOD_SERVICE)
-                as InputMethodManager? ?: return false
-        return inputManager.isActive(view)
-    } catch (e: Exception) {
-        logger.e("An exception occurred: ${e.message}", e)
-        return false
-    }
-}
-
-@JvmOverloads
-fun showKeyboard(
-        activity: Activity,
-        flags: Int = InputMethodManager.SHOW_IMPLICIT
-): Boolean =
-        showKeyboard(activity.currentFocus, flags, false)
-
-@JvmOverloads
-fun showKeyboard(
-        hostView: View?,
-        flags: Int = InputMethodManager.SHOW_IMPLICIT,
-        requestFocus: Boolean = true
-): Boolean {
-    if (hostView == null) return false
-    if (requestFocus) {
-        requestFocus(hostView)
-    }
-    val imm = hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
-            ?: return false
-    return imm.showSoftInput(hostView, flags)
-}
-
-@JvmOverloads
-fun hideKeyboard(
-        activity: Activity,
-        flags: Int = 0,
-        clearFocus: Boolean = true
-) = hideKeyboard(activity.currentFocus, flags, clearFocus)
-
-@JvmOverloads
-fun hideKeyboard(
-        hostView: View?,
-        flags: Int = 0,
-        clearFocus: Boolean = true
-): Boolean {
-    hostView?.let {
-        if (clearFocus) {
-            clearFocus(hostView)
-        }
-        hostView.windowToken?.let {
-            val imm = hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
-                    ?: return false
-            return imm.hideSoftInputFromWindow(it, flags)
-        }
-    }
-    return false
-}
-
-@JvmOverloads
-fun toggleKeyboard(activity: Activity, toggleFocus: Boolean = true) {
-    toggleKeyboard(activity.currentFocus, toggleFocus)
-}
-
-@JvmOverloads
-fun toggleKeyboard(hostView: View?, toggleFocus: Boolean = true) {
-    if (isKeyboardShown(hostView)) {
-        hideKeyboard(hostView, clearFocus = toggleFocus)
-    } else {
-        showKeyboard(hostView, requestFocus = toggleFocus)
-    }
-}
-
 fun showAboveLockscreen(window: Window, wakeScreen: Boolean) {
     toggleAboveLockscreen(window, wakeScreen, true)
 }
@@ -689,24 +576,6 @@ private fun toggleAboveLockscreen(window: Window, wakeScreen: Boolean, toggle: B
         window.addFlags(flags)
     } else {
         window.clearFlags(flags)
-    }
-}
-
-/**
- * Запросить фокус или показать клавиатуру в зав-ти от состояния view
- */
-@JvmOverloads
-fun toggleFocusOrKeyboardState(view: View, activity: Activity, toggle: Boolean = true) {
-    if (toggle) {
-        if (!view.isFocused) {
-            requestFocus(view)
-        } else {
-            showKeyboard(view)
-        }
-    } else {
-        hideKeyboard(activity)
-        // очистка фокуса не убирает клавиатуру
-        clearFocus(activity)
     }
 }
 

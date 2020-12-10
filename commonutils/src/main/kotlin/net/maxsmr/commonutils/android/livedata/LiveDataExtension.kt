@@ -393,9 +393,30 @@ fun <D> MutableLiveData<ILoadState<D>>.errorLoad(
     return state
 }
 
-fun <D> MutableLiveData<D>.bindToValidator(validator: BaseValidator<D>) {
+fun <D> MutableLiveData<D>.bindValidate(vararg validators: BaseValidator<D>) {
+    observeForever { data ->
+        validators.forEach {
+            it.validate(data)
+        }
+    }
+}
+
+/**
+ * Для случая, когда [validators] принимают не исходный тип [D], а комбинированный [T]
+ */
+fun <D, T> MutableLiveData<D>.bindValidate(validators: Collection<BaseValidator<T>>, mapFunc: (D) -> T) {
+    observeForever { data ->
+        validators.forEach {
+            it.validate(mapFunc(data))
+        }
+    }
+}
+
+fun MutableLiveData<*>.bindClearError(vararg validators: BaseValidator<*>) {
     observeForever {
-        validator.validate(it)
+        validators.forEach {
+            it.clearError()
+        }
     }
 }
 

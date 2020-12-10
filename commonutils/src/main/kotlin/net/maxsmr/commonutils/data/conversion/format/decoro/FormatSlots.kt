@@ -108,6 +108,32 @@ fun getSlots(base: List<Slot>, count: Int, lastIterationInserts: Int = base.size
 }
 
 /**
+ * @return как минимум один слот
+ */
+fun createAnySlots(mergedChars: List<List<Char>>): MutableList<Slot> {
+    val result = mutableListOf<Slot>()
+    for (partial in mergedChars) {
+        result.add(any(partial))
+    }
+    if (result.isEmpty()) {
+        result.add(any())
+    }
+    return result
+}
+
+fun getCharsMerged(strings: List<String>): MutableList<List<Char>> {
+    val result = mutableListOf<List<Char>>()
+    for (s in strings) {
+        val partialList = mutableListOf<Char>()
+        for (c in s.toCharArray()) {
+            partialList.add(c)
+        }
+        result.add(partialList)
+    }
+    return result
+}
+
+/**
  * Комбинированный валидатор из нескольких:
  * срабатывает на всех или хотя бы на одном в зав-ти от [validateRule]
  */
