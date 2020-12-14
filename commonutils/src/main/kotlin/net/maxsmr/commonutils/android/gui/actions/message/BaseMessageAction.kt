@@ -5,13 +5,11 @@ import net.maxsmr.commonutils.android.gui.actions.BaseViewModelAction
 /**
  * Базовое действие для показа сообщения
  */
-abstract class BaseMessageAction<T, Actor>: BaseViewModelAction<Actor>() {
-
-    open var tag: Any? = null
+abstract class BaseMessageAction<T, Actor> : BaseViewModelAction<Actor>() {
 
     var show: Boolean = true
 
-    private var lastShowed: T? = null
+    var lastShowed: T? = null
 
     protected abstract fun show(actor: Actor): T
 

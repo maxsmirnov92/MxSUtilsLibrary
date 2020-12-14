@@ -102,28 +102,28 @@ public abstract class BaseLoggerHolder {
     @Nullable
     protected abstract BaseLogger createLogger(@NotNull String className);
 
-    public static void logException(@NotNull BaseLogger logger, @NotNull Exception e) {
+    public static void logException(@NotNull BaseLogger logger, @NotNull Throwable e) {
         logException(logger, e, null);
     }
 
-    public static void logException(@NotNull BaseLogger logger, @NotNull Exception e, @Nullable String description) {
+    public static void logException(@NotNull BaseLogger logger, @NotNull Throwable e, @Nullable String description) {
         logger.e(formatException(e, description), e);
     }
 
-    public static String formatException(@NotNull Exception e) {
+    public static String formatException(@NotNull Throwable e) {
         return formatException(e, null);
     }
 
-    public static String formatException(@NotNull Exception e, @Nullable String description) {
+    public static String formatException(@NotNull Throwable e, @Nullable String description) {
         return "A(n) " + e.getClass().getSimpleName() + " occurred"
                 + (TextUtils.isEmpty(description)? EMPTY_STRING : " during " + description) + ": " + e.getMessage();
     }
 
-    public static void throwRuntimeException(@NotNull Exception e) throws RuntimeException {
+    public static void throwRuntimeException(@NotNull Throwable e) throws RuntimeException {
         throwRuntimeException(e, null);
     }
 
-    public static void throwRuntimeException(@NotNull Exception e, @Nullable String description) throws RuntimeException {
+    public static void throwRuntimeException(@NotNull Throwable e, @Nullable String description) throws RuntimeException {
         throw new RuntimeException(formatException(e, description), e);
     }
 }

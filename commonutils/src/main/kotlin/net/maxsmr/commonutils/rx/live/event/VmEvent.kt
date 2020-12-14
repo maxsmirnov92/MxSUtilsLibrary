@@ -16,11 +16,11 @@ import androidx.annotation.MainThread
  *
  * @see SharedVmEvent
  */
+@MainThread
 class VmEvent<T>(value: T) {
 
     private var value: T? = value
 
-    @MainThread
     fun get(): T? {
         val res = value ?: return null
         value = null

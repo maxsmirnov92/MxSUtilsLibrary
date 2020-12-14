@@ -15,7 +15,7 @@ abstract class BaseOptionalComparator<O : ISortOption, T>(
         var result = 0
         for ((option, ascending) in sortOptions) {
             if (lhs != null && rhs != null) {
-                result = compare(lhs, rhs, option, ascending)
+                result = compare(lhs, rhs, option, ascending ?: true)
                 if (result != 0) {
                     break
                 }
@@ -42,5 +42,5 @@ abstract class BaseOptionalComparator<O : ISortOption, T>(
         return result
     }
 
-    protected abstract fun compare(lhs: T, rhs: T, option: O, ascending: Boolean?): Int
+    protected abstract fun compare(lhs: T, rhs: T, option: O, ascending: Boolean): Int
 }

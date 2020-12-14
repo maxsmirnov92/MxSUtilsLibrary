@@ -2119,9 +2119,7 @@ class FileComparator(sortOptions: Map<SortOption, Boolean?>) : BaseOptionalCompa
             get() = name
     }
 
-    override fun compare(lhs: File, rhs: File, option: SortOption, ascending: Boolean?): Int {
-        var ascending = ascending
-        ascending = ascending != null && ascending
+    override fun compare(lhs: File, rhs: File, option: SortOption, ascending: Boolean): Int {
         return when (option) {
             SortOption.NAME -> compareStrings(lhs.absolutePath, rhs.absolutePath, ascending, true)
             SortOption.SIZE -> compareLongs(getFileLength(lhs), getFileLength(rhs), ascending)
