@@ -1,8 +1,8 @@
-package net.maxsmr.commonutils.android.livedata
+package net.maxsmr.commonutils.android.live
 
 import android.os.Handler
 import androidx.lifecycle.*
-import net.maxsmr.commonutils.android.livedata.wrappers.NotifyCheckMutableLiveData
+import net.maxsmr.commonutils.android.live.wrappers.NotifyCheckMutableLiveData
 import net.maxsmr.commonutils.data.states.ILoadState
 import net.maxsmr.commonutils.data.states.LoadState
 import net.maxsmr.commonutils.data.states.getOrCreate

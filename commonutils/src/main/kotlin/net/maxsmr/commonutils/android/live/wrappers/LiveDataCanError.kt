@@ -1,6 +1,6 @@
-package net.maxsmr.commonutils.android.livedata.wrappers
+package net.maxsmr.commonutils.android.live.wrappers
 
-import net.maxsmr.commonutils.android.livedata.setValueIfNewNotify
+import net.maxsmr.commonutils.android.live.setValueIfNewNotify
 
 data class LiveDataCanError<T>(
         private val initialDataValue: T?

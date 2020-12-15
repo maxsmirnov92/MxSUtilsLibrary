@@ -7,7 +7,7 @@ import androidx.annotation.CallSuper
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import net.maxsmr.commonutils.android.BaseBroadcastWrapper
-import net.maxsmr.commonutils.android.livedata.setValueIfNew
+import net.maxsmr.commonutils.android.live.setValueIfNew
 import net.maxsmr.networkutils.NetworkHelper.isOnline
 
 private const val ACTION_CONNECTIVITY_CHANGE = "android.net.conn.CONNECTIVITY_CHANGE"

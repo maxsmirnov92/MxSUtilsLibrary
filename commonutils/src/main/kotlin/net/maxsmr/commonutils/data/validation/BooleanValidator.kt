@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.data.validation
 
 import androidx.lifecycle.MutableLiveData
-import net.maxsmr.commonutils.android.livedata.setValueIfNew
+import net.maxsmr.commonutils.android.live.setValueIfNew
 
 /**
  * [BaseValidator] с записью true/false результата валидации в [hasErrorData]

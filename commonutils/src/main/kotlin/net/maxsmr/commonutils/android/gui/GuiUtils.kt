@@ -43,7 +43,7 @@ import net.maxsmr.commonutils.R
 import net.maxsmr.commonutils.android.*
 import net.maxsmr.commonutils.android.gui.listeners.DefaultTextWatcher
 import net.maxsmr.commonutils.android.gui.listeners.OnTextWatcher
-import net.maxsmr.commonutils.android.livedata.setValueIfNew
+import net.maxsmr.commonutils.android.live.setValueIfNew
 import net.maxsmr.commonutils.data.Pair
 import net.maxsmr.commonutils.data.ReflectionUtils
 import net.maxsmr.commonutils.data.text.*

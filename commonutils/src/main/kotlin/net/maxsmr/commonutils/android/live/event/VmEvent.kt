@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.rx.live.event
+package net.maxsmr.commonutils.android.live.event
 
 import androidx.annotation.MainThread
 
@@ -11,8 +11,8 @@ import androidx.annotation.MainThread
  * Альтернативы:
  * 1. Если использовать LiveData без обертки VmEvent - View будет реагировать на него не 1 раз, а после
  * каждой смены конфигурации.
- * 1. Если использовать [ru.railways.core.android.utils.rx.LiveSubject] - то View получит эвент только в том случае,
- * если находится в состоянии RESUMED. В противном случае эвент будет потерян.
+ * 1. Если использовать [ru.railways.core.android.utils.rx.LiveSubject] - то View получит эвент в том случае,
+ * если находится в состоянии RESUMED. Или пользовать freezeSelector вместо фильтра по состоянию.
  *
  * @see SharedVmEvent
  */
