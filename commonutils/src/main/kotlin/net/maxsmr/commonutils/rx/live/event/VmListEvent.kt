@@ -2,7 +2,7 @@ package net.maxsmr.commonutils.rx.live.event
 
 import androidx.annotation.MainThread
 import net.maxsmr.commonutils.android.gui.actions.BaseViewModelAction
-import net.maxsmr.commonutils.android.gui.fragments.dialogs.holder.DialogFragmentsHolder
+import net.maxsmr.commonutils.data.Predicate.Methods.filterWithIndex
 import net.maxsmr.commonutils.data.Predicate.Methods.findWithIndex
 import net.maxsmr.commonutils.data.collection.sort.BaseOptionalComparator
 import net.maxsmr.commonutils.data.collection.sort.ISortOption
@@ -44,7 +44,7 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
     fun getAll(remove: Boolean) = getAll(remove, null)
 
     /**
-     * @param remove нужно ли удалить вычитанный элемент из очереди (нужно, если например обработали показ диалога в [DialogFragmentsHolder]
+     * @param remove нужно ли удалить вычитанный элемент из очереди
      * @return все итемы, до первого по ходу сингла включительно
      */
     fun getAllBeforeSingle(remove: Boolean) = getAll(remove) {
@@ -63,11 +63,15 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
                     && (predicate == null || predicate.invoke(value))
             )
         } else {
-            // первый из очереди должен попасть в результат всегда
-            // далее при соот-ии предикату
+            var isMatch = true
+            // в результирующий список попадают все итемы, соответствующие предикату
+            // + первый несоответствующий
             result.addAll(list.filterIndexed { index, item ->
-                index == 0
-                        || predicate == null || predicate.invoke(item)
+                isMatch.apply {
+                    if (isMatch && predicate != null && !predicate.invoke(item)) {
+                        isMatch = false
+                    }
+                }
             })
         }
         return result
@@ -86,23 +90,20 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
     @JvmOverloads
     fun add(value: A, options: AddOptions = AddOptions()) {
         val tag = options.tag
-        val existingItem = if (tag.isNotEmpty()) {
-            findWithIndex(list) {
-                it.tag == tag
-                // && (it !is BaseMessageAction<*,*> || value !is BaseMessageAction<*,*> || it.show != value.show)
-            }
+        val existingItems = if (tag.isNotEmpty()) {
+            filterWithIndex(list) { it.tag == tag }
         } else {
-            null
+            emptyMap()
         }
         when (options.unique) {
             UniqueStrategy.IGNORE -> {
-                if (existingItem != null) {
+                if (existingItems.isNotEmpty()) {
                     return
                 }
             }
             UniqueStrategy.REPLACE -> {
-                existingItem?.let {
-                    list.removeAt(it.first)
+                existingItems.forEach {
+                    list.removeAt(it.key)
                 }
             }
             else -> {
@@ -218,7 +219,7 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
         /**
          * Добавляемое сообщение заменяет все добавленные в очередь ранее с таким же тегом
          */
-        REPLACE;
+        REPLACE
     }
 
     private class ItemComparator: BaseOptionalComparator<ItemComparator.SortOption, ItemInfo<*>>(

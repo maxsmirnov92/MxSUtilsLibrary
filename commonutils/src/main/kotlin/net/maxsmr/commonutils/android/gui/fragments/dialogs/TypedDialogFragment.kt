@@ -52,7 +52,6 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
         private set
 
     protected var customView: View? = null
-        private set
 
     @CallSuper
     override fun onCreate(savedInstanceState: Bundle?) {
