@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.android.livedata.wrappers
+package net.maxsmr.commonutils.android.live.wrappers
 
 import androidx.annotation.CallSuper
 import androidx.annotation.MainThread

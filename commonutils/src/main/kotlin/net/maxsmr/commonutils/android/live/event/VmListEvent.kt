@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.rx.live.event
+package net.maxsmr.commonutils.android.live.event
 
 import androidx.annotation.MainThread
 import net.maxsmr.commonutils.android.gui.actions.BaseViewModelAction

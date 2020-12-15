@@ -8,7 +8,7 @@ import android.net.wifi.WifiManager
 import androidx.annotation.CallSuper
 import androidx.lifecycle.MutableLiveData
 import net.maxsmr.commonutils.android.BaseBroadcastWrapper
-import net.maxsmr.commonutils.android.livedata.setValueIfNew
+import net.maxsmr.commonutils.android.live.setValueIfNew
 
 open class WifiConnectionChecker(context: Context) : BaseBroadcastWrapper(context) {
 

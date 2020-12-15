@@ -2,7 +2,7 @@ package net.maxsmr.commonutils.data.validation
 
 import androidx.annotation.StringRes
 import androidx.lifecycle.MutableLiveData
-import net.maxsmr.commonutils.android.livedata.setValueIfNew
+import net.maxsmr.commonutils.android.live.setValueIfNew
 
 /**
  * [BaseValidator] с записью сообщения об ошибочном результате валидации или его отсутствии в [errorMessageData]
