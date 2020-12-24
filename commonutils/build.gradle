@@ -2,10 +2,8 @@ apply from: "$rootDir/buildSrc/androidLib.gradle"
 
 dependencies {
     // Android + Support
-    api "androidx.core:core:$androidxCoreVersion"
     api "androidx.core:core-ktx:$androidxCoreVersion"
     api "androidx.appcompat:appcompat:$androidxAppCompatVersion"
-    api "androidx.palette:palette:$androidxPaletteVersion"
     api "androidx.palette:palette-ktx:$androidxPaletteVersion"
     api "androidx.recyclerview:recyclerview:$androidxRecyclerViewVersion"
     api "androidx.exifinterface:exifinterface:$androidxExifInterfaceVersion"
