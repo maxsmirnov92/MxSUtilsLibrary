@@ -3,13 +3,16 @@ package net.maxsmr.commonutils.data.conversion.format.decoro
 import ru.tinkoff.decoro.slots.PredefinedSlots.hardcodedSlot
 import ru.tinkoff.decoro.slots.Slot
 import ru.tinkoff.decoro.slots.Slot.SlotValidator
+import ru.tinkoff.decoro.slots.SlotValidatorSet
 import ru.tinkoff.decoro.slots.SlotValidators
 
 @JvmOverloads
-fun any(
+fun custom(
         includedChars: Collection<Char> = emptyList(),
         excludedChars: Collection<Char> = emptyList(),
-        validateRule: ValidateRule = ValidateRule.ALL
+        validateRule: ValidateRule = ValidateRule.ALL,
+        rules: Int = Slot.RULES_DEFAULT,
+        value: Char? = null
 ): Slot {
     val validators = mutableListOf<SlotValidator>()
     if (includedChars.isNotEmpty()) {
@@ -18,8 +21,19 @@ fun any(
     if (excludedChars.isNotEmpty()) {
         validators.add(ExcludeValidator(excludedChars))
     }
-    return Slot(null, CombinedValidator(validators, validateRule))
+    return custom(validators, validateRule, rules, value)
 }
+
+/**
+ * Использовать, если нужна комбинация из [validators]
+ */
+@JvmOverloads
+fun custom(
+        validators: List<SlotValidator>,
+        validateRule: ValidateRule = ValidateRule.ANY,
+        rules: Int = Slot.RULES_DEFAULT,
+        value: Char? = null
+) = Slot(rules, value, SlotValidatorSet.setOf(CombinedValidator(validators, validateRule)))
 
 /**
  * Слот, который может содержать только любую букву (кириллица или латиница) или цифру
@@ -28,28 +42,32 @@ fun any(
 fun letterOrDigit(
         supportEnglish: Boolean = true,
         supportRussian: Boolean = true,
+        rules: Int = Slot.RULES_DEFAULT,
         excludedChars: Collection<Char> = emptyList()
-): Slot {
-    val letterValidator = SlotValidators.LetterValidator(supportEnglish, supportRussian)
-    val digitValidator = SlotValidators.DigitValidator()
-    val validators = mutableListOf(letterValidator, digitValidator)
-    if (excludedChars.isNotEmpty()) {
-        validators.add(ExcludeValidator(excludedChars))
-    }
-    return Slot(null, CombinedValidator(validators, ValidateRule.ANY))
-}
+) = letterDigit(true, supportEnglish, supportRussian, rules, excludedChars)
 
 @JvmOverloads
 fun letter(
         supportEnglish: Boolean = true,
         supportRussian: Boolean = true,
+        rules: Int = Slot.RULES_DEFAULT,
+        excludedChars: Collection<Char> = emptyList()
+): Slot = letterDigit(false, supportEnglish, supportRussian, rules, excludedChars)
+
+private fun letterDigit(
+        withDigits: Boolean,
+        supportEnglish: Boolean = true,
+        supportRussian: Boolean = true,
+        rules: Int = Slot.RULES_DEFAULT,
         excludedChars: Collection<Char> = emptyList()
 ): Slot {
-    val validators = mutableListOf<SlotValidator>(SlotValidators.LetterValidator(supportEnglish, supportRussian))
+    val letterValidator = SlotValidators.LetterValidator(supportEnglish, supportRussian)
+    val digitValidator = SlotValidators.DigitValidator()
+    val validators: MutableList<SlotValidator> = if (withDigits) mutableListOf(letterValidator, digitValidator) else mutableListOf(letterValidator)
     if (excludedChars.isNotEmpty()) {
         validators.add(ExcludeValidator(excludedChars))
     }
-    return Slot(null, CombinedValidator(validators))
+    return Slot(rules, null, SlotValidatorSet.setOf(CombinedValidator(validators, ValidateRule.ANY)))
 }
 
 /**
@@ -113,10 +131,10 @@ fun getSlots(base: List<Slot>, count: Int, lastIterationInserts: Int = base.size
 fun createAnySlots(mergedChars: List<List<Char>>): MutableList<Slot> {
     val result = mutableListOf<Slot>()
     for (partial in mergedChars) {
-        result.add(any(partial))
+        result.add(custom(partial))
     }
     if (result.isEmpty()) {
-        result.add(any())
+        result.add(custom())
     }
     return result
 }
@@ -131,6 +149,25 @@ fun getCharsMerged(strings: List<String>): MutableList<List<Char>> {
         result.add(partialList)
     }
     return result
+}
+
+class RomanDigitValidator : SlotValidator {
+
+    private val allowedChars = arrayOf('x', 'v', 'i')
+
+    override fun validate(value: Char): Boolean {
+        return allowedChars.any { it.equals(value, true) }
+    }
+}
+
+class IncludeValidator(val chars: Collection<Char>) : SlotValidator {
+
+    override fun validate(value: Char): Boolean = chars.isEmpty() || chars.contains(value)
+}
+
+class ExcludeValidator(val chars: Collection<Char>) : SlotValidator {
+
+    override fun validate(value: Char): Boolean = !chars.contains(value)
 }
 
 /**
@@ -152,17 +189,6 @@ private class CombinedValidator(
         true
     }
 }
-
-private class IncludeValidator(val chars: Collection<Char>) : SlotValidator {
-
-    override fun validate(value: Char): Boolean = chars.isEmpty() || chars.contains(value)
-}
-
-private class ExcludeValidator(val chars: Collection<Char>) : SlotValidator {
-
-    override fun validate(value: Char): Boolean = !chars.contains(value)
-}
-
 enum class ValidateRule {
 
     ALL, ANY
