@@ -34,8 +34,8 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 
-import static net.maxsmr.commonutils.android.gui.GuiUtilsKt.getContentSize;
-import static net.maxsmr.commonutils.android.gui.GuiUtilsKt.getRescaledImageViewSize;
+import static net.maxsmr.commonutils.android.gui.ViewExtKt.getContentSize;
+import static net.maxsmr.commonutils.android.gui.ViewExtKt.getRescaledImageViewSize;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
 
 public class MaskClickLayout extends FrameLayout {

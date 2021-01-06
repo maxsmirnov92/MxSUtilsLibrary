@@ -122,7 +122,7 @@ fun ScrollView.scrollTo(
     if (changeFocus) {
         // если не очистить текущий фокус,
         // может не сработать
-        clearFocus(activity)
+        activity.clearFocus()
         fullScroll(View.FOCUS_DOWN)
     }
     if (smoothScroll) {

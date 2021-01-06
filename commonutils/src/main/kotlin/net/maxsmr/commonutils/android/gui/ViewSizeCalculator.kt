@@ -90,7 +90,7 @@ fun fixViewSize(targetScale: Float, view: View?, maxViewSize: Point?): Point {
         return fixedSize
     }
     if (fixedSize.x > 0 && fixedSize.y > 0) {
-        setViewSize(view, Pair(fixedSize.x, fixedSize.y))
+        view.setSize(Pair(fixedSize.x, fixedSize.y))
     }
     return fixedSize
 }

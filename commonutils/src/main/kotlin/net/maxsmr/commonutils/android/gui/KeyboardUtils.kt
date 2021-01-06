@@ -75,7 +75,7 @@ fun showKeyboard(
 ): Boolean {
     if (hostView == null) return false
     if (requestFocus) {
-        requestFocus(hostView)
+        hostView.requestFocus()
     }
     val imm = hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
             ?: return false
@@ -97,7 +97,7 @@ fun hideKeyboard(
 ): Boolean {
     hostView?.let {
         if (clearFocus) {
-            clearFocus(hostView)
+            hostView.clearFocus()
         }
         hostView.windowToken?.let {
             val imm = hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
@@ -129,13 +129,13 @@ fun toggleKeyboard(hostView: View?, toggleFocus: Boolean = true) {
 fun toggleFocusOrKeyboardState(view: View, activity: Activity, toggle: Boolean = true) {
     if (toggle) {
         if (!view.isFocused) {
-            requestFocus(view)
+            view.requestFocus()
         } else {
             showKeyboard(view)
         }
     } else {
         hideKeyboard(activity)
         // очистка фокуса не убирает клавиатуру
-        clearFocus(activity)
+        activity.clearFocus()
     }
 }

@@ -9,11 +9,9 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import static net.maxsmr.commonutils.data.conversion.format.DateFormatUtilsKt.formatDate;
-
 public class SimpleSystemLogger extends BaseTagLogger {
 
-    protected SimpleSystemLogger(@Nullable String tag) {
+    public SimpleSystemLogger(@Nullable String tag) {
         super(tag);
     }
 
