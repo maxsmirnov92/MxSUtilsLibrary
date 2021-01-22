@@ -1,18 +1,22 @@
 package net.maxsmr.commonutils.data
 
+import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
 import net.maxsmr.commonutils.android.media.getInputStreamFromResourceOrThrow
+import net.maxsmr.commonutils.android.media.readBytesFromUri
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.throwRuntimeException
 import java.io.BufferedInputStream
+import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
+import java.util.zip.CRC32
 
 const val DEFAULT_ALGORITHM = "SHA-1"
 
@@ -129,3 +133,17 @@ fun digestOrThrow(
     }
     return algorithm.digest()
 }
+
+fun getCrc32Hash(contentResolver: ContentResolver, uri: Uri): Long =
+        getCrc32Hash(readBytesFromUri(contentResolver, uri))
+
+fun getCrc32Hash(file: File): Long =
+        getCrc32Hash(readBytesFromFile(file))
+
+fun getCrc32Hash(array: ByteArray?): Long = array?.let {
+    with(CRC32()) {
+        update(array)
+        return@let this.value
+    }
+} ?: 0L
+

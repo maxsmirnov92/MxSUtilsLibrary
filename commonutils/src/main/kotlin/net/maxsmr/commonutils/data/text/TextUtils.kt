@@ -206,24 +206,24 @@ fun removeChars(
 
 fun trimWithCondition(
         text: CharSequence,
-        fromStart: Boolean,
+        trimDirection: TrimDirection,
         byChar: Char,
         condition: CompareCondition = CompareCondition.LESS_OR_EQUAL,
         ignoreCase: Boolean = true,
         andRule: Boolean = false,
         excludeByConditions: Boolean = true
 ): CharSequence =
-        trimWithCondition(text, fromStart, mapOf(Pair(byChar, CharConditionInfo(condition, ignoreCase))), andRule, excludeByConditions)
+        trimWithCondition(text, trimDirection, mapOf(Pair(byChar, CharConditionInfo(condition, ignoreCase))), andRule, excludeByConditions)
 
 fun trimWithCondition(
         text: CharSequence,
-        fromStart: Boolean,
+        trimDirection: TrimDirection,
         conditions: Map<Char, CharConditionInfo>,
         andRule: Boolean = false,
         excludeByConditions: Boolean = true
 ): CharSequence =
-        trim(text, fromStart, excludeByConditions) {
-            isTrue(conditions, andRule, it)
+        trim(text, trimDirection, excludeByConditions) { ch, index ->
+            isTrue(conditions, andRule, ch)
         }
 
 /**
@@ -231,23 +231,37 @@ fun trimWithCondition(
  */
 fun trim(
         text: CharSequence,
-        fromStart: Boolean,
+        trimDirection: TrimDirection,
         excludeByPredicate: Boolean = true,
-        predicate: (Char) -> Boolean
+        predicate: (Char, Int) -> Boolean
 ): CharSequence {
-    for (index in if (fromStart) text.indices else text.indices.reversed()) {
-        val ch = text[index]
-        val isTrue = predicate(ch)
-        if (if (excludeByPredicate) !isTrue else isTrue) {
-            return if (fromStart) {
-                text.subSequence(index, text.length)
-            } else {
-                text.subSequence(0, index + 1)
+
+    fun CharSequence.trim(fromStart: Boolean): CharSequence {
+        for (index in if (fromStart) this.indices else this.indices.reversed()) {
+            val ch = this[index]
+            val isTrue = predicate(ch, index)
+            if (if (excludeByPredicate) !isTrue else isTrue) {
+                return if (fromStart) {
+                    this.subSequence(index, this.length)
+                } else {
+                    this.subSequence(0, index + 1)
+                }
             }
         }
+        return this
     }
 
-    return EMPTY_STRING
+    return when(trimDirection) {
+        TrimDirection.START -> {
+            text.trim(true)
+        }
+        TrimDirection.END -> {
+            text.trim(false)
+        }
+        TrimDirection.BOTH -> {
+            text.trim(true).trim(false)
+        }
+    }
 }
 
 private fun isTrue(
@@ -280,3 +294,7 @@ data class CharConditionInfo(
         val condition: CompareCondition,
         val ignoreCase: Boolean = true
 )
+
+enum class TrimDirection {
+    START, END, BOTH
+}

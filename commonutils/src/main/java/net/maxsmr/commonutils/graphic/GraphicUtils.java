@@ -1,6 +1,5 @@
 package net.maxsmr.commonutils.graphic;
 
-import android.annotation.SuppressLint;
 import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
@@ -79,11 +78,8 @@ import static androidx.exifinterface.media.ExifInterface.TAG_MODEL;
 import static androidx.exifinterface.media.ExifInterface.TAG_ORIENTATION;
 import static androidx.exifinterface.media.ExifInterface.TAG_WHITE_BALANCE;
 import static net.maxsmr.commonutils.android.SdkVersionsKt.isPreKitkat;
-import static net.maxsmr.commonutils.android.SdkVersionsKt.isPreMarshmallow;
 import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getExifOrientationByRotationAngle;
-import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getOrientation;
-import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getPath;
-import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getRotationAngleByExifOrientation;
+import static net.maxsmr.commonutils.android.media.MediaUtilsKt.openOutputStream;
 import static net.maxsmr.commonutils.android.media.MetadataRetrieverKt.extractFramesFromFile;
 import static net.maxsmr.commonutils.android.media.MetadataRetrieverKt.extractMediaDurationFromFile;
 import static net.maxsmr.commonutils.data.FileUtilsKt.checkFile;
@@ -93,6 +89,7 @@ import static net.maxsmr.commonutils.data.FileUtilsKt.getFileExtension;
 import static net.maxsmr.commonutils.data.FileUtilsKt.isFileValid;
 import static net.maxsmr.commonutils.data.FileUtilsKt.removeFileExtension;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException;
 
 // TODO convert to kotlin
 public final class GraphicUtils {
@@ -127,7 +124,7 @@ public final class GraphicUtils {
 
     public static Bitmap writeTextOnBitmap(Bitmap bitmap, String text, @ColorInt int textColor, int fontSize, Point textPos) {
 
-        if (!isBitmapCorrect(bitmap)) {
+        if (!isBitmapValid(bitmap)) {
             logger.e("incorrect bitmap");
             return bitmap;
         }
@@ -169,7 +166,7 @@ public final class GraphicUtils {
 
     public static int fixFontSize(int fontSize, String text, Paint paint, Bitmap bitmap) {
 
-        if (!isBitmapCorrect(bitmap)) {
+        if (!isBitmapValid(bitmap)) {
             logger.e("incorrect bitmap");
             return fontSize;
         }
@@ -225,14 +222,19 @@ public final class GraphicUtils {
     /**
      * @return null if failed, otherwise same file or same file with changed extension
      */
-    public static File compressBitmapToFile(File file, Bitmap data, Bitmap.CompressFormat format, int quality) {
+    public static File compressBitmapToFile(
+            File file,
+            Bitmap image,
+            Bitmap.CompressFormat format,
+            int quality
+    ) {
 
         if (file == null) {
             logger.e("file not specified");
             return null;
         }
 
-        if (!isBitmapCorrect(data)) {
+        if (!isBitmapValid(image)) {
             logger.e("bitmap is incorrect");
             return null;
         }
@@ -257,7 +259,7 @@ public final class GraphicUtils {
         }
 
         try {
-            if (compressBitmapToOutputStream(new FileOutputStream(file), data, format, quality)) {
+            if (compressBitmapToOutputStream(new FileOutputStream(file), image, format, quality)) {
                 return file;
             }
         } catch (IOException e) {
@@ -266,9 +268,29 @@ public final class GraphicUtils {
         return null;
     }
 
-    public static boolean compressBitmapToOutputStream(OutputStream os, Bitmap data, Bitmap.CompressFormat format, int quality) {
+    public static boolean compressBitmapToUri(
+            @NotNull ContentResolver contentResolver,
+            @NotNull Uri uri,
+            @NotNull Bitmap image,
+            @NotNull Bitmap.CompressFormat format,
+            int quality
+    ) {
+        final OutputStream stream = openOutputStream(uri, contentResolver);
+        if (stream == null) {
+            return false;
+        }
+        return compressBitmapToOutputStream(stream, image, format, quality);
+    }
+
+
+    public static boolean compressBitmapToOutputStream(
+            @NotNull OutputStream os,
+            @NotNull Bitmap image,
+            @NotNull Bitmap.CompressFormat format,
+            int quality
+    ) {
         try {
-            data.compress(format, quality, os);
+            image.compress(format, quality, os);
             os.flush();
             return true;
         } catch (IOException e) {
@@ -288,7 +310,7 @@ public final class GraphicUtils {
     @Nullable
     public static byte[] compressBitmapToByteArray(@Nullable Bitmap data, @NotNull Bitmap.CompressFormat format, int quality) {
 
-        if (!isBitmapCorrect(data)) {
+        if (!isBitmapValid(data)) {
             logger.e("bitmap is incorrect");
             return null;
         }
@@ -326,8 +348,15 @@ public final class GraphicUtils {
     }
 
     @Nullable
-    public static File compressImage(@Nullable File imageFile, @Nullable File compressedImageFile, long maxSize, int maxRetries, int qualityDecrementStep,
-                                     @NotNull Bitmap.Config config, @NotNull Bitmap.CompressFormat format) {
+    public static File compressImage(
+            @Nullable File imageFile,
+            @Nullable File compressedImageFile,
+            long maxSize,
+            int maxRetries,
+            int qualityDecrementStep,
+            @NotNull Bitmap.Config config,
+            @NotNull Bitmap.CompressFormat format
+    ) {
 
         if (maxSize < 0) {
             logger.e("Incorrect maxSize: " + maxSize);
@@ -356,7 +385,7 @@ public final class GraphicUtils {
 
                 if (checkFile(compressedImageFile)) {
 
-                    final Bitmap bm = createBitmapFromFile(imageFile, 1, config);
+                    final Bitmap bm = createBitmapFromFile(imageFile, 1, config, false);
 
                     if (bm != null) {
 
@@ -485,7 +514,7 @@ public final class GraphicUtils {
 
     public static Bitmap cropBitmap(Bitmap srcBitmap, int fromX, int fromY, int toX, int toY) {
 
-        if (!isBitmapCorrect(srcBitmap)) {
+        if (!isBitmapValid(srcBitmap)) {
             logger.e("incorrect bitmap");
             return srcBitmap;
         }
@@ -570,171 +599,218 @@ public final class GraphicUtils {
     }
 
     @Nullable
-    public static Bitmap createBitmapFromUri(@NotNull Context context, Uri uri, int scale) {
-        return createBitmapFromUri(context, uri, scale, null);
-    }
-
-    @Nullable
-    public static Bitmap createBitmapFromUri(@NotNull Context context, Uri uri, int scale, @Nullable Bitmap.Config config) {
-
-        if (!(uri != null && (uri.getScheme() == null || uri.getScheme().equalsIgnoreCase(ContentResolver.SCHEME_FILE)))) {
-            logger.e("incorrect resource uri: " + uri);
-            return null;
-        }
-
-        try {
-            return createBitmapFromStream((context.getContentResolver().openInputStream(uri)), scale, config);
-        } catch (FileNotFoundException e) {
-            return null;
-        }
-    }
-
-    @Nullable
     public static Bitmap createBitmapFromFile(File file) {
-        return createBitmapFromFile(file, 1, null);
+        return createBitmapFromFile(file, 1, null, false);
     }
 
     @Nullable
-    public static Bitmap createBitmapFromFile(File file, int scale, @Nullable Bitmap.Config config) {
+    public static Bitmap createBitmapFromFile(
+            File file,
+            int scale,
+            @Nullable Bitmap.Config config,
+            boolean withSampleSize
+    ) {
 
         if (!canDecodeImage(file)) {
             logger.e("incorrect file: " + file);
             return null;
         }
 
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+        if (withSampleSize) {
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeFile(file.getAbsolutePath(), options);
 
-        final int width = scale > 1 ? options.outWidth / scale : options.outWidth;
-        final int height = scale > 1 ? options.outHeight / scale : options.outHeight;
+            applyBitmapSampleOptions(options, scale, config);
 
-        options.inSampleSize = calculateInSampleSizeHalf(options, width, height);
-        options.inPurgeable = true;
-        options.inInputShareable = true;
-        options.inJustDecodeBounds = false;
-        options.inPreferredConfig = config == null ? Bitmap.Config.ARGB_8888 : config;
-
-        try {
-            return BitmapFactory.decodeFile(file.getAbsolutePath(), options);
-        } catch (OutOfMemoryError e) {
-            logger.e("an OutOfMemoryError error occurred during decodeFile()", e);
-            return null;
+            try {
+                return BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+            } catch (OutOfMemoryError e) {
+                logger.e("an OutOfMemoryError error occurred during decodeFile()", e);
+                return null;
+            }
+        } else {
+            try {
+                return BitmapFactory.decodeFile(file.getAbsolutePath());
+            } catch (OutOfMemoryError e) {
+                logger.e("an OutOfMemoryError error occurred during decodeFile()", e);
+                return null;
+            }
         }
     }
 
     @Nullable
     public static Bitmap createBitmapFromByteArray(byte[] data) {
-        return createBitmapFromByteArray(data, 1, null);
+        return createBitmapFromByteArray(data, 1, null, false);
     }
 
     @Nullable
-    public static Bitmap createBitmapFromByteArray(byte[] data, int scale, @Nullable Bitmap.Config config) {
+    public static Bitmap createBitmapFromByteArray(
+            byte[] data,
+            int scale,
+            @Nullable Bitmap.Config config,
+            boolean withSampleSize
+    ) {
 
         if (data == null || data.length == 0) {
             logger.e("data is null or empty");
             return null;
         }
 
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeByteArray(data, 0, data.length, options);
+        if (withSampleSize) {
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeByteArray(data, 0, data.length, options);
 
-        final int width = scale > 1 ? options.outWidth / scale : options.outWidth;
-        final int height = scale > 1 ? options.outHeight / scale : options.outHeight;
+            applyBitmapSampleOptions(options, scale, config);
 
-        options.inSampleSize = calculateInSampleSizeHalf(options, width, height);
-        options.inPurgeable = true;
-        options.inInputShareable = true;
-        options.inJustDecodeBounds = false;
-        options.inPreferredConfig = config == null ? Bitmap.Config.ARGB_8888 : config;
-
-        try {
-            return BitmapFactory.decodeByteArray(data, 0, data.length, options);
-        } catch (OutOfMemoryError e) {
-            logger.e("an OutOfMemoryError error occurred during decodeByteArray()", e);
-            return null;
+            try {
+                return BitmapFactory.decodeByteArray(data, 0, data.length, options);
+            } catch (OutOfMemoryError e) {
+                logger.e("an OutOfMemoryError error occurred during decodeByteArray()", e);
+                return null;
+            }
+        } else {
+            try {
+                return BitmapFactory.decodeByteArray(data, 0, data.length);
+            } catch (OutOfMemoryError e) {
+                logger.e("an OutOfMemoryError error occurred during decodeByteArray()", e);
+                return null;
+            }
         }
     }
 
     @Nullable
     public static Bitmap createBitmapFromUri(ContentResolver contentResolver, Uri uri) {
-        return createBitmapFromUri(contentResolver, uri, 1, null);
+        return createBitmapFromUri(contentResolver, uri, 1, null, false);
     }
 
     @Nullable
-    public static Bitmap createBitmapFromUri(ContentResolver contentResolver, Uri uri, int scale, @Nullable Bitmap.Config config) {
+    public static Bitmap createBitmapFromUri(
+            ContentResolver contentResolver,
+            Uri uri,
+            int scale,
+            @Nullable Bitmap.Config config,
+            boolean withSampleSize
+    ) {
         InputStream is = null;
         try {
             is = contentResolver.openInputStream(uri);
-        } catch (FileNotFoundException ignored) {
+        } catch (FileNotFoundException e) {
+            logger.e(formatException(e, "openInputStream"));
         }
-        return createBitmapFromStream(is, scale, config);
+        if (is == null) {
+            return null;
+        }
+        try {
+            return createBitmapFromStream(is, scale, config, withSampleSize);
+        } finally {
+            try {
+                is.close();
+            } catch (IOException ignored) {
+            }
+        }
     }
 
     @Nullable
     public static Bitmap createBitmapFromStream(InputStream is) {
-        return createBitmapFromStream(is, 1, null);
+        return createBitmapFromStream(is, 1, null, false);
     }
 
     @Nullable
-    public static Bitmap createBitmapFromStream(InputStream is, int scale, @Nullable Bitmap.Config config) {
+    public static Bitmap createBitmapFromStream(
+            InputStream is,
+            int scale,
+            @Nullable Bitmap.Config config,
+            boolean withSampleSize
+    ) {
 
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeStream(is, null, options);
+        if (withSampleSize) {
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(is, null, options);
 
-        final int width = scale > 1 ? options.outWidth / scale : options.outWidth;
-        final int height = scale > 1 ? options.outHeight / scale : options.outHeight;
+            applyBitmapSampleOptions(options, scale, config);
 
-        options.inSampleSize = calculateInSampleSizeHalf(options, width, height);
-        options.inPurgeable = true;
-        options.inInputShareable = true;
-        options.inJustDecodeBounds = false;
-        options.inPreferredConfig = config == null ? Bitmap.Config.ARGB_8888 : config;
-
-        try {
-            return BitmapFactory.decodeStream(is, null, options);
-        } catch (OutOfMemoryError e) {
-            logger.e("an OutOfMemoryError error occurred during decodeStream()", e);
-            return null;
+            try {
+                return BitmapFactory.decodeStream(is, null, options);
+            } catch (OutOfMemoryError e) {
+                logger.e("an OutOfMemoryError error occurred during decodeStream()", e);
+                return null;
+            }
+        } else {
+            try {
+                return BitmapFactory.decodeStream(is);
+            } catch (OutOfMemoryError e) {
+                logger.e("an OutOfMemoryError error occurred during decodeStream()", e);
+                return null;
+            }
         }
     }
 
     @Nullable
     public static Bitmap createBitmapFromResource(@NotNull Context context, @DrawableRes int resId) {
-        return createBitmapFromResource(context, resId, 1, null);
+        return createBitmapFromResource(context, resId, 1, null, false);
     }
 
     @Nullable
-    public static Bitmap createBitmapFromResource(@NotNull Context context, @DrawableRes int resId, int scale, @Nullable Bitmap.Config config) {
+    public static Bitmap createBitmapFromResource(
+            @NotNull Context context,
+            @DrawableRes int resId,
+            int scale,
+            @Nullable Bitmap.Config config,
+            boolean withSampleSize
+    ) {
 
         if (resId == 0) {
             logger.e("resId is not specified");
             return null;
         }
 
-        final BitmapFactory.Options options = new BitmapFactory.Options();
-        options.inJustDecodeBounds = true;
-        BitmapFactory.decodeResource(context.getResources(), resId, options);
+        if (withSampleSize) {
+            final BitmapFactory.Options options = new BitmapFactory.Options();
+            options.inJustDecodeBounds = true;
+            BitmapFactory.decodeResource(context.getResources(), resId, options);
 
+            applyBitmapSampleOptions(options, scale, config);
+
+            try {
+                return BitmapFactory.decodeResource(context.getResources(), resId, options);
+            } catch (OutOfMemoryError e) {
+                logger.e("an OutOfMemoryError error occurred during decodeResource()", e);
+                return null;
+            }
+        } else {
+            try {
+                return BitmapFactory.decodeResource(context.getResources(), resId);
+            } catch (OutOfMemoryError e) {
+                logger.e("an OutOfMemoryError error occurred during decodeResource()", e);
+                return null;
+            }
+        }
+    }
+
+    private static void applyBitmapSampleOptions(BitmapFactory.Options options, int scale, Bitmap.Config config) {
         final int width = scale > 1 ? options.outWidth / scale : options.outWidth;
         final int height = scale > 1 ? options.outHeight / scale : options.outHeight;
-
         options.inSampleSize = calculateInSampleSizeHalf(options, width, height);
         options.inPurgeable = true;
         options.inInputShareable = true;
         options.inJustDecodeBounds = false;
         options.inPreferredConfig = config == null ? Bitmap.Config.ARGB_8888 : config;
-
-        try {
-            return BitmapFactory.decodeResource(context.getResources(), resId, options);
-        } catch (OutOfMemoryError e) {
-            logger.e("an OutOfMemoryError error occurred during decodeResource()", e);
-            return null;
-        }
     }
 
+    public static Bitmap scaleDown(
+            Bitmap bm,
+            float maxSize,
+            boolean filter
+    ) {
+        float ratio = Math.min(
+                maxSize / bm.getWidth(),
+                maxSize / bm.getHeight());
+        int width = Math.round(ratio * bm.getWidth());
+        return createScaledBitmap(bm, width, filter);
+    }
 
     public static Bitmap createScaledBitmap(Bitmap bm, int newWidth, boolean filter) {
 
@@ -760,6 +836,7 @@ public final class GraphicUtils {
         return Bitmap.createScaledBitmap(bm, newWidth, newHeight, filter);
     }
 
+
     public static boolean canDecodeImage(byte[] data) {
         if (data == null || data.length == 0) {
             return false;
@@ -782,104 +859,6 @@ public final class GraphicUtils {
 
     public static boolean canDecodeVideo(File file) {
         return isFileValid(file) && extractMediaDurationFromFile(file) != null;
-    }
-
-
-    public static Bitmap getCorrectlyOrientedImage(@NotNull Context context, Uri uri, Bitmap sourceBitmap) {
-        if (isBitmapCorrect(sourceBitmap)) {
-            if (isPreMarshmallow()) {
-                final String path = getPath(context, uri);
-                if (!isEmpty(path)) {
-                    ExifInterface exif = null;
-                    try {
-                        exif = new ExifInterface(path);
-                    } catch (Exception e) {
-                        logger.e("an Exception occurred during opening " + path, e);
-                    }
-                    if (exif != null) {
-                        int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-                        Integer rotateAngle = getRotationAngleByExifOrientation(orientation);
-                        if (rotateAngle == null) {
-                            rotateAngle = 0;
-                        }
-                        return rotateBitmap(sourceBitmap, rotateAngle);
-                    }
-                } else {
-                    logger.e("cannot extract path from uri: " + uri);
-                }
-            } else {
-                return sourceBitmap;
-            }
-        }
-        return null;
-    }
-
-    public static Bitmap getCorrectlyOrientedImage(@NotNull Context context, Uri photoUri, final int maxImageDimension) throws IOException {
-        InputStream is = context.getContentResolver().openInputStream(photoUri);
-        BitmapFactory.Options dbo = new BitmapFactory.Options();
-        dbo.inJustDecodeBounds = true;
-        BitmapFactory.decodeStream(is, null, dbo);
-
-        if (is != null)
-            is.close();
-
-        int rotatedWidth, rotatedHeight;
-        Integer orientation = getOrientation(context, photoUri);
-        if (orientation == null) {
-            orientation =0;
-        }
-
-        if (orientation == 90 || orientation == 270) {
-            rotatedWidth = dbo.outHeight;
-            rotatedHeight = dbo.outWidth;
-        } else {
-            rotatedWidth = dbo.outWidth;
-            rotatedHeight = dbo.outHeight;
-        }
-
-        Bitmap srcBitmap;
-        is = context.getContentResolver().openInputStream(photoUri);
-        if (rotatedWidth > maxImageDimension || rotatedHeight > maxImageDimension) {
-            float widthRatio = ((float) rotatedWidth) / ((float) maxImageDimension);
-            float heightRatio = ((float) rotatedHeight) / ((float) maxImageDimension);
-            float maxRatio = Math.max(widthRatio, heightRatio);
-
-            // Create the bitmap from file
-            BitmapFactory.Options options = new BitmapFactory.Options();
-            options.inSampleSize = (int) maxRatio;
-            srcBitmap = BitmapFactory.decodeStream(is, null, options);
-        } else {
-            srcBitmap = BitmapFactory.decodeStream(is);
-        }
-        if (is != null) {
-            is.close();
-        }
-
-        /*
-         * if the orientation is not 0 (or -1, which means we don't know), we
-         * have to do a rotation.
-         */
-        if (orientation > 0 && isPreMarshmallow()) {
-            return rotateBitmap(srcBitmap, orientation);
-        }
-
-        return srcBitmap;
-    }
-
-    // TODO ExifInterface to MediaUtils
-
-    public static int getRotationAngleFromExif(File imageFile) {
-        if (GraphicUtils.canDecodeImage(imageFile)) {
-            ExifInterface exif;
-            try {
-                exif = new ExifInterface(imageFile.getAbsolutePath());
-                int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1);
-                return getRotationAngleByExifOrientation(orientation);
-            } catch (Exception e) {
-                logger.e(e);
-            }
-        }
-        return -1;
     }
 
     public static boolean writeRotationAngleToExif(File imageFile, int degrees) {
@@ -977,7 +956,7 @@ public final class GraphicUtils {
     @Nullable
     public static Bitmap rotateBitmap(Bitmap sourceBitmap, int angle) {
 
-        if (!isBitmapCorrect(sourceBitmap)) {
+        if (!isBitmapValid(sourceBitmap)) {
             logger.e("incorrect bitmap: " + sourceBitmap);
             return null;
         }
@@ -996,13 +975,17 @@ public final class GraphicUtils {
         } catch (OutOfMemoryError e) {
             logger.e("an OutOfMemoryError occurred during createBitmap()", e);
             return null;
+        } finally {
+            if (!sourceBitmap.isRecycled()) {
+                sourceBitmap.recycle();
+            }
         }
     }
 
     @Nullable
     public static Bitmap mirrorBitmap(Bitmap sourceBitmap) {
 
-        if (!isBitmapCorrect(sourceBitmap)) {
+        if (!isBitmapValid(sourceBitmap)) {
             logger.e("incorrect bitmap: " + sourceBitmap);
             return null;
         }
@@ -1021,7 +1004,7 @@ public final class GraphicUtils {
     @Nullable
     public static Bitmap cutBitmap(Bitmap sourceBitmap, @NotNull Rect range) {
 
-        if (!isBitmapCorrect(sourceBitmap)) {
+        if (!isBitmapValid(sourceBitmap)) {
             logger.e("incorrect bitmap: " + sourceBitmap);
             return null;
         }
@@ -1043,11 +1026,10 @@ public final class GraphicUtils {
     }
 
 
-    public static boolean isBitmapCorrect(Bitmap b) {
+    public static boolean isBitmapValid(@Nullable Bitmap b) {
         return (b != null && !b.isRecycled() && getBitmapByteCount(b) > 0);
     }
 
-    @SuppressLint("NewApi")
     public static int getBitmapByteCount(Bitmap b) {
         if (b == null)
             return 0;
@@ -1060,7 +1042,7 @@ public final class GraphicUtils {
 
     @Nullable
     public static byte[] getBitmapData(Bitmap b) {
-        if (!isBitmapCorrect(b)) {
+        if (!isBitmapValid(b)) {
             logger.e("incorrect bitmap");
             return null;
         }
@@ -1103,7 +1085,7 @@ public final class GraphicUtils {
     @Nullable
     public static Bitmap copyBitmap(Bitmap b, Bitmap.Config c) {
 
-        if (!isBitmapCorrect(b)) {
+        if (!isBitmapValid(b)) {
             logger.e("incorrect bitmap");
             return b;
         }
@@ -1191,7 +1173,7 @@ public final class GraphicUtils {
     @Nullable
     public static Bitmap curveImage(Bitmap bitmap, @NotNull Point corners) {
 
-        if (!GraphicUtils.isBitmapCorrect(bitmap)) {
+        if (!GraphicUtils.isBitmapValid(bitmap)) {
             return null;
         }
 
@@ -1501,14 +1483,14 @@ public final class GraphicUtils {
 
     @Nullable
     public static PaletteColors generateColorByBitmap(Bitmap bm, @ColorInt final int defaultColor, final Swatch sw) {
-        if (isBitmapCorrect(bm) && sw != null) {
+        if (isBitmapValid(bm) && sw != null) {
             return makePaletteColors(new Palette.Builder(bm).generate(), defaultColor, sw);
         }
         return null;
     }
 
     public static void generateColorByBitmapAsync(Bitmap bm, @ColorInt final int defaultColor, final Swatch sw, final OnPaletteColorsGeneratedListener listener) {
-        if (isBitmapCorrect(bm) && sw != null && listener != null) {
+        if (isBitmapValid(bm) && sw != null && listener != null) {
             new Palette.Builder(bm).generate(new Palette.PaletteAsyncListener() {
                 @Override
                 public void onGenerated(Palette palette) {

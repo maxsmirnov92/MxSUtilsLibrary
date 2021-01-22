@@ -8,13 +8,15 @@ import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.LifecycleOwner
 import net.maxsmr.commonutils.android.gui.fragments.dialogs.TypedDialogFragment
+import net.maxsmr.commonutils.android.isAtLeastKitkat
 import net.maxsmr.commonutils.android.media.ContentPicker
 
 const val TAG_PICK_CONTENT_CHOICE = "pick_content_choice"
 
 abstract class ContentPickerDialogFragmentsHolder(
-    private val dialogConfigurator: IDialogConfigurator,
-    tags: Collection<String>
+        private val dialogConfigurator: IDialogConfigurator,
+        private val contentPickerOpts: ContentPickerOpts,
+        tags: Collection<String>
 ) : DialogFragmentsHolder(mergeTags(listOf(TAG_PICK_CONTENT_CHOICE), tags)) {
 
     private var contentPicker: ContentPicker? = null
@@ -43,21 +45,30 @@ abstract class ContentPickerDialogFragmentsHolder(
             val builder = TypedDialogFragment.DefaultTypedDialogBuilder()
             setupDialogBuilder(builder)
             show(
-                TAG_PICK_CONTENT_CHOICE, builder.setButtons(
+                    TAG_PICK_CONTENT_CHOICE, builder.setButtons(
                     if (!TextUtils.isEmpty(positiveButton)) positiveButton else null,
                     if (!TextUtils.isEmpty(neutralButton)) neutralButton else null,
                     if (!TextUtils.isEmpty(negativeButton)) negativeButton else null
-                ).build(), reshow
+            ).build(), reshow
             )
         }
     }
 
     protected open fun onDialogButtonClick(fragment: TypedDialogFragment<*>, which: Int) {
         if (fragment.tag == TAG_PICK_CONTENT_CHOICE) {
-            when (which) {
-                DialogInterface.BUTTON_POSITIVE -> contentPicker?.pickFromGallery()
-                DialogInterface.BUTTON_NEUTRAL -> contentPicker?.pickContent()
-                DialogInterface.BUTTON_NEGATIVE -> contentPicker?.pickFromCamera()
+            contentPicker?.let {
+                when (which) {
+                    DialogInterface.BUTTON_POSITIVE -> it.pickFromGallery()
+                    DialogInterface.BUTTON_NEUTRAL ->
+                        if (isAtLeastKitkat()) {
+                            with(contentPickerOpts) {
+                                it.pickContent(type, mimeTypes, openOrGet)
+                            }
+                        } else {
+                            // do noting
+                        }
+                    else -> it.pickFromCamera()
+                }
             }
         }
     }
@@ -70,4 +81,10 @@ abstract class ContentPickerDialogFragmentsHolder(
 
         fun setupDialogBuilder(builder: TypedDialogFragment.Builder<TypedDialogFragment<AlertDialog>>)
     }
+
+    data class ContentPickerOpts(
+            val type: String?,
+            val mimeTypes: List<String>?,
+            val openOrGet: Boolean = true
+    )
 }

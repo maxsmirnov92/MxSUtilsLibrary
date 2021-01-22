@@ -203,13 +203,19 @@ fun startActivitySafe(
 
 @JvmOverloads
 fun startActivityForResultSafe(
-        activity: Activity,
+        activity: Activity?,
+        fragment: Fragment?,
         intent: Intent?,
         requestCode: Int,
         options: Bundle? = null
 ): Boolean {
-    if (canHandleActivityIntent(activity, intent)) {
-        activity.startActivityForResult(intent, requestCode, options)
+    val context = activity ?: fragment?.requireContext() ?: throw NullPointerException("activity and fragment is null")
+    if (canHandleActivityIntent(context, intent)) {
+        if (fragment != null) {
+            fragment.startActivityForResult(intent, requestCode, options)
+        } else {
+            activity?.startActivityForResult(intent, requestCode, options)
+        }
         return true
     }
     return false

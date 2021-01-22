@@ -435,7 +435,7 @@ fun checkDir(dir: File?, createIfNotExists: Boolean = true): Boolean {
 @JvmOverloads
 fun checkPathOrThrow(parent: String?, fileName: String?, createIfNotExists: Boolean = true): Boolean {
     if (!checkPath(parent, fileName, createIfNotExists)) {
-        throw IllegalArgumentException("Incorrect path: " + parent + File.separator + fileName)
+        throw IllegalArgumentException("Incorrect path: '" + parent + File.separator + fileName + "'")
     }
     return false
 }
@@ -483,7 +483,7 @@ fun createFileOrThrow(
         createDirOrThrow(parentPath)
     }
     val newFile = toFile(fileName, parentPath)
-            ?: throw RuntimeException("Incorrect fileName or parentPath")
+            ?: throw RuntimeException("Incorrect fileName ('$fileName') or parentPath ('$parentPath')")
     if (isFileExistsOrThrow(newFile)) {
         if (recreate) {
             deleteFileOrThrow(newFile)
@@ -663,25 +663,34 @@ fun isBinaryFileOrThrow(f: File?): Boolean {
     return other != 0 && 100 * other / (ascii + other) > 95
 }
 
-fun readBytesFromFile(file: File?): ByteArray? = try {
-    readBytesFromFileOrThrow(file)
+fun readBytesFromFile(
+        file: File?,
+        offset: Int = 0,
+        length: Int = 0
+): ByteArray? = try {
+    readBytesFromFileOrThrow(file, offset, length)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
 }
 
 @Throws(RuntimeException::class)
-fun readBytesFromFileOrThrow(file: File?): ByteArray {
+fun readBytesFromFileOrThrow(
+        file: File?,
+        offset: Int = 0,
+        length: Int = 0
+): ByteArray {
     if (file == null) {
         throw NullPointerException("file is null")
     }
     if (!isFileValidOrThrow(file)) {
         throw RuntimeException("Invalid file: '$file'")
     }
-//    if (!file.canRead()) {
-//        throw RuntimeException("Cannot read from file: '$file'")
-//    }
-    return readBytesFromInputStreamOrThrow(file.toFisOrThrow())
+    return try {
+        readBytesFromInputStreamOrThrow(file.toFisOrThrow(), offset, length).first
+    } catch (e: IOException) {
+        throw RuntimeException(formatException(e, "readBytesFromInputStreamOrThrow"), e)
+    }
 }
 
 @JvmOverloads
@@ -705,9 +714,6 @@ fun readStringsFromFileOrThrow(
 ): List<String> {
     if (file == null || !isFileValidOrThrow(file)) {
         throw RuntimeException("Incorrect file: '$file'")
-    }
-    if (!isFileAccessibleOrThrow(file, forWrite = false)) {
-        throw RuntimeException("Cannot read from file: '$file'")
     }
     return try {
         readStringsFromInputStreamOrThrow(file.toFisOrThrow(), count, charsetName = charsetName)
@@ -745,9 +751,6 @@ fun writeBytesToFileOrThrow(
     if (!isFileExistsOrThrow(file)) {
         createFileOrThrow(file.name, file.parent, !append)
     }
-    if (!isFileAccessibleOrThrow(file, forRead = false)) {
-        throw RuntimeException("Cannot write to file: '$file'")
-    }
     return try {
         writeBytesToOutputStreamOrThrow(file.toFosOrThrow(append), data)
     } catch (e: IOException) {
@@ -780,9 +783,6 @@ fun writeStringsToFileOrThrow(
     }
     if (!isFileExistsOrThrow(file)) {
         createFileOrThrow(file.name, file.parent, !append)
-    }
-    if (!isFileAccessibleOrThrow(file, forRead = false)) {
-        throw RuntimeException("Cannot write to file: '$file'")
     }
     val writer: FileWriter1 = try {
         FileWriter1(file, append)
@@ -842,9 +842,6 @@ fun writeFromStreamToFileOrThrow(
         throw NullPointerException("inputStream is null")
     }
     val file: File = createFileOrThrow(targetFileName, parentPath, !append)
-    if (!isFileAccessibleOrThrow(file, forRead = false)) {
-        throw RuntimeException("Cannot write to file: '$file'")
-    }
     try {
         copyStreamOrThrow(inputStream, file.toFosOrThrow(append), notifier, buffSize)
     } catch (e: IOException) {
@@ -877,9 +874,6 @@ fun writeToStreamFromFileOrThrow(
 ) {
     if (outputStream == null) {
         throw NullPointerException("outputStreamv is null")
-    }
-    if (!isFileAccessibleOrThrow(file, forWrite = false)) {
-        throw RuntimeException("Cannot read from file: '$file'")
     }
     try {
         copyStreamOrThrow(file.toFisOrThrow(), outputStream, notifier, buffSize)
@@ -1226,7 +1220,7 @@ fun getFiles(
         notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_VALID, "Invalid file or folder: '$fromFile'"))
         return result
     }
-    if (fromFile.exists()) {
+    if (!fromFile.exists()) {
         notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_EXISTS, "File '$fromFile' not exists"))
         return result
     }

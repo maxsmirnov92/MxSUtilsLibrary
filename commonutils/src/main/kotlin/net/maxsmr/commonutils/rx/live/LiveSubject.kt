@@ -20,7 +20,7 @@ import io.reactivex.subjects.Subject
  */
 class LiveSubject<T> @JvmOverloads constructor(
         filter: ((T) -> Boolean)? = null,
-        observingState: Lifecycle.State = Lifecycle.State.STARTED,
+        observingState: Lifecycle.State? = Lifecycle.State.STARTED,
         subjectType: SubjectType = SubjectType.PUBLISH
 ) : BaseLiveObservable<T>(filter, observingState) {
 

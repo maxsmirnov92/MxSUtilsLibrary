@@ -1,7 +1,5 @@
 package net.maxsmr.commonutils.logger.holder;
 
-import android.text.TextUtils;
-
 import net.maxsmr.commonutils.logger.BaseLogger;
 
 import org.jetbrains.annotations.NotNull;
@@ -116,7 +114,7 @@ public abstract class BaseLoggerHolder {
 
     public static String formatException(@NotNull Throwable e, @Nullable String description) {
         return "A(n) " + e.getClass().getSimpleName() + " occurred"
-                + (TextUtils.isEmpty(description)? EMPTY_STRING : " during " + description) + ": " + e.getMessage();
+                + (isEmpty(description)? EMPTY_STRING : " during " + description) + ": " + e.getMessage();
     }
 
     public static void throwRuntimeException(@NotNull Throwable e) throws RuntimeException {

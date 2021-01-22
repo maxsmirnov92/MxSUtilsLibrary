@@ -66,15 +66,28 @@ fun getBrowseLinkIntent(url: String = EMPTY_STRING, withType: Boolean = true): I
 fun getOpenDocumentIntent(type: String?, mimeTypes: List<String>?): Intent {
     with(Intent(Intent.ACTION_OPEN_DOCUMENT)) {
         addCategory(Intent.CATEGORY_OPENABLE)
-        this.type = if (!TextUtils.isEmpty(type)) {
-            type
-        } else {
-            "*/*"
-        }
-        if (mimeTypes != null && mimeTypes.isNotEmpty()) {
-            putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
-        }
+        applyMimeTypes(type, mimeTypes)
         return this
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.KITKAT)
+fun getContentIntent(type: String?, mimeTypes: List<String>?): Intent {
+    with(Intent(Intent.ACTION_GET_CONTENT)) {
+        applyMimeTypes(type, mimeTypes)
+        return this
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.KITKAT)
+private fun Intent.applyMimeTypes(type: String?, mimeTypes: List<String>?) {
+    this.type = if (!TextUtils.isEmpty(type)) {
+        type
+    } else {
+        "*/*"
+    }
+    if (mimeTypes != null && mimeTypes.isNotEmpty()) {
+        putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
     }
 }
 

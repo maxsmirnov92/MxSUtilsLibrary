@@ -43,6 +43,11 @@ public class ArgsParser {
         return arg != null ? arg.second : null;
     }
 
+    public String findPairArg(int index, boolean ignoreCase) {
+        Pair<Integer, String> arg = findPairArgWithIndex(index, ignoreCase);
+        return arg != null ? arg.second : null;
+    }
+
     public String getPairArg(Pair<Integer, String> pair) {
         Pair<Integer, String> arg = getPairArgWithIndex(pair);
         return arg != null ? arg.second : null;
@@ -54,6 +59,10 @@ public class ArgsParser {
             handledArgsIndexes.add(arg.first);
         }
         return arg;
+    }
+
+    public Pair<Integer, String> findPairArgWithIndex(int index, boolean ignoreCase) {
+        return getPairArgWithIndex(findArgWithIndex(index, ignoreCase));
     }
 
     public Pair<Integer, String> getPairArgWithIndex(Pair<Integer, String> pair) {

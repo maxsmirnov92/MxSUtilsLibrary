@@ -63,7 +63,7 @@ public class NumberDrawable extends BitmapDrawable {
      */
     private void setSource(Bitmap source) {
         if (mSource != source) {
-            if (GraphicUtils.isBitmapCorrect(source)) {
+            if (GraphicUtils.isBitmapValid(source)) {
                 mSource = source;
                 if (mNeedInvalidate)
                     invalidateSelf();
@@ -149,7 +149,7 @@ public class NumberDrawable extends BitmapDrawable {
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
-        if (GraphicUtils.isBitmapCorrect(mSource)) {
+        if (GraphicUtils.isBitmapValid(mSource)) {
 //            canvas.drawBitmap(mSource, 0, 0, mPaint);
             mPaint.setColor(mTextColor);
             mPaint.setAlpha(mTextAlpha);

@@ -1,9 +1,5 @@
 package net.maxsmr.commonutils.logger.holder;
 
-import net.maxsmr.commonutils.logger.BaseTagLogger;
-
-import org.jetbrains.annotations.NotNull;
-
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -26,8 +22,6 @@ public abstract class BaseTagLoggerHolder extends BaseLoggerHolder {
         }
         this.logTag = logTag;
     }
-
-    protected abstract BaseTagLogger createLogger(@NotNull Class<?> clazz);
 
     protected String getTag(Class<?> clazz) {
         return getTag(clazz.getSimpleName());

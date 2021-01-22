@@ -34,6 +34,7 @@ import net.maxsmr.commonutils.android.*
 import net.maxsmr.commonutils.android.gui.listeners.DefaultTextWatcher
 import net.maxsmr.commonutils.android.gui.listeners.OnTextWatcher
 import net.maxsmr.commonutils.android.live.setValueIfNew
+import net.maxsmr.commonutils.android.media.getBase64
 import net.maxsmr.commonutils.data.Pair
 import net.maxsmr.commonutils.data.ReflectionUtils
 import net.maxsmr.commonutils.data.text.*
@@ -410,7 +411,7 @@ fun ImageView.setTint(
 }
 
 fun ImageView.getContentSize(): Pair<Int, Int> =
-        drawable?.let {  Pair(it.intrinsicWidth, it.intrinsicHeight) } ?: Pair(0, 0)
+        drawable?.let { Pair(it.intrinsicWidth, it.intrinsicHeight) } ?: Pair(0, 0)
 
 fun ImageView.getRescaledImageViewSize(): Pair<Int?, Int?> {
     var measuredWidth: Int
@@ -535,6 +536,16 @@ fun View.setSize(size: Pair<Int, Int>) {
     this.layoutParams = layoutParams
 }
 
+fun View.setAllPadding(paddingPx: Int) {
+    setPadding(paddingPx, paddingPx, paddingPx, paddingPx)
+}
+
+@JvmOverloads
+fun View.setPadding(startPx: Int? = null, topPx: Int? = null, endPx: Int? = null, bottomPx: Int? = null) {
+    setPadding(startPx ?: paddingStart, topPx ?: paddingTop, endPx ?: paddingEnd,
+            bottomPx ?: paddingBottom)
+}
+
 fun RadioGroup.getSelectedIndex(): Int {
     val radioButtonId = checkedRadioButtonId
     val radioButton = findViewById<RadioButton>(radioButtonId) ?: null
@@ -648,7 +659,7 @@ fun View.screenLocation(): Rect {
 
 @JvmOverloads
 fun WebView.loadDataBase64(value: String, charset: Charset = Charsets.UTF_8) {
-    loadData(Base64.encodeToString(value.toByteArray(charset), Base64.DEFAULT), "text/html; charset=${charset}", "base64")
+    loadData(getBase64(value, charset, Base64.DEFAULT), "text/html; charset=${charset}", "base64")
 }
 
 @JvmOverloads

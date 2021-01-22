@@ -9,6 +9,7 @@ import java.io.*
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
+import kotlin.Pair
 
 // Вспомогательные методы для чтения из {@link InputStream]
 // и записи в {@link OutputStream}
@@ -87,9 +88,13 @@ fun copyStreamOrThrow(
 }
 
 @JvmOverloads
-fun readBytesFromInputStream(inputStream: InputStream, closeInput: Boolean = true): ByteArray? =
-        try {
-            readBytesFromInputStreamOrThrow(inputStream, closeInput)
+fun readBytesFromInputStream(
+        inputStream: InputStream,
+        offset: Int = 0,
+        length: Int = 0,
+        closeInput: Boolean = true
+): Pair<ByteArray, Int>? = try {
+            readBytesFromInputStreamOrThrow(inputStream, offset, length, closeInput)
         } catch (e: IOException) {
             logException(logger, e, "readBytesFromInputStream")
             null
@@ -97,14 +102,24 @@ fun readBytesFromInputStream(inputStream: InputStream, closeInput: Boolean = tru
 
 @Throws(IOException::class)
 @JvmOverloads
-fun readBytesFromInputStreamOrThrow(inputStream: InputStream, closeInput: Boolean = true): ByteArray {
+fun readBytesFromInputStreamOrThrow(
+        inputStream: InputStream,
+        offset: Int = 0,
+        length: Int = 0,
+        closeInput: Boolean = true
+): Pair<ByteArray, Int> {
     try {
-        val data = ByteArray(inputStream.available())
+        val available = inputStream.available()
+        val data = ByteArray(if (length in 1..available) length else available)
         var readByteCount: Int
         do {
-            readByteCount = inputStream.read(data, 0, data.size)
-        } while (readByteCount > 0)
-        return data
+            readByteCount = inputStream.read(
+                    data,
+                    if (offset >= 0) offset else 0,
+                    data.size
+            )
+        } while (readByteCount > 0 && length <= 0)
+        return Pair(data, inputStream.available())
     } finally {
         if (closeInput) {
             inputStream.close()
