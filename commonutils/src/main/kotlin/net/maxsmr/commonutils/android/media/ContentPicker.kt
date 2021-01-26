@@ -6,6 +6,7 @@ import android.content.ContentValues
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
+import android.graphics.Bitmap.Config
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
@@ -16,8 +17,9 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import net.maxsmr.commonutils.android.*
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
-import net.maxsmr.commonutils.graphic.GraphicUtils
-import net.maxsmr.commonutils.graphic.GraphicUtils.*
+import net.maxsmr.commonutils.graphic.createBitmapFromFile
+import net.maxsmr.commonutils.graphic.createBitmapFromUri
+import net.maxsmr.commonutils.graphic.rotateBitmap
 import java.io.File
 
 private const val MIME_TYPE_IMAGE = "image/*"
@@ -44,11 +46,11 @@ class ContentPicker(
             } else {
                 object : ContentPicker.BaseFilePickerConfigurator(context, fileProviderAuthorityPostfix, pickFromGalleryRequestCode, pickFromCameraRequestCode, pickFileRequestCode) {
                     override fun newCameraPictureFile(): File = newCameraPictureFileFunc?.invoke()
-                            ?: throw IllegalStateException("")
+                            ?: throw IllegalStateException("Camera picture file must be created for FilePickerConfigurator")
                 }
             })
 
-    private val activity: Activity
+    val activity: Activity
         get() {
             with(owner) {
                 return when (this) {
@@ -208,7 +210,7 @@ class ContentPicker(
 
         private fun createBitmap(fileUri: Uri?): Bitmap? {
             return if (fileUri != null) {
-                GraphicUtils.createBitmapFromFile(File(fileUri.path ?: EMPTY_STRING))
+                createBitmapFromFile(File(fileUri.path ?: EMPTY_STRING))
             } else {
                 null
             }
@@ -268,10 +270,13 @@ class ContentPicker(
          * @param rotate требуется ли поворот в соот-ии с ориентацией из MediaStore
          * @return декодированный из [uri] битмап + угол из MediaStore
          */
+        @JvmOverloads
         fun retrieveBitmapFromAnyUri(
                 contentResolver: ContentResolver,
                 uri: Uri?,
-                rotate: Boolean
+                rotate: Boolean,
+                config: Config = Config.ARGB_8888,
+                withSampleSize: Boolean = false
         ): Pair<Bitmap, Int>? {
             // api >= Q -> можем юзать получение угла из MediaStore (не ExifInterface)
             // и создание bitmap из ContentResolver
@@ -279,7 +284,14 @@ class ContentPicker(
                 return null
             }
             // на >= Q с BitmapFactory.Options не работает
-            val bitmap = createBitmapFromUri(contentResolver, uri)
+
+//            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+//                ImageDecoder.createSource(contentResolver, it).decodeBitmap { info, decoder -> }
+//            } else {
+////                    MediaStore.Images.Media.getBitmap(contentResolver, it)
+//                GraphicUtils.createBitmapFromUri(contentResolver, it)
+//            }
+            val bitmap = createBitmapFromUri(uri, contentResolver, config = config, withSampleSize = withSampleSize)
             val angle = getOrientationFromMediaStore(contentResolver, uri)
 
             if (bitmap != null) {
@@ -304,8 +316,8 @@ class ContentPicker(
         fun retrieveBitmapFromFileUri(
                 uri: Uri?,
                 rotate: Boolean,
-                config: Bitmap.Config = Bitmap.Config.ARGB_8888,
-                withSampleSize: Boolean = true
+                config: Config = Config.ARGB_8888,
+                withSampleSize: Boolean = false
         ): Pair<Bitmap, Int>? {
             // несколько кейсов: pick контента, фотки, заранее известного cameraFile:
             // урла здесь всегда должна быть файловая!
@@ -319,7 +331,7 @@ class ContentPicker(
 
             val file = File(path)
 
-            val bitmap = createBitmapFromFile(file, 1, config, withSampleSize)
+            val bitmap = createBitmapFromFile(file, config = config, withSampleSize = withSampleSize)
             val angle = getRotationAngleFromExif(file)
 
             if (bitmap != null) {
@@ -330,19 +342,6 @@ class ContentPicker(
                     }
                 }
                 return Pair(bitmap, angle)
-            }
-            return null
-        }
-
-        private fun createBitmapFromUri(contentResolver: ContentResolver, contentUri: Uri?): Bitmap? {
-            contentUri?.let {
-//                return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-//                    ImageDecoder.createSource(contentResolver, it).decodeBitmap { info, decoder -> }
-//                } else {
-////                    MediaStore.Images.Media.getBitmap(contentResolver, it)
-//                    GraphicUtils.createBitmapFromUri(contentResolver, it)
-//                }
-                return GraphicUtils.createBitmapFromUri(contentResolver, it)
             }
             return null
         }

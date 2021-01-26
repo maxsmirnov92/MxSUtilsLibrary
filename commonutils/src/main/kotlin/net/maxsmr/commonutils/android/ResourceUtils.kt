@@ -6,14 +6,17 @@ import android.content.res.Resources
 import android.content.res.TypedArray
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.StateListDrawable
 import android.util.TypedValue
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.RawRes
+import androidx.annotation.XmlRes
 import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import net.maxsmr.commonutils.R
 import net.maxsmr.commonutils.data.*
+import net.maxsmr.commonutils.data.ReflectionUtils.invokeMethod
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.*
 import java.io.File
@@ -160,7 +163,7 @@ fun readStringsFromAssetOrThrow(
     return try {
         readStringsFromInputStreamOrThrow(openAssetStreamOrThrow(context, assetName), count, charsetName = charsetName)
     } catch (e: IOException) {
-        throw RuntimeException(formatException(e, "readStringsFromInputStream"))
+        throw RuntimeException(formatException(e, "readStringsFromInputStream"), e)
     }
 }
 
@@ -191,7 +194,7 @@ fun readStringsFromResOrThrow(
     return try {
         readStringsFromInputStreamOrThrow(openRawResourceOrThrow(context, resId), count, charsetName = charsetName)
     } catch (e: IOException) {
-        throw RuntimeException(formatException(e, "readStringsFromInputStream"))
+        throw RuntimeException(formatException(e, "readStringsFromInputStream"), e)
     }
 }
 
@@ -286,7 +289,7 @@ fun openAssetStream(context: Context, assetName: String): InputStream? = try {
 fun openAssetStreamOrThrow(context: Context, assetName: String): InputStream = try {
     context.assets.open(assetName)
 } catch (e: IOException) {
-    throw RuntimeException(formatException(e, "open"))
+    throw RuntimeException(formatException(e, "open"), e)
 }
 
 fun openRawResource(context: Context, @RawRes resId: Int): InputStream? = try {
@@ -300,5 +303,57 @@ fun openRawResource(context: Context, @RawRes resId: Int): InputStream? = try {
 fun openRawResourceOrThrow(context: Context, @RawRes resId: Int): InputStream = try {
     context.resources.openRawResource(resId)
 } catch (e: IOException) {
-    throw RuntimeException(formatException(e, "openRawResource"))
+    throw RuntimeException(formatException(e, "openRawResource"), e)
+}
+
+fun createColorStateListFromRes(context: Context, @XmlRes res: Int): ColorStateList? {
+    val parser = try {
+        context.resources.getXml(res)
+    } catch (e: Resources.NotFoundException) {
+        logger.e(formatException(e, "getXml"))
+        return null
+    }
+    return try {
+        if (isAtLeastMarshmallow()) {
+            ColorStateList.createFromXml(context.resources, parser, null)
+        } else {
+            @Suppress("DEPRECATION")
+            ColorStateList.createFromXml(context.resources, parser)
+        }
+    } catch (e: Exception) {
+        logger.e(formatException(e))
+        null
+    }
+}
+
+@ColorInt
+fun getDefaultColor(c: ColorStateList?): Int =
+        c?.defaultColor ?: 0
+
+
+fun getDefaultDrawable(d: StateListDrawable?): Drawable? =
+        if (d != null) getDrawableForState(d, 0) else null
+
+fun getDrawableForState(stateListDrawable: StateListDrawable, vararg state: Int): Drawable? {
+    val clazz = StateListDrawable::class.java
+    val parameterTypes = arrayOf(IntArray::class.java)
+    val index = invokeMethod<Int>(clazz,
+            "getStateDrawableIndex",
+            parameterTypes,
+            stateListDrawable,
+            state)
+    return invokeMethod<Drawable>(clazz,
+            "getStateDrawable",
+            parameterTypes,
+            stateListDrawable,
+            index)
+}
+
+fun cloneDrawable(drawable: Drawable?): Drawable? {
+    drawable?.let {
+        val cloned = drawable.constantState?.newDrawable()
+        return cloned?.mutate() // mutate() -> not affecting other instances, for e.g. after setting color filter
+                ?: drawable.mutate()
+    }
+    return null
 }

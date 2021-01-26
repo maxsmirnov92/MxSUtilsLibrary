@@ -21,7 +21,6 @@ import androidx.annotation.DrawableRes;
 
 import net.maxsmr.commonutils.data.Observable;
 import net.maxsmr.commonutils.data.Pair;
-import net.maxsmr.commonutils.graphic.GraphicUtils;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -34,9 +33,14 @@ import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import static android.graphics.Bitmap.createScaledBitmap;
 import static net.maxsmr.commonutils.android.gui.ViewExtKt.getContentSize;
 import static net.maxsmr.commonutils.android.gui.ViewExtKt.getRescaledImageViewSize;
 import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.createBitmapFromResource;
+import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.createScaledBitmapByWidth;
+import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.mirrorBitmap;
+import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.rotateBitmap;
 
 public class MaskClickLayout extends FrameLayout {
 
@@ -98,11 +102,11 @@ public class MaskClickLayout extends FrameLayout {
 
                     for (Item item : clickMask.items) {
 
-                        Bitmap maskBitmap = item.maskedPair.second; // GraphicUtils.createBitmapFromResource(item.maskResId, 1, getContext());
+                        Bitmap maskBitmap = item.maskedPair.second; // createBitmapFromResource(item.maskResId, 1, getContext());
 
                         if (item.options.scaleToParent) {
                             if (backgroundSize.first > 0 && backgroundSize.second > 0) {
-                                Bitmap scaledMaskBitmap = Bitmap.createScaledBitmap(maskBitmap, backgroundSize.first, backgroundSize.second, false);
+                                Bitmap scaledMaskBitmap = createScaledBitmap(maskBitmap, backgroundSize.first, backgroundSize.second, false);
 
                                 if (scaledMaskBitmap == null) {
                                     throw new RuntimeException("could not create scaled bitmap: " + backgroundSize.first + "x" + backgroundSize.second);
@@ -542,7 +546,7 @@ public class MaskClickLayout extends FrameLayout {
 
             this.clickMask = clickMask;
 
-            Bitmap background = GraphicUtils.createBitmapFromResource(getContext(), clickMask.backgroundResId);
+            Bitmap background = createBitmapFromResource(getContext().getResources(), clickMask.backgroundResId);
 
             if (background == null) {
                 throw new RuntimeException("background bitmap was not created");
@@ -551,17 +555,17 @@ public class MaskClickLayout extends FrameLayout {
             if (clickMask.options.scaleToParent) {
                 DisplayMetrics metrics = new DisplayMetrics();
                 ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(metrics);
-                Bitmap scaledBackground = GraphicUtils.createScaledBitmap(background, metrics.widthPixels, true);
+                Bitmap scaledBackground = createScaledBitmapByWidth(background, metrics.widthPixels);
                 background.recycle();
                 background = scaledBackground;
             }
 
             if (clickMask.options.rotateAngleCorrect()) {
-                background = GraphicUtils.rotateBitmap(background, clickMask.options.rotateAngle);
+                background = rotateBitmap(background, clickMask.options.rotateAngle);
             }
 
             if (clickMask.options.mirror) {
-                background = GraphicUtils.mirrorBitmap(background);
+                background = mirrorBitmap(background);
             }
 
             this.backgroundImageView.setImageBitmap(background);
@@ -690,24 +694,24 @@ public class MaskClickLayout extends FrameLayout {
 
             this.tag = tag;
 
-            Bitmap layerBitmap = GraphicUtils.createBitmapFromResource(context, layerResId);
+            Bitmap layerBitmap = createBitmapFromResource(context.getResources(), layerResId);
             if (options.rotateAngleCorrect()) {
-                layerBitmap = GraphicUtils.rotateBitmap(layerBitmap, options.rotateAngle);
+                layerBitmap = rotateBitmap(layerBitmap, options.rotateAngle);
             }
             if (options.mirror) {
-                layerBitmap = GraphicUtils.mirrorBitmap(layerBitmap);
+                layerBitmap = mirrorBitmap(layerBitmap);
             }
             if (layerBitmap == null) {
                 throw new RuntimeException("layer bitmap was not created");
             }
             this.layerPair = new Pair<>(layerResId, layerBitmap);
 
-            Bitmap maskBitmap = GraphicUtils.createBitmapFromResource(context, maskResId);
+            Bitmap maskBitmap = createBitmapFromResource(context.getResources(), maskResId);
             if (options.rotateAngleCorrect()) {
-                maskBitmap = GraphicUtils.rotateBitmap(maskBitmap, options.rotateAngle);
+                maskBitmap = rotateBitmap(maskBitmap, options.rotateAngle);
             }
             if (options.mirror) {
-                maskBitmap = GraphicUtils.mirrorBitmap(maskBitmap);
+                maskBitmap = mirrorBitmap(maskBitmap);
             }
             if (maskBitmap == null) {
                 throw new RuntimeException("mask bitmap was not created");

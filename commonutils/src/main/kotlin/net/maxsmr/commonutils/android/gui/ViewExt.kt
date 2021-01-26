@@ -2,10 +2,7 @@ package net.maxsmr.commonutils.android.gui
 
 import android.annotation.SuppressLint
 import android.content.res.ColorStateList
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.PorterDuff
-import android.graphics.Rect
+import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.text.*
 import android.text.method.LinkMovementMethod
@@ -38,11 +35,15 @@ import net.maxsmr.commonutils.android.media.getBase64
 import net.maxsmr.commonutils.data.Pair
 import net.maxsmr.commonutils.data.ReflectionUtils
 import net.maxsmr.commonutils.data.text.*
+import net.maxsmr.commonutils.graphic.createScaledBitmapByWidth
+import net.maxsmr.commonutils.graphic.isBitmapValid
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.nio.charset.Charset
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("ViewExt")
+
+private const val IMAGE_VIEW_MAX_WIDTH = 4096
 
 /**
  * Установка [IntervalEditorActionListener] на editor action у [EditText]
@@ -745,6 +746,30 @@ fun TextView.setupPlaceholderOrLabelHint(
             setHint(hint)
         }
     }
+}
+
+@JvmOverloads
+fun ImageView.setImageBitmapWithResize(
+        bitmap: Bitmap?,
+        limit: Int = IMAGE_VIEW_MAX_WIDTH
+): Bitmap? {
+    if (bitmap == null || !isBitmapValid(bitmap)) {
+        return null
+    }
+    var resultBitmap = bitmap
+    val sourceWidth = bitmap.width
+    val sourceHeight = bitmap.width
+    val result = getFixedSize(
+            bitmap.width,
+            bitmap.height,
+            limit
+    )
+    if (result.first != sourceWidth ||
+            result.second != sourceHeight) {
+        resultBitmap = createScaledBitmapByWidth(bitmap, result.first, true)
+    }
+    setImageBitmap(resultBitmap)
+    return resultBitmap
 }
 
 enum class RequiredFieldRule {

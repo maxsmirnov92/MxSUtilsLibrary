@@ -12,10 +12,13 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 
 import net.maxsmr.commonutils.android.gui.fonts.FontsHolder;
-import net.maxsmr.commonutils.graphic.GraphicUtils;
 
 import static net.maxsmr.commonutils.android.AppUtilsKt.convertAnyToPx;
 import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.copyBitmap;
+import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.createBitmapFromResource;
+import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.fixFontSize;
+import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.isBitmapValid;
 
 public class NumberDrawable extends BitmapDrawable {
 
@@ -45,7 +48,7 @@ public class NumberDrawable extends BitmapDrawable {
     }
 
     public NumberDrawable(Context context, @DrawableRes int sourceDrawableResId, @ColorInt int textColor, int textAlpha, String fontAlias) {
-        this(context, GraphicUtils.copyBitmap(GraphicUtils.createBitmapFromResource(context, sourceDrawableResId), Bitmap.Config.ARGB_8888), textColor, textAlpha, fontAlias);
+        this(context, copyBitmap(createBitmapFromResource(context.getResources(), sourceDrawableResId)), textColor, textAlpha, fontAlias);
     }
 
     public NumberDrawable(Context context, Bitmap sourceBitmap, @ColorInt int textColor, int textAlpha, String fontAlias) {
@@ -63,7 +66,7 @@ public class NumberDrawable extends BitmapDrawable {
      */
     private void setSource(Bitmap source) {
         if (mSource != source) {
-            if (GraphicUtils.isBitmapValid(source)) {
+            if (isBitmapValid(source)) {
                 mSource = source;
                 if (mNeedInvalidate)
                     invalidateSelf();
@@ -149,12 +152,12 @@ public class NumberDrawable extends BitmapDrawable {
     @Override
     public void draw(Canvas canvas) {
         super.draw(canvas);
-        if (GraphicUtils.isBitmapValid(mSource)) {
+        if (isBitmapValid(mSource)) {
 //            canvas.drawBitmap(mSource, 0, 0, mPaint);
             mPaint.setColor(mTextColor);
             mPaint.setAlpha(mTextAlpha);
             mPaint.setTypeface(mFont);
-            mPaint.setTextSize(GraphicUtils.fixFontSize(getTextSizeByDensity(), String.valueOf(mNumber), mPaint, mSource)); // getBitmap()
+            mPaint.setTextSize(fixFontSize(mSource, getTextSizeByDensity(), String.valueOf(mNumber), mPaint)); // getBitmap()
             mNumber = mSetter != null ? mSetter.getNumber() : mNumber;
 //            logger.d("drawing text " + String.valueOf(mNumber) + "...");
             canvas.drawText(String.valueOf(mNumber), 0, 0, mPaint);

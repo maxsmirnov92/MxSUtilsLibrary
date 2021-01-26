@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.graphic;
+package net.maxsmr.commonutils.android.graphic;
 
 import android.graphics.Bitmap;
 import android.view.View;

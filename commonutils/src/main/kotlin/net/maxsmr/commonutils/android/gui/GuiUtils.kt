@@ -165,9 +165,7 @@ fun showToastWithDuration(targetDuration: Long, toastFunc: (() -> Toast)): Count
 }
 
 fun getCurrentDisplayOrientation(context: Context): Int {
-    val windowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager?
-            ?: throw NullPointerException("WindowManager is null")
-    return when (windowManager.defaultDisplay.rotation) {
+    return when (context.display?.rotation) {
         Surface.ROTATION_90 -> 90
         Surface.ROTATION_180 -> 180
         Surface.ROTATION_270 -> 270
@@ -212,4 +210,30 @@ fun getViewsRotationForDisplay(context: Context, displayRotation: Int): Int {
         }
     }
     return result
+}
+
+fun getFixedSize(
+        sourceSize: Pair<Int, Int>,
+        maxSize: Int
+): Pair<Int, Int> =
+        getFixedSize(sourceSize.first, sourceSize.second, maxSize)
+
+fun getFixedSize(
+        sourceWidth: Int,
+        sourceHeight: Int,
+        maxSize: Int
+): Pair<Int, Int> {
+
+    var w = sourceWidth.toFloat()
+    var h = sourceHeight.toFloat()
+    if (w > maxSize || h > maxSize) {
+        if (w > h) {
+            h = h * maxSize / w
+            w = maxSize.toFloat()
+        } else {
+            w = w * maxSize / h
+            h = maxSize.toFloat()
+        }
+    }
+    return Pair(w.toInt(), h.toInt())
 }

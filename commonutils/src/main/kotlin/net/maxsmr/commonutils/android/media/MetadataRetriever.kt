@@ -2,7 +2,6 @@ package net.maxsmr.commonutils.android.media
 
 import android.content.ContentResolver
 import android.content.ContentUris
-import android.content.Context
 import android.graphics.Bitmap
 import android.media.MediaMetadataRetriever
 import android.net.Uri
@@ -11,7 +10,8 @@ import net.maxsmr.commonutils.android.isAtLeastMarshmallow
 import net.maxsmr.commonutils.data.isFileValid
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.text.isEmpty
-import net.maxsmr.commonutils.graphic.GraphicUtils
+import net.maxsmr.commonutils.graphic.createBitmapFromByteArray
+import net.maxsmr.commonutils.graphic.createBitmapFromUri
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.io.File
@@ -216,12 +216,12 @@ fun <M> extractMetadataField(
 /**
  * @param contentUri must have scheme "content://"
  */
-fun extractAlbumArt(context: Context, contentUri: Uri?): Bitmap? {
-    val albumId = queryUriFirst(context, contentUri, Long::class.java, listOf(MediaStore.Audio.Media.ALBUM_ID))
+fun extractAlbumArt(contentResolver: ContentResolver, contentUri: Uri?): Bitmap? {
+    val albumId = queryUriFirst(contentResolver, contentUri, Long::class.java, listOf(MediaStore.Audio.Media.ALBUM_ID))
     if (albumId != null) {
         val coverUri = Uri.parse("content://media/external/audio/albumart")
         val trackCoverUri = ContentUris.withAppendedId(coverUri, albumId)
-        return GraphicUtils.createBitmapFromUri(context, trackCoverUri, 1)
+        return createBitmapFromUri(trackCoverUri, contentResolver, 1)
     }
     return null
 }
@@ -234,7 +234,7 @@ fun getMediaFileCoverArt(filePath: String?, headers: Map<String, String>? = null
 @JvmOverloads
 fun getMediaFileCoverArt(resourceUri: Uri?, headers: Map<String, String>? = null): Bitmap? {
     val retriever = createMediaMetadataRetriever(resourceUri, headers)
-    return if (retriever != null) GraphicUtils.createBitmapFromByteArray(retriever.embeddedPicture) else null
+    return if (retriever != null) createBitmapFromByteArray(retriever.embeddedPicture) else null
 }
 
 @JvmOverloads
@@ -244,7 +244,7 @@ fun extractMediaDurationFromFile(file: File?, headers: Map<String, String>? = nu
 
 @JvmOverloads
 fun extractMediaDurationFromFile(filePath: String?, headers: Map<String, String>? = null): Long? {
-    return if (!isEmpty(filePath)) extractMediaDuration(Uri.parse(filePath), headers) else null
+    return if (!isEmpty(filePath)) extractMediaDurationFromUri(Uri.parse(filePath), headers) else null
 }
 
 fun extractMediaDurationFromFile(fileDescriptor: FileDescriptor?): Long? {
@@ -253,7 +253,7 @@ fun extractMediaDurationFromFile(fileDescriptor: FileDescriptor?): Long? {
 }
 
 @JvmOverloads
-fun extractMediaDuration(resourceUri: Uri?, headers: Map<String, String>? = null): Long? {
+fun extractMediaDurationFromUri(resourceUri: Uri?, headers: Map<String, String>? = null): Long? {
     val retriever = createMediaMetadataRetriever(resourceUri, headers) ?: return null
     return extractMediaDuration(retriever, true)
 }

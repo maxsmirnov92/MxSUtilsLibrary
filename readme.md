@@ -5,7 +5,6 @@ In your root build.gradle add my bintray repository:
 ``` groovy
 allprojects {
     repositories {
-        ...
         maven {
            url 'https://dl.bintray.com/maxsmirnov92/maven' }
     }
@@ -16,7 +15,6 @@ In your project build.gradle (usually app/build.gradle or mobile/build.gradle):
 
 ``` groovy
 dependencies {
-    ...
     api 'net.maxsmr:commonutils:1.0'
     api 'net.maxsmr:customcontentprovider:1.0'
     api 'net.maxsmr:devicewatchers:1.0'

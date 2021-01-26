@@ -17,10 +17,10 @@ import androidx.viewpager.widget.PagerAdapter;
 import androidx.viewpager.widget.ViewPager;
 
 import net.maxsmr.commonutils.R;
-import net.maxsmr.commonutils.graphic.GraphicUtils;
 
 import org.jetbrains.annotations.Nullable;
 
+import static net.maxsmr.commonutils.android.ResourceUtilsKt.cloneDrawable;
 
 /**
  * @author maxsmirnov
@@ -176,7 +176,7 @@ public class ViewPagerIndicator extends LinearLayout implements ViewPager.OnPage
         if (adapterCount > 1 || allowDisplaySingle) {
             for (int i = 0; i < adapterCount; i++) {
                 ImageView imageView = new ImageView(getContext());
-                imageView.setImageDrawable(GraphicUtils.cloneDrawable(indicatorDrawable));
+                imageView.setImageDrawable(cloneDrawable(indicatorDrawable));
                 LayoutParams lp = new LayoutParams(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT);
                 int margin = indicatorMarginPx;
                 lp.setMargins(margin, margin, margin, margin);

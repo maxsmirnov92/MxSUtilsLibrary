@@ -1,9 +1,13 @@
 package net.maxsmr.commonutils.data.text
 
+import net.maxsmr.commonutils.android.gui.fragments.dialogs.holder.logger
 import net.maxsmr.commonutils.data.CompareCondition
 import net.maxsmr.commonutils.data.Predicate
 import net.maxsmr.commonutils.data.conversion.toDoubleOrNull
 import net.maxsmr.commonutils.data.number.isZeroOrNull
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException
+import java.io.UnsupportedEncodingException
+import java.nio.charset.Charset
 import java.util.*
 
 // region: Copied from TextUtils
@@ -72,7 +76,7 @@ fun insertAt(target: CharSequence, index: Int, what: CharSequence): String {
 }
 
 fun indexOf(s: CharSequence, c: Char): Int {
-    for (index in 0 until s.length) {
+    for (index in s.indices) {
         if (s[index] == c) {
             return index
         }
@@ -262,6 +266,33 @@ fun trim(
             text.trim(true).trim(false)
         }
     }
+}
+
+fun appendSubstringWhileLess(
+        text: CharSequence,
+        minCharsCount: Int,
+        fromStart: Boolean,
+        substring: String
+): CharSequence {
+    val result = StringBuilder(text)
+    if (substring.isNotEmpty()) {
+        while (result.length < minCharsCount) {
+            if (fromStart) {
+                result.insert(0, substring)
+            } else {
+                result.append(substring)
+            }
+        }
+    }
+    return result
+}
+
+@JvmOverloads
+fun getBytes(text: String, charset: Charset = Charsets.UTF_8): ByteArray? = try {
+    text.toByteArray(charset)
+} catch (e: UnsupportedEncodingException) {
+    logger.e(formatException(e, "toByteArray"))
+    null
 }
 
 private fun isTrue(

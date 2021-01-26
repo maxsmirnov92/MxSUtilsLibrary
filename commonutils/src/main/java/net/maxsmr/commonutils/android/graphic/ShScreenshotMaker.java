@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.graphic;
+package net.maxsmr.commonutils.android.graphic;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;

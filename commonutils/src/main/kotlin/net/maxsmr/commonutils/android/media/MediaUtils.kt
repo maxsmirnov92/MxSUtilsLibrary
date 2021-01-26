@@ -26,7 +26,7 @@ import net.maxsmr.commonutils.android.isAtLeastLollipop
 import net.maxsmr.commonutils.data.*
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.text.isEmpty
-import net.maxsmr.commonutils.graphic.GraphicUtils
+import net.maxsmr.commonutils.graphic.canDecodeImage
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.*
@@ -435,7 +435,7 @@ fun getPath(context: Context, uri: Uri?): String {
             return data ?: EMPTY_STRING
         }
         return getDataColumn(context.contentResolver, uri)
-    } else if (TextUtils.isEmpty(uri.scheme) || ContentResolver.SCHEME_FILE.equals(uri.scheme, ignoreCase = true)) {
+    } else if (uri.isFileScheme()) {
         val data = uri.path
         return data ?: EMPTY_STRING
     }
@@ -494,7 +494,7 @@ fun readExifLocation(imageFile: File?): Location? = try {
 
 @Throws(RuntimeException::class)
 fun readExifLocationOrThrow(imageFile: File?): Location {
-    if (imageFile == null || !GraphicUtils.canDecodeImage(imageFile)) {
+    if (imageFile == null || !canDecodeImage(imageFile)) {
         throw RuntimeException("Incorrect image file: $imageFile")
     }
 
@@ -510,23 +510,27 @@ fun readExifLocationOrThrow(imageFile: File?): Location {
         return 0.0
     }
 
-    val exif = createExitOrThrow(imageFile.absolutePath)
-    val provider = exif.getAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD)
-    val result = Location(provider)
-    val latitude = getLocationAttr(exif, ExifInterface.TAG_GPS_LATITUDE)
-    val longitude = getLocationAttr(exif, ExifInterface.TAG_GPS_LONGITUDE)
-    val altitude = getLocationAttr(exif, ExifInterface.TAG_GPS_ALTITUDE)
-    var timestamp = 0L
-    exif.getAttribute(ExifInterface.TAG_GPS_TIMESTAMP)?.let { value ->
-        value.toLongOrNull()?.let {
-            timestamp = it
+    val exif = createExifOrThrow(imageFile)
+    try {
+        val provider = exif.getAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD)
+        val result = Location(provider)
+        val latitude = getLocationAttr(exif, ExifInterface.TAG_GPS_LATITUDE)
+        val longitude = getLocationAttr(exif, ExifInterface.TAG_GPS_LONGITUDE)
+        val altitude = getLocationAttr(exif, ExifInterface.TAG_GPS_ALTITUDE)
+        var timestamp = 0L
+        exif.getAttribute(ExifInterface.TAG_GPS_TIMESTAMP)?.let { value ->
+            value.toLongOrNull()?.let {
+                timestamp = it
+            }
         }
+        result.latitude = latitude
+        result.longitude = longitude
+        result.altitude = altitude
+        result.time = timestamp
+        return result
+    } catch (e: Exception) {
+        throw RuntimeException(formatException(e))
     }
-    result.latitude = latitude
-    result.longitude = longitude
-    result.altitude = altitude
-    result.time = timestamp
-    return result
 }
 
 fun writeExifLocation(imageFile: File?, location: Location?) = try {
@@ -539,27 +543,29 @@ fun writeExifLocation(imageFile: File?, location: Location?) = try {
 
 @Throws(RuntimeException::class)
 fun writeExifLocationOrThrow(imageFile: File?, location: Location?) {
-    if (imageFile == null || !GraphicUtils.canDecodeImage(imageFile)) {
+    if (imageFile == null || !canDecodeImage(imageFile)) {
         throw RuntimeException("Incorrect image file: $imageFile")
     }
     if (location == null) {
         throw NullPointerException("location is null")
     }
-    val exif = createExitOrThrow(imageFile.absolutePath)
-
-    val latitude = location.latitude
-    exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertLocationDoubleToString(latitude))
-    exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, if (latitude > 0) "N" else "S")
-    val longitude = location.longitude
-    exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertLocationDoubleToString(longitude))
-    exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, if (longitude > 0) "E" else "W")
-    exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, convertLocationDoubleToString(location.altitude))
-    exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, location.time.toString())
-    location.provider?.let {
-        exif.setAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD, it)
+    val exif = createExifOrThrow(imageFile)
+    try {
+        val latitude = location.latitude
+        exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE, convertLocationDoubleToString(latitude))
+        exif.setAttribute(ExifInterface.TAG_GPS_LATITUDE_REF, if (latitude > 0) "N" else "S")
+        val longitude = location.longitude
+        exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertLocationDoubleToString(longitude))
+        exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, if (longitude > 0) "E" else "W")
+        exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, convertLocationDoubleToString(location.altitude))
+        exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, location.time.toString())
+        location.provider?.let {
+            exif.setAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD, it)
+        }
+        exif.saveAttributes()
+    } catch (e: Exception) {
+        throwRuntimeException(e)
     }
-    exif.saveAttributes()
-
 }
 
 fun convertLocationDoubleToString(value: Double): String {
@@ -581,9 +587,13 @@ fun convertLocationDoubleToString(value: Double): String {
 }
 
 @Throws(RuntimeException::class)
-private fun createExitOrThrow(path: String) = try {
-    ExifInterface(path)
-} catch (e: IOException) {
+private fun createExifOrThrow(file: File?) =
+        createExifOrThrow(file?.absolutePath)
+
+@Throws(RuntimeException::class)
+private fun createExifOrThrow(path: String?) = try {
+    ExifInterface(path ?: EMPTY_STRING)
+} catch (e: Exception) {
     throw RuntimeException(formatException(e, "create ExifInterface"), e)
 }
 
@@ -599,25 +609,133 @@ fun getOrientationFromMediaStore(contentResolver: ContentResolver, photoUri: Uri
                 Int::class.java,
                 listOf(MediaStore.Images.ImageColumns.ORIENTATION))
 
-fun getRotationAngleFromExif(imageFile: File): Int {
-    if (GraphicUtils.canDecodeImage(imageFile)) {
-        try {
-            val exif = ExifInterface(imageFile.absolutePath)
-            val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
-            getRotationAngleByExifOrientation(orientation)
-        } catch (e: Exception) {
-            logger.e(e)
-        }
+fun getRotationAngleFromExif(imageFile: File): Int = try {
+    getRotationAngleFromExifOrThrow(imageFile)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    0
+}
+
+@Throws(RuntimeException::class)
+fun getRotationAngleFromExifOrThrow(imageFile: File): Int {
+    if (!canDecodeImage(imageFile)) {
+        throw RuntimeException("Incorrect image file: $imageFile")
     }
-    return -1
+    try {
+        val exif = createExifOrThrow(imageFile)
+        val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
+        return getRotationAngleByExifOrientation(orientation)
+    } catch (e: Exception) {
+        throw RuntimeException(formatException(e))
+    }
+}
+
+fun writeRotationAngleToExif(imageFile: File, degrees: Int) = try {
+    writeRotationAngleToExifOrThrow(imageFile, degrees)
+    true
+} catch (e: RuntimeException) {
+    logger.e(e)
+    false
+}
+
+@Throws(RuntimeException::class)
+fun writeRotationAngleToExifOrThrow(imageFile: File, degrees: Int) {
+    if (!canDecodeImage(imageFile)) {
+        throw RuntimeException("Incorrect image file: $imageFile")
+    }
+    if (degrees < 0) {
+        throw RuntimeException("Incorrect angle: $degrees")
+    }
+    val exif = createExifOrThrow(imageFile)
+    try {
+        exif.setAttribute(ExifInterface.TAG_ORIENTATION, getExifOrientationByRotationAngle(degrees).toString())
+        exif.saveAttributes()
+    } catch (e: Exception) {
+        throwRuntimeException(e)
+    }
+}
+
+fun copyDefaultExifInfo(sourceFile: File?, targetFile: File?) = try {
+    copyDefaultExifInfoOrThrow(sourceFile, targetFile)
+    true
+} catch (e: RuntimeException) {
+    logger.e(e)
+    false
+}
+
+/**
+ * Копирование exif-информации из одного файла в другой
+ *
+ * @param sourcePath исходный файл с exif-информацией
+ * @param targetPath файл-получатель
+ */
+@Throws(RuntimeException::class)
+fun copyDefaultExifInfoOrThrow(sourceFile: File?, targetFile: File?) {
+    val attributes = arrayOf(
+            ExifInterface.TAG_DATETIME,
+            ExifInterface.TAG_EXPOSURE_TIME,
+            ExifInterface.TAG_FLASH,
+            ExifInterface.TAG_FOCAL_LENGTH,
+            ExifInterface.TAG_GPS_ALTITUDE,
+            ExifInterface.TAG_GPS_ALTITUDE_REF,
+            ExifInterface.TAG_GPS_DATESTAMP,
+            ExifInterface.TAG_GPS_LATITUDE,
+            ExifInterface.TAG_GPS_LATITUDE_REF,
+            ExifInterface.TAG_GPS_LONGITUDE,
+            ExifInterface.TAG_GPS_LONGITUDE_REF,
+            ExifInterface.TAG_GPS_PROCESSING_METHOD,
+            ExifInterface.TAG_GPS_TIMESTAMP,
+            ExifInterface.TAG_MAKE,
+            ExifInterface.TAG_MODEL,
+            ExifInterface.TAG_ORIENTATION,
+            ExifInterface.TAG_WHITE_BALANCE
+    )
+    copyExifInfoOrThrow(sourceFile, targetFile, Arrays.asList(*attributes))
+}
+
+fun copyExifInfo(
+        sourceFile: File?,
+        targetFile: File?,
+        attributeNames: Collection<String>?
+) = try {
+    copyExifInfoOrThrow(sourceFile, targetFile, attributeNames)
+    true
+} catch (e: RuntimeException) {
+    logger.e(e)
+    false
+}
+
+@Throws(RuntimeException::class)
+fun copyExifInfoOrThrow(
+        sourceFile: File?,
+        targetFile: File?,
+        attributeNames: Collection<String>?
+) {
+    val oldExif: ExifInterface = createExifOrThrow(sourceFile)
+    val newExif: ExifInterface = createExifOrThrow(targetFile)
+    try {
+        if (attributeNames != null) {
+            for (attr in attributeNames) {
+                if (!isEmpty(attr)) {
+                    val value = oldExif.getAttribute(attr)
+                    if (value != null) {
+                        newExif.setAttribute(attr, value)
+                    }
+                }
+            }
+        }
+        newExif.saveAttributes()
+    } catch (e: IOException) {
+        throwRuntimeException(e)
+    }
 }
 
 /**
  * Определяем угол для поворота http://sylvana.net/jpegcrop/exif_orientation.html
  */
-fun getRotationAngleByExifOrientation(orientation: Int?): Int? {
+fun getRotationAngleByExifOrientation(orientation: Int?): Int {
     return when (orientation) {
-        null -> null
+        null -> 0
         ExifInterface.ORIENTATION_ROTATE_90 -> 90
         ExifInterface.ORIENTATION_ROTATE_180 -> 180
         ExifInterface.ORIENTATION_ROTATE_270 -> 270

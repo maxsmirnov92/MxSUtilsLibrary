@@ -663,6 +663,7 @@ fun isBinaryFileOrThrow(f: File?): Boolean {
     return other != 0 && 100 * other / (ascii + other) > 95
 }
 
+@JvmOverloads
 fun readBytesFromFile(
         file: File?,
         offset: Int = 0,
@@ -675,6 +676,7 @@ fun readBytesFromFile(
 }
 
 @Throws(RuntimeException::class)
+@JvmOverloads
 fun readBytesFromFileOrThrow(
         file: File?,
         offset: Int = 0,
