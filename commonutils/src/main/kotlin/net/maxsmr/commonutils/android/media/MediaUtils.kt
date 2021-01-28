@@ -23,6 +23,8 @@ import androidx.exifinterface.media.ExifInterface
 import net.maxsmr.commonutils.android.gui.getCorrectedDisplayRotation
 import net.maxsmr.commonutils.android.isAtLeastKitkat
 import net.maxsmr.commonutils.android.isAtLeastLollipop
+import net.maxsmr.commonutils.android.isAtLeastMarshmallow
+import net.maxsmr.commonutils.android.isAtLeastQ
 import net.maxsmr.commonutils.data.*
 import net.maxsmr.commonutils.data.text.EMPTY_STRING
 import net.maxsmr.commonutils.data.text.isEmpty
@@ -36,6 +38,9 @@ import java.util.*
 import kotlin.math.abs
 
 const val MIME_TYPE_ANY = "*/*"
+
+const val ENV_SECONDARY_STORAGE = "SECONDARY_STORAGE"
+const val ENV_EXTERNAL_STORAGE = "EXTERNAL_STORAGE"
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("MediaUtils")
 
@@ -70,25 +75,39 @@ fun getExternalFilesDirs(context: Context, type: String = EMPTY_STRING): Set<Fil
     return result ?: emptySet<File>()
 }
 
+/**
+ * @param type тип для Context.getExternalFilesDirs
+ */
+@Suppress("DEPRECATION")
 @JvmOverloads
 fun getFilteredExternalFilesDirs(
         context: Context,
-        type: String = EMPTY_STRING,
         excludeNotRemovable: Boolean,
         includePrimaryExternalStorage: Boolean,
-        onlyRootPaths: Boolean
+        onlyRootPaths: Boolean,
+        type: String = EMPTY_STRING
 ): Set<File> {
     val result: MutableSet<File> = ArraySet()
-    val rawSecondaryStorage = System.getenv("SECONDARY_STORAGE")
-    val primaryExternalStorage = Environment.getExternalStorageDirectory()
+
+    val rawSecondaryStoragePath: String = System.getenv(ENV_SECONDARY_STORAGE) ?: EMPTY_STRING
+    val rawExternalStoragePath: String = System.getenv(ENV_EXTERNAL_STORAGE) ?: EMPTY_STRING
+    val primaryExternalStorage: File = Environment.getExternalStorageDirectory()
+
+    fun includeRemovable(path: File) = !isAtLeastLollipop()
+            || !excludeNotRemovable || Environment.isExternalStorageRemovable(path)
+
+    /**
+     * @return true если данный путь из env не начинается с getExternalStorageDirectory
+     */
+    fun includePrimary(path: String) = path.isNotEmpty() &&
+            (includePrimaryExternalStorage || !path.startsWith(primaryExternalStorage.absolutePath))
+
     if (isAtLeastKitkat()) {
-        // can get getExternalFilesDirs by type
         val external = getExternalFilesDirs(context, type)
         for (d in external) {
             if (d != null) {
                 val path = d.absolutePath
-                if (includePrimaryExternalStorage
-                        || primaryExternalStorage == null || !path.startsWith(primaryExternalStorage.absolutePath)) {
+                if (includePrimary(path)) {
                     var secondaryPath = path
                     if (onlyRootPaths) {
                         val index = path.lastIndexOf(File.separator + "Android" /*+ File.separator + "data"*/)
@@ -96,9 +115,7 @@ fun getFilteredExternalFilesDirs(
                             secondaryPath = path.substring(0, index)
                         }
                     }
-                    if (isAtLeastLollipop()
-                            && (!excludeNotRemovable || Environment.isExternalStorageRemovable(d))
-                            || !isEmpty(rawSecondaryStorage) && rawSecondaryStorage!!.contains(path)) {
+                    if (includeRemovable(d)) {
                         result.add(File(secondaryPath))
                     }
                 }
@@ -106,14 +123,12 @@ fun getFilteredExternalFilesDirs(
         }
     } else {
         // if KITKAT or earlier - use splitted "SECONDARY_STORAGE" environment value as external paths
-        if (!isEmpty(rawSecondaryStorage)) {
-            val rawSecondaryStoragePaths = rawSecondaryStorage!!.split(File.separator).toTypedArray()
-            for (secondaryPath in rawSecondaryStoragePaths) {
-                if (includePrimaryExternalStorage
-                        || primaryExternalStorage == null || !secondaryPath.startsWith(primaryExternalStorage.absolutePath)) {
-                    result.add(File(secondaryPath))
-                }
-            }
+        // (because of getExternalFilesDir is only possible, not getExternalFilesDirs)
+        if (includePrimary(rawSecondaryStoragePath)) {
+            result.add(File(rawSecondaryStoragePath))
+        }
+        if (includePrimary(rawExternalStoragePath)) {
+            result.add(File(rawExternalStoragePath))
         }
     }
     return result
@@ -378,68 +393,173 @@ fun scanFiles(
  * @param uri     The Uri to query.
  * @author paulburke
  */
+@Suppress("DEPRECATION")
 @TargetApi(Build.VERSION_CODES.KITKAT)
 fun getPath(context: Context, uri: Uri?): String {
     if (uri == null) return EMPTY_STRING
-    // DocumentProvider
+
     if (isAtLeastKitkat() && DocumentsContract.isDocumentUri(context, uri)) {
-        // ExternalStorageProvider
-        if (isExternalStorageDocument(uri)) {
-            val docId = DocumentsContract.getDocumentId(uri)
-            val split = docId.split(":").toTypedArray()
-            val type = split[0]
-            if ("primary".equals(type, true)) {
-                return Environment.getExternalStorageDirectory().toString() + "/" + split[1]
-            }
 
-            // TODO handle non-primary volumes
-        } else if (isDownloadsDocument(uri)) {
-            val id = DocumentsContract.getDocumentId(uri)
-            val documentId: Long
-            try {
-                documentId = id.toLong()
-            } catch (e: NumberFormatException) {
-                //In Android 8 and later the id is not a number
-                val path = uri.path
-                if (path != null) {
-                    if (path.contains("/document/raw")) {
-                        return path.replaceFirst("^/document/raw:".toRegex(), "").replaceFirst("^raw:".toRegex(), "")
-                    }
-                    // "msf:" == ContentResolver.open
+        // content: and DocumentProvider
+        when {
+            isExternalStorageDocument(uri) -> {
+                // ExternalStorageProvider
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":").toTypedArray()
+                val fullPath: String = getPathFromExtSD(split)
+                return if (fullPath != "") {
+                    fullPath
+                } else {
+                    EMPTY_STRING
                 }
-                return EMPTY_STRING
             }
-            val contentUri = ContentUris.withAppendedId(
-                    Uri.parse("content://downloads/public_downloads"), documentId
-            )
-            return getDataColumn(context.contentResolver, contentUri)
-        } else if (isMediaDocument(uri)) {
-            val docId = DocumentsContract.getDocumentId(uri)
-            val split = docId.split(":").toTypedArray()
-            val type = split[0]
-            var contentUri: Uri? = null
-            if ("image" == type) {
-                contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
-            } else if ("video" == type) {
-                contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-            } else if ("audio" == type) {
-                contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
-            }
-            return getDataColumn(context.contentResolver, contentUri, "_id=?", listOf(split[1]))
-        }
-    } else if (uri.isContentScheme()) {
+            isDownloadsDocument(uri) -> {
+                // DownloadsProvider
 
-        // Return the remote address
-        if (isGooglePhotosDocument(uri)) {
-            val data = uri.lastPathSegment
-            return data ?: EMPTY_STRING
+                /**
+                 * @return убранная подстрока "raw", извлечённая из path
+                 * или null при отсутствии изменений
+                 */
+                fun String.replaceRawInId(): String? {
+                    if (startsWith("raw:")) {
+                        return replaceFirst("raw:".toRegex(), EMPTY_STRING)
+                    }
+                    return null
+                }
+
+                fun Uri.replaceRawInPath(): String {
+                    return path?.replaceFirst("^/document/raw:".toRegex(), EMPTY_STRING)?.replaceFirst("^raw:".toRegex(), EMPTY_STRING)
+                            ?: EMPTY_STRING
+                }
+
+                if (isAtLeastMarshmallow()) {
+
+                    val fileName = getResourceName(context.contentResolver, uri)
+                    val path = Environment.getExternalStorageDirectory().toString() + "/Download/" + fileName
+                    if (!TextUtils.isEmpty(path)) {
+                        return path
+                    }
+
+                    val documentTextId = DocumentsContract.getDocumentId(uri)
+                    if (TextUtils.isEmpty(documentTextId)) {
+                        return EMPTY_STRING
+                    }
+                    documentTextId.replaceRawInId()?.let {
+                        return it
+                    }
+
+                    val documentId: Long = documentTextId.toLongOrNull()
+                    //In Android 8 and later the id is not a number
+                    // "msf:" == ContentResolver.open
+                            ?: return uri.replaceRawInPath()
+
+                    val contentUriPrefixesToTry = arrayOf(
+                            "content://downloads/public_downloads",
+                            "content://downloads/my_downloads"
+                    )
+
+                    var result: String = EMPTY_STRING
+
+                    contentUriPrefixesToTry.forEach { contentUriPrefix ->
+                        val contentUri = ContentUris.withAppendedId(Uri.parse(contentUriPrefix), documentId)
+                        result = getDataColumn(context.contentResolver, contentUri, null, null)
+                        if (result.isNotEmpty()) {
+                            return@forEach
+                        }
+                    }
+                    return result
+
+                } else {
+
+                    val documentTextId = DocumentsContract.getDocumentId(uri)
+                    if (TextUtils.isEmpty(documentTextId)) {
+                        return EMPTY_STRING
+                    }
+
+                    documentTextId.replaceRawInId()?.let {
+                        return it
+                    }
+
+                    val documentId: Long = documentTextId.toLongOrNull()
+                    //In Android 8 and later the id is not a number
+                    // "msf:" == ContentResolver.open
+                            ?: return uri.replaceRawInPath()
+
+                    val contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), documentId)
+                    return getDataColumn(context.contentResolver, contentUri)
+                }
+            }
+            isMediaDocument(uri) -> {
+                val docId = DocumentsContract.getDocumentId(uri)
+                val split = docId.split(":").toTypedArray()
+                val type = split[0]
+                var contentUri: Uri? = null
+                if ("image" == type) {
+                    contentUri = MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+                } else if ("video" == type) {
+                    contentUri = MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+                } else if ("audio" == type) {
+                    contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
+                }
+                return getDataColumn(context.contentResolver, contentUri, "_id=?", listOf(split[1]))
+            }
         }
-        return getDataColumn(context.contentResolver, uri)
+
+
+    } else if (uri.isContentScheme()) {
+        // Return the remote address
+        return if (isGooglePhotosUri(uri)) {
+            val data = uri.lastPathSegment
+            data ?: EMPTY_STRING
+        } else {
+            if (isAtLeastQ()) {
+                logger.e("Can't retrieve path because of version >= Q!")
+                EMPTY_STRING
+            } else {
+                getDataColumn(context.contentResolver, uri)
+            }
+        }
     } else if (uri.isFileScheme()) {
         val data = uri.path
         return data ?: EMPTY_STRING
     }
     return EMPTY_STRING
+}
+
+@Suppress("DEPRECATION")
+private fun getPathFromExtSD(pathData: Array<String>): String {
+    if (pathData.isEmpty()) return EMPTY_STRING
+    val type = pathData[0]
+    val relativePath = "/" + pathData[1]
+    var fullPath = EMPTY_STRING
+
+    // on my Sony devices (4.4.4 & 5.1.1), `type` is a dynamic string
+    // something like "71F8-2C0A", some kind of unique id per storage
+    // don't know any API that can get the root path of that storage based on its id.
+    //
+    // so no "primary" type, but let the check here for other devices
+    if ("primary".equals(type, ignoreCase = true)) {
+        fullPath = Environment.getExternalStorageDirectory().toString() + relativePath
+        if (isFileExists(fullPath)) {
+            return fullPath
+        }
+    }
+
+    // Environment.isExternalStorageRemovable() is `true` for external and internal storage
+    // so we cannot relay on it.
+    //
+    // instead, for each possible path, check if file exists
+    // we'll start with secondary storage as this could be our (physically) removable sd card
+    System.getenv(ENV_SECONDARY_STORAGE)?.let { secondaryPath ->
+        fullPath = secondaryPath + relativePath
+        if (isFileExists(fullPath)) {
+            return fullPath
+        }
+    }
+    System.getenv(ENV_EXTERNAL_STORAGE)?.let { externalPath ->
+        fullPath = externalPath + relativePath
+    }
+    return fullPath
 }
 
 /**
@@ -483,7 +603,11 @@ fun isMediaDocument(uri: Uri): Boolean = "com.android.providers.media.documents"
  * @param uri The Uri to check.
  * @return Whether the Uri authority is Google Photos.
  */
-fun isGooglePhotosDocument(uri: Uri): Boolean = "com.google.android.apps.photos.content" == uri.authority
+fun isGooglePhotosUri(uri: Uri): Boolean = "com.google.android.apps.photos.content" == uri.authority
+
+fun isWhatsAppFile(uri: Uri): Boolean = "com.whatsapp.provider.media" == uri.authority
+
+fun isGoogleDriveUri(uri: Uri): Boolean = "com.google.android.apps.docs.storage" == uri.authority || "com.google.android.apps.docs.storage.legacy" == uri.authority
 
 fun readExifLocation(imageFile: File?): Location? = try {
     readExifLocationOrThrow(imageFile)

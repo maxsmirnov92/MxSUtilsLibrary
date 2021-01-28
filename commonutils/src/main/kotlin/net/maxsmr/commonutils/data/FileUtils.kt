@@ -1390,7 +1390,7 @@ private fun moveOrCopyFiles(
         depth: Int = DEPTH_UNLIMITED,
         singleCopyNotifier: ISingleCopyNotifier? = null,
         multipleCopyNotifier: IMultipleCopyNotifier? = null
-): Set<File>? {
+): Set<File> {
     val result = mutableSetOf<File>()
     if (targetDir == null) {
         multipleCopyNotifier?.onExceptionOccurred(NullPointerException("targetDir is null"))
