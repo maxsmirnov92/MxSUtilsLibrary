@@ -4,6 +4,8 @@ import android.app.Activity
 import android.content.Context
 import android.content.res.Configuration
 import android.content.res.Resources
+import android.graphics.Point
+import android.graphics.PointF
 import android.graphics.drawable.ColorDrawable
 import android.os.Build
 import android.os.CountDownTimer
@@ -215,15 +217,14 @@ fun getViewsRotationForDisplay(context: Context, displayRotation: Int): Int {
 fun getFixedSize(
         sourceSize: Pair<Int, Int>,
         maxSize: Int
-): Pair<Int, Int> =
+): PointF =
         getFixedSize(sourceSize.first, sourceSize.second, maxSize)
 
 fun getFixedSize(
         sourceWidth: Int,
         sourceHeight: Int,
         maxSize: Int
-): Pair<Int, Int> {
-
+): PointF {
     var w = sourceWidth.toFloat()
     var h = sourceHeight.toFloat()
     if (w > maxSize || h > maxSize) {
@@ -235,5 +236,5 @@ fun getFixedSize(
             h = maxSize.toFloat()
         }
     }
-    return Pair(w.toInt(), h.toInt())
+    return PointF(w, h)
 }

@@ -41,7 +41,7 @@ class ContentPicker(
             pickFileRequestCode: Int? = null,
             newCameraPictureFileFunc: (() -> File)? = null
     ) : this(owner,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            if (isAtLeastNougat()) {
                 MediaStorePickerConfigurator(context, pickFromGalleryRequestCode, pickFromCameraRequestCode, pickFileRequestCode)
             } else {
                 object : ContentPicker.BaseFilePickerConfigurator(context, fileProviderAuthorityPostfix, pickFromGalleryRequestCode, pickFromCameraRequestCode, pickFileRequestCode) {

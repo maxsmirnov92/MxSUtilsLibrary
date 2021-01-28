@@ -733,9 +733,8 @@ fun copyExifInfoOrThrow(
 /**
  * Определяем угол для поворота http://sylvana.net/jpegcrop/exif_orientation.html
  */
-fun getRotationAngleByExifOrientation(orientation: Int?): Int {
+fun getRotationAngleByExifOrientation(orientation: Int): Int {
     return when (orientation) {
-        null -> 0
         ExifInterface.ORIENTATION_ROTATE_90 -> 90
         ExifInterface.ORIENTATION_ROTATE_180 -> 180
         ExifInterface.ORIENTATION_ROTATE_270 -> 270

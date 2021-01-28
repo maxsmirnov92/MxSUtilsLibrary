@@ -35,8 +35,7 @@ import net.maxsmr.commonutils.android.media.getBase64
 import net.maxsmr.commonutils.data.Pair
 import net.maxsmr.commonutils.data.ReflectionUtils
 import net.maxsmr.commonutils.data.text.*
-import net.maxsmr.commonutils.graphic.createScaledBitmapByWidth
-import net.maxsmr.commonutils.graphic.isBitmapValid
+import net.maxsmr.commonutils.graphic.scaleDownBitmap
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.nio.charset.Charset
@@ -751,23 +750,9 @@ fun TextView.setupPlaceholderOrLabelHint(
 @JvmOverloads
 fun ImageView.setImageBitmapWithResize(
         bitmap: Bitmap?,
-        limit: Int = IMAGE_VIEW_MAX_WIDTH
+        maxSize: Int = IMAGE_VIEW_MAX_WIDTH
 ): Bitmap? {
-    if (bitmap == null || !isBitmapValid(bitmap)) {
-        return null
-    }
-    var resultBitmap = bitmap
-    val sourceWidth = bitmap.width
-    val sourceHeight = bitmap.width
-    val result = getFixedSize(
-            bitmap.width,
-            bitmap.height,
-            limit
-    )
-    if (result.first != sourceWidth ||
-            result.second != sourceHeight) {
-        resultBitmap = createScaledBitmapByWidth(bitmap, result.first, true)
-    }
+    val resultBitmap = scaleDownBitmap(bitmap, maxSize, recycleSource = false) ?: bitmap
     setImageBitmap(resultBitmap)
     return resultBitmap
 }

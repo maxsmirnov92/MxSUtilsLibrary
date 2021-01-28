@@ -15,6 +15,7 @@ import android.os.Build
 import android.renderscript.*
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
+import net.maxsmr.commonutils.android.gui.getFixedSize
 import net.maxsmr.commonutils.android.isPreKitkat
 import net.maxsmr.commonutils.android.media.*
 import net.maxsmr.commonutils.data.*
@@ -25,6 +26,7 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException
 import java.io.*
 import java.nio.ByteBuffer
 import kotlin.math.abs
+import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("GraphicUtils")
@@ -100,74 +102,6 @@ fun reconfigureBitmap(
         logger.e(formatException(e, "reconfigure"))
         null
     }
-}
-
-private fun calculateInSampleSize(
-        options: BitmapFactory.Options?,
-        reqWidth: Int,
-        reqHeight: Int
-): Int {
-    if (reqWidth <= 0 || reqHeight <= 0) {
-        return 0
-    }
-    if (options == null) {
-        return 0
-    }
-
-    // Raw height and width of image
-    val height = options.outHeight
-    val width = options.outWidth
-    var inSampleSize = 1
-    if (height > reqHeight || width > reqWidth) {
-
-        // Calculate ratios of height and width to requested height and width
-        val heightRatio = (height.toFloat() / reqHeight).roundToInt()
-        val widthRatio = (width.toFloat() / reqWidth).roundToInt()
-
-        // Choose the smallest ratio as inSampleSize value, this will guarantee
-        // a final image with both dimensions larger than or equal to the
-        // requested height and width.
-        inSampleSize = if (heightRatio < widthRatio) heightRatio else widthRatio
-    }
-    return inSampleSize
-}
-
-private fun calculateInSampleSizeHalf(
-        options: BitmapFactory.Options,
-        reqWidth: Int,
-        reqHeight: Int): Int {
-    val height = options.outHeight
-    val width = options.outWidth
-    var inSampleSize = 1
-    if (height > reqHeight || width > reqWidth) {
-        val halfHeight = height / 2
-        val halfWidth = width / 2
-        while (halfWidth / inSampleSize > reqWidth
-                && halfHeight / inSampleSize > reqHeight) {
-            inSampleSize *= 2
-        }
-    }
-    return inSampleSize
-}
-
-
-private fun applyBitmapSampleOptions(
-        options: BitmapFactory.Options,
-        scale: Int,
-        config: Config?,
-        sampleSizeHalf: Boolean = true
-) {
-    val width = if (scale > 1) options.outWidth / scale else options.outWidth
-    val height = if (scale > 1) options.outHeight / scale else options.outHeight
-    options.inSampleSize = if (sampleSizeHalf) {
-        calculateInSampleSizeHalf(options, width, height)
-    } else {
-        calculateInSampleSize(options, width, height)
-    }
-    options.inPurgeable = true
-    options.inInputShareable = true
-    options.inJustDecodeBounds = false
-    options.inPreferredConfig = config ?: Config.ARGB_8888
 }
 
 @JvmOverloads
@@ -411,7 +345,7 @@ fun createBitmapFromDrawable(
 @JvmOverloads
 fun createScaledBitmapByWidth(
         bitmap: Bitmap?,
-        newWidth: Int,
+        scaledWidth: Float,
         filter: Boolean = true,
         recycleSource: Boolean = true
 ): Bitmap? {
@@ -419,19 +353,23 @@ fun createScaledBitmapByWidth(
         logger.e("Incorrect bitmap: $bitmap")
         return null
     }
-    if (newWidth <= 0) {
+    if (scaledWidth <= 0) {
+        logger.e("Incorrect scaledWidth: $scaledWidth")
         return null
     }
     val width = bitmap.width
     val height = bitmap.height
+    if (width == scaledWidth.toInt()) {
+        return bitmap
+    }
 //        float aspectRatio;
 //        aspectRatio = (float) (width / height);
 //        int newHeight;
 //        newHeight = Math.round((float) newWidth / aspectRatio);
-    val scale = newWidth.toFloat() / width.toFloat()
-    val newHeight = (height.toFloat() * scale).toInt()
+    val scale = scaledWidth / width.toFloat()
+    val scaledHeight = ceil(height.toFloat() * scale)
     return try {
-        Bitmap.createScaledBitmap(bitmap, newWidth, newHeight, filter)
+        Bitmap.createScaledBitmap(bitmap, scaledWidth.toInt(), scaledHeight.toInt(), filter)
     } catch (e: Throwable) {
         logger.e(formatException(e, "createScaledBitmap"))
         null
@@ -537,15 +475,19 @@ fun createResizedBitmapIfNeeded(
 }
 
 @JvmOverloads
-fun scaleDown(
-        bm: Bitmap,
-        maxSize: Float,
+fun scaleDownBitmap(
+        bitmap: Bitmap?,
+        maxSize: Int,
         filter: Boolean = true,
         recycleSource: Boolean = true
 ): Bitmap? {
-    val ratio = (maxSize / bm.width).coerceAtMost(maxSize / bm.height)
-    val width = (ratio * bm.width).roundToInt()
-    return createScaledBitmapByWidth(bm, width, filter, recycleSource)
+    if (bitmap == null || !isBitmapValid(bitmap)) {
+        logger.e("Incorrect bitmap: $bitmap")
+        return null
+    }
+    val fixedSize = getFixedSize(bitmap.width, bitmap.height, maxSize)
+    // без отбрасывания дробной части будет более точный коэффициент, а значит и посчитанный height
+    return createScaledBitmapByWidth(bitmap, fixedSize.x, filter, recycleSource)
 }
 
 fun canDecodeImage(file: File): Boolean {
@@ -575,7 +517,6 @@ fun canDecodeImage(@DrawableRes resId: Int?, resources: Resources): Boolean {
 
 fun canDecodeVideo(file: File?): Boolean =
         extractMediaDurationFromFile(file) != null
-
 
 fun canDecodeVideo(uri: Uri?): Boolean =
         extractMediaDurationFromUri(uri) != null
@@ -683,7 +624,7 @@ fun compressBitmapToFile(
         logger.e("file was not created")
         return null
     }
-    if (compressBitmapToOutputStream(file.toFos(false), bitmap, format, quality)) {
+    if (compressBitmapToStream(file.toFos(false), bitmap, format, quality)) {
         return file
     }
     return null
@@ -691,18 +632,18 @@ fun compressBitmapToFile(
 
 @JvmOverloads
 fun compressBitmapToUri(
-        contentResolver: ContentResolver,
         uri: Uri,
+        contentResolver: ContentResolver,
         bitmap: Bitmap?,
         format: CompressFormat = CompressFormat.JPEG,
         quality: Int = 100
 ): Boolean {
     val stream = uri.openOutputStream(contentResolver) ?: return false
-    return compressBitmapToOutputStream(stream, bitmap, format, quality)
+    return compressBitmapToStream(stream, bitmap, format, quality)
 }
 
 @JvmOverloads
-fun compressBitmapToOutputStream(
+fun compressBitmapToStream(
         outputStream: OutputStream?,
         bitmap: Bitmap?,
         format: CompressFormat = CompressFormat.JPEG,
@@ -1313,7 +1254,7 @@ fun renderScriptNVToRGBA(
     return null
 }
 
-private fun createBitmapSafe(
+fun createBitmapSafe(
         width: Int,
         height: Int,
         config: Config
@@ -1326,7 +1267,7 @@ private fun createBitmapSafe(
     }
 }
 
-private fun createBitmapSafe(
+fun createBitmapSafe(
         bitmap: Bitmap,
         x: Int = 0,
         y: Int = 0,
@@ -1341,4 +1282,72 @@ private fun createBitmapSafe(
         logger.e(formatException(e, "createBitmap"))
         null
     }
+}
+
+private fun calculateInSampleSize(
+        options: BitmapFactory.Options?,
+        reqWidth: Int,
+        reqHeight: Int
+): Int {
+    if (reqWidth <= 0 || reqHeight <= 0) {
+        return 0
+    }
+    if (options == null) {
+        return 0
+    }
+
+    // Raw height and width of image
+    val height = options.outHeight
+    val width = options.outWidth
+    var inSampleSize = 1
+    if (height > reqHeight || width > reqWidth) {
+
+        // Calculate ratios of height and width to requested height and width
+        val heightRatio = (height.toFloat() / reqHeight).roundToInt()
+        val widthRatio = (width.toFloat() / reqWidth).roundToInt()
+
+        // Choose the smallest ratio as inSampleSize value, this will guarantee
+        // a final image with both dimensions larger than or equal to the
+        // requested height and width.
+        inSampleSize = if (heightRatio < widthRatio) heightRatio else widthRatio
+    }
+    return inSampleSize
+}
+
+private fun calculateInSampleSizeHalf(
+        options: BitmapFactory.Options,
+        reqWidth: Int,
+        reqHeight: Int): Int {
+    val height = options.outHeight
+    val width = options.outWidth
+    var inSampleSize = 1
+    if (height > reqHeight || width > reqWidth) {
+        val halfHeight = height / 2
+        val halfWidth = width / 2
+        while (halfWidth / inSampleSize > reqWidth
+                && halfHeight / inSampleSize > reqHeight) {
+            inSampleSize *= 2
+        }
+    }
+    return inSampleSize
+}
+
+
+private fun applyBitmapSampleOptions(
+        options: BitmapFactory.Options,
+        scale: Int,
+        config: Config?,
+        sampleSizeHalf: Boolean = true
+) {
+    val width = if (scale > 1) options.outWidth / scale else options.outWidth
+    val height = if (scale > 1) options.outHeight / scale else options.outHeight
+    options.inSampleSize = if (sampleSizeHalf) {
+        calculateInSampleSizeHalf(options, width, height)
+    } else {
+        calculateInSampleSize(options, width, height)
+    }
+    options.inPurgeable = true
+    options.inInputShareable = true
+    options.inJustDecodeBounds = false
+    options.inPreferredConfig = config ?: Config.ARGB_8888
 }
