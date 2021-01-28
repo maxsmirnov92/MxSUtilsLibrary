@@ -34,10 +34,14 @@ import net.maxsmr.commonutils.android.live.setValueIfNew
 import net.maxsmr.commonutils.android.media.getBase64
 import net.maxsmr.commonutils.data.Pair
 import net.maxsmr.commonutils.data.ReflectionUtils
+import net.maxsmr.commonutils.data.conversion.format.getFormattedText
+import net.maxsmr.commonutils.data.conversion.format.getUnformattedText
 import net.maxsmr.commonutils.data.text.*
 import net.maxsmr.commonutils.graphic.scaleDownBitmap
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import ru.tinkoff.decoro.Mask
+import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 import java.nio.charset.Charset
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("ViewExt")
@@ -132,19 +136,52 @@ fun EditText.clearMaxLength() {
             .toTypedArray()
 }
 
-fun TextView.bindTo(field: MutableLiveData<String>) = bindTo(field) {
-    it.toString()
+fun EditText.bindToTextUnformatted(field: MutableLiveData<String>, maskWatcher: MaskFormatWatcher) {
+    bindToTextUnformatted(field, maskWatcher.maskOriginal)
 }
 
-fun <D> TextView.bindTo(field: MutableLiveData<D>, fieldMapper: (CharSequence) -> D) {
-    addTextChangedListener(OnTextWatcher { s: CharSequence?, start: Int, before: Int, count: Int ->
-        field.setValueIfNew(fieldMapper(s?.toString() ?: EMPTY_STRING))
+fun EditText.bindToTextUnformatted(field: MutableLiveData<String>, mask: Mask) {
+    bindToText(field) {
+        getUnformattedText(mask, it)
+        // или maskWatcher.mask.toUnformattedString()
+    }
+}
+
+@JvmOverloads
+fun TextView.bindToText(
+        field: MutableLiveData<String>,
+        ifNew: Boolean = true,
+        toFieldValue: ((CharSequence?) -> String)? = null
+) {
+    bindTo(field, ifNew) {
+        toFieldValue?.invoke(it) ?: it.toString()
+    }
+}
+
+@JvmOverloads
+fun <D> TextView.bindTo(
+        field: MutableLiveData<D>,
+        ifNew: Boolean = true,
+        toFieldValue: (CharSequence?) -> D
+) {
+    addTextChangedListener(OnTextWatcher { s: CharSequence?, _: Int, _: Int, _: Int ->
+        val newValue = toFieldValue.invoke(s)
+        if (ifNew) {
+            field.setValueIfNew(newValue)
+        } else {
+            field.value = newValue
+        }
     })
 }
 
-fun CompoundButton.bindTo(field: MutableLiveData<Boolean>) {
+@JvmOverloads
+fun CompoundButton.bindTo(field: MutableLiveData<Boolean>, ifNew: Boolean = true) {
     setOnCheckedChangeListener { _, isChecked ->
-        field.setValueIfNew(isChecked)
+        if (ifNew) {
+            field.setValueIfNew(isChecked)
+        } else {
+            field.value = isChecked
+        }
     }
 }
 
@@ -608,10 +645,26 @@ fun View.getBoundsByParent(parent: ViewGroup): Rect {
 }
 
 @JvmOverloads
-fun TextView.setTextDistinct(text: CharSequence?, asString: Boolean = true) {
+fun TextView.setTextDistinctFormatted(
+        text: CharSequence?,
+        maskWatcher: MaskFormatWatcher,
+        asString: Boolean = true
+) = setTextDistinctFormatted(text, maskWatcher.maskOriginal, asString)
+
+@JvmOverloads
+fun TextView.setTextDistinctFormatted(
+        text: CharSequence?,
+        mask: Mask,
+        asString: Boolean = true
+) = setTextDistinct(getFormattedText(mask, text), asString)
+
+@JvmOverloads
+fun TextView.setTextDistinct(text: CharSequence?, asString: Boolean = true): Boolean {
     if (if (asString) this.text?.toString() != text.toString() else this.text != text) {
         this.text = text
+        return true
     }
+    return false
 }
 
 @JvmOverloads
