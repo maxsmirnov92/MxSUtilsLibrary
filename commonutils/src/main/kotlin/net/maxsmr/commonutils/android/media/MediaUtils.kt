@@ -407,7 +407,7 @@ fun getPath(context: Context, uri: Uri?): String {
                 val docId = DocumentsContract.getDocumentId(uri)
                 val split = docId.split(":").toTypedArray()
                 val fullPath: String = getPathFromExtSD(split)
-                return if (fullPath != "") {
+                return if (fullPath.isNotEmpty()) {
                     fullPath
                 } else {
                     EMPTY_STRING
@@ -490,6 +490,7 @@ fun getPath(context: Context, uri: Uri?): String {
                 }
             }
             isMediaDocument(uri) -> {
+                // MediaProvider
                 val docId = DocumentsContract.getDocumentId(uri)
                 val split = docId.split(":").toTypedArray()
                 val type = split[0]
@@ -504,8 +505,6 @@ fun getPath(context: Context, uri: Uri?): String {
                 return getDataColumn(context.contentResolver, contentUri, "_id=?", listOf(split[1]))
             }
         }
-
-
     } else if (uri.isContentScheme()) {
         // Return the remote address
         return if (isGooglePhotosUri(uri)) {
@@ -725,7 +724,6 @@ private fun createExifOrThrow(path: String?) = try {
 /**
  * Определяет поворот картинки
  */
-// TODO нужно ли getRotationAngleByExifOrientation??
 @TargetApi(Build.VERSION_CODES.Q)
 fun getOrientationFromMediaStore(contentResolver: ContentResolver, photoUri: Uri?): Int? =
         queryUriFirst(contentResolver,

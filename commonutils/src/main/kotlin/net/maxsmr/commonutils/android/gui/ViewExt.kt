@@ -17,10 +17,12 @@ import android.view.inputmethod.EditorInfo
 import android.webkit.WebView
 import android.widget.*
 import androidx.annotation.ColorInt
+import androidx.annotation.ColorRes
 import androidx.annotation.DrawableRes
 import androidx.annotation.StringRes
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
 import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
@@ -36,6 +38,7 @@ import net.maxsmr.commonutils.data.Pair
 import net.maxsmr.commonutils.data.ReflectionUtils
 import net.maxsmr.commonutils.data.conversion.format.getFormattedText
 import net.maxsmr.commonutils.data.conversion.format.getUnformattedText
+import net.maxsmr.commonutils.data.number.isZero
 import net.maxsmr.commonutils.data.text.*
 import net.maxsmr.commonutils.graphic.scaleDownBitmap
 import net.maxsmr.commonutils.logger.BaseLogger
@@ -281,19 +284,57 @@ fun TextView.setTextWithSelection(
 }
 
 @JvmOverloads
-fun TextView.setTextWithVisibility(
+fun TextView.setTextOrHide(
         text: CharSequence?,
         isGoneOrInvisible: Boolean = true,
         distinct: Boolean = true,
         asString: Boolean = true,
-        isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) }
+        isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
+        showFunc: (() -> Unit)? = null,
+        hideFunc: (() -> Unit)? = null
 ) {
     if (isEmptyFunc(text)) {
         this.text = EMPTY_STRING
-        setVisible(false, isGoneOrInvisible)
+        if (hideFunc != null) {
+            hideFunc.invoke()
+        } else {
+            setVisible(false, isGoneOrInvisible)
+        }
     } else {
         setTextChecked(text, distinct, asString)
-        setVisible(true)
+        if (showFunc != null) {
+            showFunc.invoke()
+        } else {
+            setVisible(true)
+        }
+    }
+}
+
+@JvmOverloads
+fun TextView.setSumOrHide(
+        sum: Double,
+        isGoneOrInvisible: Boolean = true,
+        distinct: Boolean = true,
+        asString: Boolean = true,
+        formatFunc: ((Double) -> CharSequence)? = null,
+        showFunc: (() -> Unit)? = null,
+        hideFunc: (() -> Unit)? = null
+) {
+    if (!sum.isZero()) {
+        setTextOrHide(
+                formatFunc?.let { it(sum) } ?: sum.toString(),
+                isGoneOrInvisible,
+                distinct,
+                asString,
+                showFunc = showFunc,
+                hideFunc = hideFunc
+        )
+    } else {
+        setTextOrHide(null, isGoneOrInvisible,
+                distinct,
+                false,
+                showFunc = null,
+                hideFunc = hideFunc)
     }
 }
 
@@ -385,6 +426,10 @@ fun View.setStatusBarLightColor(isLight: Boolean) {
     }
 }
 
+fun View.setTint(@ColorRes tint: Int) {
+    ViewCompat.setBackgroundTintList(this, ColorStateList.valueOf(ContextCompat.getColor(context, tint)))
+}
+
 /**
  * Выставить [icon] с фильтром [color] в кач-ве background для [View]
  */
@@ -405,7 +450,6 @@ fun View.setBackgroundTint(
  * Выставить [icon] с фильтром [color] в кач-ве src для [ImageView]
  */
 @JvmOverloads
-@SuppressLint("ResourceType")
 fun ImageView.setTint(
         @DrawableRes icon: Int,
         @ColorInt color: Int,
@@ -594,7 +638,7 @@ fun TextView.calculateMaxTextSize(
         maxWidthTextLength: Int,
         maxTextSize: Float,
         maxTextSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
-        measuredViewWidth: Int = 0
+        measuredViewWidth: Int = width
 ): Float {
     val text = StringBuilder()
     for (i in 0 until maxWidthTextLength) {
@@ -608,11 +652,10 @@ fun TextView.calculateMaxTextSize(
         maxWidthText: CharSequence,
         maxTextSize: Float,
         maxTextSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
-        measuredViewWidth: Int = 0
+        measuredViewWidth: Int = width
 ): Float {
     if (maxWidthText.isEmpty() || maxTextSize <= 0) return maxTextSize
-    val measuredWidth = if (measuredViewWidth <= 0) width else measuredViewWidth
-    if (measuredWidth == 0) return maxTextSize
+    if (measuredViewWidth <= 0) return maxTextSize
 
     val maxWidthString = maxWidthText.toString()
     var resultSize = maxTextSize
@@ -620,18 +663,164 @@ fun TextView.calculateMaxTextSize(
     val paint = Paint()
     paint.typeface = typeface
 
-    paint.textSize = convertAnyToPx(resultSize, maxTextSizeUnit, context)
-    var measureText = paint.measureText(maxWidthString)
+    // применяем в абсолютных пикселях
+    paint.textSize = TypedValue.applyDimension(maxTextSizeUnit, resultSize, context.resources.displayMetrics)
+    var measuredText = paint.measureText(maxWidthString)
 
-    while (resultSize > 0 && measureText > measuredWidth) {
+    while (resultSize > 0 && measuredText > measuredViewWidth) {
+        // убавляем в исходной размерности
         resultSize--
-        paint.textSize = convertAnyToPx(resultSize, maxTextSizeUnit, context)
-        measureText = paint.measureText(maxWidthString)
+        paint.textSize = TypedValue.applyDimension(maxTextSizeUnit, resultSize, context.resources.displayMetrics)
+        measuredText = paint.measureText(maxWidthString)
     }
     if (resultSize == 0f) {
         resultSize = maxTextSize
     }
     return resultSize
+}
+
+/**
+ * Урезание текста по ширине view:
+ * вычитание кол-ва [reduceStepCount] с конца до тех пор,
+ * пока измеренный текущий текст не влезет в [measuredWidth]
+ */
+@JvmOverloads
+fun TextView.reduceTextByWidth(
+        sourceText: CharSequence = text,
+        measuredWidth: Int = width,
+        textSize: Float,
+        textSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
+        postfix: String = "...",
+        reduceStepCount: Int = postfix.length,
+        applyText: Boolean = true
+
+): CharSequence {
+    if (textSize <= 0
+            || reduceStepCount <= 0) {
+        return sourceText
+    }
+    if (measuredWidth <= 0) return sourceText
+
+    val paint = Paint()
+    paint.typeface = typeface
+
+    // применяем в абсолютных пикселях
+    paint.textSize = TypedValue.applyDimension(textSizeUnit, textSize, context.resources.displayMetrics)
+
+    val resultString = reduceTextByMaxWidth(
+            paint,
+            sourceText,
+            postfix,
+            reduceStepCount,
+            measuredWidth
+    )
+    if (applyText) {
+        text = resultString
+    }
+    return resultString
+}
+
+/**
+ * Урезание текста с учётом ограничений
+ * по высоте view и ширины одной строки в ней
+ * @param startHeightIndex стартовый индекс символа из диапазона, по которому ведётся расчёт высоты
+ */
+@JvmOverloads
+fun TextView.reduceTextByHeight(
+        sourceText: CharSequence = text,
+        measuredWidth: Int = width,
+        measuredHeight: Int = height,
+        startHeightIndex: Int = 0,
+        endHeightIndex: Int = sourceText.length,
+        textSize: Float,
+        textSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
+        postfix: String = "...",
+        reduceStepCount: Int = postfix.length,
+        applyText: Boolean = true
+
+): CharSequence {
+    if (textSize <= 0
+            || reduceStepCount <= 0) {
+        return sourceText
+    }
+    if (measuredWidth <= 0
+            || measuredHeight <= 0) {
+        return sourceText
+    }
+
+    if (startHeightIndex < 0 || startHeightIndex >= sourceText.length
+            || endHeightIndex < 0 || endHeightIndex >= sourceText.length) {
+        return sourceText
+    }
+
+    val paint = Paint()
+    paint.typeface = typeface
+
+    val displayMetrics = context.resources.displayMetrics
+    // применяем в абсолютных пикселях
+    paint.textSize = TypedValue.applyDimension(textSizeUnit, textSize, displayMetrics)
+
+    val rect = Rect()
+    paint.getTextBounds(sourceText.toString(), startHeightIndex, endHeightIndex, rect)
+    // фиксированная высота одной строки (размер шрифта текста не меняется)
+    val lineHeight = (rect.height() / displayMetrics.density).toInt()
+    // кол-во линий, которые могут вместиться в измеренную, ранее известную, высоту
+    val linesCount = measuredHeight / lineHeight
+
+    // предельно допустимая ширина текста, с которой будет сравниваться ширина изменяемого текста
+    val maxTextWidth = measuredWidth * linesCount
+
+    val resultString = reduceTextByMaxWidth(
+            paint,
+            sourceText,
+            postfix,
+            reduceStepCount,
+            maxTextWidth
+    )
+    if (applyText) {
+        text = resultString
+    }
+    return resultString
+}
+
+private fun reduceTextByMaxWidth(
+        paint: Paint,
+        sourceText: CharSequence,
+        postfix: String,
+        reduceStepCount: Int,
+        maxTextWidth: Int
+): CharSequence {
+
+    var measuredTextWidth = paint.measureText(sourceText.toString())
+
+    // общее кол-во вычтенных символов
+    var totalReducedCount = 0
+
+    var isLastPostfixAppended = false
+
+    val resultString = StringBuilder()
+    resultString.append(sourceText)
+
+    // вычитание n-ого кол-ва сиволов с конца ещё возможно + не проходим по основному критерию:
+    // ширина текущего текста больше допустимой
+    while (resultString.length > reduceStepCount && measuredTextWidth > maxTextWidth) {
+        val previousString = resultString.toString()
+        resultString.clear()
+        var diff: Int = reduceStepCount
+        if (isLastPostfixAppended) {
+            diff += postfix.length
+        }
+        resultString.append(previousString.substring(0, previousString.length - diff))
+        totalReducedCount += reduceStepCount
+        isLastPostfixAppended = if (postfix.isNotEmpty() && totalReducedCount > postfix.length) {
+            resultString.append(postfix)
+            true
+        } else {
+            false
+        }
+        measuredTextWidth = paint.measureText(resultString.toString())
+    }
+    return resultString
 }
 
 /**
@@ -687,6 +876,11 @@ fun View.setVisible(isVisible: Boolean, isGoneOrInvisible: Boolean = true) {
     } else {
         if (isGoneOrInvisible) View.GONE else View.INVISIBLE
     }
+}
+
+fun View.hideByReferenceViews(vararg otherViews: View) {
+    val isGone = otherViews.all { it.visibility == View.GONE }
+    visibility = if (isGone) View.GONE else View.INVISIBLE
 }
 
 private fun TextView.setTextWithMovementMethod(text: CharSequence): CharSequence {

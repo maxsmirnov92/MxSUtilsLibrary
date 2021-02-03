@@ -1,5 +1,7 @@
 package net.maxsmr.commonutils.data.text
 
+import android.text.InputFilter
+import android.widget.TextView
 import net.maxsmr.commonutils.android.gui.fragments.dialogs.holder.logger
 import net.maxsmr.commonutils.data.CompareCondition
 import net.maxsmr.commonutils.data.Predicate
@@ -82,6 +84,37 @@ fun indexOf(s: CharSequence, c: Char): Int {
         }
     }
     return -1
+}
+
+/**
+ * Запрещает ввод текста в EditText и убирает нижнюю полосу. Также в случае отсутствия введенного текста
+ * пустую строку заменяет на пробел, чтобы когда EditText внутри TextInputLayout подсказка оставалась на месте.
+ * Удобно использовать, когда рядом с readOnly полем есть изменяемые поля, чтобы выглядело одинаково.
+ */
+fun TextView.setReadOnly() {
+    background = null
+    isFocusable = false
+    isClickable = false
+    isFocusableInTouchMode = false
+    addInputFilters(InputFilter { source, start, end, dest, dstart, dend ->
+        val target = dest.replaceRange(dstart, dend, source.substring(start, end))
+        if (target.isEmpty()) " " else null
+    })
+    //триггерим срабатываение InputFilter
+    text = text
+}
+
+/**
+ * Добавляет фильтры ввода к EditText
+ *
+ * @param filter Массив InputFilter
+ */
+fun TextView.addInputFilters(vararg filter: InputFilter) {
+    val editFilters = filters
+    val newFilters = arrayOfNulls<InputFilter>(editFilters.size + filter.size)
+    System.arraycopy(editFilters, 0, newFilters, 0, editFilters.size)
+    System.arraycopy(filter, 0, newFilters, editFilters.size, newFilters.size - editFilters.size)
+    filters = newFilters
 }
 
 fun replaceSubstrings(
@@ -229,6 +262,21 @@ fun trimWithCondition(
         trim(text, trimDirection, excludeByConditions) { ch, index ->
             isTrue(conditions, andRule, ch)
         }
+
+@JvmOverloads
+fun trimByLength(
+        text: CharSequence,
+        targetLength: Int,
+        postfix: CharSequence = EMPTY_STRING
+): CharSequence {
+    if (targetLength <= 0 || text.length < targetLength) {
+        return text
+    }
+//    val result = trim(text,  TrimDirection.END, false) { _, index ->
+//        index >= targetLength
+//    }
+    return text.substring(0, targetLength) + postfix
+}
 
 /**
  * Returns a sub sequence of this char sequence having leading/trailing characters matching the [predicate] removed.
