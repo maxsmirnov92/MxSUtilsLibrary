@@ -23,6 +23,7 @@ import androidx.annotation.StringRes
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
@@ -175,6 +176,62 @@ fun <D> TextView.bindTo(
             field.value = newValue
         }
     })
+}
+
+@JvmOverloads
+fun MutableLiveData<String>.observeFromTextUnformatted(
+        view: TextView,
+        viewLifecycleOwner: LifecycleOwner,
+        maskWatcher: MaskFormatWatcher,
+        distinct: Boolean = true,
+        onChanged: ((CharSequence?) -> Unit)? = null
+) {
+    observeFromTextUnformatted(
+            view,
+            viewLifecycleOwner,
+            maskWatcher.maskOriginal,
+            distinct,
+            onChanged
+    )
+}
+
+@JvmOverloads
+fun MutableLiveData<String>.observeFromTextUnformatted(
+        view: TextView,
+        viewLifecycleOwner: LifecycleOwner,
+        mask: Mask,
+        distinct: Boolean = true,
+        onChanged: ((CharSequence?) -> Unit)? = null
+) {
+    observeFromText(view, viewLifecycleOwner, distinct) {
+        onChanged?.invoke(it)
+        getFormattedText(mask, it)
+    }
+}
+
+fun MutableLiveData<String>.observeFromText(
+        view: TextView,
+        viewLifecycleOwner: LifecycleOwner,
+        distinct: Boolean = true,
+        asString: Boolean = true,
+        formatFunc: ((CharSequence?) -> CharSequence)? = null
+) {
+    observeFrom(view, viewLifecycleOwner, distinct, asString) {
+        formatFunc?.invoke(it) ?: it.toString()
+    }
+}
+
+@JvmOverloads
+fun <D> MutableLiveData<D>.observeFrom(
+        view: TextView,
+        viewLifecycleOwner: LifecycleOwner,
+        distinct: Boolean = true,
+        asString: Boolean = true,
+        formatFunc: (D?) -> CharSequence?
+) {
+    observe(viewLifecycleOwner) {
+        view.setTextChecked(formatFunc(it), distinct, asString)
+    }
 }
 
 @JvmOverloads
