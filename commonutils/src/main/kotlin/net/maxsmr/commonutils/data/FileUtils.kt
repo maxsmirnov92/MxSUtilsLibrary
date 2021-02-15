@@ -17,9 +17,9 @@ import java.io.*
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
 import java.nio.channels.OverlappingFileLockException
+import java.nio.charset.Charset
 import java.util.*
 import java.util.concurrent.TimeUnit
-import java.io.FileWriter as FileWriter1
 
 const val DEPTH_UNLIMITED = -1
 
@@ -764,9 +764,10 @@ fun writeBytesToFileOrThrow(
 fun writeStringsToFile(
         file: File?,
         data: Collection<String>?,
-        append: Boolean = false
+        append: Boolean = false,
+        charset: Charset = Charset.forName("UTF-8")
 ) = try {
-    writeStringsToFileOrThrow(file, data, append)
+    writeStringsToFileOrThrow(file, data, append, charset)
     true
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -778,7 +779,8 @@ fun writeStringsToFile(
 fun writeStringsToFileOrThrow(
         file: File?,
         data: Collection<String>?,
-        append: Boolean = false
+        append: Boolean = false,
+        charset: Charset = Charset.forName("UTF-8")
 ) {
     if (file == null) {
         throw NullPointerException("file is null")
@@ -786,10 +788,10 @@ fun writeStringsToFileOrThrow(
     if (!isFileExistsOrThrow(file)) {
         createFileOrThrow(file.name, file.parent, !append)
     }
-    val writer: FileWriter1 = try {
-        FileWriter1(file, append)
+    val writer: Writer  = try {
+        OutputStreamWriter(FileOutputStream(file, append), charset)
     } catch (e: IOException) {
-        throw RuntimeException(formatException(e, "create FileWriter"), e)
+        throw RuntimeException(formatException(e, "create Writer"), e)
     }
     try {
         writeStringToOutputStreamWriterOrThrow(writer, data)
@@ -1168,7 +1170,7 @@ fun getSize(
         notifier: IGetNotifier? = null,
 ): Long {
     var size: Long = 0
-    for (f in getFiles(fromFile, GetMode.FILES, depth= depth, currentLevel= currentLevel, notifier = notifier)) {
+    for (f in getFiles(fromFile, GetMode.FILES, depth = depth, currentLevel = currentLevel, notifier = notifier)) {
         size = try {
             getFileLengthOrThrow(fromFile)
         } catch (e: RuntimeException) {

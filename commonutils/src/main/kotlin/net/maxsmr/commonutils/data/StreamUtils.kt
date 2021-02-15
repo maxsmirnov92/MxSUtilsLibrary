@@ -232,7 +232,7 @@ fun writeStringToOutputStreamWriter(
 @Throws(IOException::class)
 @JvmOverloads
 fun writeStringToOutputStreamWriterOrThrow(
-        writer: OutputStreamWriter,
+        writer: Writer,
         data: Collection<String>?,
         closeOutput: Boolean = true
 ) {
