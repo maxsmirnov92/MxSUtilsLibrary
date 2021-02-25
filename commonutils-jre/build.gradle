@@ -1,0 +1,28 @@
+apply from: "$rootDir/buildSrc/javaPreBuildLib.gradle"
+
+jar {
+    manifest {
+        attributes(
+                'Manifest-Version': Float.valueOf(project.getModuleVersionNameByPath(project.path)),
+                // необязательно, т.к. не предполагается быть executable
+                // (если 'Main-Class' не указан здесь, при выполнении в командную строку java надо передать этот класс явно)
+                'Main-Class': 'net.maxsmr.commonutils_jre.MainClassKt',
+                'DEBUG': false
+        )
+    }
+    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+}
+
+tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
+    kotlinOptions {
+        jvmTarget = "$jvmVersion"
+        freeCompilerArgs = ["$jvmDefaultArg"]
+    }
+}
+
+dependencies {
+    api "commons-net:commons-net:$commonsNetVersion"
+    api "com.google.code.gson:gson:$gsonVersion"
+}
+
+apply from: "$rootDir/buildSrc/javaPostBuildLib.gradle"

@@ -1,0 +1,16 @@
+apply from: "$rootDir/buildSrc/config.gradle"
+apply from: "$rootDir/buildSrc/buildUtils.gradle"
+
+apply plugin: 'java-library'
+apply plugin: 'kotlin'
+
+dependencies {
+    api fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Jetbrains annotations
+    implementation "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
+
+    // Kotlin
+    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
+}
+

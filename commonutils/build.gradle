@@ -9,9 +9,6 @@ dependencies {
     api "androidx.exifinterface:exifinterface:$androidxExifInterfaceVersion"
     api "com.google.android.material:material:$materialVersion"
 
-    api "commons-net:commons-net:$commonsNetVersion"
-    api "com.google.code.gson:gson:$gsonVersion"
-
     // Lifecycle
     api "androidx.lifecycle:lifecycle-runtime:$lifecycleVersion"
     api "androidx.lifecycle:lifecycle-extensions:$lifecycleVersion"
@@ -22,4 +19,7 @@ dependencies {
 
     // Tinkoff decoro
     api "ru.tinkoff.decoro:decoro:$tinkoffDecoroVersion"
+
+    // CommonUtils
+    api project(':commonutils-jre')
 }
