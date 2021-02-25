@@ -483,21 +483,21 @@ fun View.setStatusBarLightColor(isLight: Boolean) {
     }
 }
 
-fun View.setTint(@ColorRes tint: Int) {
-    ViewCompat.setBackgroundTintList(this, ColorStateList.valueOf(ContextCompat.getColor(context, tint)))
+fun View.setBackgroundTint(@ColorRes tintResId: Int) {
+    ViewCompat.setBackgroundTintList(this, ColorStateList.valueOf(ContextCompat.getColor(context, tintResId)))
 }
 
 /**
- * Выставить [icon] с фильтром [color] в кач-ве background для [View]
+ * Выставить [iconResId] с фильтром [colorResId] в кач-ве background для [View]
  */
 @JvmOverloads
 @SuppressLint("ResourceType")
 fun View.setBackgroundTint(
-        @DrawableRes icon: Int,
-        @ColorInt color: Int,
+        @DrawableRes iconResId: Int,
+        @ColorInt colorResId: Int,
         mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ): Drawable? {
-    with(getColoredDrawable(context.resources, icon, color, mode)) {
+    with(getColoredDrawable(context.resources, iconResId, colorResId, mode)) {
         background = this
         return this
     }
@@ -519,10 +519,10 @@ fun ImageView.setTint(
 }
 
 /**
- * Выставить фильтр с [ColorStateList], полученным по [resourceId]
+ * Выставить фильтр с [ColorStateList], полученным по [colorResId]
  */
-fun ImageView.setTintResource(resourceId: Int) {
-    setTint(ContextCompat.getColorStateList(context, resourceId))
+fun ImageView.setTintResource(@ColorRes colorResId: Int) {
+    setTint(ContextCompat.getColorStateList(context, colorResId))
 }
 
 /**

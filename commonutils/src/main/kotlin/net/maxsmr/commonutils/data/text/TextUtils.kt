@@ -87,6 +87,25 @@ fun indexOf(s: CharSequence, c: Char): Int {
 }
 
 /**
+ * Аналогично [CharSequence.indexOf], только возвращает список индексов **всех** вхождений подстроки в строку
+ */
+@JvmOverloads
+fun indicesOf(s: CharSequence, substring: String, startIndex: Int = 0, ignoreCase: Boolean = false): List<Int> {
+    val positions = mutableListOf<Int>()
+    var searchIndex = startIndex
+    var resultIndex: Int
+
+    do {
+        resultIndex = s.indexOf(substring, searchIndex, ignoreCase)
+        if (resultIndex != -1) {
+            positions.add(resultIndex)
+        }
+        searchIndex = resultIndex + substring.length
+    } while (resultIndex != -1)
+    return positions
+}
+
+/**
  * Запрещает ввод текста в EditText и убирает нижнюю полосу. Также в случае отсутствия введенного текста
  * пустую строку заменяет на пробел, чтобы когда EditText внутри TextInputLayout подсказка оставалась на месте.
  * Удобно использовать, когда рядом с readOnly полем есть изменяемые поля, чтобы выглядело одинаково.

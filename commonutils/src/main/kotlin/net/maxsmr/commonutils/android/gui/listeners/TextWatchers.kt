@@ -6,7 +6,7 @@ import android.text.TextWatcher
 /**
  * [TextWatcher] с возможностью пропуска [onTextChanged] [skipCount] раз
  */
-abstract class TextChangeWithSkipListener(private val skipCount: Int): TextWatcher {
+abstract class TextChangeWithSkipListener(private val skipCount: Int): DefaultTextWatcher() {
 
     init {
         require(skipCount >= 0) { "Incorrect skipCount: $skipCount" }
@@ -31,12 +31,6 @@ abstract class TextChangeWithSkipListener(private val skipCount: Int): TextWatch
         if (handled) {
             onTextChangedHandled(s, start, before, count)
         }
-    }
-
-    override fun afterTextChanged(s: Editable?) {
-    }
-
-    override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {
     }
 }
 
