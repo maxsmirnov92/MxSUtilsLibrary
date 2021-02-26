@@ -26,7 +26,7 @@ private const val MIME_TYPE_IMAGE = "image/*"
 
 class ContentPicker(
         private val owner: LifecycleOwner,
-        private val pickerConfigurator: IPickerConfigurator
+        private val pickerConfigurator: BasePickerConfigurator
 ) {
 
     /**
@@ -75,7 +75,7 @@ class ContentPicker(
             val fragment = if (owner is Fragment) owner else null
             return startActivityForResultSafe(activity,
                     fragment,
-                    intent,
+                    wrapIntent(intent, pickFromGalleryChooserTitle),
                     pickFromGalleryRequestCode)
         }
     }
@@ -92,7 +92,7 @@ class ContentPicker(
             val fragment = if (owner is Fragment) owner else null
             return startActivityForResultSafe(activity,
                     fragment,
-                    intentInfo.first,
+                    wrapIntent(intentInfo.first, pickFromCameraChooserTitle),
                     pickFromCameraRequestCode)
         }
     }
@@ -114,7 +114,7 @@ class ContentPicker(
             val fragment = if (owner is Fragment) owner else null
             return startActivityForResultSafe(activity,
                     fragment,
-                    intent,
+                    wrapIntent(intent, pickFileChooserTitle),
                     pickFileRequestCode)
         }
     }
@@ -138,27 +138,25 @@ class ContentPicker(
         return result
     }
 
-    interface IPickerConfigurator {
+    abstract class BasePickerConfigurator(
+            val pickFromGalleryRequestCode: Int?,
+            val pickFromCameraRequestCode: Int?,
+            val pickFileRequestCode: Int?,
+            val pickFromGalleryChooserTitle: String = EMPTY_STRING,
+            val pickFromCameraChooserTitle: String = EMPTY_STRING,
+            val pickFileChooserTitle: String = EMPTY_STRING
+    ) {
 
-        val pickFromGalleryRequestCode: Int?
-        val pickFromCameraRequestCode: Int?
-        val pickFileRequestCode: Int?
 
-        fun createCameraPictureIntent(mimeType: String): Pair<Intent, Uri?>
+        abstract fun createCameraPictureIntent(mimeType: String): Pair<Intent, Uri?>
+
+        abstract fun retrieveUriAfterPickContent(data: Intent?): Uri?
+        abstract fun retrieveUriAfterPickFromCamera(outputFileUri: Uri?): Uri?
 
         fun onBeforePickPictureFromGallery(intent: Intent): Boolean = true
         fun onBeforePickPictureFromCamera(intent: Intent): Boolean = true
         fun onBeforePickContent(intent: Intent): Boolean = true
-
-        fun retrieveUriAfterPickContent(data: Intent?): Uri?
-        fun retrieveUriAfterPickFromCamera(outputFileUri: Uri?): Uri?
     }
-
-    abstract class BasePickerConfigurator(
-            override val pickFromGalleryRequestCode: Int?,
-            override val pickFromCameraRequestCode: Int?,
-            override val pickFileRequestCode: Int?
-    ) : IPickerConfigurator
 
     /**
      * [IPickerConfigurator] для получения контента
