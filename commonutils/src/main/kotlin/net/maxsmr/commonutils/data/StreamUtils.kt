@@ -93,7 +93,7 @@ fun readBytesFromInputStream(
         offset: Int = 0,
         length: Int = 0,
         closeInput: Boolean = true
-): Pair<ByteArray, Int>? = try {
+): ByteArray? = try {
             readBytesFromInputStreamOrThrow(inputStream, offset, length, closeInput)
         } catch (e: IOException) {
             logException(logger, e, "readBytesFromInputStream")
@@ -107,7 +107,7 @@ fun readBytesFromInputStreamOrThrow(
         offset: Int = 0,
         length: Int = 0,
         closeInput: Boolean = true
-): Pair<ByteArray, Int> {
+): ByteArray {
     try {
         val available = inputStream.available()
         val data = ByteArray(if (length in 1..available) length else available)
@@ -119,7 +119,7 @@ fun readBytesFromInputStreamOrThrow(
                     data.size
             )
         } while (readByteCount > 0 && length <= 0)
-        return Pair(data, inputStream.available())
+        return data
     } finally {
         if (closeInput) {
             inputStream.close()

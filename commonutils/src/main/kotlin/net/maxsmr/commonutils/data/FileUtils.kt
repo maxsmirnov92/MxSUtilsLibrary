@@ -689,7 +689,7 @@ fun readBytesFromFileOrThrow(
         throw RuntimeException("Invalid file: '$file'")
     }
     return try {
-        readBytesFromInputStreamOrThrow(file.toFisOrThrow(), offset, length).first
+        readBytesFromInputStreamOrThrow(file.toFisOrThrow(), offset, length)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "readBytesFromInputStreamOrThrow"), e)
     }

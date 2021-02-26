@@ -1117,7 +1117,7 @@ fun readBytesFromUriOrThrow(
                 uri.openInputStreamOrThrow(contentResolver),
                 offset,
                 length
-        ).first
+        )
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "readBytesFromInputStreamOrThrow"), e)
     }
