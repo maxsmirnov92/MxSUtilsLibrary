@@ -292,7 +292,7 @@ class ContentPicker(
 //                GraphicUtils.createBitmapFromUri(contentResolver, it)
 //            }
             val bitmap = createBitmapFromUri(uri, contentResolver, config = config, withSampleSize = withSampleSize)
-            val angle = getOrientationFromMediaStore(contentResolver, uri)
+            val angle = getRotationAngleFromExif(contentResolver, uri)
 
             if (bitmap != null) {
                 if (rotate && angle != null && angle > 0) {

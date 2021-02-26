@@ -500,7 +500,7 @@ fun canDecodeImage(data: ByteArray?): Boolean {
     return bounds.x > 0 && bounds.y > 0
 }
 
-fun canDecodeImage(uri: Uri?, contentResolver: ContentResolver): Boolean {
+fun canDecodeImage(contentResolver: ContentResolver, uri: Uri?): Boolean {
     val bounds = decodeBoundsFromUri(uri, contentResolver)
     return bounds.x > 0 && bounds.y > 0
 }

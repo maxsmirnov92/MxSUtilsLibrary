@@ -714,24 +714,40 @@ private fun createExifOrThrow(file: File?) =
         createExifOrThrow(file?.absolutePath)
 
 @Throws(RuntimeException::class)
-private fun createExifOrThrow(path: String?) = try {
-    ExifInterface(path ?: EMPTY_STRING)
-} catch (e: Exception) {
-    throw RuntimeException(formatException(e, "create ExifInterface"), e)
+private fun createExifOrThrow(path: String?): ExifInterface {
+    if (path == null || path.isEmpty()) {
+        throw NullPointerException("path is null or empty")
+    }
+    return try {
+        ExifInterface(path)
+    } catch (e: Exception) {
+        throw RuntimeException(formatException(e, "create ExifInterface"), e)
+    }
 }
 
+@Throws(RuntimeException::class)
+private fun createExifOrThrow(stream: InputStream?) : ExifInterface {
+    if (stream == null) {
+        throw NullPointerException("path is null")
+    }
+    return try {
+        ExifInterface(stream)
+    } catch (e: Exception) {
+        throw RuntimeException(formatException(e, "create ExifInterface"), e)
+    }
+}
 
 /**
  * Определяет поворот картинки
  */
 @TargetApi(Build.VERSION_CODES.Q)
-fun getOrientationFromMediaStore(contentResolver: ContentResolver, photoUri: Uri?): Int? =
+fun getOrientationFromMediaStore(contentResolver: ContentResolver, imageUri: Uri?): Int? =
         queryUriFirst(contentResolver,
-                photoUri,
+                imageUri,
                 Int::class.java,
                 listOf(MediaStore.Images.ImageColumns.ORIENTATION))
 
-fun getRotationAngleFromExif(imageFile: File): Int = try {
+fun getRotationAngleFromExif(imageFile: File?): Int = try {
     getRotationAngleFromExifOrThrow(imageFile)
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -739,17 +755,41 @@ fun getRotationAngleFromExif(imageFile: File): Int = try {
 }
 
 @Throws(RuntimeException::class)
-fun getRotationAngleFromExifOrThrow(imageFile: File): Int {
-    if (!canDecodeImage(imageFile)) {
+fun getRotationAngleFromExifOrThrow(imageFile: File?): Int {
+    if (imageFile == null || !canDecodeImage(imageFile)) {
         throw RuntimeException("Incorrect image file: $imageFile")
     }
     try {
         val exif = createExifOrThrow(imageFile)
-        val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
-        return getRotationAngleByExifOrientation(orientation)
+        return getRotationAngleFromExif(exif)
     } catch (e: Exception) {
         throw RuntimeException(formatException(e))
     }
+}
+
+fun getRotationAngleFromExif(contentResolver: ContentResolver, imageUri: Uri?): Int = try {
+    getRotationAngleFromExifOrThrow(contentResolver, imageUri)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    0
+}
+
+@Throws(RuntimeException::class)
+fun getRotationAngleFromExifOrThrow(contentResolver: ContentResolver, imageUri: Uri?): Int {
+    if (imageUri == null || !canDecodeImage(contentResolver, imageUri)) {
+        throw RuntimeException("Incorrect image uri: $imageUri")
+    }
+    try {
+        val exif = createExifOrThrow(imageUri.openInputStreamOrThrow(contentResolver))
+        return getRotationAngleFromExif(exif)
+    } catch (e: Exception) {
+        throw RuntimeException(formatException(e))
+    }
+}
+
+private fun getRotationAngleFromExif(exif: ExifInterface): Int {
+    val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
+    return getRotationAngleByExifOrientation(orientation)
 }
 
 fun writeRotationAngleToExif(imageFile: File, degrees: Int) = try {
@@ -992,66 +1032,6 @@ fun queryUriOrThrow(
         throw RuntimeException("cursor is null or empty or closed")
     }
     return cursor
-}
-
-fun <T> Cursor.getColumnValue(columnType: Class<T>, index: Int): T? = try {
-    getColumnValueOrThrow(columnType, index)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    null
-}
-
-@Throws(RuntimeException::class)
-@Suppress("UNCHECKED_CAST")
-fun <T> Cursor.getColumnValueOrThrow(columnType: Class<T>, index: Int): T {
-    return when {
-        columnType.isAssignableFrom(ByteArray::class.java) -> {
-            getBlob(index) as T
-        }
-        columnType.isAssignableFrom(String::class.java) -> {
-            (getString(index) ?: EMPTY_STRING) as T
-        }
-        columnType.isAssignableFrom(Short::class.java) -> {
-            getShort(index) as T
-        }
-        columnType.isAssignableFrom(Int::class.java) -> {
-            getInt(index) as T
-        }
-        columnType.isAssignableFrom(Long::class.java) -> {
-            getLong(index) as T
-        }
-        columnType.isAssignableFrom(Float::class.java) -> {
-            getFloat(index) as T
-        }
-        columnType.isAssignableFrom(Double::class.java) -> {
-            getDouble(index) as T
-        }
-        else -> {
-            throw IllegalArgumentException("Incorrect column type: $columnType")
-        }
-    }
-}
-
-@Throws(RuntimeException::class)
-private fun <T> Cursor.getColumnValueOrThrow(columnType: Class<T>, columnIndexFunc: ((Cursor) -> Int)? = null): T {
-    val index = columnIndexFunc?.invoke(this) ?: 0
-    return getColumnValueOrThrow(columnType, index)
-}
-
-private fun <T : Any> Cursor.mapToList(predicate: (Cursor) -> T?): List<T> =
-        generateSequence { if (moveToNext()) predicate(this) else null }
-                .toList()
-
-fun getColumnNames(context: Context, uri: Uri?): List<String> {
-    if (uri != null && uri.isContentScheme()) {
-        val c = context.contentResolver.query(uri, null, null, null, null)
-        if (c != null && !c.isClosed) {
-            return c.use {
-                listOf(*c.columnNames)
-            }
-        }
-    }
-    return ArrayList()
 }
 
 fun Uri?.isFileScheme(): Boolean {
