@@ -36,18 +36,23 @@ class ContentPicker(
             context: Context,
             owner: LifecycleOwner,
             fileProviderAuthorityPostfix: String,
-            pickFromGalleryRequestCode: Int? = null,
-            pickFromCameraRequestCode: Int? = null,
-            pickFileRequestCode: Int? = null,
+            pickParams: PickParams,
             newCameraPictureFileFunc: (() -> File)? = null
     ) : this(owner,
             if (isAtLeastNougat()) {
-                MediaStorePickerConfigurator(context, pickFromGalleryRequestCode, pickFromCameraRequestCode, pickFileRequestCode)
+                MediaStorePickerConfigurator(
+                        context,
+                        fileProviderAuthorityPostfix,
+                        pickParams,
+                        newCameraPictureFileFunc
+                )
             } else {
-                object : ContentPicker.BaseFilePickerConfigurator(context, fileProviderAuthorityPostfix, pickFromGalleryRequestCode, pickFromCameraRequestCode, pickFileRequestCode) {
-                    override fun newCameraPictureFile(): File = newCameraPictureFileFunc?.invoke()
-                            ?: throw IllegalStateException("Camera picture file must be created for FilePickerConfigurator")
-                }
+                FilePickerConfigurator(
+                        context,
+                        fileProviderAuthorityPostfix,
+                        pickParams,
+                        newCameraPictureFileFunc
+                )
             })
 
     val activity: Activity
@@ -65,7 +70,7 @@ class ContentPicker(
 
     fun pickFromGallery(): Boolean {
         with(pickerConfigurator) {
-            val pickFromGalleryRequestCode = pickFromGalleryRequestCode ?: return false
+            val pickFromGalleryRequestCode = pickParams.pickFromGalleryRequestCode ?: return false
             val intent = Intent(Intent.ACTION_PICK)
             intent.setDataAndType(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, MIME_TYPE_IMAGE)
             if (!onBeforePickPictureFromGallery(intent)) {
@@ -75,15 +80,19 @@ class ContentPicker(
             val fragment = if (owner is Fragment) owner else null
             return startActivityForResultSafe(activity,
                     fragment,
-                    wrapIntent(intent, pickFromGalleryChooserTitle),
+                    wrapIntent(intent, pickParams.pickFromGalleryChooserTitle),
                     pickFromGalleryRequestCode)
         }
     }
 
-    fun pickFromCamera(mimeType: String = MIME_TYPE_IMAGE): Boolean {
+    fun pickFromCamera(isFromMediaStore: Boolean, mimeType: String = MIME_TYPE_IMAGE): Boolean {
         with(pickerConfigurator) {
-            val pickFromCameraRequestCode = pickFromCameraRequestCode ?: return false
-            val intentInfo = createCameraPictureIntent(mimeType)
+            val pickFromCameraRequestCode = pickParams.pickFromCameraRequestCode ?: return false
+            val intentInfo = if (isFromMediaStore) {
+                createCameraPictureIntentFromMediaStore(mimeType)
+            } else {
+                createCameraPictureIntentFromFile()
+            }
             if (!onBeforePickPictureFromCamera(intentInfo.first)) {
                 return false
             }
@@ -92,7 +101,7 @@ class ContentPicker(
             val fragment = if (owner is Fragment) owner else null
             return startActivityForResultSafe(activity,
                     fragment,
-                    wrapIntent(intentInfo.first, pickFromCameraChooserTitle),
+                    wrapIntent(intentInfo.first, pickParams.pickFromCameraChooserTitle),
                     pickFromCameraRequestCode)
         }
     }
@@ -104,17 +113,20 @@ class ContentPicker(
             openOrGet: Boolean = true
     ): Boolean {
         with(pickerConfigurator) {
-            val pickFileRequestCode = pickFileRequestCode ?: return false
+            val pickFileRequestCode = pickParams.pickFileRequestCode ?: return false
             val intent = if (openOrGet) {
                 getOpenDocumentIntent(type, mimeTypes)
             } else {
                 getContentIntent(type, mimeTypes)
             }
+            if (!onBeforePickContent(intent)) {
+                return false
+            }
             val activity = activity
             val fragment = if (owner is Fragment) owner else null
             return startActivityForResultSafe(activity,
                     fragment,
-                    wrapIntent(intent, pickFileChooserTitle),
+                    wrapIntent(intent, pickParams.pickFileChooserTitle),
                     pickFileRequestCode)
         }
     }
@@ -123,14 +135,14 @@ class ContentPicker(
         var result: Pair<ContentSource, Uri>? = null
         with(pickerConfigurator) {
             if (Activity.RESULT_OK == resultCode) {
-                if (requestCode == pickFromCameraRequestCode) {
+                if (requestCode == pickParams.pickFromCameraRequestCode) {
                     retrieveUriAfterPickFromCamera(cameraContentUri)?.let {
                         result = Pair(ContentSource.CAMERA, it)
                     }
                     cameraContentUri = null
-                } else if (requestCode in arrayOf(pickFromGalleryRequestCode, pickFileRequestCode)) {
+                } else if (requestCode in arrayOf(pickParams.pickFromGalleryRequestCode, pickParams.pickFileRequestCode)) {
                     retrieveUriAfterPickContent(data)?.let {
-                        result = Pair(if (requestCode == pickFromGalleryRequestCode) ContentSource.GALLERY else ContentSource.OTHER, it)
+                        result = Pair(if (requestCode == pickParams.pickFromGalleryRequestCode) ContentSource.GALLERY else ContentSource.OTHER, it)
                     }
                 }
             }
@@ -139,16 +151,45 @@ class ContentPicker(
     }
 
     abstract class BasePickerConfigurator(
-            val pickFromGalleryRequestCode: Int?,
-            val pickFromCameraRequestCode: Int?,
-            val pickFileRequestCode: Int?,
-            val pickFromGalleryChooserTitle: String = EMPTY_STRING,
-            val pickFromCameraChooserTitle: String = EMPTY_STRING,
-            val pickFileChooserTitle: String = EMPTY_STRING
+            val context: Context,
+            val fileProviderAuthorityPostfix: String,
+            val pickParams: PickParams,
+            private val newCameraPictureFileFunc: (() -> File)? = null
     ) {
 
+        protected val contentResolver = context.contentResolver
 
-        abstract fun createCameraPictureIntent(mimeType: String): Pair<Intent, Uri?>
+        fun createCameraPictureIntentFromMediaStore(mimeType: String): Pair<Intent, Uri?> {
+            val captureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            val values = ContentValues(1)
+            values.put(MediaStore.Images.Media.MIME_TYPE, mimeType)
+            captureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            val outputUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, outputUri)
+            return Pair(captureIntent, outputUri)
+        }
+
+        fun createCameraPictureIntentFromFile(): Pair<Intent, Uri> {
+            val captureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
+            val localFileUri: Uri
+            val cameraFile = newCameraPictureFileFunc?.invoke()
+                    ?: throw IllegalStateException("Camera picture file must be created for PickerConfigurator")
+            val outputFileUri = with(cameraFile) {
+                localFileUri = Uri.fromFile(this)
+                if (!TextUtils.isEmpty(fileProviderAuthorityPostfix)) {
+                    // в манифесте аппа объявлен FileProvider
+                    FileProvider.getUriForFile(context, "${context.packageName}.$fileProviderAuthorityPostfix", this)
+                } else {
+                    // попытка выключить "strict mode" для пользования обычным файлом
+                    disableFileUriStrictMode()
+                    localFileUri
+                }
+            }
+            captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri)
+            // для своих целей сохраняем файловую урлу,
+            // чтобы в дальнейшем работать с File
+            return Pair(captureIntent, localFileUri)
+        }
 
         abstract fun retrieveUriAfterPickContent(data: Intent?): Uri?
         abstract fun retrieveUriAfterPickFromCamera(outputFileUri: Uri?): Uri?
@@ -164,35 +205,17 @@ class ContentPicker(
      * 2. Камера - в предоставленный внешний файл по ссылке;
      * Применяется в версиях < N
      */
-    abstract class BaseFilePickerConfigurator(
-            private val context: Context,
-            private val fileProviderAuthorityPostfix: String,
-            pickFromGalleryRequestCode: Int? = null,
-            pickFromCameraRequestCode: Int? = null,
-            pickFileRequestCode: Int? = null
-    ) : BasePickerConfigurator(pickFromGalleryRequestCode, pickFromCameraRequestCode, pickFileRequestCode) {
-
-        abstract fun newCameraPictureFile(): File
-
-        override fun createCameraPictureIntent(mimeType: String): Pair<Intent, Uri?> {
-            val captureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-            val localFileUri: Uri
-            val outputFileUri = with(newCameraPictureFile()) {
-                localFileUri = Uri.fromFile(this)
-                if (!TextUtils.isEmpty(fileProviderAuthorityPostfix)) {
-                    // в манифесте аппа объявлен FileProvider
-                    FileProvider.getUriForFile(context, "${context.packageName}.$fileProviderAuthorityPostfix", this)
-                } else {
-                    // попытка выключить "strict mode" для пользования обычным файлом
-                    disableFileUriStrictMode()
-                    localFileUri
-                }
-            }
-            captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri)
-            // для своих целей сохраняем файловую урлу,
-            // чтобы в дальнейшем извлечь File, из него ExifInterface и т.д.
-            return Pair(captureIntent, localFileUri)
-        }
+    open class FilePickerConfigurator(
+            context: Context,
+            fileProviderAuthorityPostfix: String,
+            pickParams: PickParams,
+            newCameraPictureFileFunc: (() -> File)? = null
+    ) : BasePickerConfigurator(
+            context,
+            fileProviderAuthorityPostfix,
+            pickParams,
+            newCameraPictureFileFunc
+    ) {
 
         override fun retrieveUriAfterPickContent(data: Intent?): Uri? {
             // getPath в данном случае это путь к файлу
@@ -223,22 +246,14 @@ class ContentPicker(
      */
     open class MediaStorePickerConfigurator(
             context: Context,
-            pickFromGalleryRequestCode: Int? = null,
-            pickFromCameraRequestCode: Int? = null,
-            pickFileRequestCode: Int? = null
-    ) : BasePickerConfigurator(pickFromGalleryRequestCode, pickFromCameraRequestCode, pickFileRequestCode) {
-
-        private val contentResolver = context.contentResolver
-
-        override fun createCameraPictureIntent(mimeType: String): Pair<Intent, Uri?> {
-            val captureIntent = Intent(MediaStore.ACTION_IMAGE_CAPTURE)
-            val values = ContentValues(1)
-            values.put(MediaStore.Images.Media.MIME_TYPE, mimeType)
-            captureIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
-            val outputUri = contentResolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
-            captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, outputUri)
-            return Pair(captureIntent, outputUri)
-        }
+            fileProviderAuthorityPostfix: String,
+            pickParams: PickParams,
+            newCameraPictureFileFunc: (() -> File)? = null
+    ) : BasePickerConfigurator(context,
+            fileProviderAuthorityPostfix,
+            pickParams,
+            newCameraPictureFileFunc
+    ) {
 
         override fun retrieveUriAfterPickContent(data: Intent?): Uri? {
             // в кач-ве урлы полученный результат data (может быть, например, "content://")
@@ -260,7 +275,29 @@ class ContentPicker(
         GALLERY, CAMERA, OTHER
     }
 
+    data class PickParams(
+            val pickFromGalleryRequestCode: Int?,
+            val pickFromCameraRequestCode: Int?,
+            val pickFileRequestCode: Int?,
+            val pickFromGalleryChooserTitle: String = EMPTY_STRING,
+            val pickFromCameraChooserTitle: String = EMPTY_STRING,
+            val pickFileChooserTitle: String = EMPTY_STRING
+    )
+
     companion object {
+
+        @JvmOverloads
+        fun retrieveBitmapFromAnyOrFileUri(
+                contentResolver: ContentResolver,
+                uri: Uri?,
+                rotate: Boolean,
+                config: Config = Config.ARGB_8888,
+                withSampleSize: Boolean = false
+        ): Pair<Bitmap, Int>? = if (uri.isFileScheme()) {
+            retrieveBitmapFromFileUri(uri, rotate, config, withSampleSize)
+        } else {
+            retrieveBitmapFromAnyUri(contentResolver, uri, rotate, config, withSampleSize)
+        }
 
         /**
          * Декодирование стрима из [ContentResolver]

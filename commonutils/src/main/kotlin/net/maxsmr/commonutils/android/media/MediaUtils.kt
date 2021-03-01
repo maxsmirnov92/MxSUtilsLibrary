@@ -767,11 +767,11 @@ fun getRotationAngleFromExifOrThrow(imageFile: File?): Int {
     }
 }
 
-fun getRotationAngleFromExif(contentResolver: ContentResolver, imageUri: Uri?): Int = try {
+fun getRotationAngleFromExif(contentResolver: ContentResolver, imageUri: Uri?): Int? = try {
     getRotationAngleFromExifOrThrow(contentResolver, imageUri)
 } catch (e: RuntimeException) {
     logger.e(e)
-    0
+    null
 }
 
 @Throws(RuntimeException::class)
