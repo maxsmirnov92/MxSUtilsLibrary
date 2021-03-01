@@ -11,8 +11,8 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.snackbar.Snackbar;
 
-import net.maxsmr.commonutils.data.GetMode;
-import net.maxsmr.commonutils.data.Pair;
+import net.maxsmr.commonutils.GetMode;
+import net.maxsmr.commonutils.Pair;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.storage.ids.IdHolder;
@@ -37,9 +37,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static net.maxsmr.commonutils.data.FileUtilsKt.DEPTH_UNLIMITED;
-import static net.maxsmr.commonutils.data.FileUtilsKt.getFiles;
-import static net.maxsmr.commonutils.data.number.RandomUtilsKt.randInt;
+import static net.maxsmr.commonutils.FileUtilsKt.DEPTH_UNLIMITED;
+import static net.maxsmr.commonutils.FileUtilsKt.getFiles;
+import static net.maxsmr.commonutils.number.RandomUtilsKt.randInt;
 
 public class TestTasksActivity extends AppCompatActivity implements AbstractSyncStorage.IStorageListener, TaskRunnableExecutor.Callbacks<TestRunnableInfo, Void, Boolean, TestTaskRunnable>, TaskRunnable.Callbacks<TestRunnableInfo, Void, Boolean, TaskRunnable<TestRunnableInfo, Void, Boolean>> {
 

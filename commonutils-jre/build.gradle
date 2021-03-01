@@ -6,11 +6,12 @@ jar {
                 'Manifest-Version': Float.valueOf(project.getModuleVersionNameByPath(project.path)),
                 // необязательно, т.к. не предполагается быть executable
                 // (если 'Main-Class' не указан здесь, при выполнении в командную строку java надо передать этот класс явно)
-                'Main-Class': 'net.maxsmr.commonutils_jre.MainClassKt',
+                'Main-Class': 'net.maxsmr.commonutils.MainClassKt',
                 'DEBUG': false
         )
     }
-    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
+    // jar будет весить больше за счёт котлиновских и других сторонних зависимостей + java-модуль не определит его
+//    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 }
 
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
@@ -21,7 +22,6 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 }
 
 dependencies {
-    api "commons-net:commons-net:$commonsNetVersion"
     api "com.google.code.gson:gson:$gsonVersion"
 }
 

@@ -1,27 +1,25 @@
 package net.maxsmr.networkutils;
 
+import android.net.ConnectivityManager;
+
 public enum NetworkType {
 
     NONE(-1),
 
-    MOBILE(0),
+    MOBILE(ConnectivityManager.TYPE_MOBILE),
 
-    WIFI(1);
+    WIFI(ConnectivityManager.TYPE_WIFI);
 
-    private final int value;
+    public final int value;
 
     NetworkType(int value) {
         this.value = value;
     }
 
-    public int getValue() {
-        return value;
-    }
-
     public static NetworkType fromValue(int value) throws IllegalArgumentException {
 
         for (NetworkType networkType : NetworkType.values()) {
-            if (networkType.getValue() == value) {
+            if (networkType.value == value) {
                 return networkType;
             }
         }

@@ -2,7 +2,7 @@ package net.maxsmr.testapp;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import net.maxsmr.commonutils.data.text.TextUtilsKt;
+import net.maxsmr.commonutils.text.TextUtilsKt;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -10,8 +10,8 @@ import org.junit.runner.RunWith;
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
-import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toIntSafe;
-import static net.maxsmr.commonutils.data.conversion.format.TimeFormatUtilsKt.timeToString;
+import static net.maxsmr.commonutils.conversion.NumberConversionKt.toIntSafe;
+import static net.maxsmr.commonutils.format.TimeFormatUtilsKt.timeToString;
 import static org.junit.Assert.assertFalse;
 
 @RunWith(AndroidJUnit4.class)

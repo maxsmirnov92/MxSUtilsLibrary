@@ -1,6 +1,6 @@
 package net.maxsmr.tasksutils;
 
-import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.Predicate;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.runnable.RunnableInfoRunnable;

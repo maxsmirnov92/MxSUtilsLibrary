@@ -8,7 +8,7 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.Locale;
 
-import static net.maxsmr.commonutils.data.conversion.format.DateFormatUtilsKt.formatDate;
+import static net.maxsmr.commonutils.format.DateFormatUtilsKt.formatDate;
 
 public class ExecInfo<I extends RunnableInfo, ProgressInfo, Result, T extends TaskRunnable<I, ProgressInfo, Result>> implements Serializable {
 

@@ -10,7 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 
 import com.google.android.material.snackbar.Snackbar;
 
-import net.maxsmr.commonutils.data.GetMode;
+import net.maxsmr.commonutils.GetMode;
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;
 import net.maxsmr.networkutils.loadutil.managers.NetworkLoadManager;
 import net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo;
@@ -32,7 +32,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static android.os.Environment.DIRECTORY_PICTURES;
-import static net.maxsmr.commonutils.data.FileUtilsKt.getFiles;
+import static net.maxsmr.commonutils.FileUtilsKt.getFiles;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.LoadSettings.RETRY_LIMIT_NONE;
 
 public class TestUploadActivity extends AppCompatActivity implements AbstractSyncStorage.IStorageListener, LoadListener<LoadRunnableInfo<LoadRunnableInfo.FileBody>> {

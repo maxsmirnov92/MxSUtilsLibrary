@@ -3,8 +3,8 @@ package net.maxsmr.networkutils.loadutil.managers.base;
 import android.os.Handler;
 import android.os.Looper;
 
-import net.maxsmr.commonutils.data.Observable;
-import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.Observable;
+import net.maxsmr.commonutils.Predicate;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.loadutil.managers.LoadListener;

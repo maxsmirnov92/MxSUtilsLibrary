@@ -24,9 +24,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getTableName;
-import static net.maxsmr.commonutils.data.FileUtilsKt.checkDir;
-import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.media.MediaUtilsKt.getTableName;
+import static net.maxsmr.commonutils.FileUtilsKt.checkDir;
+import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.customcontentprovider.sqlite.providers.AbstractSQLiteTableProvider.Order.ASC;
 
 public abstract class AbstractSQLiteContentProvider extends ContentProvider {

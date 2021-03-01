@@ -6,10 +6,10 @@ import android.app.usage.NetworkStatsManager
 import android.content.Context
 import android.net.ConnectivityManager.TYPE_MOBILE
 import android.os.Build
-import net.maxsmr.commonutils.android.getApplicationUid
-import net.maxsmr.commonutils.android.hardware.DeviceUtils
-import net.maxsmr.commonutils.android.isAtLeastMarshmallow
-import net.maxsmr.commonutils.data.text.EMPTY_STRING
+import net.maxsmr.commonutils.getApplicationUid
+import net.maxsmr.commonutils.hardware.DeviceUtils
+import net.maxsmr.commonutils.isAtLeastMarshmallow
+import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException

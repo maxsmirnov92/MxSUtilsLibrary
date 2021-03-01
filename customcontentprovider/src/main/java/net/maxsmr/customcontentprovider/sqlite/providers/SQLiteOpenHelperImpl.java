@@ -4,7 +4,7 @@ import android.content.Context;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
-import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.Observable;
 
 
 import org.jetbrains.annotations.NotNull;
@@ -15,11 +15,11 @@ import java.util.LinkedHashSet;
 import java.util.Locale;
 import java.util.Set;
 
-import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
-import static net.maxsmr.commonutils.data.FileUtilsKt.checkPath;
-import static net.maxsmr.commonutils.data.FileUtilsKt.createFile;
-import static net.maxsmr.commonutils.data.FileUtilsKt.createFileOrThrow;
-import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.FileUtilsKt.checkPath;
+import static net.maxsmr.commonutils.FileUtilsKt.createFile;
+import static net.maxsmr.commonutils.FileUtilsKt.createFileOrThrow;
+import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 
 public final class SQLiteOpenHelperImpl extends SQLiteOpenHelper {
 

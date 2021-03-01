@@ -5,15 +5,15 @@ import android.Manifest;
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 import androidx.test.rule.GrantPermissionRule;
 
-import net.maxsmr.commonutils.data.FileComparator;
-import net.maxsmr.commonutils.data.FileUtilsKt;
-import net.maxsmr.commonutils.data.GetMode;
-import net.maxsmr.commonutils.data.IDeleteNotifier;
-import net.maxsmr.commonutils.data.IGetNotifier;
-import net.maxsmr.commonutils.data.IMultipleCopyNotifier;
-import net.maxsmr.commonutils.data.IShellGetNotifier;
-import net.maxsmr.commonutils.data.ISingleCopyNotifier;
-import net.maxsmr.commonutils.data.MatchStringOption;
+import net.maxsmr.commonutils.FileComparator;
+import net.maxsmr.commonutils.FileUtilsKt;
+import net.maxsmr.commonutils.GetMode;
+import net.maxsmr.commonutils.IDeleteNotifier;
+import net.maxsmr.commonutils.IGetNotifier;
+import net.maxsmr.commonutils.IMultipleCopyNotifier;
+import net.maxsmr.commonutils.IShellGetNotifier;
+import net.maxsmr.commonutils.ISingleCopyNotifier;
+import net.maxsmr.commonutils.MatchStringOption;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -28,17 +28,17 @@ import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
-import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getFilteredExternalFilesDirs;
-import static net.maxsmr.commonutils.data.FileUtilsKt.DEPTH_UNLIMITED;
-import static net.maxsmr.commonutils.data.FileUtilsKt.checkFilesWithStat;
-import static net.maxsmr.commonutils.data.FileUtilsKt.copyFiles;
-import static net.maxsmr.commonutils.data.FileUtilsKt.createDir;
-import static net.maxsmr.commonutils.data.FileUtilsKt.createFile;
-import static net.maxsmr.commonutils.data.FileUtilsKt.createFileOrThrow;
-import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFiles;
-import static net.maxsmr.commonutils.data.FileUtilsKt.getFiles;
-import static net.maxsmr.commonutils.data.FileUtilsKt.searchByName;
-import static net.maxsmr.commonutils.data.FileUtilsKt.writeBytesToFile;
+import static net.maxsmr.commonutils.media.MediaUtilsKt.getFilteredExternalFilesDirs;
+import static net.maxsmr.commonutils.FileUtilsKt.DEPTH_UNLIMITED;
+import static net.maxsmr.commonutils.FileUtilsKt.checkFilesWithStat;
+import static net.maxsmr.commonutils.FileUtilsKt.copyFiles;
+import static net.maxsmr.commonutils.FileUtilsKt.createDir;
+import static net.maxsmr.commonutils.FileUtilsKt.createFile;
+import static net.maxsmr.commonutils.FileUtilsKt.createFileOrThrow;
+import static net.maxsmr.commonutils.FileUtilsKt.deleteFiles;
+import static net.maxsmr.commonutils.FileUtilsKt.getFiles;
+import static net.maxsmr.commonutils.FileUtilsKt.searchByName;
+import static net.maxsmr.commonutils.FileUtilsKt.writeBytesToFile;
 
 @RunWith(AndroidJUnit4.class)
 public class FileHelperTest extends LoggerTest {

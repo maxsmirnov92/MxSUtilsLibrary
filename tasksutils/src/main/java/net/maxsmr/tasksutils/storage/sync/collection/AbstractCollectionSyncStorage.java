@@ -1,9 +1,9 @@
 package net.maxsmr.tasksutils.storage.sync.collection;
 
-import net.maxsmr.commonutils.data.FileUtilsKt;
-import net.maxsmr.commonutils.data.GetMode;
-import net.maxsmr.commonutils.data.IDeleteNotifier;
-import net.maxsmr.commonutils.data.text.TextUtilsKt;
+import net.maxsmr.commonutils.FileUtilsKt;
+import net.maxsmr.commonutils.GetMode;
+import net.maxsmr.commonutils.IDeleteNotifier;
+import net.maxsmr.commonutils.text.TextUtilsKt;
 import net.maxsmr.tasksutils.storage.sync.AbstractSyncStorage;
 import net.maxsmr.tasksutils.taskexecutor.RunnableInfo;
 
@@ -18,14 +18,14 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
 
-import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
-import static net.maxsmr.commonutils.data.FileUtilsKt.checkDir;
-import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFiles;
-import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFile;
-import static net.maxsmr.commonutils.data.FileUtilsKt.getFileExtension;
-import static net.maxsmr.commonutils.data.FileUtilsKt.getFiles;
-import static net.maxsmr.commonutils.data.FileUtilsKt.isFileValid;
-import static net.maxsmr.commonutils.data.FileUtilsKt.sortFilesByLastModified;
+import static net.maxsmr.commonutils.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.FileUtilsKt.checkDir;
+import static net.maxsmr.commonutils.FileUtilsKt.deleteFiles;
+import static net.maxsmr.commonutils.FileUtilsKt.deleteFile;
+import static net.maxsmr.commonutils.FileUtilsKt.getFileExtension;
+import static net.maxsmr.commonutils.FileUtilsKt.getFiles;
+import static net.maxsmr.commonutils.FileUtilsKt.isFileValid;
+import static net.maxsmr.commonutils.FileUtilsKt.sortFilesByLastModified;
 
 public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> extends AbstractSyncStorage<I> {
 

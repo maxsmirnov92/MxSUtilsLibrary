@@ -1,7 +1,7 @@
 package net.maxsmr.networkutils.loadutil.managers;
 
-import net.maxsmr.commonutils.data.IStreamNotifier;
-import net.maxsmr.commonutils.data.Pair;
+import net.maxsmr.commonutils.IStreamNotifier;
+import net.maxsmr.commonutils.Pair;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -24,14 +24,14 @@ import java.io.OutputStream;
 import java.io.RandomAccessFile;
 import java.net.InetAddress;
 
-import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
-import static net.maxsmr.commonutils.data.FileUtilsKt.checkDir;
-import static net.maxsmr.commonutils.data.FileUtilsKt.checkFile;
-import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFile;
-import static net.maxsmr.commonutils.data.FileUtilsKt.isFileValid;
-import static net.maxsmr.commonutils.data.StreamUtilsKt.copyStream;
-import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
-import static net.maxsmr.commonutils.data.conversion.NumberConversionKt.toIntSafe;
+import static net.maxsmr.commonutils.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.FileUtilsKt.checkDir;
+import static net.maxsmr.commonutils.FileUtilsKt.checkFile;
+import static net.maxsmr.commonutils.FileUtilsKt.deleteFile;
+import static net.maxsmr.commonutils.FileUtilsKt.isFileValid;
+import static net.maxsmr.commonutils.StreamUtilsKt.copyStream;
+import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.conversion.NumberConversionKt.toIntSafe;
 
 public class FtpConnectionManager {
 

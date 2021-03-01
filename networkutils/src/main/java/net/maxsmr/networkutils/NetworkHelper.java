@@ -2,23 +2,22 @@ package net.maxsmr.networkutils;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
-import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
 import android.telephony.TelephonyManager;
 import android.util.Patterns;
 
-import androidx.core.content.ContextCompat;
-
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.CommandResult;
 
+import org.apache.commons.net.ntp.NTPUDPClient;
+import org.apache.commons.net.ntp.TimeInfo;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.lang.reflect.Method;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.net.SocketException;
@@ -33,16 +32,16 @@ import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
-import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.ReflectionUtils.invokeMethodOrThrow;
+import static net.maxsmr.commonutils.conversion.NumberConversionKt.toDoubleOrNull;
+import static net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException;
+import static net.maxsmr.commonutils.text.SymbolConstsKt.EMPTY_STRING;
+import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 
 public final class NetworkHelper {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(NetworkHelper.class);
-
-    public final static int NETWORK_TYPE_NONE = -1;
-
-    public final static String NETWORK_TYPE_NONE_HR = "none";
 
     private static Pattern IPV4_PATTERN = null;
     private static Pattern IPV6_PATTERN = null;
@@ -90,51 +89,23 @@ public final class NetworkHelper {
         return NetworkInfo.State.DISCONNECTED;
     }
 
-    public static int getActiveNetworkType(@NotNull Context context) {
+    @Nullable
+    public static NetworkTypeInfo getActiveNetworkTypeInfo(@NotNull Context context) {
 
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
         @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
 
         if (activeNetInfo != null && activeNetInfo.isConnected()) {
-            return activeNetInfo.getType();
+            return new NetworkTypeInfo(
+                    activeNetInfo.getType(),
+                    activeNetInfo.getSubtype(),
+                    activeNetInfo.getTypeName(),
+                    activeNetInfo.getSubtypeName()
+            );
         }
-        return NETWORK_TYPE_NONE;
+        return null;
     }
 
-    public static int getActiveNetworkSubtype(@NotNull Context context) {
-
-        final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
-
-        if (activeNetInfo != null && activeNetInfo.isConnected()) {
-            return activeNetInfo.getSubtype();
-        }
-        return NETWORK_TYPE_NONE;
-    }
-
-    public static String getActiveNetworkTypeHR(@NotNull Context context) {
-
-        final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
-
-        if (activeNetInfo != null && activeNetInfo.isConnected()) {
-            return activeNetInfo.getTypeName();
-
-        } else {
-            return NETWORK_TYPE_NONE_HR;
-        }
-    }
-
-    public static String getActiveNetworkSubtypeHR(@NotNull Context context) {
-
-        final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        @SuppressLint("MissingPermission") final NetworkInfo activeNetInfo = connectivityManager.getActiveNetworkInfo();
-
-        if (activeNetInfo != null && activeNetInfo.isConnected()) {
-            return activeNetInfo.getSubtypeName();
-        }
-        return NETWORK_TYPE_NONE_HR;
-    }
 
     public static boolean isIpAddress(String ipAddress) {
         return !isEmpty(ipAddress) && Patterns.IP_ADDRESS.matcher(ipAddress).matches();
@@ -160,12 +131,7 @@ public final class NetworkHelper {
             return null;
         }
 
-        try {
-            return InetAddress.getByName(ipAddr);
-        } catch (UnknownHostException e) {
-            logger.e("an UnknownHostException occurred during getByName(): " + e.getMessage());
-            return null;
-        }
+        return getInetAddressByNameSafe(ipAddr);
     }
 
     @Nullable
@@ -176,10 +142,14 @@ public final class NetworkHelper {
             return null;
         }
 
+        return getInetAddressByNameSafe(hostName);
+    }
+
+    private static InetAddress getInetAddressByNameSafe(String name) {
         try {
-            return InetAddress.getByName(hostName);
+            return InetAddress.getByName(name);
         } catch (UnknownHostException e) {
-            logger.e("an UnknownHostException occurred during getByName(): " + e.getMessage());
+            logger.e(formatException(e, "getByName"));
             return null;
         }
     }
@@ -207,7 +177,7 @@ public final class NetworkHelper {
                 }
             }
         } catch (SocketException e) {
-            logger.e("a SocketException occurred during getNetworkInterfaces(): " + e.getMessage());
+            logger.e(formatException(e, "getNetworkInterfaces"));
         }
         return null;
     }
@@ -240,11 +210,10 @@ public final class NetworkHelper {
                     }
                 }
             }
-        } catch (Exception ex) {
-            // for now eat exceptions
-            ex.printStackTrace();
+        } catch (Exception e) {
+            logger.e(formatException(e));
         }
-        return "";
+        return EMPTY_STRING;
     }
 
     /**
@@ -265,9 +234,29 @@ public final class NetworkHelper {
             logger.d("pinging address " + inetAddress.getHostAddress() + "...");
             return inetAddress.isReachable(timeOut);
         } catch (Exception e) {
-            logger.e("an Exception occurred during isReachable(): " + e.getMessage());
+            logger.e(formatException(e, "isReachable"));
             return false;
         }
+    }
+
+    /**
+     * @param timeout in ms
+     */
+    public static long getCurrentNtpTime(int timeout, String hostName) {
+        if (timeout <= 0) {
+            throw new IllegalArgumentException("incorrect timeout: " + timeout);
+        }
+        NTPUDPClient timeClient = new NTPUDPClient();
+        timeClient.setDefaultTimeout(timeout);
+        try {
+            InetAddress inetAddress = InetAddress.getByName(hostName);
+            TimeInfo timeInfo = timeClient.getTime(inetAddress);
+            return timeInfo.getMessage().getTransmitTimeStamp().getTime();
+        } catch (IOException e) {
+            logger.e(formatException(e));
+            timeClient.close();
+        }
+        return -1;
     }
 
     /**
@@ -297,7 +286,7 @@ public final class NetworkHelper {
                 "-W " + (timeoutUnit == null ? TimeUnit.MILLISECONDS.toSeconds(timeout) : timeoutUnit.toSeconds(timeout)),
                 inetAddress.getHostAddress()
                 ),
-                net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING, null, null, null, null, 0, TimeUnit.SECONDS);
+                EMPTY_STRING, null, null, null, null, 0, TimeUnit.SECONDS);
 
         String resultString = result.getStdOut();
 
@@ -315,43 +304,41 @@ public final class NetworkHelper {
             return -1;
         }
 
-        final String pingTime = resultString.substring(startIndex, endIndex);
-        logger.d("ping time: " + pingTime + " ms");
+        final String pingTimeString = resultString.substring(startIndex, endIndex);
+        logger.d("ping time: " + pingTimeString + " ms");
 
-        try {
-            return Double.parseDouble(pingTime);
-        } catch (NumberFormatException e) {
-            logger.e("a NumberFormatException occurred during parseDouble(): " + e.getMessage());
+        final Double pingTime = toDoubleOrNull(pingTimeString);
+        if (pingTime != null) {
+            return pingTime;
         }
-
         return -1;
     }
 
     public static boolean isGprsNetworkType(int type) {
-        return (type == TelephonyManager.NETWORK_TYPE_GPRS);
+        return type == TelephonyManager.NETWORK_TYPE_GPRS;
     }
 
     public static boolean isEdgeNetworkType(int type) {
-        return (type == TelephonyManager.NETWORK_TYPE_EDGE);
+        return type == TelephonyManager.NETWORK_TYPE_EDGE;
     }
 
     public static boolean isHighSpeedNetworkType(int type) {
-        return (type == TelephonyManager.NETWORK_TYPE_HSDPA || type == TelephonyManager.NETWORK_TYPE_HSPA
-                || type == TelephonyManager.NETWORK_TYPE_HSPAP || type == TelephonyManager.NETWORK_TYPE_HSUPA);
+        return type == TelephonyManager.NETWORK_TYPE_HSDPA || type == TelephonyManager.NETWORK_TYPE_HSPA
+                || type == TelephonyManager.NETWORK_TYPE_HSPAP || type == TelephonyManager.NETWORK_TYPE_HSUPA;
     }
 
     public static boolean isMobileNetworkType(int type) {
-        return (isGprsNetworkType(type) || isEdgeNetworkType(type) || isHighSpeedNetworkType(type));
+        return isGprsNetworkType(type) || isEdgeNetworkType(type) || isHighSpeedNetworkType(type);
     }
 
     public static boolean isWifiNetworkType(int type) {
-        return (type == ConnectivityManager.TYPE_WIFI);
+        return type == ConnectivityManager.TYPE_WIFI;
     }
 
     public static boolean isWifiEnabled(@NotNull Context context) {
         final WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wifiManager == null) {
-            throw new RuntimeException(WifiManager.class.getSimpleName() + " is null");
+            throw new RuntimeException("WifiManager is null");
         }
         return wifiManager.isWifiEnabled();
     }
@@ -360,31 +347,18 @@ public final class NetworkHelper {
     public static boolean enableWifiConnection(@NotNull Context context, boolean enable) {
         final WifiManager wifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
         if (wifiManager == null) {
-            throw new RuntimeException(WifiManager.class.getSimpleName() + " is null");
+            throw new RuntimeException("WifiManager is null");
         }
-        return ContextCompat.checkSelfPermission(context, android.Manifest.permission.CHANGE_WIFI_STATE) == PackageManager.PERMISSION_GRANTED && wifiManager.setWifiEnabled(enable);
+        return wifiManager.setWifiEnabled(enable);
     }
 
     public static boolean enableMobileDataConnection(@NotNull Context context, boolean enable) {
-
         final ConnectivityManager connectivityManager = (ConnectivityManager) context.getSystemService(Context.CONNECTIVITY_SERVICE);
-
-        final Method setMobileDataEnabledMtd;
-
         try {
-            setMobileDataEnabledMtd = ConnectivityManager.class.getDeclaredMethod("setMobileDataEnabled", boolean.class);
-        } catch (NoSuchMethodException e) {
-            logger.e("a NoSuchMethodException occurred during getDeclaredMethod(): " + e.getMessage());
-            return false;
-        }
-
-        setMobileDataEnabledMtd.setAccessible(true);
-
-        try {
-            setMobileDataEnabledMtd.invoke(connectivityManager, enable);
+            invokeMethodOrThrow(ConnectivityManager.class, "setMobileDataEnabled", new Class<?>[]{boolean.class}, connectivityManager, enable);
             return true;
-        } catch (Exception e) {
-            logger.e("an Exception occurred during invoke: " + e.getMessage());
+        } catch (RuntimeException e) {
+            logger.e(e);
             return false;
         }
     }
@@ -399,8 +373,8 @@ public final class NetworkHelper {
         try {
             return new URL(!encoded ? URLEncoder.encode(url, "UTF-8") : url);
         } catch (Exception e) {
+            logger.e(formatException(e));
             return null;
         }
     }
-
 }

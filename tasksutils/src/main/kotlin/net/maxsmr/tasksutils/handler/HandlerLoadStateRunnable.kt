@@ -4,10 +4,10 @@ import android.os.Handler
 import android.os.Looper
 import androidx.annotation.CallSuper
 import androidx.lifecycle.MutableLiveData
-import net.maxsmr.commonutils.android.live.errorLoad
-import net.maxsmr.commonutils.android.live.preLoad
-import net.maxsmr.commonutils.android.live.successLoad
-import net.maxsmr.commonutils.data.states.ILoadState
+import net.maxsmr.commonutils.live.errorLoad
+import net.maxsmr.commonutils.live.preLoad
+import net.maxsmr.commonutils.live.successLoad
+import net.maxsmr.commonutils.states.ILoadState
 import java.lang.NullPointerException
 
 abstract class HandlerLoadStateRunnable<T>(

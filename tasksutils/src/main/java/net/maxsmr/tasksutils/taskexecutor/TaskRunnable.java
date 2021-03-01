@@ -5,8 +5,8 @@ import android.os.Handler;
 
 import androidx.annotation.CallSuper;
 
-import net.maxsmr.commonutils.data.Observable;
-import net.maxsmr.commonutils.data.Predicate;
+import net.maxsmr.commonutils.Observable;
+import net.maxsmr.commonutils.Predicate;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.runnable.RunnableInfoRunnable;

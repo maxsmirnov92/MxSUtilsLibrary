@@ -1,6 +1,5 @@
 package net.maxsmr.commonutils.logger;
 
-
 import org.jetbrains.annotations.Nullable;
 import android.util.Log;
 

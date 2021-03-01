@@ -2,8 +2,8 @@ package net.maxsmr.testapp;
 
 import androidx.test.ext.junit.runners.AndroidJUnit4;
 
-import net.maxsmr.commonutils.data.conversion.SizeUnit;
-import net.maxsmr.commonutils.data.text.TextUtilsKt;
+import net.maxsmr.commonutils.conversion.SizeUnit;
+import net.maxsmr.commonutils.text.TextUtilsKt;
 
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -11,7 +11,7 @@ import org.junit.runner.RunWith;
 import java.util.Arrays;
 import java.util.HashSet;
 
-import static net.maxsmr.commonutils.data.conversion.SizeConversionKt.sizeToString;
+import static net.maxsmr.commonutils.format.SizeFormatUtilsKt.sizeToString;
 import static org.junit.Assert.assertFalse;
 
 @RunWith(AndroidJUnit4.class)

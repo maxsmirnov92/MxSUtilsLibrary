@@ -10,8 +10,8 @@ import java.util.Arrays;
 import java.util.LinkedHashSet;
 import java.util.Set;
 
-import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getExternalFilesDirs;
-import static net.maxsmr.commonutils.android.media.MediaUtilsKt.getFilteredExternalFilesDirs;
+import static net.maxsmr.commonutils.media.MediaUtilsKt.getExternalFilesDirs;
+import static net.maxsmr.commonutils.media.MediaUtilsKt.getFilteredExternalFilesDirs;
 
 @RunWith(AndroidJUnit4.class)
 public class ExternalStorageTest extends LoggerTest {
@@ -26,7 +26,7 @@ public class ExternalStorageTest extends LoggerTest {
         logger.d("external files dirs with type: " + dirs);
         dirs = getFilteredExternalFilesDirs(context, true, true, false);
         logger.d("external files dirs filtered: " + dirs);
-        dirs = getFilteredExternalFilesDirs(context, "1", true, true, false);
+        dirs = getFilteredExternalFilesDirs(context,  true, true, false, "1");
         logger.d("external files dirs filtered with type: " + dirs);
         dirs = new LinkedHashSet<>(Arrays.asList(context.getObbDirs()));
         logger.d("obb dirs: " + dirs);

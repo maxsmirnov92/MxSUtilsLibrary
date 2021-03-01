@@ -7,8 +7,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 
-import static net.maxsmr.commonutils.android.gui.ViewSizeCalculatorKt.getAutoScaledSize;
-import static net.maxsmr.commonutils.android.gui.ViewSizeCalculatorKt.getFixedViewSize;
+import static net.maxsmr.commonutils.gui.ViewSizeCalculatorKt.getAutoScaledSize;
+import static net.maxsmr.commonutils.gui.ViewSizeCalculatorKt.getFixedViewSize;
 
 @RunWith(JUnit4.class)
 public class ViewSizeCalculatorTest extends LoggerTest {

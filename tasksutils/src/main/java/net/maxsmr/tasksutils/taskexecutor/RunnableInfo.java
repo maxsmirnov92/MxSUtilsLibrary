@@ -1,7 +1,7 @@
 package net.maxsmr.tasksutils.taskexecutor;
 
-import net.maxsmr.commonutils.data.Predicate;
-import net.maxsmr.commonutils.data.model.SerializationUtils;
+import net.maxsmr.commonutils.Predicate;
+import net.maxsmr.commonutils.model.SerializationUtils;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,7 +14,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
-import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.FINISHED;
 import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.PENDING;
 import static net.maxsmr.tasksutils.taskexecutor.RunnableInfo.Status.RUNNING;

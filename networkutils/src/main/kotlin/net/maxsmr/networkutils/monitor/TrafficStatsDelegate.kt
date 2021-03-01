@@ -5,7 +5,7 @@ import android.content.Context
 import android.net.ConnectivityManager.TYPE_MOBILE
 import android.net.TrafficStats
 import android.os.Process
-import net.maxsmr.commonutils.android.getApplicationUid
+import net.maxsmr.commonutils.getApplicationUid
 import net.maxsmr.networkutils.monitor.NetworkStatsWrapper.Companion.isNetworkStatsManagerSupported
 
 fun shouldUseTrafficStats(uid: Int): Boolean {

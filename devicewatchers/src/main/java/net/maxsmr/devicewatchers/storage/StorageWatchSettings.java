@@ -1,7 +1,7 @@
 package net.maxsmr.devicewatchers.storage;
 
-import net.maxsmr.commonutils.data.GetMode;
-import net.maxsmr.commonutils.data.conversion.SizeUnit;
+import net.maxsmr.commonutils.GetMode;
+import net.maxsmr.commonutils.conversion.SizeUnit;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -11,8 +11,8 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
-import static net.maxsmr.commonutils.data.FileUtilsKt.checkDir;
-import static net.maxsmr.commonutils.data.FileUtilsKt.getPartitionSpace;
+import static net.maxsmr.commonutils.FileUtilsKt.checkDir;
+import static net.maxsmr.commonutils.FileUtilsKt.getPartitionSpace;
 
 public class StorageWatchSettings {
 

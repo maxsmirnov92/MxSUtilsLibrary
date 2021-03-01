@@ -3,12 +3,13 @@ package net.maxsmr.networkutils.watcher;
 import android.content.Context;
 import android.net.ConnectivityManager;
 
-import net.maxsmr.commonutils.android.hardware.DeviceUtils;
-import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.hardware.DeviceUtils;
+import net.maxsmr.commonutils.Observable;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.NetworkHelper;
 import net.maxsmr.networkutils.NetworkType;
+import net.maxsmr.networkutils.NetworkTypeInfo;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
 import net.maxsmr.tasksutils.runnable.RunnableInfoRunnable;
 import net.maxsmr.tasksutils.storage.ids.IdHolder;
@@ -130,7 +131,7 @@ public class NetworkWatcher {
         logger.d("setPreferableNetworkTypeAndSwitchTime(), preferableNetworkType=" + preferableNetworkType
                 + ", preferableNetworkTypeSwitchTime=" + preferableNetworkTypeSwitchTime);
 
-        if (preferableNetworkType != null && ConnectivityManager.isNetworkTypeValid(preferableNetworkType.getValue())
+        if (preferableNetworkType != null && ConnectivityManager.isNetworkTypeValid(preferableNetworkType.value)
                 || preferableNetworkType == NetworkType.NONE) {
             this.preferableNetworkType = preferableNetworkType;
         } else {
@@ -311,7 +312,7 @@ public class NetworkWatcher {
 
         private final long timeout;
 
-        private int lastActiveNetworkType = NetworkHelper.NETWORK_TYPE_NONE;
+        private int lastActiveNetworkType = NetworkType.NONE.value;
         private long lastActiveNetworkTypeStartTime = 0;
 
         private int toggleAirplaneModeAttempts = 0;
@@ -370,10 +371,17 @@ public class NetworkWatcher {
                 }
             }
 
-            if (lastActiveNetworkType != NetworkHelper.getActiveNetworkType(context)) {
-                logger.i("active network type has been changed: " + NetworkHelper.getActiveNetworkType(context) + " / previous: "
+            final NetworkTypeInfo typeInfo = NetworkHelper.getActiveNetworkTypeInfo(context);
+            
+            if (typeInfo == null) {
+                logger.e("Cannot retrieve NetworkTypeInfo");
+                return;
+            }
+            
+            if (lastActiveNetworkType != typeInfo.type) {
+                logger.i("active network type has been changed: " + typeInfo.type + " / previous: "
                         + lastActiveNetworkType);
-                lastActiveNetworkType = NetworkHelper.getActiveNetworkType(context);
+                lastActiveNetworkType = typeInfo.type;
                 lastActiveNetworkTypeStartTime = System.currentTimeMillis();
             }
 
@@ -389,7 +397,7 @@ public class NetworkWatcher {
 
                 stopRestoreNetworkRunnable();
 
-                logger.i("active network type: " + NetworkHelper.getActiveNetworkType(context) + " / preferable network type: "
+                logger.i("active network info: " + typeInfo + " / preferable network type: "
                         + preferableNetworkType);
 
                 final long currentTime = System.currentTimeMillis();
@@ -397,12 +405,11 @@ public class NetworkWatcher {
 
                 logger.i("last active network type time: " + TimeUnit.MILLISECONDS.toSeconds(lastActiveNetworkTypeTime) + " s");
 
-                if (preferableNetworkType.getValue() != NetworkHelper.getActiveNetworkType(context)
-                        && preferableNetworkType.getValue() != NetworkHelper.NETWORK_TYPE_NONE) {
+                if (preferableNetworkType != NetworkType.NONE && preferableNetworkType.value != typeInfo.type) {
 
                     logger.i("active network type not equals preferable, switching (enabled: " + enableSwitchNetworkInterface + ")...");
 
-                    if (preferableNetworkType.getValue() == ConnectivityManager.TYPE_MOBILE && !DeviceUtils.isSimCardInserted(context)) {
+                    if (preferableNetworkType.value == ConnectivityManager.TYPE_MOBILE && !DeviceUtils.isSimCardInserted(context)) {
                         logger.w("preferable network type is mobile but sim card is NOT inserted, NO need to switch");
                         return;
                     }
@@ -438,7 +445,7 @@ public class NetworkWatcher {
                 return;
             }
 
-            if (NetworkHelper.isWifiNetworkType(NetworkHelper.getActiveNetworkType(context)) || NetworkHelper.isWifiEnabled(context)) {
+            if (NetworkHelper.isWifiNetworkType(typeInfo.type) || NetworkHelper.isWifiEnabled(context)) {
 
                 logger.i("network type is wifi or wifi is enabled");
 
@@ -479,7 +486,7 @@ public class NetworkWatcher {
                 }
             }
 
-            if (NetworkHelper.isMobileNetworkType(NetworkHelper.getActiveNetworkSubtype(context)) || !NetworkHelper.isOnline(context)) {
+            if (NetworkHelper.isMobileNetworkType(typeInfo.subtype) || !NetworkHelper.isOnline(context)) {
 
                 logger.i("network type is mobile or none");
 
@@ -705,10 +712,10 @@ public class NetworkWatcher {
                         this.networkTypeToSwitch = networkTypeToSwitch;
                         break;
                     default:
-                        this.networkTypeToSwitch = NetworkType.fromValue(NetworkHelper.NETWORK_TYPE_NONE);
+                        this.networkTypeToSwitch = NetworkType.NONE;
                 }
             } else {
-                this.networkTypeToSwitch = NetworkType.fromValue(NetworkHelper.NETWORK_TYPE_NONE);
+                this.networkTypeToSwitch = NetworkType.NONE;
             }
 
             if (networkTypeSwitchPostWait < 0) {

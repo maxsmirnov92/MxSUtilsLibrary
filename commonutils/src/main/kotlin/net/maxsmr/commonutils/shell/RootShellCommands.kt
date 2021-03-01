@@ -1,15 +1,15 @@
 package net.maxsmr.commonutils.shell
 
 import android.content.Context
-import net.maxsmr.commonutils.android.getPidsByName
-import net.maxsmr.commonutils.android.isAtLeastKitkat
-import net.maxsmr.commonutils.android.processmanager.AbstractProcessManager
-import net.maxsmr.commonutils.data.MatchStringOption
-import net.maxsmr.commonutils.data.Predicate
-import net.maxsmr.commonutils.data.isFileValid
-import net.maxsmr.commonutils.data.stringsMatch
-import net.maxsmr.commonutils.data.text.EMPTY_STRING
-import net.maxsmr.commonutils.data.text.isEmpty
+import net.maxsmr.commonutils.getPidsByName
+import net.maxsmr.commonutils.isAtLeastKitkat
+import net.maxsmr.commonutils.processmanager.AbstractProcessManager
+import net.maxsmr.commonutils.MatchStringOption
+import net.maxsmr.commonutils.Predicate
+import net.maxsmr.commonutils.isFileValid
+import net.maxsmr.commonutils.stringsMatch
+import net.maxsmr.commonutils.text.EMPTY_STRING
+import net.maxsmr.commonutils.text.isEmpty
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.io.File

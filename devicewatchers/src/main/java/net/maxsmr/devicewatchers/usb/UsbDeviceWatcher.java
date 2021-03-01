@@ -1,6 +1,6 @@
 package net.maxsmr.devicewatchers.usb;
 
-import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.Observable;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
@@ -17,7 +17,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
-import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.text.SymbolConstsKt.EMPTY_STRING;
+import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.shell.ShellUtilsKt.execProcess;
 import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 
@@ -207,7 +208,7 @@ public class UsbDeviceWatcher {
         @Nullable
         @Override
         public CommandResult doWork() throws Throwable {
-            return execProcess(Arrays.asList("su", "-c", "lsusb"), net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING, null, null, null, null, 0, TimeUnit.SECONDS);
+            return execProcess(Arrays.asList("su", "-c", "lsusb"), EMPTY_STRING, null, null, null, null, 0, TimeUnit.SECONDS);
         }
 
         @Override
@@ -358,7 +359,7 @@ public class UsbDeviceWatcher {
         @Nullable
         @Override
         public CommandResult doWork() throws Throwable {
-            return execProcess(Arrays.asList("su", "-c", "cat", "/proc/bus/input/devices"), net.maxsmr.commonutils.data.text.SymbolConstsKt.EMPTY_STRING, null, null, null, null, 0, TimeUnit.SECONDS);
+            return execProcess(Arrays.asList("su", "-c", "cat", "/proc/bus/input/devices"), EMPTY_STRING, null, null, null, null, 0, TimeUnit.SECONDS);
         }
 
         @Override

@@ -2,7 +2,7 @@ package net.maxsmr.tasksutils.taskexecutor;
 
 import android.os.Handler;
 
-import net.maxsmr.commonutils.data.Observable;
+import net.maxsmr.commonutils.Observable;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.NamedThreadFactory;

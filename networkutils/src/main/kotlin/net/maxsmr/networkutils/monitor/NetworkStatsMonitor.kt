@@ -1,7 +1,7 @@
 package net.maxsmr.networkutils.monitor
 
 import android.net.TrafficStats
-import net.maxsmr.commonutils.data.Observable
+import net.maxsmr.commonutils.Observable
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.networkutils.monitor.model.NetworkTrafficStats

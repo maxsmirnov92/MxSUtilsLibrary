@@ -1,13 +1,13 @@
 package net.maxsmr.testapp.logger;
 
-import net.maxsmr.commonutils.data.conversion.SizeUnit;
+import net.maxsmr.commonutils.conversion.SizeUnit;
 
 import org.apache.log4j.Level;
 import org.jetbrains.annotations.Nullable;
 
 import de.mindpipe.android.logging.log4j.LogConfigurator;
 
-import static net.maxsmr.commonutils.data.FileUtilsKt.checkFile;
+import static net.maxsmr.commonutils.FileUtilsKt.checkFile;
 
 public class ConfigureLog4J {
 

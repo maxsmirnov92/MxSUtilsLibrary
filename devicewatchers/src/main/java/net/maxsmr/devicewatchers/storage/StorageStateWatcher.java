@@ -1,13 +1,13 @@
 package net.maxsmr.devicewatchers.storage;
 
 
-import net.maxsmr.commonutils.data.FileComparator;
-import net.maxsmr.commonutils.data.FileUtilsKt;
-import net.maxsmr.commonutils.data.GetMode;
-import net.maxsmr.commonutils.data.IDeleteNotifier;
-import net.maxsmr.commonutils.data.IGetNotifier;
-import net.maxsmr.commonutils.data.Predicate;
-import net.maxsmr.commonutils.data.conversion.SizeUnit;
+import net.maxsmr.commonutils.FileComparator;
+import net.maxsmr.commonutils.FileUtilsKt;
+import net.maxsmr.commonutils.GetMode;
+import net.maxsmr.commonutils.IDeleteNotifier;
+import net.maxsmr.commonutils.IGetNotifier;
+import net.maxsmr.commonutils.Predicate;
+import net.maxsmr.commonutils.conversion.SizeUnit;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager;
@@ -26,13 +26,13 @@ import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static net.maxsmr.commonutils.data.CompareUtilsKt.stringsEqual;
-import static net.maxsmr.commonutils.data.FileUtilsKt.DEPTH_UNLIMITED;
-import static net.maxsmr.commonutils.data.FileUtilsKt.deleteFiles;
-import static net.maxsmr.commonutils.data.FileUtilsKt.getFiles;
-import static net.maxsmr.commonutils.data.FileUtilsKt.getPartitionSpace;
-import static net.maxsmr.commonutils.data.FileUtilsKt.isDirExists;
-import static net.maxsmr.commonutils.data.text.TextUtilsKt.isEmpty;
+import static net.maxsmr.commonutils.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.FileUtilsKt.DEPTH_UNLIMITED;
+import static net.maxsmr.commonutils.FileUtilsKt.deleteFiles;
+import static net.maxsmr.commonutils.FileUtilsKt.getFiles;
+import static net.maxsmr.commonutils.FileUtilsKt.getPartitionSpace;
+import static net.maxsmr.commonutils.FileUtilsKt.isDirExists;
+import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
 
 public final class StorageStateWatcher {

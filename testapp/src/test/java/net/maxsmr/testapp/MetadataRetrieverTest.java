@@ -11,8 +11,8 @@ import org.junit.runner.RunWith;
 import java.io.File;
 import java.util.Map;
 
-import static net.maxsmr.commonutils.android.media.MetadataRetrieverKt.extractFrames;
-import static net.maxsmr.commonutils.android.media.MetadataRetrieverKt.extractFramesFromFile;
+import static net.maxsmr.commonutils.media.MetadataRetrieverKt.extractFrames;
+import static net.maxsmr.commonutils.media.MetadataRetrieverKt.extractFramesFromFile;
 
 @RunWith(AndroidJUnit4.class)
 public class MetadataRetrieverTest extends LoggerTest {
