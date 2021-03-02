@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils
 
 fun Any?.isNull(): Boolean = this == null
-fun Any?.isNotNull(): Boolean = this.isNull().not()
+fun Any?.isNotNull(): Boolean = isNull().not()
 
 inline fun <T : Any?> Boolean?.isTrue(block: () -> T): T? =
         this?.let { if (this) block() else null }

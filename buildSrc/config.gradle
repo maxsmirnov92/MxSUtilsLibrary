@@ -33,7 +33,8 @@ ext {
     rxJavaVersion = '2.1.3'
     rxAndroidVersion = '2.1.1'
 
-    lifecycleVersion = '2.1.0'
+    lifecycleRuntimeVersion = '2.3.0'
+    lifecycleExtensionsVersion = '2.2.0'
     tinkoffDecoroVersion = '1.3.5'
 
     jUnitVersion = '4.12'
