@@ -5,8 +5,8 @@ import net.maxsmr.commonutils.Predicate
 import net.maxsmr.commonutils.conversion.toDoubleOrNull
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.number.isZeroOrNull
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException
+import net.maxsmr.commonutils.number.isZeroOrNull
 import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
 import java.util.*
@@ -76,6 +76,22 @@ fun changeCaseFirstLatter(s: CharSequence?, upper: Boolean): String {
 fun insertAt(target: CharSequence, index: Int, what: CharSequence): String {
     require(!(index < 0 || index >= target.length)) { "incorrect index: $index" }
     return target.toString().substring(0, index) + what + target.toString().substring(index, target.length)
+}
+
+/**
+ * Приводит первый символ к верхнему регистру, а оставшиеся - к нижнему
+ *
+ * @param text исходная строка
+ * @return строка с большой буквы
+ */
+fun capFirstChar(text: String?): String {
+    var result = text ?: EMPTY_STRING
+    if (result.isNotEmpty()) {
+        result = result.toLowerCase(Locale.getDefault())
+        val firstChar = result.substring(0, 1)
+        result = firstChar.toUpperCase(Locale.getDefault()) + result.substring(1, result.length)
+    }
+    return result
 }
 
 fun indexOf(s: CharSequence, c: Char): Int {
