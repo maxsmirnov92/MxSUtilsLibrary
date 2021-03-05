@@ -12,13 +12,16 @@ import net.maxsmr.commonutils.text.EMPTY_STRING
  * @param moreButton скрываемая кнопка, по которой происходит показ/скрытие полного текста в соот-ии с [lineLimit]
  */
 open class TextViewLineLimitWatcher @JvmOverloads constructor(
-        val observableTextView: TextView,
-        val moreButton: TextView,
+        protected val observableTextView: TextView,
+        protected val moreButton: TextView,
         lineLimit: Int = 0,
         expandedText: CharSequence = EMPTY_STRING,
-        collapsedText: CharSequence = EMPTY_STRING,
-        expandedListener: ((Boolean) -> Unit)? = null
+        collapsedText: CharSequence = EMPTY_STRING
 ) {
+
+    private val textChangeListener: DefaultTextWatcher
+
+    var expandListener: ((Boolean) -> Unit)? = null
 
     var useAnimation: Boolean = false
 
@@ -57,8 +60,6 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
             }
         }
 
-    var expandedListener: ((Boolean) -> Unit)? = null
-
     var isExpanded: Boolean = false
         set(value) {
             if (field != value) {
@@ -66,7 +67,7 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
                 if (triggerRefresh) {
                     refreshState()
                 }
-                expandedListener?.invoke(value)
+                expandListener?.invoke(value)
             }
         }
 
@@ -75,18 +76,20 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
     init {
         observeLayoutChanges()
 
-        // при изначальном тексте не сработает
-        observableTextView.addTextChangedListener(object : DefaultTextWatcher() {
+        textChangeListener = object : DefaultTextWatcher() {
             override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
                 observeLayoutChanges()
             }
-        })
+        }
+
+        // при изначальном тексте не сработает
+        observableTextView.addTextChangedListener(textChangeListener)
 
         moreButton.setOnClickListener {
             if (triggerChangeByClick) {
                 toggleExpanded()
             } else {
-                expandedListener?.invoke(!isExpanded)
+                expandListener?.invoke(!isExpanded)
             }
         }
 
@@ -94,9 +97,16 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
         this.lineLimit = lineLimit
         this.expandedText = expandedText
         this.collapsedText = collapsedText
-        this.expandedListener = expandedListener
         triggerRefresh = true
-        refreshState()
+
+        observableTextView.post {
+            refreshState()
+        }
+    }
+
+    fun dispose() {
+        observableTextView.removeTextChangedListener(textChangeListener)
+        moreButton.setOnClickListener(null)
     }
 
     protected open fun setMaxLines(count: Int) {
@@ -119,8 +129,8 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
         }
     }
 
-    protected open fun refreshButtonVisibility(toggle: Boolean) {
-        moreButton.isVisible = toggle
+    protected open fun setMoreButtonVisibility(isVisible: Boolean) {
+        moreButton.isVisible = isVisible
     }
 
     private fun toggleExpanded() {
@@ -130,9 +140,9 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
     private fun refreshState() {
         if (lineLimit in 1 until observableTextView.lineCount) {
             refreshExpanded()
-            refreshButtonVisibility(true)
+            setMoreButtonVisibility(true)
         } else {
-            refreshButtonVisibility(false)
+            setMoreButtonVisibility(false)
         }
     }
 
