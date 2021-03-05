@@ -4,6 +4,9 @@ apply from: "$rootDir/buildSrc/buildUtils.gradle"
 apply plugin: 'java-library'
 apply plugin: 'kotlin'
 
+version = project.getModuleVersionNameByPath(project.path)
+//archivesBaseName = moduleInfo.id
+
 dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
 

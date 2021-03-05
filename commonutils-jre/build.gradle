@@ -3,7 +3,7 @@ apply from: "$rootDir/buildSrc/javaPreBuildLib.gradle"
 jar {
     manifest {
         attributes(
-                'Manifest-Version': Float.valueOf(project.getModuleVersionNameByPath(project.path)),
+                'Manifest-Version': 1.0,
                 // необязательно, т.к. не предполагается быть executable
                 // (если 'Main-Class' не указан здесь, при выполнении в командную строку java надо передать этот класс явно)
                 'Main-Class': 'net.maxsmr.commonutils.MainClassKt',
