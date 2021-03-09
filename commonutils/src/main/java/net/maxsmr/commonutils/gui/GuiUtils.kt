@@ -208,10 +208,7 @@ fun getViewsRotationForDisplay(context: Context, displayRotation: Int): Int {
     return result
 }
 
-fun getFixedSize(
-        sourceSize: Pair<Int, Int>,
-        maxSize: Int
-): PointF =
+fun getFixedSize(sourceSize: Pair<Int, Int>, maxSize: Int): PointF =
         getFixedSize(sourceSize.first, sourceSize.second, maxSize)
 
 fun getFixedSize(

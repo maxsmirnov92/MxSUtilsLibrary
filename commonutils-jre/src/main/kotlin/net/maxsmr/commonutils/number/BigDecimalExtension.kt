@@ -91,15 +91,11 @@ fun BigDecimal?.toValueOrZero(): BigDecimal = this?.correctZero() ?: ZERO
  */
 fun BigDecimal.correctZero(): BigDecimal = if (equal(0.0.toBigDecimal())) ZERO else this
 
-fun BigDecimal?.rublesToKopecksSimple(): Long = mergeFractionSimple(2)
-
 fun BigDecimal?.mergeFractionSimple(count: Int): Long {
     if (this == null) return 0
     val grade = 10.0.toBigDecimal().pow(count)
     return (this * grade).toLong()
 }
-
-fun BigDecimal?.rublesToKopecks(): Long = mergeFraction(2)
 
 fun BigDecimal?.mergeFraction(count: Int): Long {
     require(count > 0) { "count must be at least 1" }

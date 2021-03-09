@@ -31,58 +31,6 @@ private fun getText(mask: Mask, text: CharSequence?, isUnformatted: Boolean): St
 }
 
 /**
- * Убрать из строки такое кол-во символов, не соответствующих [limitedChars], чтобы общий размер не превышал [targetTextSize]
- * @param checkClearedTextSize необходимость проверки строки после преобразований на соответствие [targetTextSize] (т.к. могло быть превышено за счёт незапретных символов)
- */
-@JvmOverloads
-fun removeChars(
-        text: CharSequence,
-        targetTextSize: Int,
-        limitedChars: Collection<Char>,
-        checkClearedTextSize: Boolean = false
-): String {
-    require(targetTextSize > 0) { "Incorrect target size: $targetTextSize" }
-    val result = StringBuilder()
-    val array = text.toString().toCharArray()
-    // кол-во символов для исключения из целевой строки, чтобы получить targetSize
-    val removedCharsCount = if (text.length > targetTextSize) text.length - targetTextSize else 0
-    // кол-во символов для ограничения в целевой строке
-    val limitedCharsCount = array.toList().filter { limitedChars.contains(it) }.size
-    // максимально возможное кол-во ограничиваемых символов
-    val targetLimitedCharsCount = if (limitedCharsCount > removedCharsCount) limitedCharsCount - removedCharsCount else 0
-    var currentLimitedCharsCount = 0
-    array.forEach {
-        // является ограничиваемым
-        val isLimited = limitedChars.contains(it)
-        if (!isLimited || currentLimitedCharsCount < targetLimitedCharsCount) {
-            result.append(it)
-            if (isLimited) {
-                currentLimitedCharsCount++
-            }
-        }
-    }
-    if (checkClearedTextSize && result.length > targetTextSize) {
-        result.replace(targetTextSize - 1, result.length, EMPTY_STRING)
-    }
-    return result.toString()
-}
-
-@JvmOverloads
-fun createPlaceholderText(size: Int, placeholderChar: Char = ' '): String {
-    require(size > 0) {"Incorrect size: $size"}
-    val result = StringBuilder()
-    for (i in 0 until size) {
-        result.append(placeholderChar)
-    }
-    return result.toString()
-}
-
-/**
- * Проверить строку на наличие маскируемых цифр
- */
-fun containsMasked(text: CharSequence) = if (text.contains("*")) EMPTY_STRING else text
-
-/**
  * @param applyWatcher применять на постоянной основе или одноразовое форматирование
  * @param isDistinct перед выставлением окончательного результата проверять на уникальность, чтобы не сбивался курсор
  */
