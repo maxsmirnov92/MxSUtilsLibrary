@@ -1,6 +1,5 @@
 package net.maxsmr.commonutils.gui.listeners
 
-import android.animation.ObjectAnimator
 import android.view.ViewTreeObserver
 import android.widget.TextView
 import androidx.core.view.isVisible
@@ -15,15 +14,13 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
         protected val observableTextView: TextView,
         protected val moreButton: TextView,
         lineLimit: Int = 0,
-        expandedText: CharSequence = EMPTY_STRING,
-        collapsedText: CharSequence = EMPTY_STRING
+        private val expandedTextFunc: (() -> CharSequence)? = null,
+        private val collapsedTextFunc: (() -> CharSequence)? = null
 ) {
 
     private val textChangeListener: DefaultTextWatcher
 
     var expandListener: ((Boolean) -> Unit)? = null
-
-    var useAnimation: Boolean = false
 
     var triggerChangeByClick: Boolean = true
 
@@ -32,26 +29,6 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
             if (value < 0) {
                 throw IllegalArgumentException("lineLimit cannot be < 0")
             }
-            if (field != value) {
-                field = value
-                if (triggerRefresh) {
-                    refreshState()
-                }
-            }
-        }
-
-    var expandedText: CharSequence = EMPTY_STRING
-        set(value) {
-            if (field != value) {
-                field = value
-                if (triggerRefresh) {
-                    refreshState()
-                }
-            }
-        }
-
-    var collapsedText: CharSequence = EMPTY_STRING
-        set(value) {
             if (field != value) {
                 field = value
                 if (triggerRefresh) {
@@ -95,8 +72,6 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
 
         triggerRefresh = false
         this.lineLimit = lineLimit
-        this.expandedText = expandedText
-        this.collapsedText = collapsedText
         triggerRefresh = true
 
         observableTextView.post {
@@ -110,26 +85,23 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
     }
 
     protected open fun setMaxLines(count: Int) {
-        if (useAnimation) {
-            // FIXME аниматор не работает
-            val animation = ObjectAnimator.ofInt(observableTextView, "maxLines", count)
-            animation.setDuration(100).start()
-        } else {
-            observableTextView.maxLines = count
-        }
+        observableTextView.maxLines = count
     }
 
+    /**
+     * Контент "показать/скрыть" отображается, рефреш всего остального в зав-ти от isExpanded
+     */
     protected open fun refreshExpanded() {
         if (isExpanded) {
-            moreButton.text = expandedText
+            moreButton.text = expandedTextFunc?.invoke() ?: EMPTY_STRING
             setMaxLines(Integer.MAX_VALUE)
         } else {
-            moreButton.text = collapsedText
+            moreButton.text = collapsedTextFunc?.invoke() ?: EMPTY_STRING
             setMaxLines(lineLimit)
         }
     }
 
-    protected open fun setMoreButtonVisibility(isVisible: Boolean) {
+    protected open fun setMoreContentVisibility(isVisible: Boolean) {
         moreButton.isVisible = isVisible
     }
 
@@ -140,9 +112,9 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
     private fun refreshState() {
         if (lineLimit in 1 until observableTextView.lineCount) {
             refreshExpanded()
-            setMoreButtonVisibility(true)
+            setMoreContentVisibility(true)
         } else {
-            setMoreButtonVisibility(false)
+            setMoreContentVisibility(false)
         }
     }
 
