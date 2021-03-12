@@ -2,11 +2,11 @@ package net.maxsmr.commonutils.gui.fragments.dialogs.holder
 
 import android.content.Context
 import android.content.DialogInterface
-import android.text.TextUtils
 import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.LifecycleOwner
+import net.maxsmr.commonutils.gui.actions.message.text.TextMessage
 import net.maxsmr.commonutils.gui.fragments.dialogs.TypedDialogFragment
 import net.maxsmr.commonutils.isAtLeastKitkat
 import net.maxsmr.commonutils.media.ContentPicker
@@ -44,13 +44,12 @@ abstract class ContentPickerDialogFragmentsHolder(
             val negativeButton = this.getPickFromCameraAlertButtonName(context)
             val builder = TypedDialogFragment.DefaultTypedDialogBuilder()
             setupDialogBuilder(builder)
-            show(
-                    TAG_PICK_CONTENT_CHOICE, builder.setButtons(
-                    if (!TextUtils.isEmpty(positiveButton)) positiveButton else null,
-                    if (!TextUtils.isEmpty(neutralButton)) neutralButton else null,
-                    if (!TextUtils.isEmpty(negativeButton)) negativeButton else null
-            ).build(), reshow
-            )
+            show(TAG_PICK_CONTENT_CHOICE,
+                    builder.setButtons(
+                            positiveButton,
+                            neutralButton,
+                            negativeButton
+                    ).build(context), reshow)
         }
     }
 
@@ -75,11 +74,11 @@ abstract class ContentPickerDialogFragmentsHolder(
 
     interface IDialogConfigurator {
 
-        fun getPickFromGalleryAlertButtonName(context: Context): String
-        fun getPickFromFileAlertButtonName(context: Context): String
-        fun getPickFromCameraAlertButtonName(context: Context): String
+        fun getPickFromGalleryAlertButtonName(context: Context): TextMessage
+        fun getPickFromFileAlertButtonName(context: Context): TextMessage
+        fun getPickFromCameraAlertButtonName(context: Context): TextMessage
 
-        fun setupDialogBuilder(builder: TypedDialogFragment.Builder<TypedDialogFragment<AlertDialog>>)
+        fun setupDialogBuilder(builder: TypedDialogFragment.Builder<AlertDialog, TypedDialogFragment<AlertDialog>>)
     }
 
     data class ContentPickerOpts(

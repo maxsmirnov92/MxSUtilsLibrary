@@ -7,6 +7,7 @@ import android.os.Bundle
 import android.view.KeyEvent
 import android.view.LayoutInflater
 import android.view.View
+import android.widget.ArrayAdapter
 import androidx.annotation.*
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatDialogFragment
@@ -17,18 +18,20 @@ import io.reactivex.subjects.CompletableSubject
 import io.reactivex.subjects.PublishSubject
 import io.reactivex.subjects.SingleSubject
 import net.maxsmr.commonutils.gui.actions.TypedAction
-import net.maxsmr.commonutils.text.EMPTY_STRING
+import net.maxsmr.commonutils.gui.actions.message.text.TextMessage
+import java.io.Serializable
 
-const val ARG_TITLE = "AlertDialogFragment#ARG_TITLE"
-const val ARG_MESSAGE = "AlertDialogFragment#ARG_MESSAGE"
-const val ARG_STYLE_RES_ID = "AlertDialogFragment#ARG_STYLE_RES_ID"
-const val ARG_ICON_RES_ID = "AlertDialogFragment#ARG_ICON_RES_ID"
-const val ARG_BACKGROUND_RES_ID = "AlertDialogFragment#ARG_BACKGROUND_RES_ID"
-const val ARG_CUSTOM_VIEW_RES_ID = "AlertDialogFragment#ARG_CUSTOM_VIEW_RES_ID"
-const val ARG_CANCELABLE = "AlertDialogFragment#ARG_CANCELABLE"
-const val ARG_BUTTON_POSITIVE = "AlertDialogFragment#ARG_BUTTON_OK"
-const val ARG_BUTTON_NEGATIVE = "AlertDialogFragment#ARG_BUTTON_NEGATIVE"
-const val ARG_BUTTON_NEUTRAL = "AlertDialogFragment#ARG_BUTTON_NEUTRAL"
+const val ARG_TITLE = "TypedDialogFragment#ARG_TITLE"
+const val ARG_MESSAGE = "TypedDialogFragment#ARG_MESSAGE"
+const val ARG_STYLE_RES_ID = "TypedDialogFragment#ARG_STYLE_RES_ID"
+const val ARG_ICON_RES_ID = "TypedDialogFragment#ARG_ICON_RES_ID"
+const val ARG_BACKGROUND_RES_ID = "TypedDialogFragment#ARG_BACKGROUND_RES_ID"
+const val ARG_CUSTOM_VIEW_RES_ID = "TypedDialogFragment#ARG_CUSTOM_VIEW_RES_ID"
+const val ARG_CANCELABLE = "TypedDialogFragment#ARG_CANCELABLE"
+const val ARG_BUTTON_POSITIVE = "TypedDialogFragment#ARG_BUTTON_OK"
+const val ARG_BUTTON_NEGATIVE = "TypedDialogFragment#ARG_BUTTON_NEGATIVE"
+const val ARG_BUTTON_NEUTRAL = "TypedDialogFragment#ARG_BUTTON_NEUTRAL"
+const val ARG_ADAPTER_CONTENT = "TypedDialogFragment#ARG_ADAPTER_CONTENTL"
 
 /**
  * @param D type of created dialog in this fragment
@@ -37,14 +40,17 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
 
     protected val createdSubject = SingleSubject.create<TypedAction<D>>()
     protected val buttonClickSubject = PublishSubject.create<TypedAction<Int>>()
+    protected val itemClickSubject = PublishSubject.create<TypedAction<Int>>()
     protected val keySubject = PublishSubject.create<KeyAction>()
     protected val cancelSubject = CompletableSubject.create()
     protected val dismissSubject = CompletableSubject.create()
+
     /**
      * initialized after onCreate
      */
     protected lateinit var args: Bundle
         private set
+
     /**
      * initialized after onGetLayoutInflater
      */
@@ -100,6 +106,8 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
 
     fun buttonClickObservable(): Observable<TypedAction<Int>> = buttonClickSubject.hide()
 
+    fun itemClickObservable(): Observable<TypedAction<Int>> = itemClickSubject.hide()
+
     fun keyActionObservable(): Observable<KeyAction> = keySubject.hide()
 
     fun cancelCompletable(): Completable = cancelSubject.hide()
@@ -126,8 +134,9 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
 
     /** override if want to create own [AlertDialog.Builder]  */
     protected open fun createBuilder(args: Bundle): AlertDialog.Builder {
+        val context = requireContext()
         val styleResId = args.getInt(ARG_STYLE_RES_ID)
-        val builder = if (styleResId == 0) AlertDialog.Builder(requireContext()) else AlertDialog.Builder(requireContext(), styleResId)
+        val builder = if (styleResId == 0) AlertDialog.Builder(context) else AlertDialog.Builder(context, styleResId)
         builder.setTitle(args.getString(ARG_TITLE))
         if (args.containsKey(ARG_ICON_RES_ID)) {
             builder.setIcon(args.getInt(ARG_ICON_RES_ID))
@@ -140,6 +149,13 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             }
         } else {
             builder.setMessage(args.getString(ARG_MESSAGE))
+            val adapterData = args.getSerializable(ARG_ADAPTER_CONTENT) as StringAdapterData
+            builder.setAdapter(ArrayAdapter(context, adapterData.itemLayoutResId, adapterData.textResId, adapterData.messages)) { _, which ->
+                itemClickSubject.onNext(TypedAction(which))
+                if (adapterData.dismissOnClick) {
+                    dismiss()
+                }
+            }
         }
         if (args.containsKey(ARG_BUTTON_POSITIVE)) {
             builder.setPositiveButton(args.getString(ARG_BUTTON_POSITIVE), this)
@@ -157,94 +173,90 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
         return builder
     }
 
-    abstract class Builder<F : TypedDialogFragment<*>>() {
+    abstract class Builder<D: Dialog, F : TypedDialogFragment<D>>() {
 
-        protected var title: String? = null
-        protected var message: String? = null
+        protected var title: TextMessage? = null
+
+        protected var message: TextMessage? = null
+
         @StyleRes
         protected var styleResId = 0
+
         @DrawableRes
         protected var iconResId = 0
+
         @DrawableRes
         protected var backgroundResId = 0
+
         @LayoutRes
         protected var customViewResId = 0
-        protected var cancelable = true
-        protected var buttonPositive: String? = null
-        protected var buttonNeutral: String? = null
-        protected var buttonNegative: String? = null
 
-        fun setTitle(title: String?): Builder<*> {
+        protected var cancelable = true
+
+        protected var buttonPositive: TextMessage? = null
+        protected var buttonNeutral: TextMessage? = null
+        protected var buttonNegative: TextMessage? = null
+
+        protected var adapterContent: AdapterData? = null
+
+        fun setTitle(title: TextMessage?): Builder<D, F> {
             this.title = title
             return this
         }
 
-        fun setTitle(context: Context, @StringRes titleResId: Int): Builder<*> {
-            this.title = context.getString(titleResId)
-            return this
-        }
-
-        fun setMessage(message: String?): Builder<*> {
+        fun setMessage(message: TextMessage?): Builder<D, F> {
             this.message = message
             return this
         }
 
-        fun setMessage(context: Context, @StringRes messageResId: Int): Builder<*> {
-            this.message = context.getString(messageResId)
-            return this
-        }
-
-        fun setStyleResId(@StyleRes styleResId: Int): Builder<*> {
+        fun setStyleResId(@StyleRes styleResId: Int): Builder<D, F> {
             this.styleResId = styleResId
             return this
         }
 
-        fun setIconResId(@DrawableRes iconResId: Int): Builder<*> {
+        fun setIconResId(@DrawableRes iconResId: Int): Builder<D, F> {
             this.iconResId = iconResId
             return this
         }
 
-        fun setBackgroundResId(@DrawableRes backgroundResId: Int): Builder<*> {
+        fun setBackgroundResId(@DrawableRes backgroundResId: Int): Builder<D, F> {
             this.backgroundResId = backgroundResId
             return this
         }
 
-        fun setCustomView(@LayoutRes customViewResId: Int): Builder<*> {
+        fun setCustomView(@LayoutRes customViewResId: Int): Builder<D, F> {
             this.customViewResId = customViewResId
             return this
         }
 
-        fun setCancelable(cancelable: Boolean): Builder<*> {
+        fun setCancelable(cancelable: Boolean): Builder<D, F> {
             this.cancelable = cancelable
             return this
         }
 
-        fun setButtons(positive: String?, neutral: String?, negative: String?): Builder<*> {
+        fun setButtons(
+                positive: TextMessage? = null,
+                neutral: TextMessage? = null,
+                negative: TextMessage? = null
+        ): Builder<D, F> {
             buttonNegative = negative
             buttonNeutral = neutral
             buttonPositive = positive
             return this
         }
 
-        fun setButtons(
-                context: Context,
-                       @StringRes positiveResId: Int?,
-                @StringRes neutralResId: Int?,
-                @StringRes negativeResId: Int?
-        ): Builder<*> {
-            buttonPositive =  positiveResId?.let { context.getString(it) } ?: EMPTY_STRING
-            buttonNeutral =  neutralResId?.let { context.getString(it) } ?: EMPTY_STRING
-            buttonNegative = negativeResId?.let { context.getString(it) } ?: EMPTY_STRING
+        fun setAdapterData(adapterContent: AdapterData?): Builder<D, F> {
+            this.adapterContent = adapterContent
             return this
         }
 
-        protected open fun createArgs(): Bundle {
+        protected open fun createArgs(context: Context): Bundle {
             val args = Bundle()
-            if (title != null) {
-                args.putString(ARG_TITLE, title)
+            title?.let {
+                args.putCharSequence(ARG_TITLE, it.get(context))
             }
-            if (message != null) {
-                args.putString(ARG_MESSAGE, message)
+            message?.let {
+                args.putCharSequence(ARG_MESSAGE, it.get(context))
             }
             if (styleResId != 0) {
                 args.putInt(ARG_STYLE_RES_ID, styleResId)
@@ -258,20 +270,24 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             if (customViewResId != 0) {
                 args.putInt(ARG_CUSTOM_VIEW_RES_ID, customViewResId)
             }
-            if (buttonPositive != null) {
-                args.putString(ARG_BUTTON_POSITIVE, buttonPositive)
+            buttonPositive?.let {
+                args.putCharSequence(ARG_BUTTON_POSITIVE, it.get(context))
             }
-            if (buttonNeutral != null) {
-                args.putString(ARG_BUTTON_NEUTRAL, buttonNeutral)
+            buttonNeutral?.let {
+                args.putCharSequence(ARG_BUTTON_NEUTRAL, it.get(context))
             }
-            if (buttonNegative != null) {
-                args.putString(ARG_BUTTON_NEGATIVE, buttonNegative)
+            buttonNegative?.let {
+                args.putCharSequence(ARG_BUTTON_NEGATIVE, it.get(context))
+            }
+            adapterContent?.let {
+                args.putSerializable(ARG_ADAPTER_CONTENT,
+                        StringAdapterData(ArrayList(it.messages.map { msg -> msg.get(context).toString() }), it.itemLayoutResId, it.textResId, it.dismissOnClick))
             }
             args.putBoolean(ARG_CANCELABLE, cancelable)
             return args
         }
 
-        abstract fun build(): F
+        abstract fun build(context: Context): F
     }
 
     data class KeyAction(
@@ -279,10 +295,28 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
             val event: KeyEvent?
     )
 
-    class DefaultTypedDialogBuilder : Builder<TypedDialogFragment<AlertDialog>>() {
+    data class AdapterData(
+            val messages: List<TextMessage>,
+            @LayoutRes
+            val itemLayoutResId: Int,
+            @IdRes
+            val textResId: Int,
+            val dismissOnClick: Boolean = false
+    )
 
-        override fun build(): TypedDialogFragment<AlertDialog> {
-            return newInstance(createArgs())
+    private data class StringAdapterData(
+            val messages: ArrayList<String>,
+            @LayoutRes
+            val itemLayoutResId: Int,
+            @IdRes
+            val textResId: Int,
+            val dismissOnClick: Boolean = false
+    ) : Serializable
+
+    class DefaultTypedDialogBuilder : Builder<AlertDialog, TypedDialogFragment<AlertDialog>>() {
+
+        override fun build(context: Context): TypedDialogFragment<AlertDialog> {
+            return newInstance(createArgs(context))
         }
     }
 

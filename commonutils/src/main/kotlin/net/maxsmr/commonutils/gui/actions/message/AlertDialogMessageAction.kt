@@ -5,7 +5,7 @@ import android.content.DialogInterface
 import androidx.annotation.StringRes
 import androidx.appcompat.app.AlertDialog
 
-@Deprecated("use DialogFragmentShowMessageAction")
+@Deprecated(message = "", replaceWith = ReplaceWith("DialogBuilderFragmentShowMessageAction"))
 data class AlertDialogMessageAction(
         @StringRes
         val titleResId: Int = 0,

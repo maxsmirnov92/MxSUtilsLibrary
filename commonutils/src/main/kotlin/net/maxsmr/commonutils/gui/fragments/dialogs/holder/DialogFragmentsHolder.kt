@@ -14,6 +14,7 @@ import androidx.lifecycle.OnLifecycleEvent
 import io.reactivex.*
 import io.reactivex.functions.Predicate
 import io.reactivex.subjects.BehaviorSubject
+import net.maxsmr.commonutils.asContext
 import net.maxsmr.commonutils.gui.actions.EmptyAction
 import net.maxsmr.commonutils.gui.actions.TypedAction
 import net.maxsmr.commonutils.gui.fragments.dialogs.TypedDialogFragment
@@ -52,6 +53,8 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     val isAnyFragmentShowing: Boolean get() = showingFragmentsCount > 0
 
     val isCommitAllowed get() = !RESTRICTED_STATES.contains(lastLifecycleEvent)
+
+    val currentContext get() = currentOwner?.asContext()
 
     /**
      * Active DialogFragments, added to specified [FragmentManager]
@@ -115,6 +118,9 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             }
         }
 
+    var currentOwner: LifecycleOwner? = null
+        private set
+
     private var lastLifecycleEvent = Lifecycle.Event.ON_ANY
         private set(value) {
             if (field != value) {
@@ -128,7 +134,6 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             }
         }
 
-    private var currentOwner: LifecycleOwner? = null
 
     private var fragmentManager: FragmentManager? = null
         set(value) {
@@ -322,6 +327,32 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
                     }
             ) {
                 it.buttonClickObservable()
+            }
+
+    fun itemClickLiveEvents(
+            tag: String? = null,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED
+    ): LiveObservable<TypedAction<Int>> = itemClickLiveEvents(tag, TypedDialogFragment::class.java, observingState)
+
+    /**
+     * Подписка на клики по элементам в адаптере диалога
+     *
+     * @param tag тэг, с которым был стартован диалог
+     * @param buttons типы кнопок, за которыми наблюдаем (см. [android.content.DialogInterface]), или
+     * пустой список, если наблюдаем за всеми
+     */
+    @JvmOverloads
+    fun itemClickLiveEvents(
+            tag: String? = null,
+            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            observingState: Lifecycle.State? = Lifecycle.State.STARTED
+    ): LiveObservable<TypedAction<Int>> =
+            eventsLiveObservable(
+                    tag,
+                    clazz,
+                    observingState
+            ) {
+                it.itemClickObservable()
             }
 
     @JvmOverloads

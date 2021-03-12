@@ -4,7 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.view.View
 import android.widget.Toast
-import net.maxsmr.commonutils.text.EMPTY_STRING
+import net.maxsmr.commonutils.gui.actions.message.text.TextMessage
 
 /**
  * Действие для показа тоста
@@ -24,12 +24,13 @@ data class ToastBuilderMessageAction(
         message.cancel()
     }
 
-    class Builder(
-            val message: CharSequence = EMPTY_STRING,
-            val messageResId: Int = 0,
+    data class Builder(
+            val message: TextMessage? = null,
             val gravity: Int? = null,
             val xOffset: Int = 0,
             val yOffset: Int = 0,
+            val horizontalMargin: Float? = null,
+            val verticalMargin: Float? = null,
             val duration: Int = Toast.LENGTH_SHORT,
             val customView: View? = null
     ) {
@@ -42,11 +43,7 @@ data class ToastBuilderMessageAction(
                 duration = Toast.LENGTH_SHORT
             }
             if (customView == null) {
-                val message = if (messageResId != 0) {
-                    context.getString(messageResId)
-                } else {
-                    message
-                }
+                val message = message?.get(context) ?: throw IllegalStateException("message not specified")
                 toast = Toast.makeText(context, message, duration)
             } else {
                 toast = Toast(context)
@@ -55,6 +52,9 @@ data class ToastBuilderMessageAction(
             }
             gravity?.let {
                 toast.setGravity(gravity, xOffset, yOffset)
+            }
+            if (horizontalMargin != null && verticalMargin != null) {
+                toast.setMargin(horizontalMargin, verticalMargin)
             }
             return toast
         }

@@ -1,6 +1,7 @@
 package net.maxsmr.commonutils.gui.fragments.dialogs
 
 import android.app.Dialog
+import android.content.Context
 import android.os.Bundle
 import android.widget.ProgressBar
 import android.widget.TextView
@@ -42,10 +43,10 @@ abstract class BaseProgressDialogFragment<D : Dialog> : TypedDialogFragment<D>()
             protected val progressBarId: Int = 0,
             @IdRes
             protected val loadingMessageViewId: Int = 0
-    ) : TypedDialogFragment.Builder<F>() {
+    ) : TypedDialogFragment.Builder<D, F>() {
 
-        override fun createArgs(): Bundle {
-            return super.createArgs().apply {
+        override fun createArgs(context: Context): Bundle {
+            return super.createArgs(context).apply {
                 if (progressBarId != 0) {
                     putInt(ARG_PROGRESS_BAR_ID, progressBarId)
                 }
