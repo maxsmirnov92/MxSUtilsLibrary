@@ -108,7 +108,7 @@ open class TextMessage internal constructor(
         override fun get(context: Context): String = context.getString(value)
     }
 
-    private data class CharSequenceArg(val value: CharSequence) : Arg<CharSequence> {
+    data class CharSequenceArg(val value: CharSequence) : Arg<CharSequence> {
         override fun get(context: Context): CharSequence = value
     }
 

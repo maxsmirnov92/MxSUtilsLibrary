@@ -159,15 +159,13 @@ fun <E : JsonElement> getJsonElementAs(jsonElement: JsonElement?, clazz: Class<E
     var result: E? = null
     if (jsonElement != null) {
         when {
-            jsonElement is JsonNull && JsonNull::class.java.isAssignableFrom(clazz) ->
+            jsonElement is JsonNull && clazz.isAssignableFrom(JsonNull::class.java) ->
                 result = jsonElement as E
-            jsonElement is JsonPrimitive && JsonPrimitive::class.java.isAssignableFrom(clazz) ->
+            jsonElement is JsonPrimitive && clazz.isAssignableFrom(JsonPrimitive::class.java) ->
                 result = jsonElement as E
-            jsonElement is JsonObject && JsonObject::class.java.isAssignableFrom(clazz) ->
+            jsonElement is JsonObject && clazz.isAssignableFrom(JsonObject::class.java) ->
                 result = jsonElement as E
-            jsonElement is JsonArray && JsonArray::class.java.isAssignableFrom(clazz) ->
-                result = jsonElement as E
-            JsonElement::class.java.isAssignableFrom(clazz) ->
+            jsonElement is JsonArray && clazz.isAssignableFrom(JsonArray::class.java) ->
                 result = jsonElement as E
         }
     }

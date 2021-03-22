@@ -16,7 +16,7 @@ class PropertyBasedAdapter<T: Any> : JsonSerializer<T>, JsonDeserializer<T> {
         val jsonElement = context.serialize(src, src.javaClass)
         val obj = JsonObject()
         obj.add(KEY_SOURCE, jsonElement)
-        obj.addProperty(KEY_CLASS_META, src.javaClass.canonicalName)
+        obj.addProperty(KEY_CLASS_META, src.javaClass.name)
         return obj
     }
 
@@ -24,8 +24,7 @@ class PropertyBasedAdapter<T: Any> : JsonSerializer<T>, JsonDeserializer<T> {
     override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): T {
         val className: String? = getJsonPrimitive(json, KEY_CLASS_META, String::class.java)
         className?.let  {
-            val clz: Class<*>
-            clz = try {
+            val clz: Class<*> = try {
                 Class.forName(className)
             } catch (e: ClassNotFoundException) {
                 throw JsonParseException(e)
