@@ -5,11 +5,11 @@ package net.maxsmr.commonutils
 import com.google.gson.*
 import com.google.gson.internal.LazilyParsedNumber
 import com.google.gson.reflect.TypeToken
-import net.maxsmr.commonutils.text.EMPTY_STRING
-import net.maxsmr.commonutils.text.isEmpty
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
+import net.maxsmr.commonutils.text.EMPTY_STRING
+import net.maxsmr.commonutils.text.isEmpty
 import java.lang.reflect.Type
 import java.util.*
 
@@ -69,7 +69,7 @@ fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, type: Type): T? {
  * в строку, используя [gson]
  */
 @JvmOverloads
-fun <T: Any> toJsonString(
+fun <T : Any> toJsonString(
         gson: Gson,
         obj: T,
         type: Type = obj.javaClass
@@ -86,7 +86,7 @@ fun <T: Any> toJsonString(
  * Преобразует коллекцию объектов [listOfObjects] указанного типа [T]
  * в маппинг: объект - json-строка, используя [gson]
  */
-fun <T: Any> toJsonStringMap(
+fun <T : Any> toJsonStringMap(
         gson: Gson,
         listOfObjects: Collection<T>?,
         type: Type
@@ -98,6 +98,28 @@ fun <T: Any> toJsonStringMap(
         }
     }
     return result
+}
+
+fun isJsonFieldNull(jsonObject: JsonObject, memberName: String?): Boolean {
+    val element = getJsonElementAs(jsonObject[memberName], JsonElement::class.java)
+    return element == null || element.isJsonNull
+}
+
+fun <J : JsonElement?> toJsonElement(string: String?, clazz: Class<J>
+): J? {
+    var element: JsonElement? = null
+    if (!isEmpty(string)) {
+        try {
+            element = JsonParser.parseString(string)
+        } catch (e: JsonParseException) {
+            logException(logger, e, "parse")
+        }
+    }
+    return if (element != null && clazz.isInstance(element)) {
+        element as J
+    } else {
+        null
+    }
 }
 
 fun <P : Number?> getPrimitiveNumber(obj: Any?, clazz: Class<P>): P? {
@@ -192,21 +214,23 @@ fun <V> getJsonPrimitive(jsonElement: JsonElement?, memberName: String?, clazz: 
     return getJsonPrimitiveAs(getJsonElement(jsonElement, memberName, JsonPrimitive::class.java), clazz, defaultValue)
 }
 
-fun <J : JsonElement?> asJsonElement(string: String?, clazz: Class<J>
-): J? {
-    var element: JsonElement? = null
-    if (!isEmpty(string)) {
-        try {
-            element = JsonParser.parseString(string)
-        } catch (e: JsonParseException) {
-            logException(logger, e, "parse")
+@JvmOverloads
+fun <V> getJsonPrimitiveFromObject(jsonObject: JsonObject?, memberName: String?, clazz: Class<V>, defaultValue: V? = null): V? {
+    return jsonObject?.let {  getJsonPrimitiveAs(getJsonElementAs(jsonObject.get(memberName), JsonPrimitive::class.java), clazz, defaultValue) }
+}
+
+@JvmOverloads
+fun <V> getFromJsonArray(array: JsonArray?, parcel: JsonParcelArray<V>, nonNull: Boolean = false): List<V?> {
+    val result = mutableListOf<V?>()
+    array?.let {
+        for (i in 0 until array.size()) {
+            val item = parcel.fromJsonArray(array, i)
+            if (!nonNull || item != null) {
+                result.add(item)
+            }
         }
     }
-    return if (element != null && clazz.isInstance(element)) {
-        element as J
-    } else {
-        null
-    }
+    return result
 }
 
 fun JsonObject.mergeJsonObject(fromAnother: JsonObject) {
@@ -218,5 +242,19 @@ fun JsonObject.mergeJsonObject(fromAnother: JsonObject) {
 fun JsonArray.mergeJsonArray(fromAnother: JsonArray) {
     for (i in 0 until fromAnother.size()) {
         add(fromAnother.get(i))
+    }
+}
+
+interface JsonParcelArray<T> {
+
+    fun fromJsonArray(jsonArray: JsonArray?, index: Int): T?
+}
+
+abstract class JsonParcelArrayObjects<T>: JsonParcelArray<T> {
+
+    abstract fun fromJsonObject(jsonObj: JsonObject?): T?
+
+    override fun fromJsonArray(jsonArray: JsonArray?, index: Int): T? {
+        return jsonArray?.let { fromJsonObject(getJsonElementAs(jsonArray.get(index), JsonObject::class.java)) }
     }
 }

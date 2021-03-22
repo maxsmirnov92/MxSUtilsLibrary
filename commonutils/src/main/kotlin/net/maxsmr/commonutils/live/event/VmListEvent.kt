@@ -96,18 +96,22 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
             emptyMap()
         }
         when (options.unique) {
-            UniqueStrategy.IGNORE -> {
+            UniqueStrategy.Ignore -> {
                 if (existingItems.isNotEmpty()) {
                     return
                 }
             }
-            UniqueStrategy.REPLACE -> {
+            UniqueStrategy.Replace -> {
                 existingItems.forEach {
                     list.removeAt(it.key)
                 }
             }
+            is UniqueStrategy.Custom -> {
+                @Suppress("UNCHECKED_CAST")
+                options.unique.lambda(list as List<ItemInfo<BaseViewModelAction<*>>>)
+            }
             else -> {
-                // не меняем
+            // не меняем
             }
         }
         list.add(ItemInfo(value, options.tag, options.priority.value, options.checkSingle))
@@ -179,7 +183,7 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
     data class AddOptions @JvmOverloads constructor(
             val tag: String = EMPTY_STRING,
             val priority: Priority = Priority.NORMAL,
-            val unique: UniqueStrategy = UniqueStrategy.NONE,
+            val unique: UniqueStrategy = UniqueStrategy.None,
             val checkSingle: Boolean = true
     ) {
 
@@ -205,21 +209,26 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
         val timestamp: Long = System.currentTimeMillis()
     }
 
-    enum class UniqueStrategy {
+    sealed class UniqueStrategy {
         /**
          * Сообщение не уникально (может быть более 1 сообщения с одинаковым тэгом в очереди)
          */
-        NONE,
+        object None: UniqueStrategy()
 
         /**
          * Добавляемое сообщение не добавляется, если в очереди уже есть сообщение с таким же тегом
          */
-        IGNORE,
+        object Ignore: UniqueStrategy()
 
         /**
          * Добавляемое сообщение заменяет все добавленные в очередь ранее с таким же тегом
          */
-        REPLACE
+        object Replace: UniqueStrategy()
+
+        /**
+         * Решение о попадании сообщения в очередь принимается в [lambda]
+         */
+        class Custom(val lambda: (List<ItemInfo<BaseViewModelAction<*>>>) -> Boolean): UniqueStrategy()
     }
 
     private class ItemComparator: BaseOptionalComparator<ItemComparator.SortOption, ItemInfo<*>>(

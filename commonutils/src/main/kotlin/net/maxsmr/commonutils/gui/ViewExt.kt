@@ -283,64 +283,67 @@ fun TextView.appendClickableImageTextView(
         spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
         clickFunc: () -> Unit = {}
 ): CharSequence =
-        appendClickableImage(context, text, drawableResId, spanFlags, clickFunc)
+        text.appendClickableImage(context, drawableResId, spanFlags, clickFunc)
 
 
 /**
  * Убрать нижнее подчеркивание для текущего text
  */
 fun TextView.removeUnderlineTextView(): CharSequence =
-        setTextWithMovementMethod(removeUnderline(this.text))
+        setTextWithMovementMethod(text.removeUnderline(false))
+
+fun TextView.setHtmlText(@StringRes resId: Int) =
+        setHtmlText(resources.getString(resId))
 
 /**
  * Установить html текст в TextView
  */
 fun TextView.setHtmlText(text: CharSequence): CharSequence =
-        setTextWithMovementMethod(parseHtmlToSpannedString(text))
+        setTextWithMovementMethod(text.parseHtmlToSpannedString())
 
-
-fun TextView.setHtmlText(@StringRes resId: Int) =
-        setHtmlText(resources.getString(resId))
 
 @JvmOverloads
-fun TextView.setLinkFromHtml(@StringRes htmlLinkResId: Int, removeUnderlying: Boolean = true) =
-        setLinkFromHtml(resources.getString(htmlLinkResId), removeUnderlying)
+fun TextView.setLinkFromHtml(@StringRes htmlLinkResId: Int, removeUnderline: Boolean = true) =
+        setLinkFromHtml(resources.getString(htmlLinkResId), removeUnderline)
 
 /**
  * Установить ссылку из html-текста
  */
 @JvmOverloads
-fun TextView.setLinkFromHtml(htmlLink: String, removeUnderlying: Boolean = true): CharSequence {
-    val result = setHtmlText(htmlLink)
-    if (removeUnderlying) {
-        removeUnderlineTextView()
-    }
-    return result
+fun TextView.setLinkFromHtml(htmlLink: String, removeUnderline: Boolean = true): CharSequence = if (removeUnderline) {
+    setTextWithMovementMethod(htmlLink.removeUnderline(true))
+} else {
+    setHtmlText(htmlLink)
 }
 
 /**
- * Установить кликабельный span
- * с кастомным действием при нажатии
+ * Установить [text] с заданными настройками [spanInfo]
  */
-fun TextView.setTextWithCustomSpan(text: CharSequence, spanInfos: Collection<SpanInfo>): CharSequence =
-        setTextWithMovementMethod(createCustomSpanText(text, spanInfos))
+fun TextView.setSpanText(
+        text: CharSequence,
+        vararg spanInfo: IRangeSpanInfo
+): CharSequence =
+        setTextWithMovementMethod(text.createSpanText(*spanInfo))
 
 /**
  * @param text в строке аргументы с префиксами "^" будут заменены на [CharacterStyle]
- * @param spanInfosMap маппинг информации о [Spannable] + link для перехода по клику по нему
+ * @param spanInfoMap маппинг информации о [Spannable] + link для перехода по клику по нему
+ * (range в каждом [ISpanInfo] задействован не будет)
  */
-fun TextView.setTextWithCustomSpanExpanded(text: CharSequence, spanInfosMap: Map<SpanInfo, String>): CharSequence =
-        setTextWithMovementMethod(createCustomSpanTextExpanded(text, spanInfosMap))
-
+fun TextView.setSpanTextExpanded(
+        text: CharSequence,
+        spanInfoMap: Map<ISpanInfo, String>
+): CharSequence =
+        setTextWithMovementMethod(text.createSpanTextExpanded(spanInfoMap))
 
 /**
  * Альтернатива [setLinkFromHtml], в котором в кач-ве [text]
- * вместо html-разметки обычный текст с кликабельной ссылкой
- * в указанном диапазоне
- * @param spanInfosMap маппинг информации о [Spannable] + link для перехода по клику по нему
+ * вместо html-разметки обычный текст с кликабельными ссылкоми
+ * в указанных диапазонах
+ * @param spanInfoMap маппинг информации о [Spannable] + link для перехода по клику по нему
  */
-fun TextView.setLinkableText(text: CharSequence, spanInfosMap: Map<SpanInfo, String>): CharSequence =
-        setTextWithMovementMethod(createLinkableText(text, spanInfosMap))
+fun TextView.setLinkableText(text: CharSequence, spanInfoMap: Map<IRangeSpanInfo, String>): CharSequence =
+        setTextWithMovementMethod(text.createLinkableText(spanInfoMap))
 
 /**
  * Выставить [html] в кач-ве html текста, но для кликабельных сегментов оповещать о клике
@@ -348,10 +351,12 @@ fun TextView.setLinkableText(text: CharSequence, spanInfosMap: Map<SpanInfo, Str
 @JvmOverloads
 fun TextView.replaceUrlSpans(
         html: String,
-        removeUnderlying: Boolean = true,
+        parseHtml: Boolean,
+        isUnderlineText: Boolean = false,
         action: ((URLSpan) -> Boolean)? = null
-): CharSequence =
-        setTextWithMovementMethod(replaceUrlSpansByClickableSpans(context, html, removeUnderlying, action))
+): CharSequence = setTextWithMovementMethod(
+        html.replaceUrlSpansByClickableSpans(context, parseHtml, isUnderlineText, action)
+)
 
 /**
  * Установить текст с выделенным текстом
@@ -366,7 +371,7 @@ fun TextView.setTextWithSelection(
         selection: String,
         spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
 ) {
-    setTextWithMovementMethod(createSelectedText(text, highlightColor, selection, spanFlags))
+    setTextWithMovementMethod(text.createSelectedText(highlightColor, selection, spanFlags))
 }
 
 @JvmOverloads

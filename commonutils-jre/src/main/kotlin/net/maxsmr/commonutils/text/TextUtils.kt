@@ -13,6 +13,8 @@ import java.util.*
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("TextUtils")
 
+// TODO переделать на extensions
+
 // region: Copied from TextUtils
 fun join(delimiter: CharSequence, tokens: Array<Any?>): String =
         join(delimiter, tokens.toList())
@@ -59,14 +61,24 @@ fun getStubValueWithAppend(value: Int, appendWhat: String?, stringsProvider: () 
 fun getStubValueWithAppend(value: String?, appendWhat: String?, stringsProvider: () -> String): String? =
         if (!isEmpty(value)) if (!isEmpty(appendWhat)) "$value $appendWhat" else value else stringsProvider.invoke()
 
-fun changeCaseFirstLatter(s: CharSequence?, upper: Boolean): String {
+/**
+ * Приводит первый символ к верхнему или нижнему регистру, а оставшиеся - не меняет
+ *
+ * @param s исходная строка
+ * @return строка с большой буквы
+ */
+fun changeCaseFirstChar(s: CharSequence?, isUpper: Boolean): String {
+
+    fun String.changeCase() =
+            if (isUpper) toUpperCase(Locale.getDefault()) else toLowerCase(Locale.getDefault())
+
     var result = EMPTY_STRING
     if (s != null && !isEmpty(s)) {
         result = s.toString()
         result = if (s.length == 1) {
-            if (upper) result.toUpperCase(Locale.getDefault()) else result.toLowerCase(Locale.getDefault())
+            result.changeCase()
         } else {
-            ((if (upper) result.substring(0, 1).toUpperCase(Locale.getDefault()) else result.substring(0, 1).toLowerCase(Locale.getDefault()))
+            (result.substring(0, 1).changeCase()
                     + result.substring(1))
         }
     }
@@ -76,22 +88,6 @@ fun changeCaseFirstLatter(s: CharSequence?, upper: Boolean): String {
 fun insertAt(target: CharSequence, index: Int, what: CharSequence): String {
     require(!(index < 0 || index >= target.length)) { "incorrect index: $index" }
     return target.toString().substring(0, index) + what + target.toString().substring(index, target.length)
-}
-
-/**
- * Приводит первый символ к верхнему регистру, а оставшиеся - к нижнему
- *
- * @param text исходная строка
- * @return строка с большой буквы
- */
-fun capFirstChar(text: String?): String {
-    var result = text ?: EMPTY_STRING
-    if (result.isNotEmpty()) {
-        result = result.toLowerCase(Locale.getDefault())
-        val firstChar = result.substring(0, 1)
-        result = firstChar.toUpperCase(Locale.getDefault()) + result.substring(1, result.length)
-    }
-    return result
 }
 
 fun indexOf(s: CharSequence, c: Char): Int {

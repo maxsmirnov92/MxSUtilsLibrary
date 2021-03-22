@@ -83,6 +83,17 @@ fun convertJSONObject(obj: Any?): JsonElement {
     return value
 }
 
+@Throws(JSONException::class)
+fun copyFields(source: JSONObject?, target: JSONObject?) {
+    if (target != null && source != null) {
+        val it = source.keys()
+        while (it.hasNext()) {
+            val key = it.next()
+            target.put(key, source[key])
+        }
+    }
+}
+
 /**
  * @return массив объектов T из JSONParcel, исходя из того, что в каждом индексе исходного array лежит JSONObject
  */

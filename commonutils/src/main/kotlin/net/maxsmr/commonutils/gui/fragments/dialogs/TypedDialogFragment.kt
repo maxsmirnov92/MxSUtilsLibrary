@@ -173,7 +173,7 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
         return builder
     }
 
-    abstract class Builder<D: Dialog, F : TypedDialogFragment<D>>() {
+    abstract class Builder<D : Dialog, F : TypedDialogFragment<D>>() {
 
         protected var title: TextMessage? = null
 
@@ -199,39 +199,32 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
 
         protected var adapterContent: AdapterData? = null
 
-        fun setTitle(title: TextMessage?): Builder<D, F> {
+        fun setTitle(title: TextMessage?): Builder<D, F> = apply {
             this.title = title
-            return this
         }
 
-        fun setMessage(message: TextMessage?): Builder<D, F> {
+        fun setMessage(message: TextMessage?): Builder<D, F> = apply {
             this.message = message
-            return this
         }
 
-        fun setStyleResId(@StyleRes styleResId: Int): Builder<D, F> {
+        fun setStyleResId(@StyleRes styleResId: Int): Builder<D, F> = apply {
             this.styleResId = styleResId
-            return this
         }
 
-        fun setIconResId(@DrawableRes iconResId: Int): Builder<D, F> {
+        fun setIconResId(@DrawableRes iconResId: Int): Builder<D, F> = apply {
             this.iconResId = iconResId
-            return this
         }
 
-        fun setBackgroundResId(@DrawableRes backgroundResId: Int): Builder<D, F> {
+        fun setBackgroundResId(@DrawableRes backgroundResId: Int): Builder<D, F> = apply {
             this.backgroundResId = backgroundResId
-            return this
         }
 
-        fun setCustomView(@LayoutRes customViewResId: Int): Builder<D, F> {
+        fun setCustomView(@LayoutRes customViewResId: Int): Builder<D, F> = apply {
             this.customViewResId = customViewResId
-            return this
         }
 
-        fun setCancelable(cancelable: Boolean): Builder<D, F> {
+        fun setCancelable(cancelable: Boolean): Builder<D, F> = apply {
             this.cancelable = cancelable
-            return this
         }
 
         fun setButtons(
