@@ -12,7 +12,9 @@ import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.util.*
 
 /**
- * Похожий по смыслу на [VmEvent], но с запоминанием очереди входящих ивентов
+ * Похожий по смыслу на [VmEvent],
+ * но с запоминанием упорядоченного списка действий,
+ * со вспомогательной опциями в [ItemInfo]
  */
 @MainThread
 class VmListEvent<A : BaseViewModelAction<*>>() {
@@ -41,7 +43,11 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
         return list.hashCode()
     }
 
-    fun getAll(remove: Boolean) = getAll(remove, null)
+    fun hasTag(tag: String, remove: Boolean) = getFirstByTag(tag, remove) != null
+
+    fun getFirstByTag(tag: String, remove: Boolean) = getAll(remove) {
+        it.tag == tag
+    }.firstOrNull()
 
     /**
      * @param remove нужно ли удалить вычитанный элемент из очереди
@@ -51,6 +57,7 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
         !it.isSingle
     }
 
+    @JvmOverloads
     fun getAll(remove: Boolean, predicate: ((ItemInfo<A>) -> Boolean)? = null): List<ItemInfo<A>> {
         val result = mutableListOf<ItemInfo<A>>()
         if (remove) {
