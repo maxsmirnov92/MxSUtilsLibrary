@@ -19,14 +19,18 @@ fun getUnformattedText(mask: Mask, text: CharSequence?): String =
         getText(mask, text, true)
 
 private fun getText(mask: Mask, text: CharSequence?, isUnformatted: Boolean): String {
-    val copyMask: Mask
-    if (mask is MaskImpl) {
-        copyMask = MaskImpl(mask)
-        copyMask.clear()
+    val copyMask: Mask = if (mask is MaskImpl) {
+        MaskImpl(mask).apply {
+            clear()
+        }
     } else {
-        copyMask = mask
+        mask
     }
-    copyMask.insertFront(text)
+    try {
+        copyMask.insertFront(text)
+    } catch (e: UnsupportedOperationException) {
+        return EMPTY_STRING
+    }
     return if (isUnformatted) copyMask.toUnformattedString() else copyMask.toString()
 }
 

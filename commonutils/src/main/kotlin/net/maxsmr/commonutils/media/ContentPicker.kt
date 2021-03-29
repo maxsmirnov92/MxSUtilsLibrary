@@ -176,7 +176,7 @@ class ContentPicker(
             val cameraFile = newCameraPictureFileFunc?.invoke()
                     ?: throw IllegalStateException("Camera picture file must be created for PickerConfigurator")
             val outputFileUri = with(cameraFile) {
-                localFileUri = Uri.fromFile(this)
+                localFileUri = this.toFileUri()
                 if (!TextUtils.isEmpty(fileProviderAuthorityPostfix)) {
                     // в манифесте аппа объявлен FileProvider
                     FileProvider.getUriForFile(context, "${context.packageName}.$fileProviderAuthorityPostfix", this)
@@ -220,9 +220,9 @@ class ContentPicker(
 
         override fun retrieveUriAfterPickContent(data: Intent?): Uri? {
             // getPath в данном случае это путь к файлу
-            val path = if (data != null && data.data != null) getPath(context, data.data) else EMPTY_STRING
+            val path = if (data != null && data.data != null) data.data.getPath(context) else EMPTY_STRING
             return if (path.isNotEmpty()) {
-                Uri.fromFile(File(path))
+                File(path).toFileUri()
             } else {
                 null
             }

@@ -160,7 +160,7 @@ fun readStringsFromAssetOrThrow(
         charsetName: String = CHARSET_DEFAULT
 ): List<String> {
     return try {
-        readStringsFromInputStreamOrThrow(openAssetStreamOrThrow(context, assetName), count, charsetName = charsetName)
+        openAssetStreamOrThrow(context, assetName).readStringsOrThrow(count, charsetName = charsetName)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "readStringsFromInputStream"), e)
     }
@@ -191,7 +191,7 @@ fun readStringsFromResOrThrow(
         charsetName: String = CHARSET_DEFAULT
 ): List<String> {
     return try {
-        readStringsFromInputStreamOrThrow(openRawResourceOrThrow(context, resId), count, charsetName = charsetName)
+        openRawResourceOrThrow(context, resId).readStringsOrThrow(count, charsetName = charsetName)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "readStringsFromInputStream"), e)
     }
@@ -228,7 +228,7 @@ fun copyFromAssetsOrThrow(
     }
     createFileOrThrow(targetFile.name, targetFile.parent, rewrite)
     try {
-        copyStreamOrThrow(openAssetStreamOrThrow(context, assetName), targetFile.openOutputStreamOrThrow(!rewrite), notifier, buffSize)
+        openAssetStreamOrThrow(context, assetName).copyStreamOrThrow(targetFile.openOutputStreamOrThrow(!rewrite), notifier, buffSize)
     } catch (e: IOException) {
         throwRuntimeException(e, "copyStream")
     }
@@ -268,10 +268,9 @@ fun copyFromRawResOrThrow(
     if (targetFile == null) {
         throw NullPointerException("targetFile is null")
     }
-    val targetFilePath = targetFile.absolutePath
     createFileOrThrow(targetFile.name, targetFile.parent, rewrite)
     try {
-        copyStreamOrThrow(openRawResourceOrThrow(context, resId), targetFile.openOutputStreamOrThrow(!rewrite), notifier, buffSize)
+        openRawResourceOrThrow(context, resId).copyStreamOrThrow(targetFile.openOutputStreamOrThrow(!rewrite), notifier, buffSize)
     } catch (e: IOException) {
         throwRuntimeException(e, "copyStream")
     }

@@ -24,8 +24,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
-import static net.maxsmr.commonutils.media.MediaUtilsKt.getTableName;
 import static net.maxsmr.commonutils.FileUtilsKt.checkDir;
+import static net.maxsmr.commonutils.media.UriExtKt.getTableName;
 import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.customcontentprovider.sqlite.providers.AbstractSQLiteTableProvider.Order.ASC;
 

@@ -3,22 +3,19 @@ package net.maxsmr.commonutils
 import android.content.ContentResolver
 import android.content.Context
 import android.net.Uri
-import net.maxsmr.commonutils.media.openInputStreamFromResourceOrThrow
-import net.maxsmr.commonutils.media.readBytesFromUri
+import net.maxsmr.commonutils.media.openInputStreamOrThrow
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.media.readBytes
 import java.io.File
 import java.security.MessageDigest
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("AndroidHashUtils")
 
 @JvmOverloads
-fun digest(
-        context: Context,
-        uri: Uri,
-        algorithm: String = ALGORITHM_DEFAULT
+fun Uri.digest(contentResolver: ContentResolver, algorithm: String = ALGORITHM_DEFAULT
 ): ByteArray? = try {
-    digestOrThrow(context, uri, algorithm)
+    digestOrThrow(contentResolver, algorithm)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
@@ -26,36 +23,24 @@ fun digest(
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun digestOrThrow(
-        context: Context,
-        uri: Uri,
-        algorithm: String = ALGORITHM_DEFAULT
-): ByteArray =
-        digestOrThrow(context, uri, digestSafe(algorithm))
+fun Uri.digestOrThrow(contentResolver: ContentResolver, algorithm: String = ALGORITHM_DEFAULT): ByteArray =
+        digestOrThrow(contentResolver, digestSafe(algorithm))
 
-fun digest(
-        context: Context,
-        uri: Uri?,
-        algorithm: MessageDigest
-): ByteArray? = try {
-    digestOrThrow(context, uri, algorithm)
+fun Uri.digest(contentResolver: ContentResolver, algorithm: MessageDigest): ByteArray? = try {
+    digestOrThrow(contentResolver, algorithm)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
 }
 
 @Throws(RuntimeException::class)
-fun digestOrThrow(
-        context: Context,
-        uri: Uri?,
-        algorithm: MessageDigest
-): ByteArray =
-        digestOrThrow(uri.openInputStreamFromResourceOrThrow(context), algorithm, true)
+fun Uri.digestOrThrow(contentResolver: ContentResolver, algorithm: MessageDigest): ByteArray =
+        digestOrThrow(openInputStreamOrThrow(contentResolver), algorithm, true)
 
 
-fun getCrc32Hash(contentResolver: ContentResolver, uri: Uri): Long =
-        getCrc32Hash(readBytesFromUri(contentResolver, uri))
+fun Uri.getCrc32Hash(contentResolver: ContentResolver): Long =
+        getCrc32Hash(readBytes(contentResolver))
 
-fun getCrc32Hash(file: File): Long =
-        getCrc32Hash(readBytesFromFile(file))
+fun File.getCrc32Hash(): Long =
+        getCrc32Hash(readBytesFromFile(this))
 

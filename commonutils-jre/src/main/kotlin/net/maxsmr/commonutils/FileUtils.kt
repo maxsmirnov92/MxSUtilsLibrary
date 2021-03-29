@@ -25,6 +25,8 @@ const val DEPTH_UNLIMITED = -1
 
 private val logger = getInstance().getLogger<BaseLogger>("FileUtils")
 
+// TODO convert to extensions?
+
 fun getEnvPathFiles(): Set<File> {
     val result = mutableSetOf<File>()
     val paths = (System.getenv("PATH") ?: EMPTY_STRING).split(":").toTypedArray()
@@ -689,7 +691,7 @@ fun readBytesFromFileOrThrow(
         throw RuntimeException("Invalid file: '$file'")
     }
     return try {
-        readBytesFromInputStreamOrThrow(file.openInputStreamOrThrow(), offset, length)
+        file.openInputStreamOrThrow().readBytesOrThrow(offset, length)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "readBytesFromInputStreamOrThrow"), e)
     }
@@ -718,7 +720,7 @@ fun readStringsFromFileOrThrow(
         throw RuntimeException("Incorrect file: '$file'")
     }
     return try {
-        readStringsFromInputStreamOrThrow(file.openInputStreamOrThrow(), count, charsetName = charsetName)
+        file.openInputStreamOrThrow().readStringsOrThrow(count, charsetName = charsetName)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "readStringsFromInputStream"), e)
     }
@@ -754,7 +756,7 @@ fun writeBytesToFileOrThrow(
         createFileOrThrow(file.name, file.parent, !append)
     }
     return try {
-        writeBytesToOutputStreamOrThrow(file.openOutputStreamOrThrow(append), data)
+        file.openOutputStreamOrThrow(append).writeBytesOrThrow(data)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "writeBytesToOutputStream"), e)
     }
@@ -794,7 +796,7 @@ fun writeStringsToFileOrThrow(
         throw RuntimeException(formatException(e, "create Writer"), e)
     }
     try {
-        writeStringToOutputStreamWriterOrThrow(writer, data)
+        writer.writeStringOrThrow(data)
     } catch (e: IOException) {
         throwRuntimeException(e, "writeStringToOutputStreamWriter")
     }
@@ -847,7 +849,7 @@ fun writeFromStreamToFileOrThrow(
     }
     val file: File = createFileOrThrow(targetFileName, parentPath, !append)
     try {
-        copyStreamOrThrow(inputStream, file.openOutputStreamOrThrow(append), notifier, buffSize)
+        inputStream.copyStreamOrThrow(file.openOutputStreamOrThrow(append), notifier, buffSize)
     } catch (e: IOException) {
         throwRuntimeException(e, "copyStream")
     }
@@ -880,7 +882,7 @@ fun writeToStreamFromFileOrThrow(
         throw NullPointerException("outputStreamv is null")
     }
     try {
-        copyStreamOrThrow(file.openInputStreamOrThrow(), outputStream, notifier, buffSize)
+        file.openInputStreamOrThrow().copyStreamOrThrow(outputStream, notifier, buffSize)
     } catch (e: IOException) {
         throwRuntimeException(e, "copyStream")
     }
@@ -1837,8 +1839,7 @@ fun unzipFileOrThrow(
         throw IllegalArgumentException("destPath is null or empty")
     }
     try {
-        unzipStreamOrThrow(
-                zipFile.openInputStreamOrThrow(),
+        zipFile.openInputStreamOrThrow().unzipStreamOrThrow(
                 saveDirHierarchy,
                 buffSize,
                 notifier,

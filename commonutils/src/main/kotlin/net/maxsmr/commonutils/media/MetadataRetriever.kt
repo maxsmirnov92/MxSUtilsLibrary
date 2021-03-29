@@ -217,7 +217,7 @@ fun <M> extractMetadataField(
  * @param contentUri must have scheme "content://"
  */
 fun extractAlbumArt(contentResolver: ContentResolver, contentUri: Uri?): Bitmap? {
-    val albumId = queryUriFirst(contentResolver, contentUri, Long::class.java, listOf(MediaStore.Audio.Media.ALBUM_ID))
+    val albumId = contentUri?.queryFirst(contentResolver, Long::class.java, listOf(MediaStore.Audio.Media.ALBUM_ID))
     if (albumId != null) {
         val coverUri = Uri.parse("content://media/external/audio/albumart")
         val trackCoverUri = ContentUris.withAppendedId(coverUri, albumId)

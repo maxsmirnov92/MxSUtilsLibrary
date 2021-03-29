@@ -5,8 +5,6 @@ import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
 import android.content.Context
-import android.content.res.Resources
-import android.database.Cursor
 import android.location.Location
 import android.media.MediaScannerConnection
 import android.net.Uri
@@ -14,11 +12,12 @@ import android.os.Build
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
-import android.provider.OpenableColumns
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.collection.ArraySet
+import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
 import net.maxsmr.commonutils.gui.getCorrectedDisplayRotation
 import net.maxsmr.commonutils.isAtLeastKitkat
@@ -43,6 +42,12 @@ const val ENV_SECONDARY_STORAGE = "SECONDARY_STORAGE"
 const val ENV_EXTERNAL_STORAGE = "EXTERNAL_STORAGE"
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("MediaUtils")
+
+fun getMimeType(fileName: String?) = MimeTypeMap.getSingleton().getMimeTypeFromExtension(getFileExtension(fileName))
+        ?: EMPTY_STRING
+
+fun getMimeType(file: File) = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension)
+        ?: EMPTY_STRING
 
 /**
  * @return true, если внешнее хранилище примонтировано
@@ -141,182 +146,19 @@ fun getMimeTypeFromFile(fileName: String?): String =
         MimeTypeMap.getSingleton().getMimeTypeFromExtension(getFileExtension(fileName))
                 ?: EMPTY_STRING
 
-@JvmOverloads
-fun isResourceExists(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        checkBySize: Boolean = true
-): Boolean = try {
-    isResourceExistsOrThrow(contentResolver, uri, checkBySize)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    false
-}
+fun File.toContentUri(context: Context): Uri =
+        FileProvider.getUriForFile(context, "${context.packageName}.provider", this)
 
-@Throws(RuntimeException::class)
-@JvmOverloads
-fun isResourceExistsOrThrow(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        checkBySize: Boolean = true
-): Boolean {
-    if (checkBySize) {
-        return getResourceSizeOrThrow(contentResolver, uri) > 0
-    }
-    if (uri == null) {
-        throw NullPointerException("uri is null")
-    }
-    val path = uri.path ?: throw RuntimeException("uri path is null")
-    when {
-        uri.isFileScheme() -> {
-            return isFileExistsOrThrow(path)
-        }
-        uri.isContentScheme() -> {
-            queryUriOrThrow(contentResolver, uri, checkCursorEmpty = false).count > 0
-        }
-        else -> {
-            throw RuntimeException("Incorrect uri scheme: ${uri.path}")
-        }
-    }
-    return false
-}
-
-fun getResourceSize(contentResolver: ContentResolver, uri: Uri?): Long = try {
-    getResourceSizeOrThrow(contentResolver, uri)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    0
-}
-
-@Throws(RuntimeException::class)
-fun getResourceSizeOrThrow(contentResolver: ContentResolver, uri: Uri?): Long {
-    if (uri == null) {
-        throw NullPointerException("uri is null")
-    }
-    val path = uri.path ?: throw RuntimeException("uri path is null")
-    return when {
-        uri.isFileScheme() -> {
-            getFileLengthOrThrow(path)
-        }
-        uri.isContentScheme() -> {
-            queryUriFirstOrThrow(
-                    contentResolver,
-                    uri,
-                    Long::class.java,
-                    listOf(OpenableColumns.SIZE)
-            )
-        }
-        else -> {
-            throw RuntimeException("Incorrect uri scheme: ${uri.path}")
-        }
-    }
-}
-
-fun getResourceName(contentResolver: ContentResolver, uri: Uri?): String = try {
-    getResourceNameOrThrow(contentResolver, uri)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    EMPTY_STRING
-}
-
-@Throws(RuntimeException::class)
-fun getResourceNameOrThrow(contentResolver: ContentResolver, uri: Uri?): String {
-    if (uri == null) {
-        throw NullPointerException("uri is null")
-    }
-    val path = uri.path ?: throw RuntimeException("uri path is null")
-    return when {
-        uri.isFileScheme() -> {
-            File(path).name
-        }
-        uri.isContentScheme() -> {
-            queryUriFirstOrThrow(
-                    contentResolver,
-                    uri,
-                    String::class.java,
-                    listOf(OpenableColumns.DISPLAY_NAME)
-            )
-        }
-        else -> {
-            throw RuntimeException("Incorrect uri scheme: ${uri.path}")
-        }
-    }
-}
-
-fun deleteResource(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        throwIfNotExists: Boolean = false
-) = try {
-    deleteResourceOrThrow(contentResolver, uri, throwIfNotExists)
-    true
-} catch (e: RuntimeException) {
-    logger.e(e)
-    false
-}
-
-@Throws(RuntimeException::class)
-@JvmOverloads
-fun deleteResourceOrThrow(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        throwIfNotExists: Boolean = false
-) {
-    if (uri == null) {
-        throw NullPointerException("uri is null")
-    }
-    if (!isResourceExistsOrThrow(contentResolver, uri, false)) {
-        if (throwIfNotExists) {
-            throw Resources.NotFoundException("Resource $uri not found")
-        }
-        return
-    }
-    when {
-        uri.isFileScheme() -> {
-            deleteFileOrThrow(File(uri.path as String))
-        }
-        uri.isContentScheme() -> {
-            contentResolver.delete(uri, null, null)
-        }
-        else -> {
-            throw RuntimeException("Incorrect uri scheme: ${uri.path}")
-        }
-    }
-}
-
-fun Uri?.openInputStreamFromResource(context: Context): InputStream? = try {
-    openInputStreamFromResourceOrThrow(context)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    null
-}
-
-@Throws(RuntimeException::class)
-fun Uri?.openInputStreamFromResourceOrThrow(context: Context): InputStream {
-    if (this == null) {
-        throw NullPointerException("uri is null")
-    }
-    val path = this.path ?: throw RuntimeException("uri path is null")
-    return when {
-        this.isFileScheme() -> {
-            File(path).openInputStreamOrThrow()
-        }
-        this.isContentScheme() -> {
-            openInputStreamOrThrow(context.contentResolver)
-        }
-        else -> throw RuntimeException("Incorrect uri scheme: ${this.scheme}")
-    }
-}
+fun File.toFileUri(): Uri = Uri.fromFile(this)
 
 @TargetApi(Build.VERSION_CODES.Q)
 @JvmOverloads
-fun copyToExternal(
+fun File.copyToExternal(
         contentResolver: ContentResolver,
-        file: File,
         mimeType: String,
         useRelativePath: Boolean = false
 ) = try {
-    copyToExternalOrThrow(contentResolver, file, mimeType, useRelativePath)
+    copyToExternalOrThrow(contentResolver, mimeType, useRelativePath)
     true
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -326,26 +168,22 @@ fun copyToExternal(
 @TargetApi(Build.VERSION_CODES.Q)
 @JvmOverloads
 @Throws(RuntimeException::class)
-fun copyToExternalOrThrow(
+fun File.copyToExternalOrThrow(
         contentResolver: ContentResolver,
-        file: File?,
         mimeType: String? = null,
         useRelativePath: Boolean = false,
         notifier: IStreamNotifier? = null,
         buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
-    if (file == null) {
-        throw NullPointerException("file is null")
-    }
     val values = ContentValues().apply {
         if (useRelativePath) {
-            file.parentFile?.name?.let {
+            parentFile?.name?.let {
                 put(MediaStore.Images.Media.RELATIVE_PATH, it)
             }
         }
-        put(MediaStore.Images.Media.DISPLAY_NAME, file.name)
+        put(MediaStore.Images.Media.DISPLAY_NAME, name)
         put(MediaStore.Images.Media.MIME_TYPE,
-                if (!mimeType.isNullOrEmpty()) mimeType else getMimeTypeFromFile(file))
+                if (!mimeType.isNullOrEmpty()) mimeType else getMimeType(this@copyToExternalOrThrow))
     }
 
     val targetUri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
@@ -353,18 +191,12 @@ fun copyToExternalOrThrow(
     contentResolver.insert(targetUri, values)?.let { item ->
         val out = item.openOutputStreamOrThrow(contentResolver)
         try {
-            copyStreamOrThrow(file.openInputStreamOrThrow(), out, notifier, buffSize)
+            openInputStreamOrThrow().copyStreamOrThrow(out, notifier, buffSize)
         } catch (e: IOException) {
             throwRuntimeException(e, "copyStream")
         }
     } ?: throw RuntimeException("Insert to $targetUri failed")
 }
-
-fun scanFile(
-        context: Context,
-        file: File?,
-        onScanCompletedListener: ((String, Uri) -> Unit)? = null
-) = scanFiles(context, if (file != null) listOf(file) else null, onScanCompletedListener)
 
 @JvmOverloads
 fun scanFiles(
@@ -390,21 +222,20 @@ fun scanFiles(
  * other file-based ContentProviders.
  *
  * @param context The context.
- * @param uri     The Uri to query.
  * @author paulburke
  */
 @Suppress("DEPRECATION")
 @TargetApi(Build.VERSION_CODES.KITKAT)
-fun getPath(context: Context, uri: Uri?): String {
-    if (uri == null) return EMPTY_STRING
+fun Uri?.getPath(context: Context): String {
+    if (this == null) return EMPTY_STRING
 
-    if (isAtLeastKitkat() && DocumentsContract.isDocumentUri(context, uri)) {
+    if (isAtLeastKitkat() && DocumentsContract.isDocumentUri(context, this)) {
 
         // content: and DocumentProvider
         when {
-            isExternalStorageDocument(uri) -> {
+            isExternalStorageDocument(this) -> {
                 // ExternalStorageProvider
-                val docId = DocumentsContract.getDocumentId(uri)
+                val docId = DocumentsContract.getDocumentId(this)
                 val split = docId.split(":").toTypedArray()
                 val fullPath: String = getPathFromExtSD(split)
                 return if (fullPath.isNotEmpty()) {
@@ -413,7 +244,7 @@ fun getPath(context: Context, uri: Uri?): String {
                     EMPTY_STRING
                 }
             }
-            isDownloadsDocument(uri) -> {
+            isDownloadsDocument(this) -> {
                 // DownloadsProvider
 
                 /**
@@ -434,13 +265,13 @@ fun getPath(context: Context, uri: Uri?): String {
 
                 if (isAtLeastMarshmallow()) {
 
-                    val fileName = getResourceName(context.contentResolver, uri)
+                    val fileName = this.name(context.contentResolver)
                     val path = Environment.getExternalStorageDirectory().toString() + "/Download/" + fileName
                     if (!TextUtils.isEmpty(path)) {
                         return path
                     }
 
-                    val documentTextId = DocumentsContract.getDocumentId(uri)
+                    val documentTextId = DocumentsContract.getDocumentId(this)
                     if (TextUtils.isEmpty(documentTextId)) {
                         return EMPTY_STRING
                     }
@@ -451,7 +282,7 @@ fun getPath(context: Context, uri: Uri?): String {
                     val documentId: Long = documentTextId.toLongOrNull()
                     //In Android 8 and later the id is not a number
                     // "msf:" == ContentResolver.open
-                            ?: return uri.replaceRawInPath()
+                            ?: return this.replaceRawInPath()
 
                     val contentUriPrefixesToTry = arrayOf(
                             "content://downloads/public_downloads",
@@ -462,7 +293,7 @@ fun getPath(context: Context, uri: Uri?): String {
 
                     contentUriPrefixesToTry.forEach { contentUriPrefix ->
                         val contentUri = ContentUris.withAppendedId(Uri.parse(contentUriPrefix), documentId)
-                        result = getDataColumn(context.contentResolver, contentUri, null, null)
+                        result = contentUri.getDataColumn(context.contentResolver, null, null)
                         if (result.isNotEmpty()) {
                             return@forEach
                         }
@@ -471,7 +302,7 @@ fun getPath(context: Context, uri: Uri?): String {
 
                 } else {
 
-                    val documentTextId = DocumentsContract.getDocumentId(uri)
+                    val documentTextId = DocumentsContract.getDocumentId(this)
                     if (TextUtils.isEmpty(documentTextId)) {
                         return EMPTY_STRING
                     }
@@ -483,15 +314,15 @@ fun getPath(context: Context, uri: Uri?): String {
                     val documentId: Long = documentTextId.toLongOrNull()
                     //In Android 8 and later the id is not a number
                     // "msf:" == ContentResolver.open
-                            ?: return uri.replaceRawInPath()
+                            ?: return this.replaceRawInPath()
 
                     val contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), documentId)
-                    return getDataColumn(context.contentResolver, contentUri)
+                    return contentUri.getDataColumn(context.contentResolver)
                 }
             }
-            isMediaDocument(uri) -> {
+            isMediaDocument(this) -> {
                 // MediaProvider
-                val docId = DocumentsContract.getDocumentId(uri)
+                val docId = DocumentsContract.getDocumentId(this)
                 val split = docId.split(":").toTypedArray()
                 val type = split[0]
                 var contentUri: Uri? = null
@@ -502,24 +333,25 @@ fun getPath(context: Context, uri: Uri?): String {
                 } else if ("audio" == type) {
                     contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
                 }
-                return getDataColumn(context.contentResolver, contentUri, "_id=?", listOf(split[1]))
+                return contentUri?.getDataColumn(context.contentResolver, "_id=?", listOf(split[1]))
+                        ?: EMPTY_STRING
             }
         }
-    } else if (uri.isContentScheme()) {
+    } else if (this.isContentScheme()) {
         // Return the remote address
-        return if (isGooglePhotosUri(uri)) {
-            val data = uri.lastPathSegment
+        return if (isGooglePhotosUri(this)) {
+            val data = this.lastPathSegment
             data ?: EMPTY_STRING
         } else {
             if (isAtLeastQ()) {
                 logger.e("Can't retrieve path because of version >= Q!")
                 EMPTY_STRING
             } else {
-                getDataColumn(context.contentResolver, uri)
+                this.getDataColumn(context.contentResolver)
             }
         }
-    } else if (uri.isFileScheme()) {
-        val data = uri.path
+    } else if (this.isFileScheme()) {
+        val data = this.path
         return data ?: EMPTY_STRING
     }
     return EMPTY_STRING
@@ -572,12 +404,11 @@ private fun getPathFromExtSD(pathData: Array<String>): String {
  * @return The value of the _data column, which is typically a file path.
  */
 @JvmOverloads
-fun getDataColumn(
+fun Uri.getDataColumn(
         contentResolver: ContentResolver,
-        uri: Uri?,
         selection: String? = null,
         selectionArgs: List<String>? = null
-): String = queryUriFirst(contentResolver, uri, String::class.java, listOf(MediaStore.Images.ImageColumns.DATA), selection, selectionArgs)
+): String = queryFirst(contentResolver, String::class.java, listOf(MediaStore.Images.ImageColumns.DATA), selection, selectionArgs)
         ?: EMPTY_STRING
 
 /**
@@ -709,6 +540,34 @@ fun convertLocationDoubleToString(value: Double): String {
     return result
 }
 
+fun File.getImageRotationAngle(): Int = try {
+    getImageRotationAngleOrThrow()
+} catch (e: RuntimeException) {
+    logger.e(e)
+    ExifInterface.ORIENTATION_UNDEFINED
+}
+
+@Throws(RuntimeException::class)
+fun File.getImageRotationAngleOrThrow(): Int =
+        createExifOrThrow(this).getRotationAngleOrThrow()
+
+fun Uri.getImageRotationAngle(contentResolver: ContentResolver): Int =
+        try {
+            getImageRotationAngleOrThrow(contentResolver)
+        } catch (e: RuntimeException) {
+            logger.e(e)
+            ExifInterface.ORIENTATION_UNDEFINED
+        }
+
+@Throws(RuntimeException::class)
+fun Uri.getImageRotationAngleOrThrow(contentResolver: ContentResolver): Int =
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            getOrientationFromMediaStoreOrThrow(contentResolver)
+        } else {
+            val inputStream = openInputStreamOrThrow(contentResolver)
+            createExifOrThrow(inputStream).getRotationAngleOrThrow()
+        }
+
 @Throws(RuntimeException::class)
 private fun createExifOrThrow(file: File?) =
         createExifOrThrow(file?.absolutePath)
@@ -741,9 +600,17 @@ private fun createExifOrThrow(stream: InputStream?): ExifInterface {
  * Определяет поворот картинки
  */
 @TargetApi(Build.VERSION_CODES.Q)
-fun getOrientationFromMediaStore(contentResolver: ContentResolver, imageUri: Uri?): Int? =
-        queryUriFirst(contentResolver,
-                imageUri,
+fun Uri.getOrientationFromMediaStore(contentResolver: ContentResolver): Int? = try {
+    getOrientationFromMediaStoreOrThrow(contentResolver)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+@TargetApi(Build.VERSION_CODES.Q)
+@Throws(RuntimeException::class)
+fun Uri.getOrientationFromMediaStoreOrThrow(contentResolver: ContentResolver): Int =
+        queryFirstOrThrow(contentResolver,
                 Int::class.java,
                 listOf(MediaStore.Images.ImageColumns.ORIENTATION))
 
@@ -761,7 +628,7 @@ fun getRotationAngleFromExifOrThrow(imageFile: File?): Int {
     }
     try {
         val exif = createExifOrThrow(imageFile)
-        return getRotationAngleFromExif(exif)
+        return exif.getRotationAngleOrThrow()
     } catch (e: Exception) {
         throw RuntimeException(formatException(e))
     }
@@ -781,14 +648,17 @@ fun getRotationAngleFromExifOrThrow(contentResolver: ContentResolver, imageUri: 
     }
     try {
         val exif = createExifOrThrow(imageUri.openInputStreamOrThrow(contentResolver))
-        return getRotationAngleFromExif(exif)
+        return exif.getRotationAngleOrThrow()
     } catch (e: Exception) {
         throw RuntimeException(formatException(e))
     }
 }
 
-private fun getRotationAngleFromExif(exif: ExifInterface): Int {
-    val orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, 1)
+@Throws(RuntimeException::class)
+private fun ExifInterface.getRotationAngleOrThrow(): Int {
+    val orientation = getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+    if (orientation == ExifInterface.ORIENTATION_UNDEFINED)
+        throw RuntimeException("Orientation undefined")
     return getRotationAngleByExifOrientation(orientation)
 }
 
@@ -900,7 +770,7 @@ fun getRotationAngleByExifOrientation(orientation: Int): Int {
         ExifInterface.ORIENTATION_ROTATE_90 -> 90
         ExifInterface.ORIENTATION_ROTATE_180 -> 180
         ExifInterface.ORIENTATION_ROTATE_270 -> 270
-        else -> 0
+        else -> ExifInterface.ORIENTATION_UNDEFINED
     }
 }
 
@@ -914,331 +784,6 @@ fun getExifOrientationByRotationAngle(degrees: Int): Int {
     }
     return orientation
 }
-
-@JvmOverloads
-fun <T> queryUriFirst(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        propertyType: Class<T>,
-        projection: List<String>? = null,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        columnIndexFunc: ((Cursor) -> Int)? = null
-): T? = try {
-    queryUriFirstOrThrow(contentResolver, uri, propertyType, projection, selection, selectionArgs, columnIndexFunc)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    null
-}
-
-@Throws(RuntimeException::class)
-@JvmOverloads
-fun <T> queryUriFirstOrThrow(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        columnType: Class<T>,
-        projection: List<String>? = null,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        columnIndexFunc: ((Cursor) -> Int)? = null
-): T {
-    if (uri == null) {
-        throw NullPointerException("uri is null")
-    }
-    queryUriOrThrow(contentResolver, uri, projection, selection, selectionArgs).use { cursor ->
-        if (cursor.position == -1) {
-            cursor.moveToFirst()
-        }
-        return cursor.getColumnValueOrThrow(columnType, columnIndexFunc)
-    }
-}
-
-@JvmOverloads
-fun <T : Any> queryUri(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        columnType: Class<T>,
-        projection: List<String>? = null,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        sortOrder: String? = null,
-        columnIndexFunc: ((Cursor) -> Int)? = null
-): List<T> = try {
-    queryUriOrThrow(contentResolver, uri, columnType, projection, selection, selectionArgs, sortOrder, columnIndexFunc)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    listOf()
-}
-
-@Throws(RuntimeException::class)
-@JvmOverloads
-fun <T : Any> queryUriOrThrow(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        columnType: Class<T>,
-        projection: List<String>? = null,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        sortOrder: String? = null,
-        columnIndexFunc: ((Cursor) -> Int)? = null
-): List<T> {
-    queryUriOrThrow(contentResolver, uri, projection, selection, selectionArgs, sortOrder).use { cursor ->
-        return cursor.mapToList {
-            cursor.getColumnValueOrThrow(columnType, columnIndexFunc)
-        }
-    }
-}
-
-@JvmOverloads
-fun queryUri(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        projection: List<String>? = null,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        sortOrder: String? = null,
-        checkCursorEmpty: Boolean = true
-): Cursor? = try {
-    queryUriOrThrow(contentResolver, uri, projection, selection, selectionArgs, sortOrder, checkCursorEmpty)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    null
-}
-
-@Throws(RuntimeException::class)
-@JvmOverloads
-fun queryUriOrThrow(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        projection: List<String>? = null,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        sortOrder: String? = null,
-        checkCursorEmpty: Boolean = true
-): Cursor {
-    if (uri == null) {
-        throw NullPointerException("uri is null")
-    }
-    if (!uri.isContentScheme()) throw IllegalArgumentException("uri is not content://")
-    val cursor = contentResolver.query(
-            uri,
-            projection?.toTypedArray() ?: arrayOf(),
-            selection,
-            selectionArgs?.toTypedArray() ?: arrayOf(),
-            sortOrder
-    )
-    if (cursor == null
-            || (if (checkCursorEmpty) !cursor.isNonEmpty() else !cursor.isValid())) {
-        throw RuntimeException("cursor is null or empty or closed")
-    }
-    return cursor
-}
-
-fun Uri?.isFileScheme(): Boolean {
-    if (this != null) {
-        val scheme = this.scheme
-        return isEmpty(scheme) || ContentResolver.SCHEME_FILE.equals(scheme, true)
-    }
-    return false
-}
-
-fun Uri?.isContentScheme(): Boolean {
-    if (this != null) {
-        return ContentResolver.SCHEME_CONTENT.equals(this.scheme, true)
-    }
-    return false
-}
-
-fun Uri?.getTableName(): String? {
-    return if (this != null && this.isContentScheme()) {
-        this.pathSegments[0]
-    } else null
-}
-
-fun Cursor?.isValid() = this != null && !this.isClosed
-
-fun Cursor?.isNonEmpty() = this != null && !this.isClosed && this.count > 0
-
-fun Uri?.openInputStream(resolver: ContentResolver): InputStream? = try {
-    openInputStreamOrThrow(resolver)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    null
-}
-
-@Throws(RuntimeException::class)
-fun Uri?.openInputStreamOrThrow(resolver: ContentResolver): InputStream {
-    if (this == null) {
-        throw NullPointerException("uri is null")
-    }
-    return try {
-        resolver.openInputStream(this)
-    } catch (e: IOException) {
-        throw RuntimeException(formatException(e, "openInputStream"), e)
-    } ?: throw NullPointerException("Cannot open InputStream on $this")
-}
-
-fun Uri?.openOutputStream(resolver: ContentResolver): OutputStream? = try {
-    openOutputStreamOrThrow(resolver)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    null
-}
-
-
-@Throws(RuntimeException::class)
-fun Uri?.openOutputStreamOrThrow(resolver: ContentResolver): OutputStream {
-    if (this == null) {
-        throw NullPointerException("uri is null")
-    }
-    return try {
-        resolver.openOutputStream(this)
-    } catch (e: IOException) {
-        throw RuntimeException(formatException(e, "openOutputStream"), e)
-    } ?: throw NullPointerException("Cannot open OutputStream on $this")
-}
-
-
-fun readBytesFromUri(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        offset: Int = 0,
-        length: Int = 0
-): ByteArray? = try {
-    readBytesFromUriOrThrow(contentResolver, uri, offset, length)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    null
-}
-
-@Throws(RuntimeException::class)
-fun readBytesFromUriOrThrow(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        offset: Int = 0,
-        length: Int = 0
-): ByteArray {
-    if (uri == null) {
-        throw NullPointerException("uri is null")
-    }
-    return try {
-        readBytesFromInputStreamOrThrow(
-                uri.openInputStreamOrThrow(contentResolver),
-                offset,
-                length
-        )
-    } catch (e: IOException) {
-        throw RuntimeException(formatException(e, "readBytesFromInputStreamOrThrow"), e)
-    }
-}
-
-fun readStringsFromUri(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        count: Int = 0,
-        charsetName: String = CHARSET_DEFAULT
-): List<String> = try {
-    readStringsFromUriOrThrow(contentResolver, uri, count, charsetName)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    emptyList()
-}
-
-@Throws(RuntimeException::class)
-@JvmOverloads
-fun readStringsFromUriOrThrow(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        count: Int = 0,
-        charsetName: String = CHARSET_DEFAULT
-): List<String> {
-    if (uri == null) {
-        throw NullPointerException("Incorrect uri: '$uri'")
-    }
-    return try {
-        readStringsFromInputStreamOrThrow(uri.openInputStreamOrThrow(contentResolver), count, charsetName = charsetName)
-    } catch (e: IOException) {
-        throw RuntimeException(formatException(e, "readStringsFromInputStream"), e)
-    }
-}
-
-fun writeBytesToUri(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        data: ByteArray?
-) = try {
-    writeBytesToUriOrThrow(contentResolver, uri, data)
-    true
-} catch (e: RuntimeException) {
-    logger.e(e)
-    false
-}
-
-@Throws(RuntimeException::class)
-fun writeBytesToUriOrThrow(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        data: ByteArray?
-) {
-    if (uri == null) {
-        throw NullPointerException("Incorrect uri: '$uri'")
-    }
-    if (data == null) {
-        throw NullPointerException("data is null")
-    }
-    return try {
-        writeBytesToOutputStreamOrThrow(uri.openOutputStreamOrThrow(contentResolver), data)
-    } catch (e: IOException) {
-        throw RuntimeException(formatException(e, "writeBytesToOutputStream"), e)
-    }
-}
-
-fun writeStringsToUri(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        data: Collection<String>?,
-) = try {
-    writeStringsToUriOrThrow(contentResolver, uri, data)
-    true
-} catch (e: RuntimeException) {
-    logger.e(e)
-    false
-}
-
-@Throws(RuntimeException::class)
-fun writeStringsToUriOrThrow(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        data: Collection<String>?,
-) {
-    if (uri == null) {
-        throw NullPointerException("Incorrect uri: '$uri'")
-    }
-    val outStreamWriter =
-            try {
-                OutputStreamWriter(uri.openOutputStreamOrThrow(contentResolver))
-            } catch (e: Throwable) {
-                throw RuntimeException(formatException(e, "create OutputStreamWriter"))
-            }
-    try {
-        writeStringToOutputStreamWriterOrThrow(outStreamWriter, data)
-    } catch (e: IOException) {
-        throwRuntimeException(e, "writeStringToOutputStreamWriter")
-    }
-}
-
-@JvmOverloads
-fun getBase64(
-        contentResolver: ContentResolver,
-        uri: Uri?,
-        charset: Charset = Charset.defaultCharset(),
-        flags: Int = Base64.DEFAULT
-): String = getBase64(
-        TextUtils.join(System.getProperty("line.separator") ?: "\\n",
-                readStringsFromUri(contentResolver, uri)),
-        charset,
-        flags
-)
 
 @JvmOverloads
 fun getBase64(

@@ -9,11 +9,10 @@ import android.provider.Settings
 import android.text.TextUtils
 import android.webkit.MimeTypeMap
 import androidx.annotation.RequiresApi
-import androidx.core.content.FileProvider
+import net.maxsmr.commonutils.media.toContentUri
+import net.maxsmr.commonutils.media.toFileUri
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.io.File
-
-const val PROVIDER_AUTHORITY_FORMAT = "%s.provider"
 
 @JvmOverloads
 fun wrapIntent(
@@ -60,21 +59,26 @@ fun getBrowseLinkIntent(url: String = EMPTY_STRING, withType: Boolean = true): I
     return result
 }
 
+/**
+ * Интент для открытия SAF (Storage Access Framework) пикера файлов. Открывает дефолтный UI для
+ * выбора файлов из любого доступного приложения (предоставляющего контент провайдер).
+ * Доступ к полученным таким образом файлам постоянный (можно хранить uri для долговременного использования)
+ */
 @RequiresApi(Build.VERSION_CODES.KITKAT)
-fun getOpenDocumentIntent(type: String?, mimeTypes: List<String>?): Intent {
-    with(Intent(Intent.ACTION_OPEN_DOCUMENT)) {
-        addCategory(Intent.CATEGORY_OPENABLE)
-        applyMimeTypes(type, mimeTypes)
-        return this
-    }
+fun getOpenDocumentIntent(type: String?, mimeTypes: List<String>?) = Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
+    addCategory(Intent.CATEGORY_OPENABLE)
+    applyMimeTypes(type, mimeTypes)
 }
 
+/**
+ * Интент для получения файла из стороннего приложения. Как правило открывает экран стороннего
+ * приложения для выбора файла (каждое стороннее приложение предоставляет UI для выбора файла).
+ * Доступ к полученным таким образом файлам может быть временным (т.е. например сохранять uri полученного
+ * таким образом файла для использования в дальнейшем - не лучшая идея)
+ */
 @RequiresApi(Build.VERSION_CODES.KITKAT)
-fun getContentIntent(type: String?, mimeTypes: List<String>?): Intent {
-    with(Intent(Intent.ACTION_GET_CONTENT)) {
-        applyMimeTypes(type, mimeTypes)
-        return this
-    }
+fun getContentIntent(type: String?, mimeTypes: List<String>?)= Intent(Intent.ACTION_GET_CONTENT).apply {
+    applyMimeTypes(type, mimeTypes)
 }
 
 @RequiresApi(Build.VERSION_CODES.KITKAT)
@@ -160,11 +164,9 @@ private fun getFileUriAndType(
     }
 
     val fileUri = if (shouldUseFileProvider) {
-        FileProvider.getUriForFile(context,
-                String.format(PROVIDER_AUTHORITY_FORMAT, context.packageName),
-                file)
+        file.toContentUri(context)
     } else {
-        Uri.fromFile(file)
+        file.toFileUri()
     }
 
     val ext = getFileExtension(file)
