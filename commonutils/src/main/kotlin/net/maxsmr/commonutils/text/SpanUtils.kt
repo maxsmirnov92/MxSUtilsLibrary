@@ -10,36 +10,6 @@ import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import net.maxsmr.commonutils.*
 
-/**
- * Попытка привести html к Spanned строке с форматированием из html
- */
-@Throws(Exception::class)
-fun CharSequence.parseHtmlToSpannedStringOrThrow(): Spanned =
-        toString().replace("\n", "<br/>")
-                .let {
-                    if (isAtLeastNougat()) {
-                        @Suppress("NewApi")
-                        Html.fromHtml(it, Html.FROM_HTML_MODE_COMPACT)
-                    } else {
-                        @Suppress("DEPRECATION")
-                        Html.fromHtml(it)
-                    }
-                }
-
-
-fun CharSequence.parseHtmlToSpannedString(): CharSequence =
-        try {
-            parseHtmlToSpannedStringOrThrow()
-        } catch (e: Throwable) {
-            this
-        }
-
-/**
- * Попытка привести html к строке с потерей части форматирования.
- */
-fun String.createClearedHtml(): String =
-        parseHtmlToSpannedString().toString()
-
 fun CharSequence.createSpanText(vararg spanInfo: IRangeSpanInfo): CharSequence {
     if (this.isEmpty() || spanInfo.isEmpty()) return this
     return SpannableString(this).apply {

@@ -292,15 +292,22 @@ fun TextView.appendClickableImageTextView(
 fun TextView.removeUnderlineTextView(): CharSequence =
         setTextWithMovementMethod(text.removeUnderline(false))
 
-fun TextView.setHtmlText(@StringRes resId: Int) =
-        setHtmlText(resources.getString(resId))
+@JvmOverloads
+fun TextView.setHtmlText(@StringRes resId: Int, clearHtml: Boolean = false) =
+        setHtmlText(resources.getString(resId), clearHtml)
 
 /**
  * Установить html текст в TextView
  */
-fun TextView.setHtmlText(text: CharSequence): CharSequence =
-        setTextWithMovementMethod(text.parseHtmlToSpannedString())
-
+@JvmOverloads
+fun TextView.setHtmlText(text: CharSequence?, clearHtml: Boolean = false): CharSequence =
+        setTextWithMovementMethod(
+                if (clearHtml) {
+                    text.createClearedHtml()
+                } else {
+                    text.parseHtmlToSpannedString()
+                }
+        )
 
 @JvmOverloads
 fun TextView.setLinkFromHtml(@StringRes htmlLinkResId: Int, removeUnderline: Boolean = true) =
@@ -374,6 +381,9 @@ fun TextView.setTextWithSelection(
     setTextWithMovementMethod(text.createSelectedText(highlightColor, selection, spanFlags))
 }
 
+/**
+ * @return true, если текст был выставлен
+ */
 @JvmOverloads
 fun TextView.setTextOrHide(
         text: CharSequence?,
@@ -383,7 +393,7 @@ fun TextView.setTextOrHide(
         isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
         showFunc: (() -> Unit)? = null,
         hideFunc: (() -> Unit)? = null
-) {
+): Boolean {
     if (isEmptyFunc(text)) {
         this.text = EMPTY_STRING
         if (hideFunc != null) {
@@ -391,6 +401,7 @@ fun TextView.setTextOrHide(
         } else {
             setVisible(false, isGoneOrInvisible)
         }
+        return false
     } else {
         setTextChecked(text, distinct, asString)
         if (showFunc != null) {
@@ -398,6 +409,7 @@ fun TextView.setTextOrHide(
         } else {
             setVisible(true)
         }
+        return true
     }
 }
 
@@ -410,8 +422,7 @@ fun TextView.setSumOrHide(
         formatFunc: ((Double) -> CharSequence)? = null,
         showFunc: (() -> Unit)? = null,
         hideFunc: (() -> Unit)? = null
-) {
-    if (!sum.isZero()) {
+): Boolean = if (!sum.isZero()) {
         setTextOrHide(
                 formatFunc?.let { it(sum) } ?: sum.toString(),
                 isGoneOrInvisible,
@@ -427,7 +438,6 @@ fun TextView.setSumOrHide(
                 showFunc = null,
                 hideFunc = hideFunc)
     }
-}
 
 @JvmOverloads
 fun EditText.setTextWithSelectionToEnd(
@@ -974,10 +984,10 @@ fun View.hideByReferenceViews(vararg otherViews: View) {
     visibility = if (isGone) View.GONE else View.INVISIBLE
 }
 
-private fun TextView.setTextWithMovementMethod(text: CharSequence): CharSequence {
+private fun TextView.setTextWithMovementMethod(text: CharSequence?): CharSequence {
     this.text = text
-    this.movementMethod = LinkMovementMethod.getInstance()
-    return text
+    movementMethod = LinkMovementMethod.getInstance()
+    return text ?: EMPTY_STRING
 }
 
 /**
