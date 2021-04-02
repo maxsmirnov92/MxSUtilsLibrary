@@ -32,5 +32,5 @@ fun CharSequence?.parseHtmlToSpannedString(): CharSequence = this?.let {
 /**
  * Попытка привести html к строке с потерей части форматирования.
  */
-fun CharSequence?.createClearedHtml(): String =
+fun CharSequence?.parseClearedHtml(): String =
         parseHtmlToSpannedString().toString()

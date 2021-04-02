@@ -9,6 +9,12 @@ import androidx.annotation.CallSuper
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import net.maxsmr.commonutils.*
+import kotlin.Pair
+
+/**
+ * строка, из которой происходит expandTemplate + url
+ */
+typealias ExpandValueInfo = Pair<String, String>
 
 fun CharSequence.createSpanText(vararg spanInfo: IRangeSpanInfo): CharSequence {
     if (this.isEmpty() || spanInfo.isEmpty()) return this
@@ -24,22 +30,30 @@ fun CharSequence.createSpanText(vararg spanInfo: IRangeSpanInfo): CharSequence {
 }
 
 fun CharSequence.createSpanTextExpanded(spanInfoMap: Map<ISpanInfo, String>): CharSequence {
-    val links = mutableListOf<CharSequence>()
+    val parts = mutableListOf<CharSequence>()
     spanInfoMap.forEach {
-        val link = SpannableString(it.value)
-        link.setSpan(it.key.style, 0, link.length, it.key.flags)
-        links.add(link)
+        val part = SpannableString(it.value)
+        part.setSpan(it.key.style, 0, part.length, it.key.flags)
+        parts.add(part)
     }
-    return TextUtils.expandTemplate(SpannableString(this), *links.toTypedArray())
+    return TextUtils.expandTemplate(SpannableString(this), *parts.toTypedArray())
 }
 
+/**
+ * @return строка с url-частями (value):
+ * кастомным способом лямбдой onClick или стандартным из [URLSpan],
+ * созданная общей [SpannableString]
+ */
 fun CharSequence.createLinkableText(spanInfoMap: Map<IRangeSpanInfo, String>): CharSequence {
     val newSpanInfoMap = mutableListOf<IRangeSpanInfo>()
     spanInfoMap.forEach {
         val ranges = it.key.ranges(this)
         ranges.forEach { range ->
-            newSpanInfoMap.add(RangeSpanInfo(range.first, range.last, UrlClickableSpan(it.value) { view ->
-                val span = it.key.style
+            val span = it.key.style
+            newSpanInfoMap.add(RangeSpanInfo(range.first, range.last, UrlClickableSpan(
+                    it.value,
+                    if (span is AppClickableSpan) span.isUnderlineText else true
+            ) { view ->
                 if (span is AppClickableSpan) {
                     // вызываем отдельно исходный action, если он был
                     span.onClick?.invoke(view)
@@ -50,6 +64,33 @@ fun CharSequence.createLinkableText(spanInfoMap: Map<IRangeSpanInfo, String>): C
     return createSpanText(*newSpanInfoMap.toTypedArray())
 }
 
+/**
+ * @return строка с частями (value) из [ExpandValueInfo]:
+ * кастомным способом лямбдой onClick или стандартным из [URLSpan]
+ * созданная посредством expandTemplate из нескольких [SpannableString]
+ */
+fun CharSequence.createLinkableTextExpanded(spanInfoMap: Map<ISpanInfo, ExpandValueInfo>): CharSequence {
+    val newSpanInfoMap = mutableMapOf<ISpanInfo, String>()
+    spanInfoMap.entries.forEach {
+        val span = it.key.style
+        newSpanInfoMap[
+                SimpleSpanInfo(
+                        UrlClickableSpan(
+                                it.value.second,
+                                if (span is AppClickableSpan) span.isUnderlineText else true
+                        ) { view ->
+                            if (span is AppClickableSpan) {
+                                // вызываем отдельно исходный action, если он был
+                                span.onClick?.invoke(view)
+                            }
+                        },
+                        it.key.flags
+                )
+        ] = it.value.first
+    }
+    return createSpanTextExpanded(newSpanInfoMap)
+}
+
 @JvmOverloads
 fun CharSequence.createSelectedText(
         @ColorInt highlightColor: Int,
@@ -57,8 +98,8 @@ fun CharSequence.createSelectedText(
         spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
 ): CharSequence = createSpanText(
         SubstringSpanInfo(selection,
-        ForegroundColorSpan(highlightColor),
-        flags = spanFlags)
+                ForegroundColorSpan(highlightColor),
+                flags = spanFlags)
 )
 
 @JvmOverloads
@@ -80,22 +121,17 @@ fun CharSequence.appendClickableImage(
 
 @JvmOverloads
 fun CharSequence.replaceUrlSpansByClickableSpans(
-        context: Context,
         parseHtml: Boolean,
         isUnderlineText: Boolean = false,
-        action: ((URLSpan) -> Boolean)? = null
+        action: ((URLSpan) -> Any)? = null
 ): CharSequence = replaceUrlSpansByCustomSpans(parseHtml) { span ->
     AppClickableSpan(isUnderlineText) {
-        if (action?.invoke(span) != true) {
-            // not handled by action
-            startActivitySafe(context, wrapIntent(getBrowseLinkIntent(span.url),
-                    flags = Intent.FLAG_ACTIVITY_NEW_TASK))
-        }
+        action?.invoke(span)
     }
 }
 
 @JvmOverloads
-fun CharSequence.removeUnderline(
+fun CharSequence.removeUnderlineFromUrlSpans(
         parseHtml: Boolean,
         action: ((URLSpan) -> Any)? = null
 ): CharSequence = replaceUrlSpansByCustomSpans(parseHtml) { span ->
@@ -121,6 +157,11 @@ private fun CharSequence.replaceUrlSpansByCustomSpans(
     return result
 }
 
+fun defaultBrowseClickAction(context: Context, url: String) {
+    startActivitySafe(context, wrapIntent(getBrowseLinkIntent(url),
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK))
+}
+
 interface ISpanInfo {
 
     val style: CharacterStyle
@@ -131,6 +172,14 @@ interface IRangeSpanInfo : ISpanInfo {
 
     fun ranges(fullText: CharSequence): List<IntRange>
 }
+
+/**
+ * Простая реализация [ISpanInfo] для случая использования expandTemplate
+ */
+data class SimpleSpanInfo(
+        override val style: CharacterStyle,
+        override val flags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+): ISpanInfo
 
 /**
  * Установить спан [style] в диапазоне [startIndex]..[endIndex] полной строки
@@ -177,7 +226,6 @@ class SubstringSpanInfo @JvmOverloads constructor(
     }
 }
 
-
 open class AppClickableSpan @JvmOverloads constructor(
         val isUnderlineText: Boolean = true,
         val onClick: ((View) -> Unit)? = null
@@ -203,7 +251,7 @@ open class UrlClickableSpan @JvmOverloads constructor(
 
     @CallSuper
     override fun onClick(widget: View) {
-        onClick?.invoke(widget)
+        onClick?.invoke(widget) ?: super.onClick(widget)
     }
 
     @CallSuper

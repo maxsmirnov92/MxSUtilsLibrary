@@ -289,8 +289,8 @@ fun TextView.appendClickableImageTextView(
 /**
  * Убрать нижнее подчеркивание для текущего text
  */
-fun TextView.removeUnderlineTextView(): CharSequence =
-        setTextWithMovementMethod(text.removeUnderline(false))
+fun TextView.resetNotUnderlinedUrlSpans(): CharSequence =
+        setTextWithMovementMethod(text.removeUnderlineFromUrlSpans(false))
 
 @JvmOverloads
 fun TextView.setHtmlText(@StringRes resId: Int, clearHtml: Boolean = false) =
@@ -303,7 +303,7 @@ fun TextView.setHtmlText(@StringRes resId: Int, clearHtml: Boolean = false) =
 fun TextView.setHtmlText(text: CharSequence?, clearHtml: Boolean = false): CharSequence =
         setTextWithMovementMethod(
                 if (clearHtml) {
-                    text.createClearedHtml()
+                    text.parseClearedHtml()
                 } else {
                     text.parseHtmlToSpannedString()
                 }
@@ -318,7 +318,7 @@ fun TextView.setLinkFromHtml(@StringRes htmlLinkResId: Int, removeUnderline: Boo
  */
 @JvmOverloads
 fun TextView.setLinkFromHtml(htmlLink: String, removeUnderline: Boolean = true): CharSequence = if (removeUnderline) {
-    setTextWithMovementMethod(htmlLink.removeUnderline(true))
+    setTextWithMovementMethod(htmlLink.removeUnderlineFromUrlSpans(true))
 } else {
     setHtmlText(htmlLink)
 }
@@ -349,8 +349,17 @@ fun TextView.setSpanTextExpanded(
  * в указанных диапазонах
  * @param spanInfoMap маппинг информации о [Spannable] + link для перехода по клику по нему
  */
-fun TextView.setLinkableText(text: CharSequence, spanInfoMap: Map<IRangeSpanInfo, String>): CharSequence =
+fun TextView.setLinkableText(
+        text: CharSequence,
+        spanInfoMap: Map<IRangeSpanInfo, String>
+): CharSequence =
         setTextWithMovementMethod(text.createLinkableText(spanInfoMap))
+
+fun TextView.setLinkableTextExpanded(
+        text: CharSequence,
+        spanInfoMap: Map<ISpanInfo, ExpandValueInfo>,
+): CharSequence =
+        setTextWithMovementMethod(text.createLinkableTextExpanded(spanInfoMap))
 
 /**
  * Выставить [html] в кач-ве html текста, но для кликабельных сегментов оповещать о клике
@@ -362,7 +371,7 @@ fun TextView.replaceUrlSpans(
         isUnderlineText: Boolean = false,
         action: ((URLSpan) -> Boolean)? = null
 ): CharSequence = setTextWithMovementMethod(
-        html.replaceUrlSpansByClickableSpans(context, parseHtml, isUnderlineText, action)
+        html.replaceUrlSpansByClickableSpans(parseHtml, isUnderlineText, action)
 )
 
 /**
