@@ -12,11 +12,33 @@ import java.io.Serializable
 fun TextMessage?.orEmpty(): TextMessage = this ?: TextMessage.EMPTY
 
 /**
- * Текстовое сообщение, может быть инстанциировано либо строкой, либо идентификатором ресурса.
- * Для получения сообщения используется метод [get]. При получении сообщения приоритет у [message].
- * Используется в случаях, когда надо сформировать сообщение, которое может содержать строковые ресурсы,
- * и при этом недоступен контекст, с которым это сообщение будет показано (контекст приложения использовать нельзя,
- * т.к. язык приложения может отличаться от системного).
+ * Класс для формирования текстового сообщения в условиях отсутствия контекста (например, во ViewModel).
+ * Само сообщение может быть извлечено позднее с помощью метода [get] с передачей контекста активити/фрагмента/view.
+ * Контекст приложения использовать некорректно, т.к. в приложении язык может отличаться от системного.
+ *
+ * Допустимые варианты создания сообщения:
+ * 1. С помощью [CharSequence] (Внимание, при сериализации/десериализации интерпретируется
+ * как строка, т.е. может быть потеря информации, например о спанах). **Пример: TextMessage("Произвольное сообщение")**
+ * 1. С помощью форматированной строки с аргументами. **Пример: TextMessage("В вагоне %s %d свободных мест", ResArg(R.string.car_type), 5)**
+ * 1. С помощью строки из ресурсов.
+ *      * без аргументов. **Пример: TextMessage(R.string.some_message)**
+ *      * с аргументами. **Пример: TextMessage(R.string.some_message_args, ResArg(R.string.car_type), "SomeArg")**
+ *
+ * Для передачи в качестве аргумента другого строкового ресурса, необходимо его оборачивать в [ResArg],
+ * чтобы его можно было отличить от простого целочисленного аргумента. Аргументы прочих типов можно
+ * не оборачивать в соответствующие наследники [Arg] для лаконичности - они будут обернуты автоматически.
+ *
+ * @param message строковое сообщение. При отсутствии [args] отображается как есть, иначе используется [String.format].
+ * Приоритетнее, чем [messageResId]
+ * @param messageResId ид ресурса сообщения.
+ * @param args массив аргументов. Допустимые значения:
+ * 1. любой наследник [Arg]
+ * 1. любая реализация [CharSequence] (Внимание, при сериализации/десериализации интерпретируется
+ * как строка, т.е. может быть потеря информации, например о спанах)
+ * 1. любой наследник [Number]
+ * 1. другой [TextMessage]
+ *
+ * @see PluralTextMessage
  */
 open class TextMessage internal constructor(
         message: CharSequence?,
@@ -125,15 +147,14 @@ open class TextMessage internal constructor(
         fun TextMessage.readFields(aInputStream: ObjectInputStream) {
             message = aInputStream.readUTF()
             messageResId = aInputStream.readInt()
-            val argsClass = try {
-                Class.forName(aInputStream.readUTF())
-            } catch (e: ClassNotFoundException) {
-                null
-            }
             val args = mutableListOf<Arg<Any>>()
             val count = aInputStream.readInt()
             for (i in 0 until count) {
-                argsClass?.let {
+                try {
+                    Class.forName(aInputStream.readUTF())
+                } catch (e: ClassNotFoundException) {
+                    null
+                }?.let { argsClass ->
                     when {
                         argsClass.isAssignableFrom(NumArg::class.java) -> NumArg(LazilyParsedNumber(aInputStream.readUTF()))
                         argsClass.isAssignableFrom(ResArg::class.java) -> ResArg(aInputStream.readInt())
@@ -156,15 +177,19 @@ open class TextMessage internal constructor(
             args.forEach {
                 when (it) {
                     is NumArg -> {
+                        aOutputStream.writeUTF(NumArg::class.java.name)
                         aOutputStream.writeUTF(it.value.toString())
                     }
                     is ResArg -> {
+                        aOutputStream.writeUTF(ResArg::class.java.name)
                         aOutputStream.writeInt(it.value)
                     }
                     is CharSequenceArg -> {
+                        aOutputStream.writeUTF(CharSequenceArg::class.java.name)
                         aOutputStream.writeUTF(it.value.toString())
                     }
                     is MessageArg -> {
+                        aOutputStream.writeUTF(MessageArg::class.java.name)
                         aOutputStream.writeObject(it.value)
                     }
                 }

@@ -49,17 +49,9 @@ class TextMessageTypeAdapter : JsonSerializer<TextMessage>, JsonDeserializer<Tex
             }, true) as List<TextMessage.Arg<*>>)
         }
         return if (typeOfT is Class<*> && PluralTextMessage::class.java.isAssignableFrom(typeOfT)) {
-            if (args.isNotEmpty()) {
-                PluralTextMessage(pluralResId ?: 0, quantity ?: 0, *args.toTypedArray())
-            } else {
-                PluralTextMessage(pluralResId ?: 0, quantity ?: 0)
-            }
+            PluralTextMessage(pluralResId ?: 0, quantity ?: 0, *args.toTypedArray())
         } else {
-            if (args.isNotEmpty()) {
-                TextMessage(message, messageResId, *args.toTypedArray())
-            } else {
-                TextMessage(message, messageResId)
-            }
+            TextMessage(message, messageResId, *args.toTypedArray())
         }
     }
 

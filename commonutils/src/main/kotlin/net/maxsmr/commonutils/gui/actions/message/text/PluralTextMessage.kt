@@ -7,6 +7,16 @@ import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 
+/**
+ * Класс для формирования Quantity сообщения в условиях отсутствия контекста (например, во ViewModel).
+ * Для более подробного описания см. [TextMessage].
+ *
+ * @param pluralResId ид quantity ресурса
+ * @param quantity количество
+ * @param args дополнительные аргументы строки
+ *
+ * @see TextMessage
+ */
 @SuppressLint("ResourceType")
 class PluralTextMessage(
         @PluralsRes pluralResId: Int,
@@ -21,6 +31,8 @@ class PluralTextMessage(
     var quantity: Int = quantity
         private set
 
+    constructor(): this(0, 0)
+
     override fun get(context: Context): CharSequence =
             context.resources.getQuantityString(pluralResId, quantity, *flattenArgs(context))
 
@@ -30,15 +42,15 @@ class PluralTextMessage(
 
     @Throws(ClassNotFoundException::class, IOException::class)
     private fun readObject(aInputStream: ObjectInputStream) {
-        readFields(aInputStream)
         pluralResId = aInputStream.readInt()
         quantity = aInputStream.readInt()
+        readFields(aInputStream)
     }
 
     @Throws(IOException::class)
     private fun writeObject(aOutputStream: ObjectOutputStream) {
-        writeFields(aOutputStream)
         aOutputStream.writeInt(pluralResId)
         aOutputStream.writeInt(quantity)
+        writeFields(aOutputStream)
     }
 }
