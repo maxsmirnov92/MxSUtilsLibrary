@@ -12,15 +12,15 @@ import android.os.StrictMode
 import android.util.DisplayMetrics
 import android.util.TypedValue
 import android.view.WindowManager
+import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LifecycleOwner
-import net.maxsmr.commonutils.processmanager.AbstractProcessManager
-import net.maxsmr.commonutils.*
-import net.maxsmr.commonutils.text.EMPTY_STRING
-import net.maxsmr.commonutils.text.isEmpty
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.processmanager.AbstractProcessManager
+import net.maxsmr.commonutils.text.EMPTY_STRING
+import net.maxsmr.commonutils.text.isEmpty
 import java.io.File
 import java.lang.reflect.Method
 import java.util.*
@@ -137,6 +137,7 @@ fun launchSelf(context: Context, flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK or I
 /**
  * try to disable throwing exception when sharing file:// scheme instead of [androidx.core.content.FileProvider]
  */
+@RequiresApi(Build.VERSION_CODES.N)
 fun disableFileUriStrictMode(): Boolean {
     var result = true
     if (isAtLeastNougat()) {

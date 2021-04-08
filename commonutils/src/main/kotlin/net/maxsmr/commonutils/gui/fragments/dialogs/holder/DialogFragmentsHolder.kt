@@ -17,7 +17,7 @@ import io.reactivex.subjects.BehaviorSubject
 import net.maxsmr.commonutils.asContext
 import net.maxsmr.commonutils.gui.actions.EmptyAction
 import net.maxsmr.commonutils.gui.actions.TypedAction
-import net.maxsmr.commonutils.gui.fragments.dialogs.TypedDialogFragment
+import net.maxsmr.commonutils.gui.fragments.dialogs.BaseTypedDialogFragment
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
@@ -30,7 +30,7 @@ private val RESTRICTED_STATES = setOf(Lifecycle.Event.ON_ANY, Lifecycle.Event.ON
 
 /**
  * Class for showing/hiding [DialogFragment] via specified [FragmentManager], with storing its state info
- * (if it's [TypedDialogFragment] - also handling dismiss events)
+ * (if it's [BaseTypedDialogFragment] - also handling dismiss events)
  * @param allowedTags fragment tags, which this Holder should handle, include after restore
  * (will not show or apply after restore dialog if new tag is not in this set)
  * or empty - if allow any tag
@@ -76,7 +76,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     protected val targetFragmentsToHide: MutableSet<String> = mutableSetOf()
 
     /**
-     * Allow showing single or multiple [TypedDialogFragment] instances at time
+     * Allow showing single or multiple [BaseTypedDialogFragment] instances at time
      */
     var showRule: ShowRule = ShowRule.MULTI
         set(value) {
@@ -268,7 +268,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @JvmOverloads
     fun <D : Dialog> createdLiveEventsOnce(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<D>> = TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>,
+            clazz: Class<BaseTypedDialogFragment<D>> = BaseTypedDialogFragment::class.java as Class<BaseTypedDialogFragment<D>>,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED,
             eventsFilter: Predicate<TypedAction<D>>? = null
     ): LiveSingle<TypedAction<D>> =
@@ -285,7 +285,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @JvmOverloads
     fun <D : Dialog> createdLiveEvents(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<D>> = TypedDialogFragment::class.java as Class<TypedDialogFragment<D>>,
+            clazz: Class<BaseTypedDialogFragment<D>> = BaseTypedDialogFragment::class.java as Class<BaseTypedDialogFragment<D>>,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED,
             eventsFilter: Predicate<TypedAction<D>>? = null
     ): LiveObservable<TypedAction<D>> =
@@ -302,7 +302,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
             tag: String? = null,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED,
             buttons: Collection<Int> = listOf()
-    ): LiveObservable<TypedAction<Int>> = buttonClickLiveEvents(tag, TypedDialogFragment::class.java, observingState, buttons)
+    ): LiveObservable<TypedAction<Int>> = buttonClickLiveEvents(tag, BaseTypedDialogFragment::class.java, observingState, buttons)
 
     /**
      * Подписка на клики по кнопкам диалога
@@ -314,7 +314,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @JvmOverloads
     fun buttonClickLiveEvents(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            clazz: Class<BaseTypedDialogFragment<*>> = BaseTypedDialogFragment::class.java,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED,
             buttons: Collection<Int> = listOf()
     ): LiveObservable<TypedAction<Int>> =
@@ -332,7 +332,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     fun itemClickLiveEvents(
             tag: String? = null,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED
-    ): LiveObservable<TypedAction<Int>> = itemClickLiveEvents(tag, TypedDialogFragment::class.java, observingState)
+    ): LiveObservable<TypedAction<Int>> = itemClickLiveEvents(tag, BaseTypedDialogFragment::class.java, observingState)
 
     /**
      * Подписка на клики по элементам в адаптере диалога
@@ -344,7 +344,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @JvmOverloads
     fun itemClickLiveEvents(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            clazz: Class<BaseTypedDialogFragment<*>> = BaseTypedDialogFragment::class.java,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED
     ): LiveObservable<TypedAction<Int>> =
             eventsLiveObservable(
@@ -358,19 +358,19 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @JvmOverloads
     fun keyActionLiveEvents(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            clazz: Class<BaseTypedDialogFragment<*>> = BaseTypedDialogFragment::class.java,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED,
             vararg keyCodes: Int
-    ): LiveObservable<TypedDialogFragment.KeyAction> =
+    ): LiveObservable<BaseTypedDialogFragment.KeyAction> =
             keyActionLiveEvents(tag, clazz, observingState, { keyCodes.isEmpty() || it.keyCode in keyCodes })
 
     @JvmOverloads
     fun keyActionLiveEvents(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            clazz: Class<BaseTypedDialogFragment<*>> = BaseTypedDialogFragment::class.java,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED,
-            keyEventFilter: Predicate<TypedDialogFragment.KeyAction>
-    ): LiveObservable<TypedDialogFragment.KeyAction> =
+            keyEventFilter: Predicate<BaseTypedDialogFragment.KeyAction>
+    ): LiveObservable<BaseTypedDialogFragment.KeyAction> =
             eventsLiveObservable(
                     tag,
                     clazz,
@@ -384,7 +384,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @JvmOverloads
     fun dismissLiveEventsOnce(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            clazz: Class<BaseTypedDialogFragment<*>> = BaseTypedDialogFragment::class.java,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED
     ): LiveCompletable =
             eventsLiveCompletable(
@@ -398,7 +398,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @JvmOverloads
     fun dismissLiveEvents(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            clazz: Class<BaseTypedDialogFragment<*>> = BaseTypedDialogFragment::class.java,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED
     ): LiveObservable<EmptyAction> =
             eventsLiveObservable(
@@ -420,7 +420,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @JvmOverloads
     fun cancelEventsOnce(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            clazz: Class<BaseTypedDialogFragment<*>> = BaseTypedDialogFragment::class.java,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED
     ): LiveCompletable =
             eventsLiveCompletable(
@@ -434,7 +434,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     @JvmOverloads
     fun cancelEvents(
             tag: String? = null,
-            clazz: Class<TypedDialogFragment<*>> = TypedDialogFragment::class.java,
+            clazz: Class<BaseTypedDialogFragment<*>> = BaseTypedDialogFragment::class.java,
             observingState: Lifecycle.State? = Lifecycle.State.STARTED
     ): LiveObservable<EmptyAction> =
             eventsLiveObservable(
@@ -544,7 +544,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
      * @return Pair:
      * - true if fragment for specified tag was successfully hided or already not showing,
      * false - otherwise (also when showing was scheduled)
-     * - [TypedDialogFragment] instance non-null if was added to [FragmentManager] before, false otherwise
+     * - [BaseTypedDialogFragment] instance non-null if was added to [FragmentManager] before, false otherwise
      */
     fun hide(tag: String?): Pair<HideResult, DialogFragment?> {
         logger.d("hide: tag=$tag")
@@ -689,7 +689,7 @@ open class DialogFragmentsHolder(val allowedTags: Set<String> = emptySet()) : Li
     private fun onSetEventListener(forFragment: DialogFragment) {
         with(currentOwner) {
             checkNotNull(this) { "LifecycleOwner is not attached" }
-            if (forFragment is TypedDialogFragment<*>) {
+            if (forFragment is BaseTypedDialogFragment<*>) {
                 // должен прилетать в любых стейтах, чтобы отслеживать здесь
                 dismissLiveEvents(forFragment.tag, observingState = null).subscribe(this, emitOnce = true) {
                     onDialogDismiss(forFragment)

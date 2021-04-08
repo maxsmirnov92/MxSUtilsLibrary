@@ -31,6 +31,8 @@ import kotlin.math.roundToInt
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("GraphicUtils")
 
+// TODO convert to extensions?
+
 fun isBitmapValid(b: Bitmap?): Boolean =
         b != null && !b.isRecycled && getBitmapByteCount(b) > 0
 

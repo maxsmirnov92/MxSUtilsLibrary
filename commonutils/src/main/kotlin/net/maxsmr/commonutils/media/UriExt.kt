@@ -8,15 +8,14 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import android.text.TextUtils
 import android.util.Base64
-import android.util.Log
 import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.throwRuntimeException
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
 import java.io.*
-import java.lang.Exception
 import java.nio.charset.Charset
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("UriExt")
@@ -110,8 +109,45 @@ fun Uri.writeStringsOrThrow(contentResolver: ContentResolver, data: Collection<S
     try {
         outStreamWriter.writeStringOrThrow(data)
     } catch (e: IOException) {
-        BaseLoggerHolder.throwRuntimeException(e, "writeStringToOutputStreamWriter")
+        throwRuntimeException(e, "writeStringToOutputStreamWriter")
     }
+}
+
+@JvmOverloads
+fun Uri.copyTo(
+        contentResolver: ContentResolver,
+        fileTo: File,
+        append: Boolean = false,
+        deleteOnFinish: Boolean = false,
+): Uri? = try {
+    copyToOrThrow(contentResolver, fileTo, append, deleteOnFinish)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+@Throws(RuntimeException::class)
+@JvmOverloads
+fun Uri.copyToOrThrow(
+        contentResolver: ContentResolver,
+        fileTo: File,
+        append: Boolean = false,
+        deleteOnFinish: Boolean = false,
+): Uri {
+    if (!isEmptyOrThrow(contentResolver)) {
+        val input = openInputStreamOrThrow(contentResolver)
+        createFileOrThrow(fileTo.name, fileTo.parent, true)
+        val output = fileTo.openOutputStreamOrThrow(append)
+        try {
+            input.copyStreamOrThrow(output)
+        } catch (e: IOException) {
+            throwRuntimeException(e, "copyStream")
+        }
+    }
+    if (deleteOnFinish) {
+        deleteOrThrow(contentResolver)
+    }
+    return Uri.fromFile(fileTo)
 }
 
 @JvmOverloads

@@ -1,16 +1,16 @@
 package net.maxsmr.commonutils.gui.fragments.dialogs
 
-import android.app.Dialog
 import android.content.Context
 import android.os.Bundle
 import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.annotation.IdRes
+import androidx.appcompat.app.AlertDialog
 
 const val ARG_PROGRESS_BAR_ID = "BaseProgressTypedDialogFragment#ARG_PROGRESS_BAR_ID"
 const val ARG_LOADING_MESSAGE_VIEW_ID = "BaseProgressTypedDialogFragment#ARG_LOADING_MESSAGE_VIEW_ID"
 
-abstract class BaseProgressDialogFragment<D : Dialog> : TypedDialogFragment<D>() {
+open class ProgressDialogFragment : AlertTypedDialogFragment() {
 
     protected var progressBar: ProgressBar? = null
         private set
@@ -18,7 +18,7 @@ abstract class BaseProgressDialogFragment<D : Dialog> : TypedDialogFragment<D>()
     protected var loadingMessageView: TextView? = null
         private set
 
-    override fun onDialogCreated(dialog: D) {
+    override fun onDialogCreated(dialog: AlertDialog) {
         super.onDialogCreated(dialog)
         customView?.let {
             val progressBarId: Int = args.getInt(ARG_PROGRESS_BAR_ID)
@@ -38,12 +38,12 @@ abstract class BaseProgressDialogFragment<D : Dialog> : TypedDialogFragment<D>()
         }
     }
 
-    abstract class Builder<D : Dialog, F : BaseProgressDialogFragment<D>> @JvmOverloads constructor(
+    abstract class BaseBuilder<F: ProgressDialogFragment> @JvmOverloads constructor(
             @IdRes
             protected val progressBarId: Int = 0,
             @IdRes
             protected val loadingMessageViewId: Int = 0
-    ) : TypedDialogFragment.Builder<D, F>() {
+    ) : BaseTypedDialogFragment.Builder<AlertDialog, F>() {
 
         override fun createArgs(context: Context): Bundle {
             return super.createArgs(context).apply {
@@ -54,6 +54,20 @@ abstract class BaseProgressDialogFragment<D : Dialog> : TypedDialogFragment<D>()
                     putInt(ARG_LOADING_MESSAGE_VIEW_ID, loadingMessageViewId)
                 }
             }
+        }
+    }
+
+    class Builder: BaseBuilder<ProgressDialogFragment>() {
+
+        override fun build(context: Context) = newInstance(createArgs(context))
+    }
+
+    companion object {
+
+        private fun newInstance(args: Bundle?): ProgressDialogFragment {
+            val fragment = ProgressDialogFragment()
+            fragment.arguments = args
+            return fragment
         }
     }
 }

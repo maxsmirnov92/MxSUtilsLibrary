@@ -36,7 +36,7 @@ const val ARG_ADAPTER_CONTENT = "TypedDialogFragment#ARG_ADAPTER_CONTENTL"
 /**
  * @param D type of created dialog in this fragment
  */
-open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogInterface.OnClickListener {
+abstract class BaseTypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogInterface.OnClickListener {
 
     protected val createdSubject = SingleSubject.create<TypedAction<D>>()
     protected val buttonClickSubject = PublishSubject.create<TypedAction<Int>>()
@@ -59,6 +59,9 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
 
     protected var customView: View? = null
 
+    // because of onCreateDialog overriding onCreateView is restricted!
+    abstract override fun onCreateDialog(savedInstanceState: Bundle?): Dialog
+
     @CallSuper
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -79,12 +82,6 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
     @Suppress("UNCHECKED_CAST")
     override fun getDialog(): D? {
         return super.getDialog() as D?
-    }
-
-    // because of onCreateDialog overriding onCreateView is restricted!
-    override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        // here you may not use AlertDialog.Builder at all
-        return createBuilder(args).create()
     }
 
     override fun onDismiss(dialog: DialogInterface) {
@@ -132,48 +129,7 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
         isCancelable = shouldBeCancelable()
     }
 
-    /** override if want to create own [AlertDialog.Builder]  */
-    protected open fun createBuilder(args: Bundle): AlertDialog.Builder {
-        val context = requireContext()
-        val styleResId = args.getInt(ARG_STYLE_RES_ID)
-        val builder = if (styleResId == 0) AlertDialog.Builder(context) else AlertDialog.Builder(context, styleResId)
-        builder.setTitle(args.getString(ARG_TITLE))
-        if (args.containsKey(ARG_ICON_RES_ID)) {
-            builder.setIcon(args.getInt(ARG_ICON_RES_ID))
-        }
-        val customViewId = args.getInt(ARG_CUSTOM_VIEW_RES_ID)
-        if (customViewId != 0) {
-            with(LayoutInflater.from(context).inflate(customViewId, null)) {
-                customView = this
-                builder.setView(this)
-            }
-        } else {
-            builder.setMessage(args.getString(ARG_MESSAGE))
-            val adapterData = args.getSerializable(ARG_ADAPTER_CONTENT) as StringAdapterData
-            builder.setAdapter(ArrayAdapter(context, adapterData.itemLayoutResId, adapterData.textResId, adapterData.messages)) { _, which ->
-                itemClickSubject.onNext(TypedAction(which))
-                if (adapterData.dismissOnClick) {
-                    dismiss()
-                }
-            }
-        }
-        if (args.containsKey(ARG_BUTTON_POSITIVE)) {
-            builder.setPositiveButton(args.getString(ARG_BUTTON_POSITIVE), this)
-        }
-        if (args.containsKey(ARG_BUTTON_NEUTRAL)) {
-            builder.setNeutralButton(args.getString(ARG_BUTTON_NEUTRAL), this)
-        }
-        if (args.containsKey(ARG_BUTTON_NEGATIVE)) {
-            builder.setNegativeButton(args.getString(ARG_BUTTON_NEGATIVE), this)
-        }
-        builder.setOnKeyListener { dialog: DialogInterface?, keyCode: Int, event: KeyEvent? ->
-            keySubject.onNext(KeyAction(keyCode, event))
-            return@setOnKeyListener false
-        }
-        return builder
-    }
-
-    abstract class Builder<D : Dialog, F : TypedDialogFragment<D>>() {
+    abstract class Builder<D : Dialog, F : BaseTypedDialogFragment<D>>() {
 
         protected var title: TextMessage? = null
 
@@ -273,8 +229,7 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
                 args.putCharSequence(ARG_BUTTON_NEGATIVE, it.get(context))
             }
             adapterContent?.let {
-                args.putSerializable(ARG_ADAPTER_CONTENT,
-                        StringAdapterData(ArrayList(it.messages.map { msg -> msg.get(context).toString() }), it.itemLayoutResId, it.textResId, it.dismissOnClick))
+                args.putSerializable(ARG_ADAPTER_CONTENT, it)
             }
             args.putBoolean(ARG_CANCELABLE, cancelable)
             return args
@@ -289,36 +244,11 @@ open class TypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), DialogIn
     )
 
     data class AdapterData(
-            val messages: List<TextMessage>,
-            @LayoutRes
-            val itemLayoutResId: Int,
-            @IdRes
-            val textResId: Int,
-            val dismissOnClick: Boolean = false
-    )
-
-    private data class StringAdapterData(
             val messages: ArrayList<String>,
             @LayoutRes
             val itemLayoutResId: Int,
             @IdRes
             val textResId: Int,
             val dismissOnClick: Boolean = false
-    ) : Serializable
-
-    class DefaultTypedDialogBuilder : Builder<AlertDialog, TypedDialogFragment<AlertDialog>>() {
-
-        override fun build(context: Context): TypedDialogFragment<AlertDialog> {
-            return newInstance(createArgs(context))
-        }
-    }
-
-    companion object {
-
-        private fun newInstance(args: Bundle?): TypedDialogFragment<AlertDialog> {
-            val fragment = TypedDialogFragment<AlertDialog>()
-            fragment.arguments = args
-            return fragment
-        }
-    }
+    ): Serializable
 }

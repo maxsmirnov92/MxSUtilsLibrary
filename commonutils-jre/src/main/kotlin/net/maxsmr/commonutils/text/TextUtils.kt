@@ -383,6 +383,33 @@ fun createPlaceholderText(size: Int, placeholderChar: Char = ' '): String {
     return result.toString()
 }
 
+/**
+ * @param allowedChars разрешённые символы, из которых сделать регулярки для валидации и фильтрации
+ * @param allowIfEmpty true, если при пустой разрешённой строке вернуть исходную [this]; в ином случае - пустую
+ * @return модифицированная или исходная строка
+ */
+@JvmOverloads
+fun CharSequence?.filterTextByRegex(allowedChars: String, allowIfEmpty: Boolean = false): CharSequence {
+    if (this == null || this.isEmpty()) {
+        return EMPTY_STRING
+    }
+    if (allowedChars.isEmpty()) {
+        return if (allowIfEmpty) {
+            this
+        } else {
+            EMPTY_STRING
+        }
+    }
+    val matchRegex = "[-$allowedChars]+".toRegex()
+    val editRegex = "[^$allowedChars]+".toRegex()
+    val text = this.toString()
+    return if (text.matches(matchRegex)) {
+        this
+    } else {
+        text.replace(editRegex, EMPTY_STRING)
+    }
+}
+
 @JvmOverloads
 fun getBytes(text: String, charset: Charset = Charsets.UTF_8): ByteArray? = try {
     text.toByteArray(charset)

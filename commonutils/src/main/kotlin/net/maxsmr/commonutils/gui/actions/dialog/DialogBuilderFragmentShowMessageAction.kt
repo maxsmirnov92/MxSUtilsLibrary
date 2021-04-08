@@ -2,12 +2,12 @@ package net.maxsmr.commonutils.gui.actions.dialog
 
 import android.app.Dialog
 import net.maxsmr.commonutils.gui.actions.BaseTaggedViewModelAction
-import net.maxsmr.commonutils.gui.fragments.dialogs.TypedDialogFragment
+import net.maxsmr.commonutils.gui.fragments.dialogs.BaseTypedDialogFragment
 import net.maxsmr.commonutils.gui.fragments.dialogs.holder.DialogFragmentsHolder
 
-data class DialogBuilderFragmentShowMessageAction<D: Dialog, F : TypedDialogFragment<D>>(
+data class DialogBuilderFragmentShowMessageAction<D: Dialog, F : BaseTypedDialogFragment<D>>(
         override val tag: String,
-        val builder: TypedDialogFragment.Builder<D, F>,
+        val builder: BaseTypedDialogFragment.Builder<D, F>,
         val reshow: Boolean = true
 ) : BaseTaggedViewModelAction<DialogFragmentsHolder>() {
 

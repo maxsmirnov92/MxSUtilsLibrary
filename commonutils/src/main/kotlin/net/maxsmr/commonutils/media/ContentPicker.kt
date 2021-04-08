@@ -36,22 +36,22 @@ class ContentPicker(
     constructor(
             context: Context,
             owner: LifecycleOwner,
-            fileProviderAuthorityPostfix: String,
             pickParams: PickParams,
+            tryDisableStrictMode: Boolean = false,
             newCameraPictureFileFunc: (() -> File)? = null
     ) : this(owner,
             if (isAtLeastNougat()) {
                 MediaStorePickerConfigurator(
                         context,
-                        fileProviderAuthorityPostfix,
                         pickParams,
+                        tryDisableStrictMode,
                         newCameraPictureFileFunc
                 )
             } else {
                 FilePickerConfigurator(
                         context,
-                        fileProviderAuthorityPostfix,
                         pickParams,
+                        tryDisableStrictMode,
                         newCameraPictureFileFunc
                 )
             })
@@ -153,8 +153,8 @@ class ContentPicker(
 
     abstract class BasePickerConfigurator(
             val context: Context,
-            val fileProviderAuthorityPostfix: String,
             val pickParams: PickParams,
+            private val tryDisableStrictMode: Boolean = false,
             private val newCameraPictureFileFunc: (() -> File)? = null
     ) {
 
@@ -177,13 +177,13 @@ class ContentPicker(
                     ?: throw IllegalStateException("Camera picture file must be created for PickerConfigurator")
             val outputFileUri = with(cameraFile) {
                 localFileUri = this.toFileUri()
-                if (!TextUtils.isEmpty(fileProviderAuthorityPostfix)) {
-                    // в манифесте аппа объявлен FileProvider
-                    FileProvider.getUriForFile(context, "${context.packageName}.$fileProviderAuthorityPostfix", this)
-                } else {
+                if (tryDisableStrictMode && isAtLeastNougat()) {
                     // попытка выключить "strict mode" для пользования обычным файлом
                     disableFileUriStrictMode()
                     localFileUri
+                } else {
+                    // в манифесте аппа объявлен FileProvider
+                    toContentUri(context)
                 }
             }
             captureIntent.putExtra(MediaStore.EXTRA_OUTPUT, outputFileUri)
@@ -208,13 +208,13 @@ class ContentPicker(
      */
     open class FilePickerConfigurator(
             context: Context,
-            fileProviderAuthorityPostfix: String,
             pickParams: PickParams,
+            tryDisableStrictMode: Boolean = false,
             newCameraPictureFileFunc: (() -> File)? = null
     ) : BasePickerConfigurator(
             context,
-            fileProviderAuthorityPostfix,
             pickParams,
+            tryDisableStrictMode,
             newCameraPictureFileFunc
     ) {
 
@@ -247,12 +247,12 @@ class ContentPicker(
      */
     open class MediaStorePickerConfigurator(
             context: Context,
-            fileProviderAuthorityPostfix: String,
             pickParams: PickParams,
+            tryDisableStrictMode: Boolean = false,
             newCameraPictureFileFunc: (() -> File)? = null
     ) : BasePickerConfigurator(context,
-            fileProviderAuthorityPostfix,
             pickParams,
+            tryDisableStrictMode,
             newCameraPictureFileFunc
     ) {
 

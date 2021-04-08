@@ -166,8 +166,8 @@ fun File.copyToExternal(
 }
 
 @TargetApi(Build.VERSION_CODES.Q)
-@JvmOverloads
 @Throws(RuntimeException::class)
+@JvmOverloads
 fun File.copyToExternalOrThrow(
         contentResolver: ContentResolver,
         mimeType: String? = null,
@@ -551,17 +551,17 @@ fun File.getImageRotationAngle(): Int = try {
 fun File.getImageRotationAngleOrThrow(): Int =
         createExifOrThrow(this).getRotationAngleOrThrow()
 
-fun Uri.getImageRotationAngle(contentResolver: ContentResolver): Int =
+fun Uri.getImageRotationAngle(contentResolver: ContentResolver): Int? =
         try {
             getImageRotationAngleOrThrow(contentResolver)
         } catch (e: RuntimeException) {
             logger.e(e)
-            ExifInterface.ORIENTATION_UNDEFINED
+            null
         }
 
 @Throws(RuntimeException::class)
 fun Uri.getImageRotationAngleOrThrow(contentResolver: ContentResolver): Int =
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+        if (isAtLeastQ()) {
             getOrientationFromMediaStoreOrThrow(contentResolver)
         } else {
             val inputStream = openInputStreamOrThrow(contentResolver)
