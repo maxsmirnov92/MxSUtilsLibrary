@@ -9,7 +9,7 @@ import android.widget.Checkable
  * This can be used as the root view for a custom list item layout for
  * [android.widget.AbsListView] elements with a setChoiceMode set.
  */
-interface ICheckableLayout : Checkable {
+interface ICheckableView : Checkable {
 
     var _isChecked: Boolean
 

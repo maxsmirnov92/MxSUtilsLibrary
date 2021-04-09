@@ -3,15 +3,13 @@ package net.maxsmr.commonutils.gui.views.checkable
 import android.content.Context
 import android.util.AttributeSet
 import android.view.View
-import android.widget.LinearLayout
 import android.widget.RelativeLayout
-import net.maxsmr.commonutils.gui.views.checkable.ICheckableLayout
 
 open class CheckableRelativeLayout @JvmOverloads constructor(
         context: Context,
         attrs: AttributeSet? = null,
         defStyleAttr: Int = 0
-) : RelativeLayout(context, attrs, defStyleAttr), ICheckableLayout {
+) : RelativeLayout(context, attrs, defStyleAttr), ICheckableView {
 
     override var _isChecked: Boolean = false
 

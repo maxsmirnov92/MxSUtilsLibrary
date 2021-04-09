@@ -23,6 +23,7 @@ import androidx.annotation.StringRes
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.isVisible
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
@@ -390,6 +391,26 @@ fun TextView.setTextWithSelection(
     setTextWithMovementMethod(text.createSelectedText(highlightColor, selection, spanFlags))
 }
 
+@JvmOverloads
+fun TextView.setTextOrHide(
+        @StringRes textResId: Int?,
+        isGoneOrInvisible: Boolean = true,
+        distinct: Boolean = true,
+        asString: Boolean = true,
+        isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
+        showFunc: (() -> Unit)? = null,
+        hideFunc: (() -> Unit)? = null
+): Boolean =
+        setTextOrHide(
+                textResId?.takeIf { it != 0 }?.let { context.getString(it) },
+                isGoneOrInvisible,
+                distinct,
+                asString,
+                isEmptyFunc,
+                showFunc,
+                hideFunc
+        )
+
 /**
  * @return true, если текст был выставлен
  */
@@ -441,11 +462,20 @@ fun TextView.setSumOrHide(
                 hideFunc = hideFunc
         )
     } else {
-        setTextOrHide(null, isGoneOrInvisible,
+        setTextOrHide(null as String?, isGoneOrInvisible,
                 distinct,
                 false,
                 showFunc = null,
                 hideFunc = hideFunc)
+    }
+
+fun ImageView.setImageResourceOrHide(@DrawableRes iconResId: Int?): Boolean = if (iconResId == null || iconResId == 0) {
+        isVisible = false
+        false
+    } else {
+        setImageResource(iconResId)
+        isVisible = true
+        true
     }
 
 @JvmOverloads
