@@ -12,7 +12,8 @@ import net.maxsmr.commonutils.*
 import kotlin.Pair
 
 /**
- * строка, из которой происходит expandTemplate + url
+ * key: строка, из которой происходит expandTemplate
+ * value: строка-url для подстановки
  */
 typealias ExpandValueInfo = Pair<String, String>
 
@@ -40,9 +41,8 @@ fun CharSequence.createSpanTextExpanded(spanInfoMap: Map<ISpanInfo, String>): Ch
 }
 
 /**
- * @return строка с url-частями (value):
- * кастомным способом лямбдой onClick или стандартным из [URLSpan],
- * созданная общей [SpannableString]
+ * @return [SpannableString], созданная по [spanInfoMap]
+ * @param spanInfoMap key - вспомогательная инфа для Span с диапазоном, value - url для перехода
  */
 fun CharSequence.createLinkableText(spanInfoMap: Map<IRangeSpanInfo, String>): CharSequence {
     val newSpanInfoMap = mutableListOf<IRangeSpanInfo>()
@@ -65,9 +65,8 @@ fun CharSequence.createLinkableText(spanInfoMap: Map<IRangeSpanInfo, String>): C
 }
 
 /**
- * @return строка с частями (value) из [ExpandValueInfo]:
- * кастомным способом лямбдой onClick или стандартным из [URLSpan]
- * созданная посредством expandTemplate из нескольких [SpannableString]
+ * @return строка, созданная по [spanInfoMap]
+ * @param spanInfoMap key - вспомогательная инфа для Span, value - см. [ExpandValueInfo]
  */
 fun CharSequence.createLinkableTextExpanded(spanInfoMap: Map<ISpanInfo, ExpandValueInfo>): CharSequence {
     val newSpanInfoMap = mutableMapOf<ISpanInfo, String>()
@@ -176,7 +175,7 @@ interface IRangeSpanInfo : ISpanInfo {
 /**
  * Простая реализация [ISpanInfo] для случая использования expandTemplate
  */
-data class SimpleSpanInfo(
+private data class SimpleSpanInfo(
         override val style: CharacterStyle,
         override val flags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
 ): ISpanInfo
