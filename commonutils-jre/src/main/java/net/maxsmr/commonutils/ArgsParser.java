@@ -110,7 +110,7 @@ public class ArgsParser {
         Set<String> argsNamesSet = argsNames instanceof Set ? (Set<String>) argsNames : new LinkedHashSet<>(argsNames);
         List<String> argsNamesList = new ArrayList<>(argsNamesSet);
         return args != null ?
-                Predicate.Methods.findWithIndex(args, element -> element != null && (ignoreCase ? element.equalsIgnoreCase(argsNamesList.get(index)) : element.equals(argsNamesList.get(index))))
+                Predicate.Methods.findIndexed(args, element -> element != null && (ignoreCase ? element.equalsIgnoreCase(argsNamesList.get(index)) : element.equals(argsNamesList.get(index))))
                 : null;
     }
 

@@ -245,7 +245,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
                 if (isEmpty(columnName)) {
                     throw new IllegalArgumentException("Cannot parse output header line " + headerIndex + ": name is not specified for column " + column);
                 }
-                Pair<Integer, String> indexPair = Predicate.Methods.findWithIndex(columnNamesList, element -> {
+                Pair<Integer, String> indexPair = Predicate.Methods.findIndexed(columnNamesList, element -> {
                     return stringsEqual(element, columnName, true); // May be "NAME" or "Name", for example
                 });
                 if (indexPair != null && indexPair.first != null && indexPair.first >= 0) {

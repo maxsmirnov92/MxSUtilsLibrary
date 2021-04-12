@@ -17,16 +17,16 @@ public interface Predicate<V> {
     class Methods {
 
         public static <V> boolean all(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
-            return findWithIndex(elements, element -> !predicate.apply(element)) == null;
+            return findIndexed(elements, element -> !predicate.apply(element)) == null;
         }
 
         public static <V> boolean contains(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             // any
-            return findWithIndex(elements, predicate) != null;
+            return findIndexed(elements, predicate) != null;
         }
 
         @Nullable
-        public static <V> Pair<Integer, V> findWithIndex(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
+        public static <V> Pair<Integer, V> findIndexed(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             int resultIndex = -1;
             V result = null;
             if (elements != null) {
@@ -45,12 +45,12 @@ public interface Predicate<V> {
 
         @Nullable
         public static <V> V find(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
-            Pair<Integer, V> result = findWithIndex(elements, predicate);
+            Pair<Integer, V> result = findIndexed(elements, predicate);
             return result != null ? result.second : null;
         }
 
         @NotNull
-        public static <V> Map<Integer, V> filterWithIndex(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
+        public static <V> Map<Integer, V> filterIndexed(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             Map<Integer, V> result = new LinkedHashMap<>();
             if (elements != null) {
                 int index = 0;
@@ -66,12 +66,12 @@ public interface Predicate<V> {
 
         @NotNull
         public static <V> List<V> filter(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
-            Map<Integer, V> map = filterWithIndex(elements, predicate);
+            Map<Integer, V> map = filterIndexed(elements, predicate);
             return entriesToValues(map.entrySet());
         }
 
         @Nullable
-        public static <V> Pair<Integer, V> removeFirstWithIndex(@Nullable Iterable<V> elements, @NotNull Predicate<V> predicate) {
+        public static <V> Pair<Integer, V> removeFirstIndex(@Nullable Iterable<V> elements, @NotNull Predicate<V> predicate) {
             int resultIndex = -1;
             V result = null;
             if (elements != null) {
@@ -93,12 +93,12 @@ public interface Predicate<V> {
 
         @Nullable
         public static <V> V removeFirst(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
-            Pair<Integer, V> result = removeFirstWithIndex(elements, predicate);
+            Pair<Integer, V> result = removeFirstIndex(elements, predicate);
             return result != null ? result.second : null;
         }
 
         @NotNull
-        public static <V> Map<Integer, V> removeAllWithIndex(@Nullable Iterable<V> elements, @NotNull Predicate<V> predicate) {
+        public static <V> Map<Integer, V> removeAllIndexed(@Nullable Iterable<V> elements, @NotNull Predicate<V> predicate) {
             Map<Integer, V> removed = new LinkedHashMap<>();
             if (elements != null) {
                 final Iterator<V> iterator = elements.iterator();
@@ -117,7 +117,7 @@ public interface Predicate<V> {
 
         @NotNull
         public static <V> List<V> removeAll(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
-            Map<Integer, V> map = removeAllWithIndex(elements, predicate);
+            Map<Integer, V> map = removeAllIndexed(elements, predicate);
             return entriesToValues(map.entrySet());
         }
 

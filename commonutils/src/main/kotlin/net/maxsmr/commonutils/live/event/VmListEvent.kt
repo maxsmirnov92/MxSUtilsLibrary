@@ -2,8 +2,8 @@ package net.maxsmr.commonutils.live.event
 
 import androidx.annotation.MainThread
 import net.maxsmr.commonutils.gui.actions.BaseViewModelAction
-import net.maxsmr.commonutils.Predicate.Methods.filterWithIndex
-import net.maxsmr.commonutils.Predicate.Methods.findWithIndex
+import net.maxsmr.commonutils.Predicate.Methods.filterIndexed
+import net.maxsmr.commonutils.Predicate.Methods.findIndexed
 import net.maxsmr.commonutils.collection.sort.BaseOptionalComparator
 import net.maxsmr.commonutils.collection.sort.ISortOption
 import net.maxsmr.commonutils.compareInts
@@ -98,7 +98,7 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
     fun add(value: A, options: AddOptions = AddOptions()) {
         val tag = options.tag
         val existingItems = if (tag.isNotEmpty()) {
-            filterWithIndex(list) { it.tag == tag }
+            filterIndexed(list) { it.tag == tag }
         } else {
             emptyMap()
         }
@@ -139,7 +139,7 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
     }
 
     fun removeFirstByTag(tag: String): ItemInfo<A>? {
-        findWithIndex(list) {
+        findIndexed(list) {
             it.tag == tag
         }?.let {
             list.removeAt(it.first)

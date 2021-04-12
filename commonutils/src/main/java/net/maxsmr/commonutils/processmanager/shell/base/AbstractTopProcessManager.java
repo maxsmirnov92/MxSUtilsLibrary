@@ -25,7 +25,7 @@ public abstract class AbstractTopProcessManager extends AbstractShellProcessMana
     @Override
     protected int getOutputHeaderIndex(@NotNull List<String> output) {
         // in 'top' header is usually not located in 0 index
-        Pair<Integer, String> headerIndex = Predicate.Methods.findWithIndex(output, element -> {
+        Pair<Integer, String> headerIndex = Predicate.Methods.findIndexed(output, element -> {
             if (!isEmpty(element)) {
                 element = element.trim();
                 return element.toLowerCase().contains(Column.PID.name().toLowerCase()); // try to find by PID string
