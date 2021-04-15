@@ -188,10 +188,14 @@ fun TextView.bindToText(
         toFieldValue: ((CharSequence?) -> String)? = null
 ) {
     bindTo(field, ifNew) {
-        toFieldValue?.invoke(it) ?: it.toString()
+        toFieldValue?.invoke(it) ?: it?.toString().orEmpty()
     }
 }
 
+/**
+ * При срабатывании [TextWatcher] для укзанного [EditText]
+ * будет выставляться значение в [field]
+ */
 @JvmOverloads
 fun <D> TextView.bindTo(
         field: MutableLiveData<D>,
@@ -208,21 +212,26 @@ fun <D> TextView.bindTo(
     })
 }
 
+/**
+ * Обозревание форматированного или неформатированного (второй вариант более правильный)
+ * из [MutableLiveData] с целью выставления в целевую [view] форматированного значения методом refreshMask
+ * @param maskWatcher уже привязанный к [view]
+ */
 @JvmOverloads
 fun MutableLiveData<String>.observeFromTextUnformatted(
         view: TextView,
         viewLifecycleOwner: LifecycleOwner,
         maskWatcher: MaskFormatWatcher,
-        distinct: Boolean = true,
         onChanged: ((CharSequence?) -> Unit)? = null
 ) {
-    observeFromTextUnformatted(
-            view,
-            viewLifecycleOwner,
-            maskWatcher.maskOriginal,
-            distinct,
-            onChanged
-    )
+    observe(viewLifecycleOwner) {
+        if (it != null && it.isNotEmpty()) {
+            maskWatcher.refreshMask(it)
+        } else {
+            view.text = EMPTY_STRING
+        }
+        onChanged?.invoke(it)
+    }
 }
 
 @JvmOverloads
@@ -239,6 +248,10 @@ fun MutableLiveData<String>.observeFromTextUnformatted(
     }
 }
 
+/**
+ * Обозревание форматированного или неформатированного (второй вариант более правильный)
+ * из [Field] с целью выставления в целевую [view] форматированного значения через [formatFunc]
+ */
 fun MutableLiveData<String>.observeFromText(
         view: TextView,
         viewLifecycleOwner: LifecycleOwner,
