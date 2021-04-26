@@ -212,7 +212,7 @@ class SubstringSpanInfo @JvmOverloads constructor(
 ) : IRangeSpanInfo {
 
     override fun ranges(fullText: CharSequence): List<IntRange> = if (allEntries) {
-        indicesOf(fullText, substring, ignoreCase = true)
+        fullText.indicesOf(substring, ignoreCase = true)
                 .filter { it > 0 }
                 .map { IntRange(it, it + substring.length) }
     } else {

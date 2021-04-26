@@ -8,6 +8,7 @@ import android.os.Build
 import android.view.View
 import android.view.ViewGroup
 import android.view.animation.DecelerateInterpolator
+import android.widget.HorizontalScrollView
 import android.widget.ScrollView
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.widget.NestedScrollView
@@ -89,11 +90,12 @@ fun NestedScrollView.setOnScrollChangesListener(listener: ((ScrollState) -> Unit
 }
 
 @JvmOverloads
-fun ScrollView.scrollToView(
+fun ViewGroup.scrollToView(
         activity: Activity?,
         target: View,
         isVertically: Boolean,
-        smoothScroll: Boolean = true
+        smoothScroll: Boolean = true,
+        changeFocus: Boolean = false
 ) {
     val x: Int
     val y: Int
@@ -105,14 +107,14 @@ fun ScrollView.scrollToView(
         x = coords.left
         y = 0
     }
-    scrollTo(activity, x, y, smoothScroll)
+    scrollTo(activity, x, y, smoothScroll, changeFocus)
 }
 
 /**
  * Скролл в указанную позицию (x, y) [ScrollView]
  */
 @JvmOverloads
-fun ScrollView.scrollTo(
+fun ViewGroup.scrollTo(
         activity: Activity?,
         x: Int,
         y: Int,
@@ -122,11 +124,26 @@ fun ScrollView.scrollTo(
     if (changeFocus) {
         // если не очистить текущий фокус,
         // может не сработать
-        activity.clearFocus()
-        fullScroll(View.FOCUS_DOWN)
+        activity?.currentFocus?.clearFocus()
+        when(this) {
+            is ScrollView -> {
+                fullScroll(View.FOCUS_DOWN)
+            }
+            is HorizontalScrollView -> {
+                fullScroll(View.FOCUS_DOWN)
+            }
+        }
+
     }
     if (smoothScroll) {
-        smoothScrollTo(x, y)
+        when(this) {
+            is ScrollView -> {
+                smoothScrollTo(x, y)
+            }
+            is HorizontalScrollView -> {
+                smoothScrollTo(x, y)
+            }
+        }
     } else {
         scrollTo(x, y)
     }

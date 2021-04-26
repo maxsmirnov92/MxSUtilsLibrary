@@ -70,6 +70,15 @@ fun Uri.readStringsOrThrow(
     }
 }
 
+@JvmOverloads
+fun Uri.readBase64(
+        contentResolver: ContentResolver,
+        charset: Charset = Charset.defaultCharset(),
+        flags: Int = Base64.DEFAULT,
+): String = readStrings(contentResolver)
+        .joinToString(System.getProperty("line.separator") ?: "\\n")
+        .toBase64(charset, flags)
+
 fun Uri.writeBytes(contentResolver: ContentResolver, data: ByteArray?) = try {
     writeBytesOrThrow(contentResolver, data)
     true
@@ -149,18 +158,6 @@ fun Uri.copyToOrThrow(
     }
     return Uri.fromFile(fileTo)
 }
-
-@JvmOverloads
-fun Uri.getBase64(
-        contentResolver: ContentResolver,
-        charset: Charset = Charset.defaultCharset(),
-        flags: Int = Base64.DEFAULT
-): String = getBase64(
-        TextUtils.join(System.getProperty("line.separator") ?: "\\n",
-                readStrings(contentResolver)),
-        charset,
-        flags
-)
 
 @JvmOverloads
 fun <T> Uri.queryFirst(

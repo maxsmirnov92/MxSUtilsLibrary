@@ -35,7 +35,7 @@ import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.gui.listeners.DefaultTextWatcher
 import net.maxsmr.commonutils.gui.listeners.OnTextWatcher
 import net.maxsmr.commonutils.live.setValueIfNew
-import net.maxsmr.commonutils.media.getBase64
+import net.maxsmr.commonutils.media.toBase64
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.format.getUnformattedText
 import net.maxsmr.commonutils.graphic.scaleDownBitmap
@@ -980,9 +980,9 @@ private fun reduceTextByMaxWidth(
  * @return relative coordinates to the parent
  */
 fun View.getBoundsByParent(parent: ViewGroup): Rect {
-    val offsetViewBounds = Rect();
-    getDrawingRect(offsetViewBounds);
-    parent.offsetDescendantRectToMyCoords(this, offsetViewBounds);
+    val offsetViewBounds = Rect()
+    getDrawingRect(offsetViewBounds)
+    parent.offsetDescendantRectToMyCoords(this, offsetViewBounds)
     return offsetViewBounds
 }
 
@@ -1059,7 +1059,7 @@ fun View.screenLocation(): Rect {
 
 @JvmOverloads
 fun WebView.loadDataBase64(value: String, charset: Charset = Charsets.UTF_8) {
-    loadData(getBase64(value, charset, Base64.DEFAULT), "text/html; charset=${charset}", "base64")
+    loadData(value.toBase64(charset, Base64.DEFAULT), "text/html; charset=${charset}", "base64")
 }
 
 @JvmOverloads

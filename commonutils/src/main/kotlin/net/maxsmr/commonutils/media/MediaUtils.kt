@@ -14,7 +14,6 @@ import android.provider.DocumentsContract
 import android.provider.MediaStore
 import android.text.TextUtils
 import android.util.Base64
-import android.util.Log
 import android.webkit.MimeTypeMap
 import androidx.collection.ArraySet
 import androidx.core.content.FileProvider
@@ -786,11 +785,8 @@ fun getExifOrientationByRotationAngle(degrees: Int): Int {
 }
 
 @JvmOverloads
-fun getBase64(
-        value: String?,
-        charset: Charset = Charset.defaultCharset(),
-        flags: Int = Base64.DEFAULT
-): String = getBase64(value?.toByteArray(charset), flags)
+fun String?.toBase64(charset: Charset = Charset.defaultCharset(), flags: Int = Base64.DEFAULT): String
+= this?.toByteArray(charset).toBase64(flags)
 
 /**
  * Получение бинартых данных файла в формате Base64
@@ -799,5 +795,5 @@ fun getBase64(
  * @return - строка в формате base64
  */
 @JvmOverloads
-fun getBase64(value: ByteArray?, flags: Int = Base64.DEFAULT): String =
-        value?.let { Base64.encodeToString(value, flags) } ?: EMPTY_STRING
+fun ByteArray?.toBase64(flags: Int = Base64.DEFAULT): String =
+        this?.let { Base64.encodeToString(this, flags) } ?: EMPTY_STRING

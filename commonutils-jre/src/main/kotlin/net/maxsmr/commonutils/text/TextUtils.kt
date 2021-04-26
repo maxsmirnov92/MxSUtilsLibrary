@@ -103,19 +103,25 @@ fun indexOf(s: CharSequence, c: Char): Int {
  * Аналогично [CharSequence.indexOf], только возвращает список индексов **всех** вхождений подстроки в строку
  */
 @JvmOverloads
-fun indicesOf(s: CharSequence, substring: String, startIndex: Int = 0, ignoreCase: Boolean = false): List<Int> {
+fun CharSequence.indicesOf(substring: String, startIndex: Int = 0, ignoreCase: Boolean = false): List<Int> {
     val positions = mutableListOf<Int>()
     var searchIndex = startIndex
     var resultIndex: Int
 
     do {
-        resultIndex = s.indexOf(substring, searchIndex, ignoreCase)
+        resultIndex = this.indexOf(substring, searchIndex, ignoreCase)
         if (resultIndex != -1) {
             positions.add(resultIndex)
         }
         searchIndex = resultIndex + substring.length
     } while (resultIndex != -1)
     return positions
+}
+
+@JvmOverloads
+fun CharSequence.substringBefore(delimiter: Char, missingDelimiterValue: CharSequence = this): CharSequence {
+    val index = indexOf(delimiter)
+    return if (index == -1) missingDelimiterValue else substring(0, index)
 }
 
 fun replaceSubstrings(

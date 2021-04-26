@@ -3,6 +3,7 @@ package net.maxsmr.commonutils.graphic
 import android.annotation.TargetApi
 import android.content.ContentResolver
 import android.content.Context
+import android.content.res.ColorStateList
 import android.content.res.Resources
 import android.graphics.*
 import android.graphics.Bitmap.CompressFormat
@@ -10,6 +11,7 @@ import android.graphics.Bitmap.Config
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
+import android.graphics.drawable.RippleDrawable
 import android.net.Uri
 import android.os.Build
 import android.renderscript.*
@@ -1255,6 +1257,9 @@ fun renderScriptNVToRGBA(
     }
     return null
 }
+
+fun Drawable.wrapRipple(@ColorInt color: Int): Drawable =
+        RippleDrawable(ColorStateList.valueOf(color), this, null)
 
 fun createBitmapSafe(
         width: Int,
