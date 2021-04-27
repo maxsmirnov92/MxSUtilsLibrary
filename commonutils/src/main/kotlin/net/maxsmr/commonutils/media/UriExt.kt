@@ -8,6 +8,7 @@ import android.net.Uri
 import android.provider.OpenableColumns
 import android.text.TextUtils
 import android.util.Base64
+import android.util.Log
 import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
@@ -36,14 +37,14 @@ fun Uri.readBytesOrThrow(
         contentResolver: ContentResolver,
         offset: Int = 0,
         length: Int = 0
-): ByteArray =try {
-        openInputStreamOrThrow(contentResolver).readBytesOrThrow(
-                offset,
-                length
-        )
-    } catch (e: IOException) {
-        throw RuntimeException(formatException(e, "readBytesOrThrow"), e)
-    }
+): ByteArray = try {
+    openInputStreamOrThrow(contentResolver).readBytesOrThrow(
+            offset,
+            length
+    )
+} catch (e: IOException) {
+    throw RuntimeException(formatException(e, "readBytesOrThrow"), e)
+}
 
 fun Uri.readStrings(
         contentResolver: ContentResolver,
@@ -156,19 +157,18 @@ fun Uri.copyToOrThrow(
     if (deleteOnFinish) {
         deleteOrThrow(contentResolver)
     }
-    return Uri.fromFile(fileTo)
+    return fileTo.toFileUri()
 }
 
 @JvmOverloads
 fun <T> Uri.queryFirst(
         contentResolver: ContentResolver,
         propertyType: Class<T>,
-        projection: List<String>? = null,
+        projection: String,
         selection: String? = null,
         selectionArgs: List<String>? = null,
-        columnIndexFunc: ((Cursor) -> Int)? = null
 ): T? = try {
-    queryFirstOrThrow(contentResolver, propertyType, projection, selection, selectionArgs, columnIndexFunc)
+    queryFirstOrThrow(contentResolver, propertyType, projection, selection, selectionArgs)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
@@ -179,16 +179,46 @@ fun <T> Uri.queryFirst(
 fun <T> Uri.queryFirstOrThrow(
         contentResolver: ContentResolver,
         columnType: Class<T>,
-        projection: List<String>? = null,
+        projection: String,
+        selection: String? = null,
+        selectionArgs: List<String>? = null
+): T {
+    queryOrThrow(contentResolver, listOf(projection), selection, selectionArgs).use { cursor ->
+        if (cursor.position == -1) {
+            cursor.moveToFirst()
+        }
+        return cursor.getColumnValueOrThrow(columnType, 0)
+    }
+}
+
+@JvmOverloads
+fun <T> Uri.queryFirst(
+        contentResolver: ContentResolver,
+        projection: List<String>,
         selection: String? = null,
         selectionArgs: List<String>? = null,
-        columnIndexFunc: ((Cursor) -> Int)? = null
+        mapFunc: (Cursor) -> T?
+): T? = try {
+    queryFirstOrThrow(contentResolver, projection, selection, selectionArgs, mapFunc)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+@Throws(RuntimeException::class)
+@JvmOverloads
+fun <T> Uri.queryFirstOrThrow(
+        contentResolver: ContentResolver,
+        projection: List<String>,
+        selection: String? = null,
+        selectionArgs: List<String>? = null,
+        mapFunc: (Cursor) -> T?
 ): T {
     queryOrThrow(contentResolver, projection, selection, selectionArgs).use { cursor ->
         if (cursor.position == -1) {
             cursor.moveToFirst()
         }
-        return cursor.getColumnValueOrThrow(columnType, columnIndexFunc)
+        return mapFunc(cursor) ?: throw RuntimeException("Cannot map cursor to entity")
     }
 }
 
@@ -196,13 +226,12 @@ fun <T> Uri.queryFirstOrThrow(
 fun <T : Any> Uri.query(
         contentResolver: ContentResolver,
         columnType: Class<T>,
-        projection: List<String>? = null,
+        projection: String,
         selection: String? = null,
         selectionArgs: List<String>? = null,
-        sortOrder: String? = null,
-        columnIndexFunc: ((Cursor) -> Int)? = null
+        sortOrder: String? = null
 ): List<T> = try {
-    queryOrThrow(contentResolver, columnType, projection, selection, selectionArgs, sortOrder, columnIndexFunc)
+    queryOrThrow(contentResolver, columnType, projection, selection, selectionArgs, sortOrder)
 } catch (e: RuntimeException) {
     logger.e(e)
     listOf()
@@ -213,16 +242,41 @@ fun <T : Any> Uri.query(
 fun <T : Any> Uri.queryOrThrow(
         contentResolver: ContentResolver,
         columnType: Class<T>,
+        projection: String,
+        selection: String? = null,
+        selectionArgs: List<String>? = null,
+        sortOrder: String? = null
+): List<T> = queryOrThrow(contentResolver, listOf(projection), selection, selectionArgs, sortOrder) {
+    it.getColumnValueOrThrow(columnType, 0)
+}
+
+@JvmOverloads
+fun <T : Any> Uri.query(
+        contentResolver: ContentResolver,
         projection: List<String>? = null,
         selection: String? = null,
         selectionArgs: List<String>? = null,
         sortOrder: String? = null,
-        columnIndexFunc: ((Cursor) -> Int)? = null
+        mapFunc: (Cursor) -> T?
+): List<T> = try {
+    queryOrThrow(contentResolver, projection, selection, selectionArgs, sortOrder, mapFunc)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    listOf()
+}
+
+@Throws(RuntimeException::class)
+@JvmOverloads
+fun <T : Any> Uri.queryOrThrow(
+        contentResolver: ContentResolver,
+        projection: List<String>? = null,
+        selection: String? = null,
+        selectionArgs: List<String>? = null,
+        sortOrder: String? = null,
+        mapFunc: (Cursor) -> T?
 ): List<T> {
     queryOrThrow(contentResolver, projection, selection, selectionArgs, sortOrder).use { cursor ->
-        return cursor.mapToList {
-            cursor.getColumnValueOrThrow(columnType, columnIndexFunc)
-        }
+        return cursor.mapToList(mapFunc)
     }
 }
 
@@ -287,27 +341,6 @@ fun Uri?.getTableName(): String? {
     } else null
 }
 
-fun Cursor?.isValid() = this != null && !this.isClosed
-
-fun Cursor?.isNonEmpty() = this != null && !this.isClosed && this.count > 0
-
-fun Uri.toContentUri(context: Context): Uri? = try {
-    toContentUriOrThrow(context)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    null
-}
-
-@Throws(RuntimeException::class)
-fun Uri.toContentUriOrThrow(context: Context): Uri {
-    val path = path ?: throw RuntimeException("uri path is null")
-    return when {
-        isFileScheme() -> File(path).toContentUri(context)
-        isContentScheme() -> this
-        else -> throw RuntimeException("Incorrect uri scheme: $scheme")
-    }
-}
-
 fun Uri.exists(contentResolver: ContentResolver): Boolean = try {
     existsOrThrow(contentResolver)
 } catch (e: RuntimeException) {
@@ -360,12 +393,29 @@ fun Uri.lengthOrThrow(contentResolver: ContentResolver): Long {
             queryFirstOrThrow(
                     contentResolver,
                     Long::class.java,
-                    listOf(OpenableColumns.SIZE)
+                    OpenableColumns.SIZE
             )
         }
         else -> {
             throw RuntimeException("Incorrect uri scheme: $scheme")
         }
+    }
+}
+
+fun Uri.toContentUri(context: Context): Uri? = try {
+    toContentUriOrThrow(context)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+@Throws(RuntimeException::class)
+fun Uri.toContentUriOrThrow(context: Context): Uri {
+    val path = path ?: throw RuntimeException("uri path is null")
+    return when {
+        isFileScheme() -> File(path).toContentUri(context)
+        isContentScheme() -> this
+        else -> throw RuntimeException("Incorrect uri scheme: $scheme")
     }
 }
 
@@ -387,7 +437,7 @@ fun Uri.nameOrThrow(contentResolver: ContentResolver): String {
             queryFirstOrThrow(
                     contentResolver,
                     String::class.java,
-                    listOf(OpenableColumns.DISPLAY_NAME)
+                    OpenableColumns.DISPLAY_NAME
             )
         }
         else -> {
@@ -404,7 +454,7 @@ fun Uri.mimeType(contentResolver: ContentResolver): String = try {
 
 @Throws(RuntimeException::class)
 fun Uri.mimeTypeOrThrow(contentResolver: ContentResolver): String = when {
-    isFileScheme() -> getMimeType(path)
+    isFileScheme() -> path.mimeType
     isContentScheme() -> {
         try {
             contentResolver.getType(this)

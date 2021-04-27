@@ -42,11 +42,21 @@ const val ENV_EXTERNAL_STORAGE = "EXTERNAL_STORAGE"
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("MediaUtils")
 
-fun getMimeType(fileName: String?) = MimeTypeMap.getSingleton().getMimeTypeFromExtension(getFileExtension(fileName))
+val File.mimeType get() = name.mimeType
+
+val String?.mimeType get() = MimeTypeMap.getSingleton().getMimeTypeFromExtension(this.extension)
         ?: EMPTY_STRING
 
-fun getMimeType(file: File) = MimeTypeMap.getSingleton().getMimeTypeFromExtension(file.extension)
-        ?: EMPTY_STRING
+fun File.isPrivate(context: Context): Boolean {
+    val internalFileDir = Environment.getDataDirectory()
+    val externalFileDir = context.getExternalFilesDir(null)
+    return this.startsWith(internalFileDir) || (externalFileDir != null && this.startsWith(externalFileDir))
+}
+
+fun File.toContentUri(context: Context): Uri =
+        FileProvider.getUriForFile(context, "${context.packageName}.provider", this)
+
+fun File.toFileUri(): Uri = Uri.fromFile(this)
 
 /**
  * @return true, если внешнее хранилище примонтировано
@@ -138,18 +148,6 @@ fun getFilteredExternalFilesDirs(
     return result
 }
 
-fun getMimeTypeFromFile(file: File?): String =
-        getMimeTypeFromFile(file?.name ?: EMPTY_STRING)
-
-fun getMimeTypeFromFile(fileName: String?): String =
-        MimeTypeMap.getSingleton().getMimeTypeFromExtension(getFileExtension(fileName))
-                ?: EMPTY_STRING
-
-fun File.toContentUri(context: Context): Uri =
-        FileProvider.getUriForFile(context, "${context.packageName}.provider", this)
-
-fun File.toFileUri(): Uri = Uri.fromFile(this)
-
 @TargetApi(Build.VERSION_CODES.Q)
 @JvmOverloads
 fun File.copyToExternal(
@@ -182,7 +180,7 @@ fun File.copyToExternalOrThrow(
         }
         put(MediaStore.Images.Media.DISPLAY_NAME, name)
         put(MediaStore.Images.Media.MIME_TYPE,
-                if (!mimeType.isNullOrEmpty()) mimeType else getMimeType(this@copyToExternalOrThrow))
+                if (!mimeType.isNullOrEmpty()) mimeType else this@copyToExternalOrThrow.mimeType)
     }
 
     val targetUri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
@@ -205,7 +203,7 @@ fun scanFiles(
 ) {
     val filesMap = mutableMapOf<String, String>()
     files?.forEach {
-        filesMap[it.absolutePath] = getMimeTypeFromFile(it).takeIf { type -> type.isNotEmpty() }
+        filesMap[it.absolutePath] = it.mimeType.takeIf { type -> type.isNotEmpty() }
                 ?: MIME_TYPE_ANY
     }
     MediaScannerConnection.scanFile(context, filesMap.keys.toTypedArray(), filesMap.values.toTypedArray()) { path, uri ->
@@ -407,7 +405,7 @@ fun Uri.getDataColumn(
         contentResolver: ContentResolver,
         selection: String? = null,
         selectionArgs: List<String>? = null
-): String = queryFirst(contentResolver, String::class.java, listOf(MediaStore.Images.ImageColumns.DATA), selection, selectionArgs)
+): String = queryFirst(contentResolver, String::class.java, MediaStore.Images.ImageColumns.DATA, selection, selectionArgs)
         ?: EMPTY_STRING
 
 /**
@@ -567,34 +565,6 @@ fun Uri.getImageRotationAngleOrThrow(contentResolver: ContentResolver): Int =
             createExifOrThrow(inputStream).getRotationAngleOrThrow()
         }
 
-@Throws(RuntimeException::class)
-private fun createExifOrThrow(file: File?) =
-        createExifOrThrow(file?.absolutePath)
-
-@Throws(RuntimeException::class)
-private fun createExifOrThrow(path: String?): ExifInterface {
-    if (path == null || path.isEmpty()) {
-        throw NullPointerException("path is null or empty")
-    }
-    return try {
-        ExifInterface(path)
-    } catch (e: Exception) {
-        throw RuntimeException(formatException(e, "create ExifInterface"), e)
-    }
-}
-
-@Throws(RuntimeException::class)
-private fun createExifOrThrow(stream: InputStream?): ExifInterface {
-    if (stream == null) {
-        throw NullPointerException("path is null")
-    }
-    return try {
-        ExifInterface(stream)
-    } catch (e: Exception) {
-        throw RuntimeException(formatException(e, "create ExifInterface"), e)
-    }
-}
-
 /**
  * Определяет поворот картинки
  */
@@ -611,7 +581,7 @@ fun Uri.getOrientationFromMediaStore(contentResolver: ContentResolver): Int? = t
 fun Uri.getOrientationFromMediaStoreOrThrow(contentResolver: ContentResolver): Int =
         queryFirstOrThrow(contentResolver,
                 Int::class.java,
-                listOf(MediaStore.Images.ImageColumns.ORIENTATION))
+                MediaStore.Images.ImageColumns.ORIENTATION)
 
 fun getRotationAngleFromExif(imageFile: File?): Int = try {
     getRotationAngleFromExifOrThrow(imageFile)
@@ -785,8 +755,7 @@ fun getExifOrientationByRotationAngle(degrees: Int): Int {
 }
 
 @JvmOverloads
-fun String?.toBase64(charset: Charset = Charset.defaultCharset(), flags: Int = Base64.DEFAULT): String
-= this?.toByteArray(charset).toBase64(flags)
+fun String?.toBase64(charset: Charset = Charset.defaultCharset(), flags: Int = Base64.DEFAULT): String = this?.toByteArray(charset).toBase64(flags)
 
 /**
  * Получение бинартых данных файла в формате Base64
@@ -797,3 +766,31 @@ fun String?.toBase64(charset: Charset = Charset.defaultCharset(), flags: Int = B
 @JvmOverloads
 fun ByteArray?.toBase64(flags: Int = Base64.DEFAULT): String =
         this?.let { Base64.encodeToString(this, flags) } ?: EMPTY_STRING
+
+@Throws(RuntimeException::class)
+private fun createExifOrThrow(file: File?) =
+        createExifOrThrow(file?.absolutePath)
+
+@Throws(RuntimeException::class)
+private fun createExifOrThrow(path: String?): ExifInterface {
+    if (path == null || path.isEmpty()) {
+        throw NullPointerException("path is null or empty")
+    }
+    return try {
+        ExifInterface(path)
+    } catch (e: Exception) {
+        throw RuntimeException(formatException(e, "create ExifInterface"), e)
+    }
+}
+
+@Throws(RuntimeException::class)
+private fun createExifOrThrow(stream: InputStream?): ExifInterface {
+    if (stream == null) {
+        throw NullPointerException("path is null")
+    }
+    return try {
+        ExifInterface(stream)
+    } catch (e: Exception) {
+        throw RuntimeException(formatException(e, "create ExifInterface"), e)
+    }
+}

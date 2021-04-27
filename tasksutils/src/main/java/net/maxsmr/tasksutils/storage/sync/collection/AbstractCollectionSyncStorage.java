@@ -22,7 +22,7 @@ import static net.maxsmr.commonutils.CompareUtilsKt.stringsEqual;
 import static net.maxsmr.commonutils.FileUtilsKt.checkDir;
 import static net.maxsmr.commonutils.FileUtilsKt.deleteFiles;
 import static net.maxsmr.commonutils.FileUtilsKt.deleteFile;
-import static net.maxsmr.commonutils.FileUtilsKt.getFileExtension;
+import static net.maxsmr.commonutils.FileUtilsKt.getExtension;
 import static net.maxsmr.commonutils.FileUtilsKt.getFiles;
 import static net.maxsmr.commonutils.FileUtilsKt.isFileValid;
 import static net.maxsmr.commonutils.FileUtilsKt.sortFilesByLastModified;
@@ -94,7 +94,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
                     continue;
                 }
 
-                final String ext = getFileExtension(f.getName());
+                final String ext = getExtension(f);
 
                 if (isFileValid(f) && extension.equalsIgnoreCase(ext)) {
 
@@ -203,7 +203,7 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
         FileUtilsKt.deleteFiles(new File(storageDirPath), false, null, 1, 0, new IDeleteNotifier() {
             @Override
             public boolean confirmDeleteFile(@NotNull File file) {
-                return stringsEqual(extension, getFileExtension(file.getName()), true);
+                return stringsEqual(extension, getExtension(file), true);
             }
         });
         return true;

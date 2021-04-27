@@ -141,6 +141,13 @@ fun replaceSubstrings(
     return result
 }
 
+fun replaceRange(s: CharSequence, start: Int, end: Int, replacement: CharSequence): CharSequence =
+        try {
+            replaceRangeOrThrow(s, start, end, replacement)
+        } catch (e: IllegalArgumentException) {
+            s
+        }
+
 fun replaceRangeOrThrow(s: CharSequence, start: Int, end: Int, replacement: CharSequence): String {
     checkArgs(s, start, end)
     val sb = StringBuilder(s)
@@ -148,9 +155,9 @@ fun replaceRangeOrThrow(s: CharSequence, start: Int, end: Int, replacement: Char
     return sb.toString()
 }
 
-fun replaceRange(s: CharSequence, start: Int, end: Int, replacement: CharSequence): CharSequence =
+fun removeRange(s: CharSequence, start: Int, end: Int): CharSequence =
         try {
-            replaceRangeOrThrow(s, start, end, replacement)
+            removeRangeOrThrow(s, start, end)
         } catch (e: IllegalArgumentException) {
             s
         }
@@ -161,13 +168,6 @@ fun removeRangeOrThrow(s: CharSequence, start: Int, end: Int): String {
     sb.delete(start, end)
     return sb.toString()
 }
-
-fun removeRange(s: CharSequence, start: Int, end: Int): CharSequence =
-        try {
-            removeRangeOrThrow(s, start, end)
-        } catch (e: IllegalArgumentException) {
-            s
-        }
 
 fun removeSubstrings(
         text: String?,

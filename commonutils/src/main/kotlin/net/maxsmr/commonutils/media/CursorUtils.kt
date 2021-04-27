@@ -9,6 +9,10 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("CursorUtils")
 
+fun Cursor?.isValid() = this != null && !this.isClosed
+
+fun Cursor?.isNonEmpty() = this != null && !this.isClosed && this.count > 0
+
 fun <T> Cursor.getColumnValue(columnType: Class<T>, index: Int): T? = try {
     getColumnValueOrThrow(columnType, index)
 } catch (e: RuntimeException) {

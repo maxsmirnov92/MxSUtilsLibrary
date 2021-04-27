@@ -162,15 +162,12 @@ private fun getFileUriAndType(
     if (file == null || !isFileExists(file)) {
         return null
     }
-
     val fileUri = if (shouldUseFileProvider) {
         file.toContentUri(context)
     } else {
         file.toFileUri()
     }
-
-    val ext = getFileExtension(file)
+    val ext = file.extension
     val mimeType = MimeTypeMap.getSingleton().getMimeTypeFromExtension(ext)
-
     return Pair(fileUri, mimeType ?: EMPTY_STRING)
 }

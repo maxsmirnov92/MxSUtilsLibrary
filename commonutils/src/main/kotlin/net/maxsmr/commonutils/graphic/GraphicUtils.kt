@@ -621,9 +621,9 @@ fun compressBitmapToFile(
     var ext = getFileExtByCompressFormat(format)
     if (isEmpty(ext)) {
         logger.e("Unknown format: $format")
-        ext = getFileExtension(file.name)
+        ext = file.name.extension
     }
-    file = createFile(removeFileExtension(file.name) + "." + ext, file.parent)
+    file = createFile(file.name.removeExtension() + "." + ext, file.parent)
     if (file == null) {
         logger.e("file was not created")
         return null

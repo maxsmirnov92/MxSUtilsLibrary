@@ -39,28 +39,28 @@ fun getEnvPathFiles(): Set<File> {
     return result
 }
 
-fun getFileExtension(file: File?): String = getFileExtension(file?.name)
+val File?.extension : String get() = this?.name.extension
 
-fun getFileExtension(fileName: String?): String {
-    if (fileName == null) return EMPTY_STRING
-    val index = fileName.lastIndexOf('.')
-    return if (index > 0 && index < fileName.length - 1) fileName.substring(index + 1) else EMPTY_STRING
+val String?.extension: String get() {
+    if (this == null) return EMPTY_STRING
+    val index = this.lastIndexOf('.')
+    return if (index > 0 && index < this.length - 1) this.substring(index + 1) else EMPTY_STRING
 }
 
-fun removeFileExtension(file: File?): String =
-        removeFileExtension(file?.name)
+fun File?.removeExtension(): String =
+        this?.name.removeExtension()
 
 /**
  * убрать расширение файла
  *
  * @return новое имя
  */
-fun removeFileExtension(fileName: String?): String {
-    var result: String = fileName ?: EMPTY_STRING
-    if (fileName != null && !isEmpty(fileName)) {
-        val startIndex = fileName.lastIndexOf('.')
+fun String?.removeExtension(): String {
+    var result: String = this ?: EMPTY_STRING
+    if (this != null && this.isNotEmpty()) {
+        val startIndex = this.lastIndexOf('.')
         if (startIndex >= 0) {
-            result = replaceRangeOrThrow(fileName, startIndex, fileName.length, EMPTY_STRING)
+            result = replaceRangeOrThrow(this, startIndex, this.length, EMPTY_STRING)
         }
     }
     return result
@@ -69,10 +69,10 @@ fun removeFileExtension(fileName: String?): String {
 fun appendPostfix(file: File?, postfix: String?): File? {
     var result = file
     if (!isEmpty(postfix) && file != null) {
-        var name = removeFileExtension(file.name)
+        var name = file.name.removeExtension()
         if (name.isNotEmpty()) {
             name += postfix
-            val extension = getFileExtension(file.name)
+            val extension = file.name.extension
             if (extension.isNotEmpty()) {
                 name += ".$extension"
             }
@@ -350,9 +350,9 @@ fun isDirExistsOrThrow(dirName: String?, parentPath: String? = null): Boolean =
 fun isDirExistsOrThrow(dir: File?): Boolean = isFileOrDirExistsOrThrow(dir, false)
 
 @Throws(RuntimeException::class)
-private fun isFileOrDirExistsOrThrow(dir: File?, isFile: Boolean): Boolean =
+private fun isFileOrDirExistsOrThrow(file: File?, isFile: Boolean?): Boolean =
         try {
-            dir != null && (if (isFile) dir.isFile else dir.isDirectory) && dir.exists()
+            file != null && file.exists() && (isFile == null || (if (isFile) file.isFile else file.isDirectory))
         } catch (e: SecurityException) {
             throw RuntimeException(formatException(e), e)
         }
@@ -790,7 +790,7 @@ fun writeStringsToFileOrThrow(
     if (!isFileExistsOrThrow(file)) {
         createFileOrThrow(file.name, file.parent, !append)
     }
-    val writer: Writer  = try {
+    val writer: Writer = try {
         OutputStreamWriter(FileOutputStream(file, append), charset)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "create Writer"), e)
@@ -928,12 +928,12 @@ fun moveFile(
 
 fun renameFile(
         sourceFile: File?,
-        destinationDir: String?,
+        targetDir: String?,
         newFileName: String?,
         deleteIfExists: Boolean,
         deleteEmptyDirs: Boolean
 ): File? = try {
-    renameFileOrThrow(sourceFile, destinationDir, newFileName, deleteIfExists, deleteEmptyDirs)
+    renameFileOrThrow(sourceFile, targetDir, newFileName, deleteIfExists, deleteEmptyDirs)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
@@ -957,39 +957,36 @@ fun renameFileOrThrow(
         throw RuntimeException("File name for new file is not specified")
     }
     val newFile: File
-    val newDir = createDir(targetDir)
-    if (newDir != null) {
-        newFile = File(newDir, newFileName)
-        if (newFile != sourceFile) {
-            if (isFileExistsOrThrow(newFile)) {
-                logger.d("Target file '$newFile' already exists")
-                if (deleteIfExists) {
-                    if (!deleteFile(newFile)) {
-                        throw RuntimeException("Delete file '$newFile' failed")
-                    }
-                } else {
-                    throw RuntimeException("File '$newFile' exists, not deleting")
-                }
-            }
-            val renamed = try {
-                sourceFile.renameTo(newFile)
-            } catch (e: SecurityException) {
-                throw RuntimeException(formatException(e, "rename '$sourceFile' to '$newFile'"), e)
-            }
-            if (renamed) {
-                val sourceParentDir = sourceFile.parentFile
-                if (deleteEmptyDirs) {
-                    deleteEmptyDir(sourceParentDir)
+    val newDir = createDirOrThrow(targetDir)
+    newFile = File(newDir, newFileName)
+    if (newFile != sourceFile) {
+        if (isFileOrDirExistsOrThrow(newFile, null)) {
+            logger.d("Target file '$newFile' already exists")
+            if (deleteIfExists) {
+                if (!deleteFile(newFile)) {
+                    throw RuntimeException("Delete file '$newFile' failed")
                 }
             } else {
-                throw RuntimeException("Rename '$sourceFile' to '$newFile' failed")
+                throw RuntimeException("File '$newFile' exists, not deleting")
+            }
+        }
+        val renamed = try {
+            sourceFile.renameTo(newFile)
+        } catch (e: SecurityException) {
+            throw RuntimeException(formatException(e, "rename '$sourceFile' to '$newFile'"), e)
+        }
+        if (renamed) {
+            val sourceParentDir = sourceFile.parentFile
+            if (deleteEmptyDirs) {
+                deleteEmptyDir(sourceParentDir)
             }
         } else {
-            logger.w("New file '$newFile' is same as source file")
+            throw RuntimeException("Rename '$sourceFile' to '$newFile' failed")
         }
     } else {
-        throw RuntimeException("Create new dir: '$targetDir' failed")
+        logger.w("New file '$newFile' is same as source file")
     }
+
     return newFile
 }
 

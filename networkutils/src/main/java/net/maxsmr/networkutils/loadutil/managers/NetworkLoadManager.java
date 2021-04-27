@@ -42,10 +42,10 @@ import java.util.concurrent.TimeUnit;
 import static net.maxsmr.commonutils.FileUtilsKt.checkDir;
 import static net.maxsmr.commonutils.FileUtilsKt.createFile;
 import static net.maxsmr.commonutils.FileUtilsKt.deleteFile;
-import static net.maxsmr.commonutils.FileUtilsKt.getFileExtension;
+import static net.maxsmr.commonutils.FileUtilsKt.getExtension;
 import static net.maxsmr.commonutils.FileUtilsKt.isFileExists;
 import static net.maxsmr.commonutils.FileUtilsKt.isFileValid;
-import static net.maxsmr.commonutils.FileUtilsKt.removeFileExtension;
+import static net.maxsmr.commonutils.FileUtilsKt.removeExtension;
 import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.text.TextUtilsKt.join;
 import static net.maxsmr.networkutils.loadutil.managers.base.info.LoadRunnableInfo.ContentType.MULTIPART_FORM_DATA;
@@ -886,9 +886,9 @@ public class NetworkLoadManager<B extends LoadRunnableInfo.Body, LI extends Load
                                         int it = 1;
                                         while (lastDownloadFile.exists()) {
                                             String newName = lastDownloadFile.getName();
-                                            String ext = getFileExtension(newName);
+                                            String ext = getExtension(newName);
                                             if (!isEmpty(ext)) {
-                                                newName = removeFileExtension(newName) + " (" + it + ")." + ext;
+                                                newName = removeExtension(newName) + " (" + it + ")." + ext;
                                             } else {
                                                 newName += " (" + it + ")";
                                             }
