@@ -229,9 +229,10 @@ fun <T : Any> Uri.query(
         projection: String,
         selection: String? = null,
         selectionArgs: List<String>? = null,
-        sortOrder: String? = null
+        sortOrder: String? = null,
+        checkCursorEmpty: Boolean = false
 ): List<T> = try {
-    queryOrThrow(contentResolver, columnType, projection, selection, selectionArgs, sortOrder)
+    queryOrThrow(contentResolver, columnType, projection, selection, selectionArgs, sortOrder, checkCursorEmpty)
 } catch (e: RuntimeException) {
     logger.e(e)
     listOf()
@@ -245,8 +246,9 @@ fun <T : Any> Uri.queryOrThrow(
         projection: String,
         selection: String? = null,
         selectionArgs: List<String>? = null,
-        sortOrder: String? = null
-): List<T> = queryOrThrow(contentResolver, listOf(projection), selection, selectionArgs, sortOrder) {
+        sortOrder: String? = null,
+        checkCursorEmpty: Boolean = false
+): List<T> = queryOrThrow(contentResolver, listOf(projection), selection, selectionArgs, sortOrder, checkCursorEmpty) {
     it.getColumnValueOrThrow(columnType, 0)
 }
 
@@ -257,9 +259,10 @@ fun <T : Any> Uri.query(
         selection: String? = null,
         selectionArgs: List<String>? = null,
         sortOrder: String? = null,
+        checkCursorEmpty: Boolean = false,
         mapFunc: (Cursor) -> T?
 ): List<T> = try {
-    queryOrThrow(contentResolver, projection, selection, selectionArgs, sortOrder, mapFunc)
+    queryOrThrow(contentResolver, projection, selection, selectionArgs, sortOrder, checkCursorEmpty, mapFunc)
 } catch (e: RuntimeException) {
     logger.e(e)
     listOf()
@@ -273,9 +276,10 @@ fun <T : Any> Uri.queryOrThrow(
         selection: String? = null,
         selectionArgs: List<String>? = null,
         sortOrder: String? = null,
+        checkCursorEmpty: Boolean = false,
         mapFunc: (Cursor) -> T?
 ): List<T> {
-    queryOrThrow(contentResolver, projection, selection, selectionArgs, sortOrder).use { cursor ->
+    queryOrThrow(contentResolver, projection, selection, selectionArgs, sortOrder, checkCursorEmpty).use { cursor ->
         return cursor.mapToList(mapFunc)
     }
 }

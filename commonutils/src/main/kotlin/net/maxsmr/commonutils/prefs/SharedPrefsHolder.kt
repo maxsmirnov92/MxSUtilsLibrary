@@ -6,6 +6,7 @@ import net.maxsmr.commonutils.prefs.SharedPrefsHolder.PrefType.*
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(SharedPrefsHolder::class.java)
 
@@ -13,7 +14,6 @@ const val EMPTY_BOOLEAN_SETTING = false
 const val EMPTY_INT_SETTING = -1
 const val EMPTY_LONG_SETTING = -1L
 const val EMPTY_FLOAT_SETTING = -1f
-const val EMPTY_DOUBLE_SETTING = -1.0
 val EMPTY_SET_SETTING = HashSet<String>()
 val EMPTY_STRING_SETTING = EMPTY_STRING
 
@@ -28,6 +28,7 @@ object SharedPrefsHolder {
 
     fun hasKey(sp: SharedPreferences, key: String) = sp.contains(key)
 
+    @Synchronized
     fun <V> getValue(
             sp: SharedPreferences,
             key: String,
@@ -44,7 +45,7 @@ object SharedPrefsHolder {
             STRING_SET -> sp.getStringSet(key, if (defaultValue != null) defaultValue as Set<String>? else EMPTY_SET_SETTING) as V
         }
     } catch (e: ClassCastException) {
-        logger.e("A RuntimeException occurred during get value")
+        logException(logger, e, "getValue")
         null
     }
 
@@ -82,7 +83,7 @@ object SharedPrefsHolder {
                 editor.putString(key, null)
             }
         } catch (e: RuntimeException) {
-            logger.e("A RuntimeException occurred during put value")
+            logException(logger, e, "setValue")
         }
 
         if (saveChanges(editor, async)) {
@@ -94,6 +95,7 @@ object SharedPrefsHolder {
         return false
     }
 
+    @Synchronized
     fun removeKey(sp: SharedPreferences,
                   key: String,
                   async: Boolean = true): Boolean {
@@ -102,18 +104,16 @@ object SharedPrefsHolder {
         return saveChanges(editor, async)
     }
 
+    @Synchronized
     fun clear(sp: SharedPreferences, async: Boolean = true): Boolean {
         val editor = getOrCreateEditor(sp)
         editor.clear()
         return saveChanges(editor, async)
     }
 
-
     private fun getOrCreateEditor(sp: SharedPreferences): SharedPreferences.Editor =
-            synchronized(sharedPreferencesEditorMap) {
-                sharedPreferencesEditorMap.getOrPut(sp) {
-                    sp.edit()
-                }
+            sharedPreferencesEditorMap.getOrPut(sp) {
+                sp.edit()
             }
 
     private fun saveChanges(editor: SharedPreferences.Editor, async: Boolean = true): Boolean {
