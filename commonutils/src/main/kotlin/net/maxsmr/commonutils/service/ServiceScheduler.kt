@@ -3,6 +3,7 @@ package net.maxsmr.commonutils.service
 import android.app.Service
 import android.content.Context
 import android.content.Intent
+import android.os.Bundle
 
 class ServiceScheduler<S : Service>(
         private val context: Context,
@@ -23,29 +24,40 @@ class ServiceScheduler<S : Service>(
             }
         }
 
-    fun start(args: Intent? = null) {
-        if (start(context, serviceClass, args)) {
-            isServiceScheduled = false
+    var lastFailedMode: ServiceLaunchMode? = null
+
+    fun start(args: Bundle? = null) {
+        start(context, serviceClass, args).let {
+            if (it == StartResult.STARTED) {
+                isServiceScheduled = false
+                lastFailedMode = null
+            } else if (it == StartResult.NOT_STARTED_FAILED) {
+                lastFailedMode = ServiceLaunchMode.START.apply { this.args = args }
+            }
         }
     }
 
-    fun restart(args: Intent? = null) {
-        restart(context, serviceClass, args)
-        isServiceScheduled = false
+    fun restart(args: Bundle? = null) {
+        if (restart(context, serviceClass, args)) {
+            isServiceScheduled = false
+            lastFailedMode = null
+        } else {
+            lastFailedMode = ServiceLaunchMode.RESTART.apply { this.args = args }
+        }
     }
 
     fun stop() {
         stop(context, serviceClass)
     }
 
-    fun startDelay(delay: Long, args: Intent? = null) {
+    fun startDelay(delay: Long, args: Bundle? = null) {
         if (startDelay(context, serviceClass, delay, args)) {
             isServiceScheduled = true
         }
     }
 
 
-    fun restartDelay(delay: Long, args: Intent? = null) {
+    fun restartDelay(delay: Long, args: Bundle? = null) {
         if (restartDelay(context, serviceClass, delay, args)) {
             isServiceScheduled = true
         }
@@ -53,5 +65,28 @@ class ServiceScheduler<S : Service>(
 
     fun cancelDelay() {
         cancelDelay(context, serviceClass)
+    }
+
+    // вызвать вручную из того места, где отслеживается жизненный цикл
+    fun notifyAppStateChanged(state: AppState) {
+        lastFailedMode?.let {
+            if (state == AppState.FOREGROUND) {
+                when (it) {
+                    ServiceLaunchMode.START -> start(it.args)
+                    ServiceLaunchMode.RESTART -> restart(it.args)
+                }
+            }
+        }
+    }
+
+    enum class ServiceLaunchMode {
+        START, RESTART;
+
+        var args: Bundle? = null
+    }
+
+    enum class AppState {
+
+        FOREGROUND, BACKGROUND, NOT_RUNNING
     }
 }

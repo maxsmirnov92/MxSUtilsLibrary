@@ -5,61 +5,43 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 
-abstract class BaseBroadcastWrapper(val context: Context) {
-
-    abstract val intentFilter: IntentFilter
-
-    var isDisposed: Boolean = false
-        private set(value) {
-            if (field != value) {
-                field = value
-                if (field) {
-                    unregisterReceiver()
-                }
-            }
-        }
+abstract class BaseBroadcastWrapper @JvmOverloads constructor(
+        val context: Context,
+        val intentFilter: IntentFilter,
+        registerFirst: Boolean = true
+) {
 
     private var receiver: ActionBroadcastReceiver? = null
 
     init {
-        registerReceiver()
+        if (registerFirst) {
+            registerReceiver()
+        }
     }
 
-    fun dispose() {
-        isDisposed = true
-    }
+    protected abstract fun onReceive(intent: Intent)
 
-    protected abstract fun doAction(intent: Intent)
+    protected open fun Intent.matches(): Boolean = true
 
-    private fun registerReceiver() {
-        checkDisposed()
+    fun registerReceiver() {
         if (receiver == null) {
             receiver = ActionBroadcastReceiver()
             context.registerReceiver(receiver, intentFilter)
         }
     }
 
-    private fun unregisterReceiver() {
+    fun unregisterReceiver() {
         receiver?.let {
             context.unregisterReceiver(it)
-        }
-    }
-
-    private fun checkDisposed() {
-        require(!isDisposed) {
-            throw IllegalStateException("$this was disposed")
+            receiver = null
         }
     }
 
     private inner class ActionBroadcastReceiver : BroadcastReceiver() {
 
         override fun onReceive(context: Context, intent: Intent?) {
-            if (isDisposed) {
-                return
-            }
-            intent?.let {
-                doAction(intent)
-            }
+            if (intent != null && intent.matches())
+                onReceive(intent)
         }
     }
 }
