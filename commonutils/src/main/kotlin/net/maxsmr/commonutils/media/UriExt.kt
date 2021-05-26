@@ -5,10 +5,9 @@ import android.content.Context
 import android.content.res.Resources
 import android.database.Cursor
 import android.net.Uri
+import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
-import android.text.TextUtils
 import android.util.Base64
-import android.util.Log
 import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
@@ -394,11 +393,9 @@ fun Uri.lengthOrThrow(contentResolver: ContentResolver): Long {
             getFileLengthOrThrow(path)
         }
         isContentScheme() -> {
-            queryFirstOrThrow(
-                    contentResolver,
-                    Long::class.java,
-                    OpenableColumns.SIZE
-            )
+            openFileDescriptorOrThrow(contentResolver).use {
+                it.statSize
+            }
         }
         else -> {
             throw RuntimeException("Incorrect uri scheme: $scheme")
@@ -538,7 +535,7 @@ fun Uri.openOutputStreamOrThrow(contentResolver: ContentResolver): OutputStream 
     }
 }
 
-private fun Uri.openResolverInputStream(resolver: ContentResolver): InputStream? = try {
+fun Uri.openResolverInputStream(resolver: ContentResolver): InputStream? = try {
     openResolverInputStreamOrThrow(resolver)
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -546,7 +543,7 @@ private fun Uri.openResolverInputStream(resolver: ContentResolver): InputStream?
 }
 
 @Throws(RuntimeException::class)
-private fun Uri.openResolverInputStreamOrThrow(resolver: ContentResolver): InputStream {
+fun Uri.openResolverInputStreamOrThrow(resolver: ContentResolver): InputStream {
     return try {
         resolver.openInputStream(this)
     } catch (e: IOException) {
@@ -554,7 +551,7 @@ private fun Uri.openResolverInputStreamOrThrow(resolver: ContentResolver): Input
     } ?: throw NullPointerException("Cannot open InputStream on $this")
 }
 
-private fun Uri.openResolverOutputStream(resolver: ContentResolver): OutputStream? = try {
+fun Uri.openResolverOutputStream(resolver: ContentResolver): OutputStream? = try {
     openResolverOutputStreamOrThrow(resolver)
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -563,10 +560,26 @@ private fun Uri.openResolverOutputStream(resolver: ContentResolver): OutputStrea
 
 
 @Throws(RuntimeException::class)
-private fun Uri.openResolverOutputStreamOrThrow(resolver: ContentResolver): OutputStream {
+fun Uri.openResolverOutputStreamOrThrow(resolver: ContentResolver): OutputStream {
     return try {
         resolver.openOutputStream(this)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "openOutputStream"), e)
     } ?: throw NullPointerException("Cannot open OutputStream on $this")
 }
+
+@JvmOverloads
+fun Uri.openFileDescriptor(resolver: ContentResolver, mode: String = "r"): ParcelFileDescriptor? = try {
+    openFileDescriptorOrThrow(resolver, mode)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+@Throws(RuntimeException::class)
+@JvmOverloads
+fun Uri.openFileDescriptorOrThrow(resolver: ContentResolver, mode: String = "r"): ParcelFileDescriptor = try {
+        resolver.openFileDescriptor(this, mode) ?: throw NullPointerException("Cannot open OutputStream on $this")
+    } catch (e: FileNotFoundException) {
+        throw RuntimeException(formatException(e, "openFileDescriptor"))
+    }
