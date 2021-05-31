@@ -143,27 +143,31 @@ fun getCanonicalPath(file: File?): String {
     } else EMPTY_STRING
 }
 
-fun isFileLocked(f: File?): Boolean {
-    val l = lockFileChannel(f, false)
-    return try {
-        l == null
-    } finally {
-        releaseLock(l)
+fun File?.isLocked(): Boolean {
+    lock().let {
+        return try {
+            it == null
+        } finally {
+            it.releaseSafe()
+        }
     }
 }
 
-fun lockFileChannel(f: File?, blocking: Boolean): FileLock? {
-    if (f == null || !isFileExists(f)) {
-        logger.e("File '$f' not exists")
+fun File?.lock(isStrict: Boolean = false): FileLockInfo? {
+    if (this == null || !exists()) {
         return null
     }
     var randomAccFile: RandomAccessFile? = null
     var channel: FileChannel? = null
     try {
-        randomAccFile = RandomAccessFile(f, "rw")
+        randomAccFile = RandomAccessFile(this, "rw")
         channel = randomAccFile.channel
         try {
-            return if (!blocking) channel.tryLock() else channel.lock()
+            return FileLockInfo(
+                    if (!isStrict) channel.tryLock() else channel.lock(),
+                    channel,
+                    randomAccFile
+            )
         } catch (e: IOException) {
             logException(logger, e, "tryLock")
         } catch (e: OverlappingFileLockException) {
@@ -171,28 +175,29 @@ fun lockFileChannel(f: File?, blocking: Boolean): FileLock? {
         }
     } catch (e: FileNotFoundException) {
         logException(logger, e)
-    } finally {
-        try {
-            channel?.close()
-            randomAccFile?.close()
-        } catch (e: IOException) {
-            logException(logger, e, "close")
-        }
     }
     return null
 }
 
-fun releaseLock(lock: FileLock?): Boolean {
-    try {
-        if (lock != null) {
-            lock.release()
+fun FileLockInfo?.releaseSafe(): Boolean {
+    this?.let {
+        try {
+            fileLock.release()
+            fileChannel.close()
+            randomAccFile.close()
             return true
+        } catch (e: IOException) {
+            logException(logger, e, "release/close")
         }
-    } catch (e: IOException) {
-        logException(logger, e, "release")
     }
     return false
 }
+
+data class FileLockInfo(
+        val fileLock: FileLock,
+        val fileChannel: FileChannel,
+        val randomAccFile: RandomAccessFile
+)
 
 @JvmOverloads
 fun isFileValid(fileName: String?, parentPath: String? = null): Boolean = try {
