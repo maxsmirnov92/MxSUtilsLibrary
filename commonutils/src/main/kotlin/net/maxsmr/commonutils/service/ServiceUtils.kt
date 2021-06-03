@@ -10,13 +10,10 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.text.TextUtils
-import net.maxsmr.commonutils.cancelAlarm
-import net.maxsmr.commonutils.isAtLeastOreo
-import net.maxsmr.commonutils.isSelfAppInBackgroundOrThrow
+import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
-import net.maxsmr.commonutils.setAlarm
 
 private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("ServiceUtils")
 
@@ -37,10 +34,11 @@ fun <S : Service> start(
         context: Context,
         serviceClass: Class<S>,
         args: Bundle? = null,
+        action: String? = null,
         startForeground: Boolean = false
 ): StartResult {
     if (!isServiceRunning(context, serviceClass)) {
-        return  if (startNoCheck(context, serviceClass, args, startForeground)) {
+        return  if (startNoCheck(context, serviceClass, args, action, startForeground)) {
             StartResult.STARTED
         } else {
             StartResult.NOT_STARTED_FAILED
@@ -49,16 +47,16 @@ fun <S : Service> start(
     return StartResult.NOT_STARTED_ALREADY_RUNNING
 }
 
-
 @JvmOverloads
 fun <S : Service> restart(
         context: Context,
         serviceClass: Class<S>,
         args: Bundle? = null,
+        action: String? = null,
         startForeground: Boolean = false
 ): Boolean {
     stop(context, serviceClass)
-    return startNoCheck(context, serviceClass, args, startForeground)
+    return startNoCheck(context, serviceClass, args, action, startForeground)
 }
 
 fun <S : Service> stop(context: Context, serviceClass: Class<S>) {
@@ -73,15 +71,15 @@ fun <S : Service> restartDelay(
         serviceClass: Class<S>,
         delay: Long,
         args: Bundle? = null,
+        action: String? = null,
         requestCode: Int = 0,
         flags: Int = PendingIntent.FLAG_CANCEL_CURRENT,
         wakeUp: Boolean = true
 ): Boolean {
     logger.d("restartDelay, serviceClass=$serviceClass, delay=$delay")
-
     require(delay >= 0) { "Incorrect delay: $delay" }
     stop(context, serviceClass)
-    return startDelayNoCheck(context, serviceClass, delay, args, requestCode, flags, wakeUp)
+    return startDelayNoCheck(context, serviceClass, delay, args, action, requestCode, flags, wakeUp)
 }
 
 
@@ -90,13 +88,14 @@ fun <S : Service> startDelay(
         serviceClass: Class<S>,
         delay: Long,
         args: Bundle? = null,
+        action: String? = null,
         requestCode: Int = 0,
         flags: Int = PendingIntent.FLAG_CANCEL_CURRENT,
         wakeUp: Boolean = true
 ): Boolean {
     logger.d("startDelay, serviceClass=$serviceClass, delay=$delay")
     if (!isServiceRunning(context, serviceClass)) {
-        return restartDelayNoCheck(context, serviceClass, delay, args, requestCode, flags, wakeUp)
+        return restartDelayNoCheck(context, serviceClass, delay, args, action, requestCode, flags, wakeUp)
     }
     return false
 }
@@ -118,19 +117,23 @@ fun <C : ServiceConnection, S : Service> bindService(
         serviceClass: Class<S>,
         serviceConnection: C,
         args: Bundle? = null,
-        flags: Int = 0
+        action: String? = null,
+        flags: Int = 0,
+        restartIfFailed: Boolean = false
 ): Boolean {
     logger.d("bindService, serviceClass=$serviceClass, serviceConnection=$serviceConnection, flags=$flags")
     var bounded = false
     try {
-        bounded = context.bindService(createServiceIntent(context.packageName, serviceClass, args), serviceConnection, flags)
+        bounded = context.bindService(createServiceIntent(context.packageName, serviceClass, args, action), serviceConnection, flags)
     } catch (e: Exception) {
         logException(logger, e, "bindService")
     }
 
     if (!bounded) {
         logger.e("Binding to service $serviceClass failed")
-        restart(context, serviceClass)
+        if (restartIfFailed) {
+            restart(context, serviceClass)
+        }
         return false
     }
     return true
@@ -143,17 +146,70 @@ fun <C : ServiceConnection> unbindService(context: Context, serviceConnection: C
     } catch (e: Exception) {
         logException(logger, e, "unbindService")
     }
+}
 
+@JvmOverloads
+fun createServiceIntent(
+        packageName: String,
+        serviceClass: Class<out Service>,
+        args: Bundle?  = null,
+        action: String? = null
+): Intent {
+    require(!TextUtils.isEmpty(packageName)) { "Empty package name: $packageName" }
+    val componentName = ComponentName(packageName, serviceClass.name)
+    val serviceIntent = if (action != null && action.isNotEmpty()) {
+        Intent(action)
+    } else {
+        Intent()
+    }.apply {
+        args?.let {
+            putExtras(it)
+        }
+    }
+    serviceIntent.component = componentName
+    return serviceIntent
+}
+
+fun createServicePendingIntent(
+        context: Context,
+        requestCode: Int,
+        serviceClass: Class<out Service>,
+        isForeground: Boolean,
+        args: Bundle,
+        action: String? = null
+): PendingIntent {
+    val intent = createServiceIntent(
+            context.packageName,
+            serviceClass,
+            args,
+            action
+    )
+    return if (isForeground && isAtLeastOreo()) {
+        PendingIntent.getForegroundService(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_CANCEL_CURRENT
+        )
+    } else {
+        PendingIntent.getService(
+                context,
+                requestCode,
+                intent,
+                PendingIntent.FLAG_CANCEL_CURRENT
+        )
+    }
 }
 
 private fun <S : Service> restartNoCheck(
         context: Context,
         serviceClass: Class<S>,
         args: Bundle? = null,
+        action: String? = null,
         startForeground: Boolean = false
 ) {
     stopNoCheck(context, serviceClass)
-    startNoCheck(context, serviceClass, args, startForeground)
+    startNoCheck(context, serviceClass, args, action, startForeground)
 }
 
 private fun <S : Service> stopNoCheck(context: Context, serviceClass: Class<S>) {
@@ -165,18 +221,19 @@ private fun <S : Service> stopNoCheck(context: Context, serviceClass: Class<S>) 
  * @param startForeground true if intended to start in foreground for 8+
  */
 @SuppressLint("NewApi")
-private fun <S : Service> startNoCheck(
+@JvmOverloads
+fun <S : Service> startNoCheck(
         context: Context,
         serviceClass: Class<S>,
-        args: Bundle?,
+        args: Bundle? = null,
+        action: String? = null,
         startForeground: Boolean
 ): Boolean {
-    val i = createServiceIntent(context.packageName, serviceClass, args)
-    val isOreo = isAtLeastOreo()
+    val i = createServiceIntent(context.packageName, serviceClass, args, action)
     if (startForeground) {
         context.startForegroundService(i)
     } else {
-        if (!isOreo || !isSelfAppInBackgroundOrThrow(context)) {
+        if (!isAtLeastOreo() || !isSelfAppInBackgroundOrThrow(context)) {
             context.startService(i)
         } else {
             logger.e("Cannot start service with intent $i: app is not in foreground")
@@ -191,6 +248,7 @@ private fun <S : Service> restartDelayNoCheck(
         serviceClass: Class<S>,
         delay: Long,
         args: Bundle? = null,
+        action: String? = null,
         requestCode: Int = 0,
         flags: Int = PendingIntent.FLAG_CANCEL_CURRENT,
         wakeUp: Boolean = true
@@ -199,7 +257,7 @@ private fun <S : Service> restartDelayNoCheck(
     require(delay >= 0) { "Incorrect delay: $delay" }
 
     stopNoCheck(context, serviceClass)
-    return startDelayNoCheck(context, serviceClass, delay, args, requestCode, flags, wakeUp)
+    return startDelayNoCheck(context, serviceClass, delay, args, action, requestCode, flags, wakeUp)
 }
 
 private fun <S : Service> startDelayNoCheck(
@@ -207,6 +265,7 @@ private fun <S : Service> startDelayNoCheck(
         serviceClass: Class<S>,
         delay: Long,
         args: Bundle? = null,
+        action: String? = null,
         requestCode: Int = 0,
         flags: Int = PendingIntent.FLAG_CANCEL_CURRENT,
         wakeUp: Boolean = true
@@ -215,22 +274,10 @@ private fun <S : Service> startDelayNoCheck(
     val pendingIntent = PendingIntent.getService(
             context,
             requestCode,
-            createServiceIntent(context.packageName, serviceClass, args),
+            createServiceIntent(context.packageName, serviceClass, args, action),
             flags
     )
     return setAlarm(context, pendingIntent, delay, wakeUp)
-}
-
-private fun createServiceIntent(packageName: String, serviceClass: Class<out Service>, args: Bundle?): Intent {
-    require(!TextUtils.isEmpty(packageName)) { "Empty package name: $packageName" }
-    val componentName = ComponentName(packageName, serviceClass.name)
-    val serviceIntent = Intent().apply {
-        args?.let {
-            putExtras(it)
-        }
-    }
-    serviceIntent.component = componentName
-    return serviceIntent
 }
 
 enum class StartResult {

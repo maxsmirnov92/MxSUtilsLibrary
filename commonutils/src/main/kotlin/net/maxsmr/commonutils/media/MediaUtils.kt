@@ -96,7 +96,7 @@ fun getExternalFilesDirs(context: Context, type: String = EMPTY_STRING): Set<Fil
 @JvmOverloads
 fun getFilteredExternalFilesDirs(
         context: Context,
-        excludeNotRemovable: Boolean,
+        includeRemovable: Boolean,
         includePrimaryExternalStorage: Boolean,
         onlyRootPaths: Boolean,
         type: String = EMPTY_STRING
@@ -107,8 +107,9 @@ fun getFilteredExternalFilesDirs(
     val rawExternalStoragePath: String = System.getenv(ENV_EXTERNAL_STORAGE) ?: EMPTY_STRING
     val primaryExternalStorage: File = Environment.getExternalStorageDirectory()
 
-    fun includeRemovable(path: File) = !isAtLeastLollipop()
-            || !excludeNotRemovable || Environment.isExternalStorageRemovable(path)
+    fun includeRemovable(path: File) = includeRemovable
+            && isAtLeastLollipop()
+            && Environment.isExternalStorageRemovable(path)
 
     /**
      * @return true если данный путь из env не начинается с getExternalStorageDirectory
