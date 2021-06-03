@@ -10,7 +10,7 @@ import net.maxsmr.commonutils.Predicate
 import net.maxsmr.commonutils.text.isEmpty
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 
 /**
  * Class for holding added/removed [View] to/from [WindowManager]
@@ -23,7 +23,7 @@ open class WindowsHolder(
         tags: Collection<String>?
 ) {
 
-    protected val logger: BaseLogger = BaseLoggerHolder.getInstance().getLogger(WindowsHolder::class.java)
+    protected val logger: BaseLogger = BaseLoggerHolder.instance.getLogger(WindowsHolder::class.java)
 
     protected val windowManager: WindowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager?
             ?: throw RuntimeException("WindowManager is null")

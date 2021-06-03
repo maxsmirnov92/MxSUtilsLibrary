@@ -6,9 +6,9 @@ import net.maxsmr.commonutils.prefs.SharedPrefsHolder.PrefType.*
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(SharedPrefsHolder::class.java)
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>(SharedPrefsHolder::class.java)
 
 const val EMPTY_BOOLEAN_SETTING = false
 const val EMPTY_INT_SETTING = -1

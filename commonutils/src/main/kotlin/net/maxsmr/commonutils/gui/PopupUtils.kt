@@ -37,8 +37,12 @@ fun showPopupWindow(
 ): PopupWindow? {
     with(params) {
         var popup = currentPopup
-        if (popup != null && params.dismissIfShowed) {
-            popup.dismiss()
+        val isShowing = popup != null && popup.isShowing
+        if (isShowing && !params.reshow) {
+            return null
+        }
+        if (isShowing) {
+            popup!!.dismiss()
             if (onDismissed?.invoke(popup) == true) {
                 return null
             }
@@ -99,7 +103,7 @@ interface ViewReadyListener {
 class PopupParams @JvmOverloads constructor(
         val anchorView: View,
         val gravity: Int = Gravity.TOP,
-        val dismissIfShowed: Boolean = true,
+        val reshow: Boolean = true,
         val onDismissed: ((PopupWindow) -> Boolean)? = null,
         val onShowed: ((PopupWindow) -> Unit)? = null,
         windowConfigurator: ((PopupWindow, Context) -> Unit)? = null

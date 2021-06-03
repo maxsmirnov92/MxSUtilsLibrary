@@ -7,7 +7,7 @@ import android.os.SystemClock
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("AlarmUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AlarmUtils")
 
 fun setAlarm(context: Context, pIntent: PendingIntent, delayTime: Long, shouldWakeUp: Boolean): Boolean {
     if (delayTime <= 0) {

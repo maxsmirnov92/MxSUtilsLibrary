@@ -1,7 +1,10 @@
 package net.maxsmr.commonutils
 
 import net.maxsmr.commonutils.logger.BaseLogger
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.*
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.appendSubstringWhileLess
 import java.io.BufferedInputStream
@@ -20,7 +23,7 @@ const val MD5_HASH_CHARS_COUNT_DEFAULT = 32
 
 private const val HEX_CHARS = "0123456789ABCDEF"
 
-private val logger = getInstance().getLogger<BaseLogger>("HashUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("HashUtils")
 
 fun messageDigest(algorithm: String): MessageDigest? = try {
     messageDigestOrThrow(algorithm)

@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit
 
 private const val DEFAULT_DARK_COLOR_RATIO = 0.7
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("GuiUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("GuiUtils")
 
 fun Activity.setFullScreen(toggle: Boolean) {
     with(window) {

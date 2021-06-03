@@ -17,7 +17,7 @@ val INTERVAL_NETWORK_STATS_MONITOR_DEFAULT: Long = 3000
 
 class NetworkStatsMonitor(interval: Long = INTERVAL_NETWORK_STATS_MONITOR_DEFAULT) {
 
-    private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(NetworkStatsMonitor::class.java)
+    private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>(NetworkStatsMonitor::class.java)
 
     private val manager = ScheduledThreadPoolExecutorManager("NetworkStatsMonitor")
 

@@ -43,6 +43,7 @@ public final class CertificateHelper {
         return generateCertificate(context.getResources().openRawResource(certResId));
     }
 
+    @NotNull
     public static Certificate generateCertificate(File file) throws RuntimeException {
         try {
             return generateCertificate(new FileInputStream(file));
@@ -51,7 +52,7 @@ public final class CertificateHelper {
         }
     }
 
-    @Nullable
+    @NotNull
     private static Certificate generateCertificate(@NotNull InputStream in) throws RuntimeException {
         try {
             CertificateFactory cf = CertificateFactory.getInstance("X.509");

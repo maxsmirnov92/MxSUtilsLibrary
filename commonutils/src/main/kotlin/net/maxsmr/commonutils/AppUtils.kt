@@ -18,6 +18,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LifecycleOwner
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import net.maxsmr.commonutils.processmanager.AbstractProcessManager
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
@@ -25,7 +26,7 @@ import java.io.File
 import java.lang.reflect.Method
 import java.util.*
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("AppUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AppUtils")
 
 fun isPackageInstalled(context: Context, packageName: String): Boolean =
         getApplicationInfo(context, packageName) != null
@@ -285,60 +286,86 @@ fun isSelfAppInBackground(
         context: Context,
         manager: AbstractProcessManager,
         includeSystemPackages: Boolean
-): Boolean? = isAppInBackground(context.packageName, manager, includeSystemPackages)
+): Boolean = try {
+    isSelfAppInBackgroundOrThrow(context, manager, includeSystemPackages)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    false
+}
 
-/**
- * @return null if not found
- */
+@Throws(RuntimeException::class)
+fun isSelfAppInBackgroundOrThrow(
+        context: Context,
+        manager: AbstractProcessManager,
+        includeSystemPackages: Boolean
+): Boolean = isAppInBackgroundOrThrow(context.packageName, manager, includeSystemPackages)
+
 fun isAppInBackground(
         packageName: String,
         manager: AbstractProcessManager,
         includeSystemPackages: Boolean
-): Boolean? {
-    var isInBackground: Boolean? = null
+): Boolean = try {
+    isAppInBackgroundOrThrow(packageName, manager, includeSystemPackages)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    false
+}
+
+@Throws(RuntimeException::class)
+fun isAppInBackgroundOrThrow(
+        packageName: String,
+        manager: AbstractProcessManager,
+        includeSystemPackages: Boolean
+): Boolean {
     if (!isEmpty(packageName)) {
         for (info in manager.getProcesses(includeSystemPackages)) {
             if (stringsEqual(info.packageName, packageName, false)) {
-                isInBackground = info.isForeground != null && !info.isForeground
-                break
+                return info.isForeground != null && !info.isForeground
             }
         }
     }
-    return isInBackground
+    throw RuntimeException("Process with name '$packageName' not found")
 }
 
 fun isSelfAppInBackground(context: Context): Boolean? {
     return try {
         isSelfAppInBackgroundOrThrow(context)
     } catch (e: RuntimeException) {
+        logger.e(e)
         null
     }
 }
 
 @Throws(RuntimeException::class)
-fun isSelfAppInBackgroundOrThrow(context: Context): Boolean {
-    val result = isAppInBackground(context, context.packageName)
-    return result ?: throw RuntimeException("Self package ${context.packageName} not found")
+fun isSelfAppInBackgroundOrThrow(context: Context): Boolean = isAppInBackgroundOrThrow(context, context.packageName)
+
+fun isAppInBackground(context: Context, packageName: String): Boolean? {
+    return try {
+        isAppInBackgroundOrThrow(context, packageName)
+    } catch (e: RuntimeException) {
+        logger.e(e)
+        null
+    }
 }
 
 /**
  * @return null if not found
  */
-fun isAppInBackground(context: Context, packageName: String): Boolean? {
+@Throws(RuntimeException::class)
+fun isAppInBackgroundOrThrow(context: Context, packageName: String): Boolean {
     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager?
             ?: throw RuntimeException(ActivityManager::class.java.simpleName + " is null")
-    var isInBackground: Boolean? = null
     if (!isEmpty(packageName)) {
         val runningProcesses = am.runningAppProcesses
         if (runningProcesses != null) {
             for (processInfo in runningProcesses) {
                 if (packageName == processInfo.processName) {
-                    isInBackground = processInfo.importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
+                    return processInfo.importance != ActivityManager.RunningAppProcessInfo.IMPORTANCE_FOREGROUND
                 }
             }
         }
     }
-    return isInBackground
+    throw RuntimeException("Process with name '$packageName' not found")
 }
 
 fun getPidsByName(
@@ -380,13 +407,13 @@ fun getVersionCode(info: PackageInfo?): Long? {
     }
 }
 
-fun isSystemApp(packageInfo: PackageInfo?): Boolean? =
+fun isSystemApp(packageInfo: PackageInfo?): Boolean =
         isSystemApp(packageInfo?.applicationInfo)
 
 /**
  * @return null if not found
  */
-fun isSystemApp(applicationInfo: ApplicationInfo?): Boolean? {
+fun isSystemApp(applicationInfo: ApplicationInfo?): Boolean {
     if (applicationInfo == null) {
         return false;
     }
@@ -398,7 +425,7 @@ fun isSystemApp(applicationInfo: ApplicationInfo?): Boolean? {
  *
  * @param locale объект локали
  */
-fun forceLocaleInApp(context: Context, locale: Locale?) {
+fun forceLocaleInApp(context: Context, locale: Locale) {
     Locale.setDefault(locale)
     context.resources?.let {
         val configuration = it.configuration

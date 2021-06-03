@@ -5,14 +5,17 @@ import net.maxsmr.commonutils.collection.sort.ISortOption
 import net.maxsmr.commonutils.conversion.SizeUnit
 import net.maxsmr.commonutils.conversion.SizeUnit.Companion.convert
 import net.maxsmr.commonutils.conversion.toLongNotNull
-import net.maxsmr.commonutils.text.EMPTY_STRING
-import net.maxsmr.commonutils.text.isEmpty
-import net.maxsmr.commonutils.text.replaceRangeOrThrow
 import net.maxsmr.commonutils.logger.BaseLogger
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.*
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
 import net.maxsmr.commonutils.shell.DEFAULT_TARGET_CODE
 import net.maxsmr.commonutils.shell.ShellCallback
 import net.maxsmr.commonutils.shell.ShellWrapper
+import net.maxsmr.commonutils.text.EMPTY_STRING
+import net.maxsmr.commonutils.text.isEmpty
+import net.maxsmr.commonutils.text.replaceRangeOrThrow
 import java.io.*
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
@@ -23,7 +26,7 @@ import java.util.concurrent.TimeUnit
 
 const val DEPTH_UNLIMITED = -1
 
-private val logger = getInstance().getLogger<BaseLogger>("FileUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("FileUtils")
 
 // TODO convert to extensions?
 
@@ -143,27 +146,31 @@ fun getCanonicalPath(file: File?): String {
     } else EMPTY_STRING
 }
 
-fun isFileLocked(f: File?): Boolean {
-    val l = lockFileChannel(f, false)
-    return try {
-        l == null
-    } finally {
-        releaseLock(l)
+fun File?.isLocked(): Boolean {
+    lock().let {
+        return try {
+            it == null
+        } finally {
+            it.releaseSafe()
+        }
     }
 }
 
-fun lockFileChannel(f: File?, blocking: Boolean): FileLock? {
-    if (f == null || !isFileExists(f)) {
-        logger.e("File '$f' not exists")
+fun File?.lock(isStrict: Boolean = false): FileLockInfo? {
+    if (this == null || !exists()) {
         return null
     }
     var randomAccFile: RandomAccessFile? = null
     var channel: FileChannel? = null
     try {
-        randomAccFile = RandomAccessFile(f, "rw")
+        randomAccFile = RandomAccessFile(this, "rw")
         channel = randomAccFile.channel
         try {
-            return if (!blocking) channel.tryLock() else channel.lock()
+            return FileLockInfo(
+                    if (!isStrict) channel.tryLock() else channel.lock(),
+                    channel,
+                    randomAccFile
+            )
         } catch (e: IOException) {
             logException(logger, e, "tryLock")
         } catch (e: OverlappingFileLockException) {
@@ -171,28 +178,29 @@ fun lockFileChannel(f: File?, blocking: Boolean): FileLock? {
         }
     } catch (e: FileNotFoundException) {
         logException(logger, e)
-    } finally {
-        try {
-            channel?.close()
-            randomAccFile?.close()
-        } catch (e: IOException) {
-            logException(logger, e, "close")
-        }
     }
     return null
 }
 
-fun releaseLock(lock: FileLock?): Boolean {
-    try {
-        if (lock != null) {
-            lock.release()
+fun FileLockInfo?.releaseSafe(): Boolean {
+    this?.let {
+        try {
+            fileLock.release()
+            fileChannel.close()
+            randomAccFile.close()
             return true
+        } catch (e: IOException) {
+            logException(logger, e, "release/close")
         }
-    } catch (e: IOException) {
-        logException(logger, e, "release")
     }
     return false
 }
+
+data class FileLockInfo(
+        val fileLock: FileLock,
+        val fileChannel: FileChannel,
+        val randomAccFile: RandomAccessFile
+)
 
 @JvmOverloads
 fun isFileValid(fileName: String?, parentPath: String? = null): Boolean = try {

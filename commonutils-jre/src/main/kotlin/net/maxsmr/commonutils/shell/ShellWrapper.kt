@@ -6,7 +6,7 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(ShellWrapper::class.java)
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>(ShellWrapper::class.java)
 
 class ShellWrapper @JvmOverloads constructor(
         var addToCommandsMap: Boolean = true,

@@ -11,7 +11,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import kotlin.collections.ArrayList
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("ShellUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("ShellUtils")
 
 @JvmOverloads
 fun execProcessAsync(

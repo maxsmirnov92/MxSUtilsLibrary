@@ -12,21 +12,19 @@ import net.maxsmr.networkutils.NetworkHelper.isOnline
 
 private const val ACTION_CONNECTIVITY_CHANGE = "android.net.conn.CONNECTIVITY_CHANGE"
 
-open class ConnectivityChecker(context: Context): BaseBroadcastWrapper(context) {
+open class ConnectivityChecker(context: Context): BaseBroadcastWrapper(context,
+        IntentFilter(ACTION_CONNECTIVITY_CHANGE)) {
 
     private val connectedData = MutableLiveData<Boolean>()
 
     val isConnected: LiveData<Boolean>
         get() = connectedData
 
-    override val intentFilter: IntentFilter
-        get() = IntentFilter(ACTION_CONNECTIVITY_CHANGE)
 
     var connectedAction: (() -> Unit)? = null
     var notConnectedAction: (() -> Unit)? = null
 
-    @CallSuper
-    override fun doAction(intent: Intent) {
+    override fun onReceive(intent: Intent) {
         val isConnected = isOnline(context)
         if (isConnected) {
             doActionWhenConnected()

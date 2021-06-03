@@ -47,7 +47,7 @@ import ru.tinkoff.decoro.Mask
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 import java.nio.charset.Charset
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("ViewExt")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("ViewExt")
 
 private const val IMAGE_VIEW_MAX_WIDTH = 4096
 
@@ -338,13 +338,39 @@ fun TextView.setLinkFromHtml(htmlLink: String, removeUnderline: Boolean = true):
 }
 
 /**
- * Установить [text] с заданными настройками [spanInfo]
+ * Выставить сформированные [RangeSpanInfo] по заданной подстроке
  */
 fun TextView.setSpanText(
         text: CharSequence,
-        vararg spanInfo: IRangeSpanInfo
+        vararg spanInfo: RangeSpanInfo
 ): CharSequence =
         setTextWithMovementMethod(text.createSpanText(*spanInfo))
+
+
+/**
+ * Установить спан [style] для подстроки [substring] в месте ее нахождения в полной строке
+ *
+ * @param allEntries true, если спан надо установить для всех вхождений подстроки [substring], false - если для первого
+ * @param createSpanInfoFunc лямбда, возвращающая CharacterStyle + флаги, которые нужно применить в указанный поддиапазаон для этой [substring]
+ */
+@JvmOverloads
+fun TextView.setSpanTextBySubstring(
+        text: CharSequence,
+        substring: String,
+        allEntries: Boolean = true,
+        createSpanInfoFunc: (Int, Int) -> List<SimpleSpanInfo>
+): CharSequence =
+        setTextWithMovementMethod(text.createSpanTextBySubstring(substring, allEntries, createSpanInfoFunc))
+
+@JvmOverloads
+fun TextView.setSpanTextBySubstrings(
+        text: CharSequence,
+        substrings: List<String>,
+        allEntries: Boolean = true,
+        createSpanInfoFunc: (String, Int, Int) -> List<SimpleSpanInfo>
+): CharSequence =
+        setTextWithMovementMethod(text.createSpanTextBySubstrings(substrings, allEntries, createSpanInfoFunc))
+
 
 /**
  * @param text в строке аргументы с префиксами "^" будут заменены на [CharacterStyle]
@@ -365,7 +391,7 @@ fun TextView.setSpanTextExpanded(
  */
 fun TextView.setLinkableText(
         text: CharSequence,
-        spanInfoMap: Map<IRangeSpanInfo, String>
+        spanInfoMap: Map<RangeSpanInfo, String>
 ): CharSequence =
         setTextWithMovementMethod(text.createLinkableText(spanInfoMap))
 
@@ -399,9 +425,10 @@ fun TextView.setTextWithSelection(
         text: String,
         @ColorInt highlightColor: Int,
         selection: String,
+        allEntries: Boolean = false,
         spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
 ) {
-    setTextWithMovementMethod(text.createSelectedText(highlightColor, selection, spanFlags))
+    setTextWithMovementMethod(text.createSelectedText(highlightColor, selection, allEntries, spanFlags))
 }
 
 @JvmOverloads

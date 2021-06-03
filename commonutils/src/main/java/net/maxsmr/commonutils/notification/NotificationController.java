@@ -24,7 +24,9 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 
-
+/**
+ * Use {@linkplain net.maxsmr.commonutils.NotificationWrapper} instead
+ */
 @Deprecated
 public class NotificationController {
 

@@ -7,7 +7,6 @@ import androidx.annotation.CallSuper;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.LogcatLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
-import net.maxsmr.commonutils.logger.holder.ILoggerHolderProvider;
 
 import org.jetbrains.annotations.NotNull;
 import org.junit.Assert;
@@ -33,7 +32,7 @@ public class LoggerTest {
         context = androidx.test.platform.app.InstrumentationRegistry.getInstrumentation().getContext();
         // may be already initialized in static Application
         Holder.releaseInstance();
-        Holder.initInstance((ILoggerHolderProvider<Holder>) Holder::new);
+        Holder.initInstance(Holder::new);
         logger = Holder.getInstance().getLogger(getLoggerClass());
         logger.setLoggingEnabled(true);
     }
@@ -44,10 +43,6 @@ public class LoggerTest {
     }
 
     private static class Holder extends BaseLoggerHolder {
-
-        private Holder() {
-            super(false);
-        }
 
         @Override
         protected BaseLogger createLogger(@NotNull String className) {

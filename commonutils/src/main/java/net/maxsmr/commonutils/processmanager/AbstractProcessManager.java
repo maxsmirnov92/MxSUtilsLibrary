@@ -4,9 +4,9 @@ import android.content.Context;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 
-import net.maxsmr.commonutils.processmanager.model.ProcessInfo;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
+import net.maxsmr.commonutils.processmanager.model.ProcessInfo;
 
 import org.jetbrains.annotations.NotNull;
 
@@ -45,8 +45,7 @@ public abstract class AbstractProcessManager {
         List<PackageInfo> installedPackagesInfo = packageManager.getInstalledPackages(0);
         for (PackageInfo installedPackage : installedPackagesInfo) {
             installedPackages.add(installedPackage.packageName);
-            final Boolean isSystem = isSystemApp(installedPackage);
-            if (isSystem != null && isSystem) {
+            if (isSystemApp(installedPackage)) {
                 systemPackages.add(installedPackage.packageName);
             }
         }

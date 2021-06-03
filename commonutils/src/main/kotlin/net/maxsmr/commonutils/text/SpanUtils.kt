@@ -17,7 +17,7 @@ import kotlin.Pair
  */
 typealias ExpandValueInfo = Pair<String, String>
 
-fun CharSequence.createSpanText(vararg spanInfo: IRangeSpanInfo): CharSequence {
+fun CharSequence.createSpanText(vararg spanInfo: RangeSpanInfo): CharSequence {
     if (this.isEmpty() || spanInfo.isEmpty()) return this
     return SpannableString(this).apply {
         spanInfo.forEach {
@@ -28,6 +28,33 @@ fun CharSequence.createSpanText(vararg spanInfo: IRangeSpanInfo): CharSequence {
             }
         }
     }
+}
+
+@JvmOverloads
+fun CharSequence.createSpanTextBySubstring(
+        substring: String,
+        allEntries: Boolean = false,
+        createSpanInfoFunc: (Int, Int) -> List<SimpleSpanInfo>
+): CharSequence = createSpanTextBySubstrings(
+        listOf(substring),
+        allEntries
+) { subsring, start, end ->
+    createSpanInfoFunc(start, end)
+}
+
+@JvmOverloads
+fun CharSequence.createSpanTextBySubstrings(
+        substrings: List<String>,
+        allEntries: Boolean = false,
+        createSpanInfoFunc: (String, Int, Int) -> List<SimpleSpanInfo>
+): CharSequence {
+    val result = mutableListOf<RangeSpanInfo>()
+    substrings.forEach {
+        result.addAll(this.toRangeSpanInfo(it, allEntries) { start, end ->
+            createSpanInfoFunc(it, start, end)
+        })
+    }
+    return createSpanText(*result.toTypedArray())
 }
 
 fun CharSequence.createSpanTextExpanded(spanInfoMap: Map<ISpanInfo, String>): CharSequence {
@@ -44,8 +71,8 @@ fun CharSequence.createSpanTextExpanded(spanInfoMap: Map<ISpanInfo, String>): Ch
  * @return [SpannableString], созданная по [spanInfoMap]
  * @param spanInfoMap key - вспомогательная инфа для Span с диапазоном, value - url для перехода
  */
-fun CharSequence.createLinkableText(spanInfoMap: Map<IRangeSpanInfo, String>): CharSequence {
-    val newSpanInfoMap = mutableListOf<IRangeSpanInfo>()
+fun CharSequence.createLinkableText(spanInfoMap: Map<RangeSpanInfo, String>): CharSequence {
+    val newSpanInfoMap = mutableListOf<RangeSpanInfo>()
     spanInfoMap.forEach {
         val ranges = it.key.ranges(this)
         ranges.forEach { range ->
@@ -94,11 +121,15 @@ fun CharSequence.createLinkableTextExpanded(spanInfoMap: Map<ISpanInfo, ExpandVa
 fun CharSequence.createSelectedText(
         @ColorInt highlightColor: Int,
         selection: String,
+        allEntries: Boolean = false,
         spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
 ): CharSequence = createSpanText(
-        SubstringSpanInfo(selection,
-                ForegroundColorSpan(highlightColor),
-                flags = spanFlags)
+        *toRangeSpanInfo(selection, allEntries) { _, _ ->
+            listOf(SimpleSpanInfo(
+                    ForegroundColorSpan(highlightColor),
+                    spanFlags
+            ))
+        }.toTypedArray()
 )
 
 @JvmOverloads
@@ -139,6 +170,42 @@ fun CharSequence.removeUnderlineFromUrlSpans(
     }
 }
 
+fun defaultBrowseClickAction(context: Context, url: String) {
+    startActivitySafe(context, wrapIntent(getBrowseLinkIntent(url),
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK))
+}
+
+fun CharSequence.toRangeSpanInfo(
+        substring: String,
+        allEntries: Boolean = false,
+        createSpanInfoFunc: (Int, Int) -> List<SimpleSpanInfo>,
+): List<RangeSpanInfo> {
+
+    val result = mutableListOf<RangeSpanInfo>()
+
+    fun List<SimpleSpanInfo>.toResult(start: Int, end: Int) {
+        forEach {
+            result.add(RangeSpanInfo(start, end, it.style, it.flags))
+        }
+    }
+    if (allEntries) {
+        indicesOf(substring, ignoreCase = true)
+                .filter { it > 0 }
+                .forEach { index ->
+                    val start = index
+                    val end = index + substring.length
+                    createSpanInfoFunc(start, end).toResult(start, end)
+                }
+    } else {
+        val start = indexOf(substring, ignoreCase = true)
+        if (start >= 0) {
+            val end = start + substring.length
+            createSpanInfoFunc(start, end).toResult(start, end)
+        }
+    }
+    return result
+}
+
 private fun CharSequence.replaceUrlSpansByCustomSpans(
         parseHtml: Boolean,
         createSpanFunc: (URLSpan) -> CharacterStyle
@@ -156,26 +223,16 @@ private fun CharSequence.replaceUrlSpansByCustomSpans(
     return result
 }
 
-fun defaultBrowseClickAction(context: Context, url: String) {
-    startActivitySafe(context, wrapIntent(getBrowseLinkIntent(url),
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK))
-}
-
 interface ISpanInfo {
 
     val style: CharacterStyle
     val flags: Int
 }
 
-interface IRangeSpanInfo : ISpanInfo {
-
-    fun ranges(fullText: CharSequence): List<IntRange>
-}
-
 /**
  * Простая реализация [ISpanInfo] для случая использования expandTemplate
  */
-private data class SimpleSpanInfo(
+data class SimpleSpanInfo @JvmOverloads constructor(
         override val style: CharacterStyle,
         override val flags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
 ): ISpanInfo
@@ -188,39 +245,13 @@ data class RangeSpanInfo @JvmOverloads constructor(
         val endIndex: Int,
         override val style: CharacterStyle,
         override val flags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-) : IRangeSpanInfo {
+) : ISpanInfo {
 
-    override fun ranges(fullText: CharSequence): List<IntRange> {
+    fun ranges(fullText: CharSequence): List<IntRange> {
         return if (startIndex > endIndex || startIndex !in 0..fullText.length || endIndex !in 0..fullText.length) {
             emptyList()
         } else {
             listOf(IntRange(startIndex, endIndex))
-        }
-    }
-}
-
-/**
- * Установить спан [style] для подстроки [substring] в месте ее нахождения в полной строке
- *
- * @param allEntries true, если спан надо установить для всех вхождений подстроки [substring], false - если для первого
- */
-class SubstringSpanInfo @JvmOverloads constructor(
-        val substring: String,
-        override val style: CharacterStyle,
-        val allEntries: Boolean = false,
-        override val flags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-) : IRangeSpanInfo {
-
-    override fun ranges(fullText: CharSequence): List<IntRange> = if (allEntries) {
-        fullText.indicesOf(substring, ignoreCase = true)
-                .filter { it > 0 }
-                .map { IntRange(it, it + substring.length) }
-    } else {
-        val start = fullText.indexOf(substring, ignoreCase = true)
-        if (start < 0) {
-            emptyList()
-        } else {
-            listOf(IntRange(start, start + substring.length))
         }
     }
 }

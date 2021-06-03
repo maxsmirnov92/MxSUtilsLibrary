@@ -10,22 +10,19 @@ import androidx.lifecycle.MutableLiveData
 import net.maxsmr.commonutils.BaseBroadcastWrapper
 import net.maxsmr.commonutils.live.setValueIfNew
 
-open class WifiConnectionChecker(context: Context) : BaseBroadcastWrapper(context) {
+open class WifiConnectionChecker(context: Context) : BaseBroadcastWrapper(context,
+        IntentFilter().apply {
+            addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
+            addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
+            addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION)
+        }) {
 
     private val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager?
             ?: throw NullPointerException("WifiManager is null")
 
     val connectionInfo = MutableLiveData<WifiInfo>()
 
-    override val intentFilter: IntentFilter
-        get() = IntentFilter().apply {
-            addAction(WifiManager.WIFI_STATE_CHANGED_ACTION)
-            addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION)
-            addAction(WifiManager.SUPPLICANT_STATE_CHANGED_ACTION)
-        }
-
-    @CallSuper
-    override fun doAction(intent: Intent) {
+    override fun onReceive(intent: Intent) {
         connectionInfo.setValueIfNew(wifiManager.connectionInfo)
     }
 }

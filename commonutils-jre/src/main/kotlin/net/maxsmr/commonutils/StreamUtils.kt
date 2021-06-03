@@ -4,7 +4,7 @@ import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.NEXT_LINE
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import java.io.*
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -14,7 +14,7 @@ import kotlin.Pair
 // Вспомогательные методы для чтения из {@link InputStream]
 // и записи в {@link OutputStream}
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("StreamUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("StreamUtils")
 
 const val CHARSET_DEFAULT = "UTF-8"
 

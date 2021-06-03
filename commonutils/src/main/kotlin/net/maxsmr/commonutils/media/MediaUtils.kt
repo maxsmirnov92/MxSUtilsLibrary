@@ -18,18 +18,15 @@ import android.webkit.MimeTypeMap
 import androidx.collection.ArraySet
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
-import net.maxsmr.commonutils.gui.getCorrectedDisplayRotation
-import net.maxsmr.commonutils.isAtLeastKitkat
-import net.maxsmr.commonutils.isAtLeastLollipop
-import net.maxsmr.commonutils.isAtLeastMarshmallow
-import net.maxsmr.commonutils.isAtLeastQ
 import net.maxsmr.commonutils.*
-import net.maxsmr.commonutils.text.EMPTY_STRING
-import net.maxsmr.commonutils.text.isEmpty
 import net.maxsmr.commonutils.graphic.canDecodeImage
+import net.maxsmr.commonutils.gui.getCorrectedDisplayRotation
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.*
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
+import net.maxsmr.commonutils.text.EMPTY_STRING
+import net.maxsmr.commonutils.text.isEmpty
 import java.io.*
 import java.nio.charset.Charset
 import java.util.*
@@ -40,7 +37,7 @@ const val MIME_TYPE_ANY = "*/*"
 const val ENV_SECONDARY_STORAGE = "SECONDARY_STORAGE"
 const val ENV_EXTERNAL_STORAGE = "EXTERNAL_STORAGE"
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("MediaUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("MediaUtils")
 
 val File.mimeType get() = name.mimeType
 
@@ -96,7 +93,7 @@ fun getExternalFilesDirs(context: Context, type: String = EMPTY_STRING): Set<Fil
 @JvmOverloads
 fun getFilteredExternalFilesDirs(
         context: Context,
-        excludeNotRemovable: Boolean,
+        includeRemovable: Boolean,
         includePrimaryExternalStorage: Boolean,
         onlyRootPaths: Boolean,
         type: String = EMPTY_STRING
@@ -107,8 +104,9 @@ fun getFilteredExternalFilesDirs(
     val rawExternalStoragePath: String = System.getenv(ENV_EXTERNAL_STORAGE) ?: EMPTY_STRING
     val primaryExternalStorage: File = Environment.getExternalStorageDirectory()
 
-    fun includeRemovable(path: File) = !isAtLeastLollipop()
-            || !excludeNotRemovable || Environment.isExternalStorageRemovable(path)
+    fun includeRemovable(path: File) = includeRemovable
+            && isAtLeastLollipop()
+            && Environment.isExternalStorageRemovable(path)
 
     /**
      * @return true если данный путь из env не начинается с getExternalStorageDirectory
