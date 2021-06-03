@@ -14,7 +14,7 @@ import androidx.annotation.MainThread
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
-private val logger: BaseLogger = BaseLoggerHolder.getInstance().getLogger(DownloadManagerWrapper::class.java)
+private val logger: BaseLogger = BaseLoggerHolder.instance.getLogger(DownloadManagerWrapper::class.java)
 
 /**
  * Класс для отслеживания начатых и завершённых, старта новых загрузок через [DownloadManager]

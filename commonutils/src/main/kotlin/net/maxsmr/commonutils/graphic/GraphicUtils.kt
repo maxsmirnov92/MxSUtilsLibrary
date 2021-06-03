@@ -23,7 +23,7 @@ import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.text.isEmpty
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 import net.maxsmr.commonutils.media.*
 import java.io.*
 import java.nio.ByteBuffer
@@ -31,7 +31,7 @@ import kotlin.math.abs
 import kotlin.math.ceil
 import kotlin.math.roundToInt
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("GraphicUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("GraphicUtils")
 
 // TODO convert to extensions?
 

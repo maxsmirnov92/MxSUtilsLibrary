@@ -5,13 +5,13 @@ import net.maxsmr.commonutils.Predicate
 import net.maxsmr.commonutils.conversion.toDoubleOrNull
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 import net.maxsmr.commonutils.number.isZeroOrNull
 import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
 import java.util.*
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("TextUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("TextUtils")
 
 // TODO переделать на extensions
 
@@ -189,7 +189,6 @@ fun removeCharAt(s: CharSequence, index: Int): String {
     sb.deleteCharAt(index)
     return sb.toString()
 }
-
 
 fun removeChars(
         text: CharSequence,

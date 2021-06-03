@@ -9,7 +9,7 @@ import android.view.inputmethod.InputMethodManager
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("KeyboardUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("KeyboardUtils")
 
 fun getKeyboardHeight(rootView: View, targetView: View): Int {
     val rect = Rect()

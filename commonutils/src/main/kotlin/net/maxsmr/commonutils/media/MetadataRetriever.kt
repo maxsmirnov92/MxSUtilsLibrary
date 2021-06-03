@@ -18,7 +18,7 @@ import java.io.File
 import java.io.FileDescriptor
 import java.util.concurrent.TimeUnit
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("MetadataRetriever")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("MetadataRetriever")
 
 @JvmOverloads
 fun createMediaMetadataRetriever(resourceUri: Uri?, headers: Map<String, String>? = null): MediaMetadataRetriever? {

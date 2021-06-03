@@ -5,14 +5,17 @@ import net.maxsmr.commonutils.collection.sort.ISortOption
 import net.maxsmr.commonutils.conversion.SizeUnit
 import net.maxsmr.commonutils.conversion.SizeUnit.Companion.convert
 import net.maxsmr.commonutils.conversion.toLongNotNull
-import net.maxsmr.commonutils.text.EMPTY_STRING
-import net.maxsmr.commonutils.text.isEmpty
-import net.maxsmr.commonutils.text.replaceRangeOrThrow
 import net.maxsmr.commonutils.logger.BaseLogger
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.*
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
 import net.maxsmr.commonutils.shell.DEFAULT_TARGET_CODE
 import net.maxsmr.commonutils.shell.ShellCallback
 import net.maxsmr.commonutils.shell.ShellWrapper
+import net.maxsmr.commonutils.text.EMPTY_STRING
+import net.maxsmr.commonutils.text.isEmpty
+import net.maxsmr.commonutils.text.replaceRangeOrThrow
 import java.io.*
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
@@ -23,7 +26,7 @@ import java.util.concurrent.TimeUnit
 
 const val DEPTH_UNLIMITED = -1
 
-private val logger = getInstance().getLogger<BaseLogger>("FileUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("FileUtils")
 
 // TODO convert to extensions?
 

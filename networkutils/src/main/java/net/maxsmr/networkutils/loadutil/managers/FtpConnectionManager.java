@@ -2,7 +2,6 @@ package net.maxsmr.networkutils.loadutil.managers;
 
 import net.maxsmr.commonutils.IStreamNotifier;
 import net.maxsmr.commonutils.Pair;
-
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.networkutils.NetworkHelper;
@@ -30,8 +29,8 @@ import static net.maxsmr.commonutils.FileUtilsKt.checkFile;
 import static net.maxsmr.commonutils.FileUtilsKt.deleteFile;
 import static net.maxsmr.commonutils.FileUtilsKt.isFileValid;
 import static net.maxsmr.commonutils.StreamUtilsKt.copyStream;
-import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.conversion.NumberConversionKt.toIntSafe;
+import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 
 public class FtpConnectionManager {
 

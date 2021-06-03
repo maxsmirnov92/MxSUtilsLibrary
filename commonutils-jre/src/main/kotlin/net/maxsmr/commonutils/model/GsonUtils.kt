@@ -7,7 +7,7 @@ import com.google.gson.internal.LazilyParsedNumber
 import com.google.gson.reflect.TypeToken
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
 import java.lang.reflect.Type
@@ -16,7 +16,7 @@ import java.util.*
 //Вспомогательные утилиты для работы с json
 //посредством [Gson]
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("GsonUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("GsonUtils")
 
 /**
  * Преобразует строку [jsonString] в инстанс указанного типа [T],

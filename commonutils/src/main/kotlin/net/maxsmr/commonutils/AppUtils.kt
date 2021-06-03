@@ -18,7 +18,7 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LifecycleOwner
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import net.maxsmr.commonutils.processmanager.AbstractProcessManager
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
@@ -26,7 +26,7 @@ import java.io.File
 import java.lang.reflect.Method
 import java.util.*
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("AppUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AppUtils")
 
 fun isPackageInstalled(context: Context, packageName: String): Boolean =
         getApplicationInfo(context, packageName) != null

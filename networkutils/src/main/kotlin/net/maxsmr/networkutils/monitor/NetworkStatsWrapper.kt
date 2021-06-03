@@ -12,7 +12,7 @@ import net.maxsmr.commonutils.isAtLeastMarshmallow
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import java.lang.RuntimeException
 
 /**
@@ -24,7 +24,7 @@ class NetworkStatsWrapper @JvmOverloads constructor(
         private val packageUid: Int = getApplicationUid(context, context.packageName) ?: -1
 ) {
 
-    private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(NetworkStatsWrapper::class.java)
+    private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>(NetworkStatsWrapper::class.java)
 
 
     private val networkStatsManager: NetworkStatsManager = context.getSystemService(Context.NETWORK_STATS_SERVICE) as NetworkStatsManager?

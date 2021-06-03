@@ -17,7 +17,9 @@ import androidx.core.graphics.drawable.DrawableCompat
 import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.ReflectionUtils.invokeMethod
 import net.maxsmr.commonutils.logger.BaseLogger
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.*
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
@@ -26,7 +28,7 @@ const val EMPTY_ID = 0
 const val INVALID_ATTRIBUTE = 0
 const val INVALID_COLOR = -1
 
-private val logger = getInstance().getLogger<BaseLogger>("ResourceUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("ResourceUtils")
 
 /**
  * проверить факт существования ресурса с указанным [resId]

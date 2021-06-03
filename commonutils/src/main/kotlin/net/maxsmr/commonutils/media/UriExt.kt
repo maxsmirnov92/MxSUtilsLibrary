@@ -11,14 +11,14 @@ import android.util.Base64
 import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.throwRuntimeException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
 import java.io.*
 import java.nio.charset.Charset
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("UriExt")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("UriExt")
 
 fun Uri.readBytes(
         contentResolver: ContentResolver,

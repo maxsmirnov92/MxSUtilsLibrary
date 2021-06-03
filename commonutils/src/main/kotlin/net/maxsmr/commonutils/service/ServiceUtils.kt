@@ -13,9 +13,10 @@ import android.text.TextUtils
 import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("ServiceUtils")
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
+
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("ServiceUtils")
 
 @JvmOverloads
 fun <S : Service> isServiceRunning(

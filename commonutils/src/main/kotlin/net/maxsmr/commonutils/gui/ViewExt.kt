@@ -47,7 +47,7 @@ import ru.tinkoff.decoro.Mask
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 import java.nio.charset.Charset
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("ViewExt")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("ViewExt")
 
 private const val IMAGE_VIEW_MAX_WIDTH = 4096
 

@@ -15,7 +15,7 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.io.File
 import java.util.*
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("RootShellCommands")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("RootShellCommands")
 
 /**
  * Execute SU command

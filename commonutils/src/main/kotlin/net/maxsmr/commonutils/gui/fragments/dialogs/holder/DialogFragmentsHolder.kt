@@ -20,11 +20,11 @@ import net.maxsmr.commonutils.gui.actions.TypedAction
 import net.maxsmr.commonutils.gui.fragments.dialogs.BaseTypedDialogFragment
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import net.maxsmr.commonutils.rx.live.*
 import org.jetbrains.annotations.Nullable
 
-val logger: BaseLogger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("DialogFragmentsHolder")
+val logger: BaseLogger = BaseLoggerHolder.instance.getLogger<BaseLogger>("DialogFragmentsHolder")
 
 private val RESTRICTED_STATES = setOf(Lifecycle.Event.ON_ANY, Lifecycle.Event.ON_STOP, Lifecycle.Event.ON_DESTROY)
 

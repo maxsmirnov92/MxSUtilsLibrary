@@ -13,7 +13,7 @@ class AnalyticsHelper(
         var eventParamsToExclude: Map<String, List<String>> = mapOf()
 ) {
 
-    private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>(AnalyticsHelper::class.java)
+    private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>(AnalyticsHelper::class.java)
     
     /**
      * Маппинг, содержащий кол-во отправленных ивентов для экземпляра

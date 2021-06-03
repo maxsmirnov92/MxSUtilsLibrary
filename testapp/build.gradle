@@ -2,7 +2,7 @@ apply from: "$rootDir/buildSrc/androidApp.gradle"
 
 ext {
     log4jVersion = "1.0.3"
-    slf4jVersion = "1.7.21"
+    slf4jVersion = "1.7.30"
 }
 
 dependencies {

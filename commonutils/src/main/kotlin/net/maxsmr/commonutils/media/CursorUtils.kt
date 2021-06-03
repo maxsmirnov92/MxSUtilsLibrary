@@ -7,7 +7,7 @@ import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("CursorUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("CursorUtils")
 
 fun Cursor?.isValid() = this != null && !this.isClosed
 

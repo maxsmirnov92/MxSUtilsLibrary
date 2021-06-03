@@ -8,7 +8,7 @@ import net.maxsmr.commonutils.media.openInputStreamOrThrow
 import net.maxsmr.commonutils.media.readBytes
 import java.security.MessageDigest
 
-private val logger = BaseLoggerHolder.getInstance().getLogger<BaseLogger>("AndroidHashUtils")
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AndroidHashUtils")
 
 fun Uri.digest(contentResolver: ContentResolver, algorithm: String): ByteArray? = try {
     digestOrThrow(contentResolver, algorithm)
