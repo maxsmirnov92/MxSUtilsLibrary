@@ -50,21 +50,29 @@ class ServiceScheduler<S : Service>(
         stop(context, serviceClass)
     }
 
-    fun startDelay(delay: Long, args: Bundle? = null) {
-        if (startDelay(context, serviceClass, delay, args)) {
+    fun startDelay(
+            delay: Long,
+            args: Bundle? = null,
+            action: String? = null,
+    ) {
+        if (startDelay(context, serviceClass, delay, 0, args = args, action = action)) {
             isServiceScheduled = true
         }
     }
 
 
-    fun restartDelay(delay: Long, args: Bundle? = null) {
-        if (restartDelay(context, serviceClass, delay, args)) {
+    fun restartDelay(
+            delay: Long,
+            args: Bundle? = null,
+            action: String? = null,
+    ) {
+        if (restartDelay(context, serviceClass, delay, 0, args = args, action = action)) {
             isServiceScheduled = true
         }
     }
 
     fun cancelDelay() {
-        cancelDelay(context, serviceClass)
+        cancelDelay(context, serviceClass, 0)
     }
 
     // вызвать вручную из того места, где отслеживается жизненный цикл
