@@ -32,15 +32,15 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputLayout
 import net.maxsmr.commonutils.*
-import net.maxsmr.commonutils.gui.listeners.DefaultTextWatcher
-import net.maxsmr.commonutils.gui.listeners.OnTextWatcher
-import net.maxsmr.commonutils.live.setValueIfNew
-import net.maxsmr.commonutils.media.toBase64
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.format.getUnformattedText
 import net.maxsmr.commonutils.graphic.scaleDownBitmap
+import net.maxsmr.commonutils.gui.listeners.DefaultTextWatcher
+import net.maxsmr.commonutils.gui.listeners.OnTextWatcher
+import net.maxsmr.commonutils.live.setValueIfNew
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.media.toBase64
 import net.maxsmr.commonutils.number.isZero
 import net.maxsmr.commonutils.text.*
 import ru.tinkoff.decoro.Mask
@@ -294,16 +294,14 @@ fun CompoundButton.bindTo(field: MutableLiveData<Boolean>, ifNew: Boolean = true
 @JvmOverloads
 fun TextView.appendClickableImageTextView(
         @DrawableRes drawableResId: Int,
-        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
         clickFunc: () -> Unit = {}
 ): CharSequence =
-        text.appendClickableImage(context, drawableResId, spanFlags, clickFunc)
-
+        text.appendClickableImage(context, drawableResId, clickFunc)
 
 /**
  * Убрать нижнее подчеркивание для текущего text
  */
-fun TextView.resetNotUnderlinedUrlSpans(): CharSequence =
+fun TextView.removeUnderlineFromUrlSpans(): CharSequence =
         setTextWithMovementMethod(text.removeUnderlineFromUrlSpans(false))
 
 @JvmOverloads
@@ -346,32 +344,6 @@ fun TextView.setSpanText(
 ): CharSequence =
         setTextWithMovementMethod(text.createSpanText(*spanInfo))
 
-
-/**
- * Установить спан [style] для подстроки [substring] в месте ее нахождения в полной строке
- *
- * @param allEntries true, если спан надо установить для всех вхождений подстроки [substring], false - если для первого
- * @param createSpanInfoFunc лямбда, возвращающая CharacterStyle + флаги, которые нужно применить в указанный поддиапазаон для этой [substring]
- */
-@JvmOverloads
-fun TextView.setSpanTextBySubstring(
-        text: CharSequence,
-        substring: String,
-        allEntries: Boolean = true,
-        createSpanInfoFunc: (Int, Int) -> List<SimpleSpanInfo>
-): CharSequence =
-        setTextWithMovementMethod(text.createSpanTextBySubstring(substring, allEntries, createSpanInfoFunc))
-
-@JvmOverloads
-fun TextView.setSpanTextBySubstrings(
-        text: CharSequence,
-        substrings: List<String>,
-        allEntries: Boolean = true,
-        createSpanInfoFunc: (String, Int, Int) -> List<SimpleSpanInfo>
-): CharSequence =
-        setTextWithMovementMethod(text.createSpanTextBySubstrings(substrings, allEntries, createSpanInfoFunc))
-
-
 /**
  * @param text в строке аргументы с префиксами "^" будут заменены на [CharacterStyle]
  * @param spanInfoMap маппинг информации о [Spannable] + link для перехода по клику по нему
@@ -379,27 +351,10 @@ fun TextView.setSpanTextBySubstrings(
  */
 fun TextView.setSpanTextExpanded(
         text: CharSequence,
-        spanInfoMap: Map<ISpanInfo, String>
+        args: Map<String, List<CharacterStyle>>
 ): CharSequence =
-        setTextWithMovementMethod(text.createSpanTextExpanded(spanInfoMap))
+        setTextWithMovementMethod(text.createSpanTextExpanded(args))
 
-/**
- * Альтернатива [setLinkFromHtml], в котором в кач-ве [text]
- * вместо html-разметки обычный текст с кликабельными ссылкоми
- * в указанных диапазонах
- * @param spanInfoMap маппинг информации о [Spannable] + link для перехода по клику по нему
- */
-fun TextView.setLinkableText(
-        text: CharSequence,
-        spanInfoMap: Map<RangeSpanInfo, String>
-): CharSequence =
-        setTextWithMovementMethod(text.createLinkableText(spanInfoMap))
-
-fun TextView.setLinkableTextExpanded(
-        text: CharSequence,
-        spanInfoMap: Map<ISpanInfo, ExpandValueInfo>,
-): CharSequence =
-        setTextWithMovementMethod(text.createLinkableTextExpanded(spanInfoMap))
 
 /**
  * Выставить [html] в кач-ве html текста, но для кликабельных сегментов оповещать о клике
@@ -414,27 +369,10 @@ fun TextView.replaceUrlSpans(
         html.replaceUrlSpansByClickableSpans(parseHtml, isUnderlineText, action)
 )
 
-/**
- * Установить текст с выделенным текстом
- * @param highlightColor цвет выделенного текста
- * @param str текст
- * @param selection текст для выделения (ищется первое вхождение [selection] в [str]
- */
-@JvmOverloads
-fun TextView.setTextWithSelection(
-        text: String,
-        @ColorInt highlightColor: Int,
-        selection: String,
-        allEntries: Boolean = false,
-        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-) {
-    setTextWithMovementMethod(text.createSelectedText(highlightColor, selection, allEntries, spanFlags))
-}
-
 @JvmOverloads
 fun TextView.setTextOrHide(
         @StringRes textResId: Int?,
-        isGoneOrInvisible: Boolean = true,
+        visibilityHide: VisibilityHide = VisibilityHide.GONE,
         distinct: Boolean = true,
         asString: Boolean = true,
         isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
@@ -443,7 +381,7 @@ fun TextView.setTextOrHide(
 ): Boolean =
         setTextOrHide(
                 textResId?.takeIf { it != 0 }?.let { context.getString(it) },
-                isGoneOrInvisible,
+                visibilityHide,
                 distinct,
                 asString,
                 isEmptyFunc,
@@ -457,7 +395,7 @@ fun TextView.setTextOrHide(
 @JvmOverloads
 fun TextView.setTextOrHide(
         text: CharSequence?,
-        isGoneOrInvisible: Boolean = true,
+        visibilityHide: VisibilityHide = VisibilityHide.GONE,
         distinct: Boolean = true,
         asString: Boolean = true,
         isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
@@ -469,7 +407,7 @@ fun TextView.setTextOrHide(
         if (hideFunc != null) {
             hideFunc.invoke()
         } else {
-            setVisible(false, isGoneOrInvisible)
+            setVisible(false, visibilityHide)
         }
         return false
     } else {
@@ -486,7 +424,7 @@ fun TextView.setTextOrHide(
 @JvmOverloads
 fun TextView.setSumOrHide(
         sum: Double,
-        isGoneOrInvisible: Boolean = true,
+        visibilityHide: VisibilityHide = VisibilityHide.GONE,
         distinct: Boolean = true,
         asString: Boolean = true,
         formatFunc: ((Double) -> CharSequence)? = null,
@@ -495,14 +433,14 @@ fun TextView.setSumOrHide(
 ): Boolean = if (!sum.isZero()) {
         setTextOrHide(
                 formatFunc?.let { it(sum) } ?: sum.toString(),
-                isGoneOrInvisible,
+                visibilityHide,
                 distinct,
                 asString,
                 showFunc = showFunc,
                 hideFunc = hideFunc
         )
     } else {
-        setTextOrHide(null as String?, isGoneOrInvisible,
+        setTextOrHide(null as String?, visibilityHide,
                 distinct,
                 false,
                 showFunc = null,
@@ -1050,12 +988,16 @@ fun TextView.setTextChecked(
 }
 
 @JvmOverloads
-fun View.setVisible(isVisible: Boolean, isGoneOrInvisible: Boolean = true) {
+fun View.setVisible(isVisible: Boolean, visibilityHide: VisibilityHide = VisibilityHide.GONE) {
     visibility = if (isVisible) {
         View.VISIBLE
     } else {
-        if (isGoneOrInvisible) View.GONE else View.INVISIBLE
+        if (visibilityHide == VisibilityHide.GONE) View.GONE else View.INVISIBLE
     }
+}
+
+enum class VisibilityHide {
+    INVISIBLE, GONE
 }
 
 fun View.hideByReferenceViews(vararg otherViews: View) {
