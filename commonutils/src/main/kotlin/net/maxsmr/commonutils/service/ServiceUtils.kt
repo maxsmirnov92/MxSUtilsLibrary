@@ -10,11 +10,13 @@ import android.content.Intent
 import android.content.ServiceConnection
 import android.os.Bundle
 import android.text.TextUtils
-import net.maxsmr.commonutils.*
+import net.maxsmr.commonutils.cancelAlarm
+import net.maxsmr.commonutils.isAtLeastOreo
+import net.maxsmr.commonutils.isSelfAppInBackground
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
+import net.maxsmr.commonutils.setAlarm
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("ServiceUtils")
 
@@ -62,11 +64,12 @@ fun <S : Service> restart(
     return startNoCheck(context, serviceClass, args, action, startForeground)
 }
 
-fun <S : Service> stop(context: Context, serviceClass: Class<S>) {
+fun <S : Service> stop(context: Context, serviceClass: Class<S>): Boolean {
     logger.d("stop, serviceClass=$serviceClass")
     if (isServiceRunning(context, serviceClass)) {
-        stopNoCheck(context, serviceClass)
+        return stopNoCheck(context, serviceClass)
     }
+    return true
 }
 
 fun <S : Service> restartDelay(
@@ -253,33 +256,24 @@ fun <S : Service> startNoCheck(
         startForeground: Boolean = false
 ): Boolean {
     val i = createServiceIntent(context.packageName, serviceClass, args, action)
-    if (startForeground) {
-        context.startForegroundService(i)
+    val isOreo = isAtLeastOreo()
+    if (startForeground && isOreo) {
+        return context.startForegroundService(i) != null
     } else {
-        if (!isAtLeastOreo() || isSelfAppInBackground(context) == false) {
-            context.startService(i)
+        if (!isOreo || isSelfAppInBackground(context) == false) {
+            if (context.startService(i) != null) {
+                return true
+            }
         } else {
             logger.e("Cannot start service with intent $i: app is not in foreground")
-            return false
         }
     }
-    return true
+    return false
 }
 
-private fun <S : Service> restartNoCheck(
-        context: Context,
-        serviceClass: Class<S>,
-        args: Bundle? = null,
-        action: String? = null,
-        startForeground: Boolean = false
-) {
-    stopNoCheck(context, serviceClass)
-    startNoCheck(context, serviceClass, args, action, startForeground)
-}
-
-private fun <S : Service> stopNoCheck(context: Context, serviceClass: Class<S>) {
+private fun <S : Service> stopNoCheck(context: Context, serviceClass: Class<S>): Boolean {
     val service = Intent(context, serviceClass)
-    context.stopService(service)
+    return context.stopService(service)
 }
 
 private fun <S : Service> restartDelayNoCheck(

@@ -2,7 +2,6 @@ package net.maxsmr.commonutils.format
 
 import net.maxsmr.commonutils.number.isZero
 import net.maxsmr.commonutils.number.mergeFraction
-import net.maxsmr.commonutils.number.mergeFractionSimple
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.math.BigDecimal
 import java.math.RoundingMode
@@ -65,8 +64,6 @@ fun Double.formatPrice(
     }
     return costStr
 }
-
-fun BigDecimal?.sumToFractionalSimple(): Long = mergeFractionSimple(2)
 
 fun BigDecimal?.sumToFractional(): Long = mergeFraction(2)
 

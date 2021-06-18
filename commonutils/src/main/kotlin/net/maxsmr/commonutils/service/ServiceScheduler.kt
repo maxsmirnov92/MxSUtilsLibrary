@@ -2,7 +2,6 @@ package net.maxsmr.commonutils.service
 
 import android.app.Service
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 
 class ServiceScheduler<S : Service>(
@@ -46,9 +45,7 @@ class ServiceScheduler<S : Service>(
         }
     }
 
-    fun stop() {
-        stop(context, serviceClass)
-    }
+    fun stop() = stop(context, serviceClass)
 
     fun startDelay(
             delay: Long,
