@@ -1,8 +1,6 @@
-package net.maxsmr.commonutils.gson
+package net.maxsmr.commonutils.model.gson
 
 import com.google.gson.*
-import net.maxsmr.commonutils.getJsonElement
-import net.maxsmr.commonutils.getJsonPrimitive
 import java.lang.reflect.Type
 
 /**

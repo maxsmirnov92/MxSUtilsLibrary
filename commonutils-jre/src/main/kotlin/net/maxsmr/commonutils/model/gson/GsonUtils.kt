@@ -1,6 +1,6 @@
 @file:Suppress("UNCHECKED_CAST")
 
-package net.maxsmr.commonutils
+package net.maxsmr.commonutils.model.gson
 
 import com.google.gson.*
 import com.google.gson.internal.LazilyParsedNumber

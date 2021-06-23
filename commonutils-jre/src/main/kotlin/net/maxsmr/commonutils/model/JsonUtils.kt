@@ -126,3 +126,29 @@ private fun <T> asListIndexed(array: JSONArray?, parcel: JSONParcelArrayIndexed<
     }
     return result
 }
+
+fun <T> asPrimitiveList(array: JSONArray?, clazz: Class<T>, nonNull: Boolean): List<T?> = asListIndexed(array, object : JSONParcelArrayIndexed<T> {
+
+    override fun fromJSONArray(jsonArray: JSONArray, index: Int): T {
+        return when {
+            clazz.isAssignableFrom(String::class.java) -> {
+                jsonArray.optString(index) as T
+            }
+            clazz.isAssignableFrom(Int::class.java) -> {
+                jsonArray.optInt(index) as T
+            }
+            clazz.isAssignableFrom(Long::class.java) -> {
+                jsonArray.optLong(index) as T
+            }
+            clazz.isAssignableFrom(Double::class.java) -> {
+                jsonArray.optDouble(index) as T
+            }
+            clazz.isAssignableFrom(Boolean::class.java) -> {
+                jsonArray.optBoolean(index) as T
+            }
+            else -> {
+                throw RuntimeException("Incorrect primitive class: $clazz")
+            }
+        }
+    }
+}, nonNull)

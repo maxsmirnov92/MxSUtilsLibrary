@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.gui.actions.message.text
 
 import com.google.gson.*
-import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.gui.actions.message.text.TextMessage.CharSequenceArg
+import net.maxsmr.commonutils.model.gson.*
 import java.lang.reflect.Type
 
 class TextMessageTypeAdapter : JsonSerializer<TextMessage>, JsonDeserializer<TextMessage> {

@@ -29,6 +29,7 @@ ext {
 
     commonsNetVersion = '3.3'
     gsonVersion = '2.8.6'
+    jsonVersion = '20210307'
 
     rxJavaVersion = '2.1.3'
     rxAndroidVersion = '2.1.1'
