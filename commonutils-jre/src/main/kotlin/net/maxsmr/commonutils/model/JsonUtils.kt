@@ -50,39 +50,6 @@ fun isJsonFieldJson(jsonObject: JSONObject?, fieldName: String?): Boolean {
     return false
 }
 
-fun convertJSONObject(obj: Any?): JsonElement {
-    var value: JsonElement = JsonNull.INSTANCE
-    when (obj) {
-        is JSONObject -> {
-            value = JsonObject().apply {
-                obj.keys().forEach { key ->
-                    add(key, convertJSONObject(obj.get(key)))
-                }
-            }
-        }
-        is JSONArray -> {
-            value = JsonArray().apply {
-                for (i in 0 until obj.length()) {
-                    add(convertJSONObject(obj.get(i)))
-                }
-            }
-        }
-        is Boolean -> {
-            value = JsonPrimitive(obj)
-        }
-        is Number -> {
-            value = JsonPrimitive(obj)
-        }
-        is String -> {
-            value = JsonPrimitive(obj)
-        }
-        is Char -> {
-            value = JsonPrimitive(obj)
-        }
-    }
-    return value
-}
-
 @Throws(JSONException::class)
 fun copyFields(source: JSONObject?, target: JSONObject?) {
     if (target != null && source != null) {

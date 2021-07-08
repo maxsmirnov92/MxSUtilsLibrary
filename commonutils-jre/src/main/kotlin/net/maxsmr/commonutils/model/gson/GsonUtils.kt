@@ -10,6 +10,8 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
+import org.json.JSONArray
+import org.json.JSONObject
 import java.lang.reflect.Type
 import java.util.*
 
@@ -213,11 +215,6 @@ fun <V> getJsonPrimitive(jsonElement: JsonElement?, memberName: String?, clazz: 
 }
 
 @JvmOverloads
-fun <V> getJsonPrimitiveFromObject(jsonObject: JsonObject?, memberName: String?, clazz: Class<V>, defaultValue: V? = null): V? {
-    return jsonObject?.let {  getJsonPrimitiveAs(getJsonElementAs(jsonObject.get(memberName), JsonPrimitive::class.java), clazz, defaultValue) }
-}
-
-@JvmOverloads
 fun <V> getFromJsonArray(array: JsonArray?, parcel: JsonParcelArray<V>, nonNull: Boolean = false): List<V?> {
     val result = mutableListOf<V?>()
     array?.let {
@@ -229,6 +226,39 @@ fun <V> getFromJsonArray(array: JsonArray?, parcel: JsonParcelArray<V>, nonNull:
         }
     }
     return result
+}
+
+fun Any?.toJsonElement(): JsonElement {
+    var value: JsonElement = JsonNull.INSTANCE
+    when (this) {
+        is JSONObject -> {
+            value = JsonObject().apply {
+                this@toJsonElement.keys().forEach { key ->
+                    add(key, this.get(key).toJsonElement())
+                }
+            }
+        }
+        is JSONArray -> {
+            value = JsonArray().apply {
+                for (i in 0 until this@toJsonElement.length()) {
+                    add(this.get(i).toJsonElement())
+                }
+            }
+        }
+        is Boolean -> {
+            value = JsonPrimitive(this)
+        }
+        is Number -> {
+            value = JsonPrimitive(this)
+        }
+        is String -> {
+            value = JsonPrimitive(this)
+        }
+        is Char -> {
+            value = JsonPrimitive(this)
+        }
+    }
+    return value
 }
 
 fun JsonObject.mergeJsonObject(fromAnother: JsonObject) {
