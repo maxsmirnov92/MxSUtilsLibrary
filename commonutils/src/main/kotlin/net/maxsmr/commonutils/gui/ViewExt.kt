@@ -24,7 +24,6 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
@@ -35,8 +34,8 @@ import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.format.getUnformattedText
 import net.maxsmr.commonutils.graphic.scaleDownBitmap
+import net.maxsmr.commonutils.gui.listeners.AfterTextWatcher
 import net.maxsmr.commonutils.gui.listeners.DefaultTextWatcher
-import net.maxsmr.commonutils.gui.listeners.OnTextWatcher
 import net.maxsmr.commonutils.live.setValueIfNew
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
@@ -202,7 +201,7 @@ fun <D> TextView.bindTo(
         ifNew: Boolean = true,
         toFieldValue: (CharSequence?) -> D
 ) {
-    addTextChangedListener(OnTextWatcher { s: CharSequence?, _: Int, _: Int, _: Int ->
+    addTextChangedListener(AfterTextWatcher { s: Editable ->
         val newValue = toFieldValue.invoke(s)
         if (ifNew) {
             field.setValueIfNew(newValue)
@@ -210,71 +209,6 @@ fun <D> TextView.bindTo(
             field.value = newValue
         }
     })
-}
-
-/**
- * Обозревание форматированного или неформатированного (второй вариант более правильный)
- * из [MutableLiveData] с целью выставления в целевую [view] форматированного значения методом refreshMask
- * @param maskWatcher уже привязанный к [view]
- */
-@JvmOverloads
-fun MutableLiveData<String>.observeFromTextUnformatted(
-        view: TextView,
-        viewLifecycleOwner: LifecycleOwner,
-        maskWatcher: MaskFormatWatcher,
-        onChanged: ((CharSequence?) -> Unit)? = null
-) {
-    observe(viewLifecycleOwner) {
-        if (it != null && it.isNotEmpty()) {
-            maskWatcher.refreshMask(it)
-        } else {
-            view.text = EMPTY_STRING
-        }
-        onChanged?.invoke(it)
-    }
-}
-
-@JvmOverloads
-fun MutableLiveData<String>.observeFromTextUnformatted(
-        view: TextView,
-        viewLifecycleOwner: LifecycleOwner,
-        mask: Mask,
-        distinct: Boolean = true,
-        onChanged: ((CharSequence?) -> Unit)? = null
-) {
-    observeFromText(view, viewLifecycleOwner, distinct) {
-        onChanged?.invoke(it)
-        getFormattedText(mask, it)
-    }
-}
-
-/**
- * Обозревание форматированного или неформатированного (второй вариант более правильный)
- * из [Field] с целью выставления в целевую [view] форматированного значения через [formatFunc]
- */
-fun MutableLiveData<String>.observeFromText(
-        view: TextView,
-        viewLifecycleOwner: LifecycleOwner,
-        distinct: Boolean = true,
-        asString: Boolean = true,
-        formatFunc: ((CharSequence?) -> CharSequence)? = null
-) {
-    observeFrom(view, viewLifecycleOwner, distinct, asString) {
-        formatFunc?.invoke(it) ?: it.toString()
-    }
-}
-
-@JvmOverloads
-fun <D> MutableLiveData<D>.observeFrom(
-        view: TextView,
-        viewLifecycleOwner: LifecycleOwner,
-        distinct: Boolean = true,
-        asString: Boolean = true,
-        formatFunc: (D?) -> CharSequence?
-) {
-    observe(viewLifecycleOwner) {
-        view.setTextChecked(formatFunc(it), distinct, asString)
-    }
 }
 
 @JvmOverloads
@@ -955,8 +889,23 @@ fun View.getBoundsByParent(parent: ViewGroup): Rect {
 fun TextView.setTextDistinctFormatted(
         text: CharSequence?,
         maskWatcher: MaskFormatWatcher,
-        asString: Boolean = true
-) = setTextDistinctFormatted(text, maskWatcher.maskOriginal, asString)
+        asString: Boolean = true,
+        refreshMask: Boolean = true
+): Boolean {
+    return  if (refreshMask) {
+        if (text.isNullOrEmpty()) {
+            setText(EMPTY_STRING)
+        } else {
+            // getMask возвращает UnmodifiableMask -
+            // format на её копии не сработает
+            // maskOriginal - MaskImpl текущая изменяемая маска
+            maskWatcher.refreshMask(text)
+        }
+        true
+    } else {
+        setTextDistinctFormatted(text, maskWatcher.maskOriginal, asString)
+    }
+}
 
 @JvmOverloads
 fun TextView.setTextDistinctFormatted(

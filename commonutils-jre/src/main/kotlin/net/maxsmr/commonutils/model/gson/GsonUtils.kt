@@ -161,13 +161,13 @@ fun <E : JsonElement> getJsonElementAs(jsonElement: JsonElement?, clazz: Class<E
     var result: E? = null
     if (jsonElement != null) {
         when {
-            jsonElement is JsonNull && clazz.isAssignableFrom(JsonNull::class.java) ->
+            jsonElement is JsonNull && clazz == JsonNull::class.java ->
                 result = jsonElement as E
-            jsonElement is JsonPrimitive && clazz.isAssignableFrom(JsonPrimitive::class.java) ->
+            jsonElement is JsonPrimitive && clazz == JsonPrimitive::class.java ->
                 result = jsonElement as E
-            jsonElement is JsonObject && clazz.isAssignableFrom(JsonObject::class.java) ->
+            jsonElement is JsonObject && clazz == JsonObject::class.java ->
                 result = jsonElement as E
-            jsonElement is JsonArray && clazz.isAssignableFrom(JsonArray::class.java) ->
+            jsonElement is JsonArray && clazz == JsonArray::class.java ->
                 result = jsonElement as E
         }
     }
@@ -178,25 +178,22 @@ fun <E : JsonElement> getJsonElementAs(jsonElement: JsonElement?, clazz: Class<E
 fun <V> getJsonPrimitiveAs(forElement: JsonPrimitive?, clazz: Class<V>, defaultValue: V? = null): V? {
     var value: V? = null
     if (forElement != null) {
-        if (forElement.isString && String::class.java.isAssignableFrom(clazz)) {
+        if (forElement.isString && clazz == String::class.java) {
             value = forElement.asString as V
-        } else if (forElement.isNumber) {
+        } else if (forElement.isNumber && Number::class.java.isAssignableFrom(clazz)) {
             val numberValue = forElement.asNumber
-            if (numberValue is LazilyParsedNumber) {
-                value = when {
-                    Int::class.java.isAssignableFrom(clazz) -> numberValue.toInt() as V
-                    Long::class.java.isAssignableFrom(clazz) -> numberValue.toLong() as V
-                    Long::class.java.isAssignableFrom(clazz) -> numberValue.toShort() as V
-                    Double::class.java.isAssignableFrom(clazz) -> numberValue.toDouble() as V
-                    Float::class.java.isAssignableFrom(clazz) -> numberValue.toFloat() as V
-                    Byte::class.java.isAssignableFrom(clazz) -> numberValue.toByte() as V
-                    Char::class.java.isAssignableFrom(clazz) -> numberValue.toChar() as V
-                    else -> null
-                }
-            } else if (Number::class.java.isAssignableFrom(clazz)) {
-                value = numberValue as V
+            // любой наследник от Number реализует эти методы
+            value = when (clazz) {
+                Int::class.java -> numberValue.toInt() as V
+                Long::class.java -> numberValue.toLong() as V
+                Short::class.java -> numberValue.toShort() as V
+                Double::class.java -> numberValue.toDouble() as V
+                Float::class.java -> numberValue.toFloat() as V
+                Byte::class.java -> numberValue.toByte() as V
+                Char::class.java -> numberValue.toChar() as V
+                else -> null
             }
-        } else if (forElement.isBoolean && Boolean::class.java.isAssignableFrom(clazz)) {
+        } else if (forElement.isBoolean && clazz == Boolean::class.java) {
             value = forElement.asBoolean as V
         }
     }
@@ -212,6 +209,11 @@ fun <E : JsonElement> getJsonElement(jsonElement: JsonElement?, memberName: Stri
 @JvmOverloads
 fun <V> getJsonPrimitive(jsonElement: JsonElement?, memberName: String?, clazz: Class<V>, defaultValue: V? = null): V? {
     return getJsonPrimitiveAs(getJsonElement(jsonElement, memberName, JsonPrimitive::class.java), clazz, defaultValue)
+}
+
+@JvmOverloads
+fun <V> getJsonPrimitive(jsonElement: JsonElement?, clazz: Class<V>, defaultValue: V? = null): V? {
+    return getJsonPrimitiveAs(getJsonElementAs(jsonElement, JsonPrimitive::class.java), clazz, defaultValue)
 }
 
 @JvmOverloads
