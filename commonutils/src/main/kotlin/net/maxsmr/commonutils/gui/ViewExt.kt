@@ -334,9 +334,10 @@ fun TextView.setTextOrHide(
         asString: Boolean = true,
         isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
         showFunc: (() -> Unit)? = null,
-        hideFunc: (() -> Unit)? = null
+        hideFunc: (() -> Unit)? = null,
+        formatFunc: ((CharSequence) -> CharSequence)? = null
 ): Boolean {
-    if (isEmptyFunc(text)) {
+    if (text == null || isEmptyFunc(text)) {
         this.text = EMPTY_STRING
         if (hideFunc != null) {
             hideFunc.invoke()
@@ -345,7 +346,7 @@ fun TextView.setTextOrHide(
         }
         return false
     } else {
-        setTextChecked(text, distinct, asString)
+        setTextChecked(formatFunc?.invoke(text) ?: text, distinct, asString)
         if (showFunc != null) {
             showFunc.invoke()
         } else {
