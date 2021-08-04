@@ -879,7 +879,7 @@ private fun reduceTextByMaxWidth(
 /**
  * @return relative coordinates to the parent
  */
-fun View.getBoundsByParent(parent: ViewGroup): Rect {
+fun View.getOffsetByParent(parent: ViewGroup): Rect {
     val offsetViewBounds = Rect()
     getDrawingRect(offsetViewBounds)
     parent.offsetDescendantRectToMyCoords(this, offsetViewBounds)

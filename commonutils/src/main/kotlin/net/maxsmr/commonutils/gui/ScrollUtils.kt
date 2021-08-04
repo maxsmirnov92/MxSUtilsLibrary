@@ -89,6 +89,20 @@ fun NestedScrollView.setOnScrollChangesListener(listener: ((ScrollState) -> Unit
     }
 }
 
+fun ViewGroup.calculateCoordsForScroll(target: View, isVertically: Boolean): Pair<Int, Int> {
+    val x: Int
+    val y: Int
+    val coords = target.getOffsetByParent(this)
+    if (isVertically) {
+        x = 0
+        y = coords.top
+    } else {
+        x = coords.left
+        y = 0
+    }
+    return Pair(x, y)
+}
+
 @JvmOverloads
 fun ViewGroup.scrollToView(
         activity: Activity?,
@@ -97,17 +111,8 @@ fun ViewGroup.scrollToView(
         smoothScroll: Boolean = true,
         changeFocus: Boolean = false
 ) {
-    val x: Int
-    val y: Int
-    val coords = target.getBoundsByParent(this)
-    if (isVertically) {
-        x = 0
-        y = coords.top
-    } else {
-        x = coords.left
-        y = 0
-    }
-    scrollTo(activity, x, y, smoothScroll, changeFocus)
+    val coords = calculateCoordsForScroll(target, isVertically)
+    scrollTo(activity, coords.first, coords.second, smoothScroll, changeFocus)
 }
 
 /**
@@ -132,6 +137,9 @@ fun ViewGroup.scrollTo(
             is HorizontalScrollView -> {
                 fullScroll(View.FOCUS_DOWN)
             }
+            is NestedScrollView -> {
+                fullScroll(View.FOCUS_DOWN)
+            }
         }
 
     }
@@ -141,6 +149,9 @@ fun ViewGroup.scrollTo(
                 smoothScrollTo(x, y)
             }
             is HorizontalScrollView -> {
+                smoothScrollTo(x, y)
+            }
+            is NestedScrollView -> {
                 smoothScrollTo(x, y)
             }
         }
