@@ -43,7 +43,7 @@ fun split(text: String, expression: String): Array<String> {
 
 @JvmOverloads
 fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): Boolean =
-        s == null || s == EMPTY_STRING || shouldCheckNullString && "null".equals(s.toString(), ignoreCase = true)
+        s == null || s.isEmpty() || shouldCheckNullString && "null".equals(s.toString(), ignoreCase = true)
 
 fun isZeroOrNull(value: CharSequence?) = value.toDoubleOrNull().isZeroOrNull()
 

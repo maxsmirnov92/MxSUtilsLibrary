@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils.service
 
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
 import android.os.Bundle
@@ -47,29 +48,48 @@ class ServiceScheduler<S : Service>(
 
     fun stop() = stop(context, serviceClass)
 
+    @JvmOverloads
     fun startDelay(
             delay: Long,
+            requestCode: Int = 0,
+            isForeground: Boolean = false,
+            packageName: String = context.packageName,
             args: Bundle? = null,
             action: String? = null,
+            flags: Int = PendingIntent.FLAG_CANCEL_CURRENT,
+            shouldWakeUp: Boolean = true
     ) {
-        if (startDelay(context, serviceClass, delay, 0, args = args, action = action)) {
+        if (startDelay(context, serviceClass, delay, requestCode, isForeground, packageName, args, action, flags, shouldWakeUp)) {
             isServiceScheduled = true
         }
     }
 
-
+    @JvmOverloads
     fun restartDelay(
             delay: Long,
+            requestCode: Int = 0,
+            isForeground: Boolean = false,
+            packageName: String = context.packageName,
             args: Bundle? = null,
             action: String? = null,
+            flags: Int = PendingIntent.FLAG_CANCEL_CURRENT,
+            shouldWakeUp: Boolean = true
     ) {
-        if (restartDelay(context, serviceClass, delay, 0, args = args, action = action)) {
+        if (restartDelay(context, serviceClass, delay, requestCode, isForeground, packageName, args, action, flags, shouldWakeUp)) {
             isServiceScheduled = true
         }
     }
 
-    fun cancelDelay() {
-        cancelDelay(context, serviceClass, 0)
+    @JvmOverloads
+    fun cancelDelay(
+            requestCode: Int = 0,
+            flags: Int = PendingIntent.FLAG_CANCEL_CURRENT,
+            isForeground: Boolean = false,
+            packageName: String = context.packageName,
+            args: Bundle? = null,
+            action: String? = null
+    ) {
+        cancelDelay(context, serviceClass, requestCode, flags, isForeground, packageName, args, action)
     }
 
     // вызвать вручную из того места, где отслеживается жизненный цикл

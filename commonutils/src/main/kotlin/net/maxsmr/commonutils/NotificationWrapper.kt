@@ -50,4 +50,15 @@ class NotificationWrapper(
             config?.invoke(this)
         }
     }
+
+    companion object {
+
+        fun NotificationCompat.Builder.setContentBigText(text: String?) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                setStyle(NotificationCompat.BigTextStyle().bigText(text))
+            } else {
+                setContentText(text)
+            }
+        }
+    }
 }

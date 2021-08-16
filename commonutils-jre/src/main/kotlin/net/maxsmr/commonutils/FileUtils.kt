@@ -15,7 +15,7 @@ import net.maxsmr.commonutils.shell.ShellCallback
 import net.maxsmr.commonutils.shell.ShellWrapper
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
-import net.maxsmr.commonutils.text.replaceRangeOrThrow
+import net.maxsmr.commonutils.text.replaceRange
 import java.io.*
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
@@ -63,26 +63,50 @@ fun String?.removeExtension(): String {
     if (this != null && this.isNotEmpty()) {
         val startIndex = this.lastIndexOf('.')
         if (startIndex >= 0) {
-            result = replaceRangeOrThrow(this, startIndex, this.length, EMPTY_STRING)
+            result = replaceRange(this, startIndex, this.length, EMPTY_STRING).toString()
         }
     }
     return result
 }
 
-fun appendPostfix(file: File?, postfix: String?): File? {
-    var result = file
-    if (!isEmpty(postfix) && file != null) {
-        var name = file.name.removeExtension()
-        if (name.isNotEmpty()) {
-            name += postfix
-            val extension = file.name.extension
-            if (extension.isNotEmpty()) {
-                name += ".$extension"
-            }
-            result = File(file.parent, name)
+fun File?.appendExtension(extension: String?): File? = this?.let {
+    File(this.parent, this.name.appendExtension(extension))
+}
+
+/**
+ * Дописать расширение; убирает существующее, если есть
+ */
+fun String?.appendExtension(extension: String?): String {
+    if (!isEmpty(extension) && this != null) {
+        val newName = this.removeExtension()
+        return if (newName.isNotEmpty()) {
+            "$newName.$extension"
+        } else {
+            this
         }
     }
-    return result
+    return this ?: EMPTY_STRING
+}
+
+
+fun File?.appendPostfix(postfix: String?): File? = this?.let {
+    File(this.parent, this.name.appendPostfix(postfix))
+}
+
+/**
+ * Дописать в конец имени (до расширения ".", если есть) [postfix]
+ */
+fun String?.appendPostfix(postfix: String?): String {
+    if (!isEmpty(postfix) && this != null) {
+        var newName = this.removeExtension() + postfix
+        newName += postfix
+        val extension = this.extension
+        if (extension.isNotEmpty()) {
+            newName += ".$extension"
+        }
+        return newName
+    }
+    return this ?: EMPTY_STRING
 }
 
 @JvmOverloads

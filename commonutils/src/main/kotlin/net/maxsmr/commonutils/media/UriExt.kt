@@ -455,7 +455,7 @@ fun Uri.mimeType(contentResolver: ContentResolver): String = try {
 
 @Throws(RuntimeException::class)
 fun Uri.mimeTypeOrThrow(contentResolver: ContentResolver): String = when {
-    isFileScheme() -> path.mimeType
+    isFileScheme() -> path.mimeTypeFromName
     isContentScheme() -> {
         try {
             contentResolver.getType(this)
