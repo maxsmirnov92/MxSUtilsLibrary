@@ -23,6 +23,7 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 
 dependencies {
     api "com.google.code.gson:gson:$gsonVersion"
+    api "org.json:json:$jsonVersion"
 }
 
 apply from: "$rootDir/buildSrc/javaPostBuildLib.gradle"

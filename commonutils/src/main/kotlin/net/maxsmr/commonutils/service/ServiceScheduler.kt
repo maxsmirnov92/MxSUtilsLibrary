@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.service
 
+import android.app.PendingIntent
 import android.app.Service
 import android.content.Context
-import android.content.Intent
 import android.os.Bundle
 
 class ServiceScheduler<S : Service>(
@@ -46,25 +46,50 @@ class ServiceScheduler<S : Service>(
         }
     }
 
-    fun stop() {
-        stop(context, serviceClass)
-    }
+    fun stop() = stop(context, serviceClass)
 
-    fun startDelay(delay: Long, args: Bundle? = null) {
-        if (startDelay(context, serviceClass, delay, args)) {
+    @JvmOverloads
+    fun startDelay(
+            delay: Long,
+            requestCode: Int = 0,
+            isForeground: Boolean = false,
+            packageName: String = context.packageName,
+            args: Bundle? = null,
+            action: String? = null,
+            flags: Int = PendingIntent.FLAG_CANCEL_CURRENT,
+            shouldWakeUp: Boolean = true
+    ) {
+        if (startDelay(context, serviceClass, delay, requestCode, isForeground, packageName, args, action, flags, shouldWakeUp)) {
             isServiceScheduled = true
         }
     }
 
-
-    fun restartDelay(delay: Long, args: Bundle? = null) {
-        if (restartDelay(context, serviceClass, delay, args)) {
+    @JvmOverloads
+    fun restartDelay(
+            delay: Long,
+            requestCode: Int = 0,
+            isForeground: Boolean = false,
+            packageName: String = context.packageName,
+            args: Bundle? = null,
+            action: String? = null,
+            flags: Int = PendingIntent.FLAG_CANCEL_CURRENT,
+            shouldWakeUp: Boolean = true
+    ) {
+        if (restartDelay(context, serviceClass, delay, requestCode, isForeground, packageName, args, action, flags, shouldWakeUp)) {
             isServiceScheduled = true
         }
     }
 
-    fun cancelDelay() {
-        cancelDelay(context, serviceClass)
+    @JvmOverloads
+    fun cancelDelay(
+            requestCode: Int = 0,
+            flags: Int = PendingIntent.FLAG_CANCEL_CURRENT,
+            isForeground: Boolean = false,
+            packageName: String = context.packageName,
+            args: Bundle? = null,
+            action: String? = null
+    ) {
+        cancelDelay(context, serviceClass, requestCode, flags, isForeground, packageName, args, action)
     }
 
     // вызвать вручную из того места, где отслеживается жизненный цикл

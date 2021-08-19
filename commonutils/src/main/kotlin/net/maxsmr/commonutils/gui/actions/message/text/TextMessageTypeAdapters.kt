@@ -1,8 +1,8 @@
 package net.maxsmr.commonutils.gui.actions.message.text
 
 import com.google.gson.*
-import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.gui.actions.message.text.TextMessage.CharSequenceArg
+import net.maxsmr.commonutils.model.gson.*
 import java.lang.reflect.Type
 
 class TextMessageTypeAdapter : JsonSerializer<TextMessage>, JsonDeserializer<TextMessage> {
@@ -38,10 +38,10 @@ class TextMessageTypeAdapter : JsonSerializer<TextMessage>, JsonDeserializer<Tex
         var messageResId: Int? = null
         val args = mutableListOf<TextMessage.Arg<*>>()
         getJsonElementAs(json, JsonObject::class.java)?.let {
-            pluralResId = getJsonPrimitiveFromObject(it, KEY_PLURAL_RES_ID, Int::class.java)
-            quantity = getJsonPrimitiveFromObject(it, KEY_QUANTITY, Int::class.java)
-            message = getJsonPrimitiveFromObject(it, KEY_MESSAGE, String::class.java)
-            messageResId = getJsonPrimitiveFromObject(it, KEY_MESSAGE_RES_ID, Int::class.java)
+            pluralResId = getJsonPrimitive(it, KEY_PLURAL_RES_ID, Int::class.java)
+            quantity = getJsonPrimitive(it, KEY_QUANTITY, Int::class.java)
+            message = getJsonPrimitive(it, KEY_MESSAGE, String::class.java)
+            messageResId = getJsonPrimitive(it, KEY_MESSAGE_RES_ID, Int::class.java)
             args.addAll(getFromJsonArray(getJsonElementAs(it[KEY_ARGS], JsonArray::class.java), object : JsonParcelArrayObjects<TextMessage.Arg<*>>() {
 
                 override fun fromJsonObject(jsonObj: JsonObject?): TextMessage.Arg<*>? = context.deserialize(jsonObj, TextMessage.Arg::class.java)

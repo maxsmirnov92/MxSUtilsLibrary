@@ -4,22 +4,42 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.os.SystemClock
+import androidx.core.app.AlarmManagerCompat
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AlarmUtils")
 
-fun setAlarm(context: Context, pIntent: PendingIntent, delayTime: Long, shouldWakeUp: Boolean): Boolean {
+@JvmOverloads
+fun setAlarm(
+        context: Context,
+        alarmIntent: PendingIntent,
+        delayTime: Long,
+        shouldWakeUp: Boolean,
+        showIntent: PendingIntent? = null
+): Boolean {
     if (delayTime <= 0) {
         logger.e("Incorrect delay time: $delayTime")
         return false
     }
-    return setAlarm(context, pIntent, System.currentTimeMillis() + delayTime, if (shouldWakeUp) AlarmType.RTC_WAKE_UP else AlarmType.RTC)
+    return setAlarm(context,
+            alarmIntent,
+            System.currentTimeMillis() + delayTime,
+            if (shouldWakeUp) AlarmType.RTC_WAKE_UP else AlarmType.RTC,
+            showIntent
+    )
 }
 
 /** compat use of [AlarmManager]  */
-fun setAlarm(context: Context, pIntent: PendingIntent, triggerTime: Long, alarmType: AlarmType): Boolean {
-    logger.d("setAlarm(), pIntent=$pIntent, triggerTime=$triggerTime, alarmType=$alarmType")
+@JvmOverloads
+fun setAlarm(
+        context: Context,
+        alarmIntent: PendingIntent,
+        triggerTime: Long,
+        alarmType: AlarmType,
+        showIntent: PendingIntent? = null
+): Boolean {
+    logger.d("setAlarm(), alarmIntent: $alarmIntent, triggerTime: $triggerTime, alarmType: $alarmType, showIntent: $showIntent")
 
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager?
             ?: throw RuntimeException(AlarmManager::class.java.simpleName + " is null")
@@ -38,15 +58,12 @@ fun setAlarm(context: Context, pIntent: PendingIntent, triggerTime: Long, alarmT
         }
     }
 
-    if (isPreKitkat()) {
-        alarmManager.set(alarmType.type, triggerTime, pIntent)
-    } else if (isPreLollipop()) {
-        alarmManager.setExact(alarmType.type, triggerTime, pIntent)
-    } else if (isPreMarshmallow()) {
-        alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(triggerTime, null), pIntent)
+    if (isAtLeastLollipop()) {
+        alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(triggerTime, showIntent), alarmIntent)
     } else {
-        alarmManager.setExactAndAllowWhileIdle(alarmType.type, triggerTime, pIntent)
+        AlarmManagerCompat.setExact(alarmManager, alarmType.value, triggerTime, alarmIntent)
     }
+    // setExactAndAllowWhileIdle is not working in doze mode
     return true
 }
 
@@ -56,7 +73,7 @@ fun cancelAlarm(context: Context, pendingIntent: PendingIntent) {
     alarmManager.cancel(pendingIntent)
 }
 
-enum class AlarmType(val type: Int) {
+enum class AlarmType(val value: Int) {
 
     RTC(AlarmManager.RTC),
     RTC_WAKE_UP(AlarmManager.RTC_WAKEUP),

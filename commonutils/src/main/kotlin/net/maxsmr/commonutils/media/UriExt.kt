@@ -71,12 +71,34 @@ fun Uri.readStringsOrThrow(
 }
 
 @JvmOverloads
+fun Uri.readString(
+        contentResolver: ContentResolver,
+        charsetName: String = CHARSET_DEFAULT,
+): String? = try {
+    readStringOrThrow(contentResolver, charsetName)
+} catch (e: RuntimeException) {
+    null
+}
+
+@Throws(RuntimeException::class)
+@JvmOverloads
+fun Uri.readStringOrThrow(
+        contentResolver: ContentResolver,
+        charsetName: String = CHARSET_DEFAULT,
+): String? {
+    return try {
+        openInputStreamOrThrow(contentResolver).readStringOrThrow(charsetName)
+    } catch (e: IOException) {
+        throw RuntimeException(formatException(e, "readStringOrThrow"), e)
+    }
+}
+
+@JvmOverloads
 fun Uri.readBase64(
         contentResolver: ContentResolver,
         charset: Charset = Charset.defaultCharset(),
         flags: Int = Base64.DEFAULT,
-): String = readStrings(contentResolver)
-        .joinToString(System.getProperty("line.separator") ?: "\\n")
+): String = readString(contentResolver, charsetName = charset.name())
         .toBase64(charset, flags)
 
 fun Uri.writeBytes(contentResolver: ContentResolver, data: ByteArray?) = try {
@@ -455,7 +477,7 @@ fun Uri.mimeType(contentResolver: ContentResolver): String = try {
 
 @Throws(RuntimeException::class)
 fun Uri.mimeTypeOrThrow(contentResolver: ContentResolver): String = when {
-    isFileScheme() -> path.mimeType
+    isFileScheme() -> path.mimeTypeFromName
     isContentScheme() -> {
         try {
             contentResolver.getType(this)

@@ -1,6 +1,6 @@
 @file:Suppress("UNCHECKED_CAST")
 
-package net.maxsmr.commonutils
+package net.maxsmr.commonutils.model.gson
 
 import com.google.gson.*
 import com.google.gson.internal.LazilyParsedNumber
@@ -10,6 +10,8 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
+import org.json.JSONArray
+import org.json.JSONObject
 import java.lang.reflect.Type
 import java.util.*
 
@@ -159,13 +161,13 @@ fun <E : JsonElement> getJsonElementAs(jsonElement: JsonElement?, clazz: Class<E
     var result: E? = null
     if (jsonElement != null) {
         when {
-            jsonElement is JsonNull && clazz.isAssignableFrom(JsonNull::class.java) ->
+            jsonElement is JsonNull && clazz == JsonNull::class.java ->
                 result = jsonElement as E
-            jsonElement is JsonPrimitive && clazz.isAssignableFrom(JsonPrimitive::class.java) ->
+            jsonElement is JsonPrimitive && clazz == JsonPrimitive::class.java ->
                 result = jsonElement as E
-            jsonElement is JsonObject && clazz.isAssignableFrom(JsonObject::class.java) ->
+            jsonElement is JsonObject && clazz == JsonObject::class.java ->
                 result = jsonElement as E
-            jsonElement is JsonArray && clazz.isAssignableFrom(JsonArray::class.java) ->
+            jsonElement is JsonArray && clazz == JsonArray::class.java ->
                 result = jsonElement as E
         }
     }
@@ -176,25 +178,22 @@ fun <E : JsonElement> getJsonElementAs(jsonElement: JsonElement?, clazz: Class<E
 fun <V> getJsonPrimitiveAs(forElement: JsonPrimitive?, clazz: Class<V>, defaultValue: V? = null): V? {
     var value: V? = null
     if (forElement != null) {
-        if (forElement.isString && String::class.java.isAssignableFrom(clazz)) {
+        if (forElement.isString && clazz == String::class.java) {
             value = forElement.asString as V
-        } else if (forElement.isNumber) {
+        } else if (forElement.isNumber && Number::class.java.isAssignableFrom(clazz)) {
             val numberValue = forElement.asNumber
-            if (numberValue is LazilyParsedNumber) {
-                value = when {
-                    Int::class.java.isAssignableFrom(clazz) -> numberValue.toInt() as V
-                    Long::class.java.isAssignableFrom(clazz) -> numberValue.toLong() as V
-                    Long::class.java.isAssignableFrom(clazz) -> numberValue.toShort() as V
-                    Double::class.java.isAssignableFrom(clazz) -> numberValue.toDouble() as V
-                    Float::class.java.isAssignableFrom(clazz) -> numberValue.toFloat() as V
-                    Byte::class.java.isAssignableFrom(clazz) -> numberValue.toByte() as V
-                    Char::class.java.isAssignableFrom(clazz) -> numberValue.toChar() as V
-                    else -> null
-                }
-            } else if (Number::class.java.isAssignableFrom(clazz)) {
-                value = numberValue as V
+            // любой наследник от Number реализует эти методы
+            value = when (clazz) {
+                Int::class.java -> numberValue.toInt() as V
+                Long::class.java -> numberValue.toLong() as V
+                Short::class.java -> numberValue.toShort() as V
+                Double::class.java -> numberValue.toDouble() as V
+                Float::class.java -> numberValue.toFloat() as V
+                Byte::class.java -> numberValue.toByte() as V
+                Char::class.java -> numberValue.toChar() as V
+                else -> null
             }
-        } else if (forElement.isBoolean && Boolean::class.java.isAssignableFrom(clazz)) {
+        } else if (forElement.isBoolean && clazz == Boolean::class.java) {
             value = forElement.asBoolean as V
         }
     }
@@ -213,8 +212,8 @@ fun <V> getJsonPrimitive(jsonElement: JsonElement?, memberName: String?, clazz: 
 }
 
 @JvmOverloads
-fun <V> getJsonPrimitiveFromObject(jsonObject: JsonObject?, memberName: String?, clazz: Class<V>, defaultValue: V? = null): V? {
-    return jsonObject?.let {  getJsonPrimitiveAs(getJsonElementAs(jsonObject.get(memberName), JsonPrimitive::class.java), clazz, defaultValue) }
+fun <V> getJsonPrimitive(jsonElement: JsonElement?, clazz: Class<V>, defaultValue: V? = null): V? {
+    return getJsonPrimitiveAs(getJsonElementAs(jsonElement, JsonPrimitive::class.java), clazz, defaultValue)
 }
 
 @JvmOverloads
@@ -229,6 +228,39 @@ fun <V> getFromJsonArray(array: JsonArray?, parcel: JsonParcelArray<V>, nonNull:
         }
     }
     return result
+}
+
+fun Any?.toJsonElement(): JsonElement {
+    var value: JsonElement = JsonNull.INSTANCE
+    when (this) {
+        is JSONObject -> {
+            value = JsonObject().apply {
+                this@toJsonElement.keys().forEach { key ->
+                    add(key, this.get(key).toJsonElement())
+                }
+            }
+        }
+        is JSONArray -> {
+            value = JsonArray().apply {
+                for (i in 0 until this@toJsonElement.length()) {
+                    add(this.get(i).toJsonElement())
+                }
+            }
+        }
+        is Boolean -> {
+            value = JsonPrimitive(this)
+        }
+        is Number -> {
+            value = JsonPrimitive(this)
+        }
+        is String -> {
+            value = JsonPrimitive(this)
+        }
+        is Char -> {
+            value = JsonPrimitive(this)
+        }
+    }
+    return value
 }
 
 fun JsonObject.mergeJsonObject(fromAnother: JsonObject) {

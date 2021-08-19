@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.gson.exclusion
+package net.maxsmr.commonutils.model.gson.exclusion
 
 import com.google.gson.ExclusionStrategy
 import com.google.gson.FieldAttributes

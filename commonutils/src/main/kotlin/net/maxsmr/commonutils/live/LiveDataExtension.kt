@@ -1,12 +1,85 @@
 package net.maxsmr.commonutils.live
 
 import android.os.Handler
+import android.widget.TextView
 import androidx.lifecycle.*
+import net.maxsmr.commonutils.format.getFormattedText
+import net.maxsmr.commonutils.gui.setTextChecked
+import net.maxsmr.commonutils.gui.setTextDistinctFormatted
 import net.maxsmr.commonutils.live.wrappers.NotifyCheckMutableLiveData
 import net.maxsmr.commonutils.states.ILoadState
 import net.maxsmr.commonutils.states.LoadState
 import net.maxsmr.commonutils.states.getOrCreate
 import net.maxsmr.commonutils.validation.BaseValidator
+import ru.tinkoff.decoro.Mask
+import ru.tinkoff.decoro.watchers.MaskFormatWatcher
+
+// region Field
+
+/**
+ * Обозревание форматированного или неформатированного (второй вариант более правильный)
+ * из [MutableLiveData] с целью выставления в целевую [view] форматированного значения методом refreshMask
+ * @param maskWatcher уже привязанный к [view]
+ */
+@JvmOverloads
+fun MutableLiveData<String>.observeFromTextFormatted(
+        view: TextView,
+        owner: LifecycleOwner,
+        maskWatcher: MaskFormatWatcher,
+        asString: Boolean = true,
+        onChanged: ((String?) -> Unit)? = null
+) {
+    observe(owner) {
+        onChanged?.invoke(it)
+        view.setTextDistinctFormatted(it, maskWatcher, asString)
+    }
+}
+
+@JvmOverloads
+fun MutableLiveData<String>.observeFromTextFormatted(
+        view: TextView,
+        owner: LifecycleOwner,
+        mask: Mask,
+        distinct: Boolean = true,
+        asString: Boolean = true,
+        onChanged: ((String?) -> Unit)? = null
+) {
+    observeFromText(view, owner, distinct, asString) {
+        onChanged?.invoke(it)
+        getFormattedText(mask, it)
+    }
+}
+
+/**
+ * Обозревание форматированного или неформатированного (второй вариант более правильный)
+ * из [MutableLiveData] с целью выставления в целевую [view] форматированного значения через [formatFunc]
+ */
+fun MutableLiveData<String>.observeFromText(
+        view: TextView,
+        owner: LifecycleOwner,
+        distinct: Boolean = true,
+        asString: Boolean = true,
+        formatFunc: ((String?) -> CharSequence)? = null
+) {
+    observeFrom(view, owner, distinct, asString) {
+        formatFunc?.invoke(it) ?: it
+    }
+}
+
+@JvmOverloads
+fun <D> MutableLiveData<D>.observeFrom(
+        view: TextView,
+        owner: LifecycleOwner,
+        distinct: Boolean = true,
+        asString: Boolean = true,
+        formatFunc: (D?) -> CharSequence?
+) {
+    observe(owner) {
+        view.setTextChecked(formatFunc(it), distinct, asString)
+    }
+}
+
+// endregion
 
 /**
  * @return [LiveData] с изменёнными текущими данными из исходного [T] с использованием [changeFunc]

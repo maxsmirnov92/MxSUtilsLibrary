@@ -39,9 +39,13 @@ const val ENV_EXTERNAL_STORAGE = "EXTERNAL_STORAGE"
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("MediaUtils")
 
-val File.mimeType get() = name.mimeType
+val File.mimeType get() = name.mimeTypeFromName
 
-val String?.mimeType get() = MimeTypeMap.getSingleton().getMimeTypeFromExtension(this.extension)
+val String?.mimeTypeFromUrl : String get() = MimeTypeMap.getFileExtensionFromUrl(this)?.let {
+    it.mimeTypeFromName
+} ?: EMPTY_STRING
+
+val String?.mimeTypeFromName: String get() = MimeTypeMap.getSingleton().getMimeTypeFromExtension(this.extension)
         ?: EMPTY_STRING
 
 fun File.isPrivate(context: Context): Boolean {

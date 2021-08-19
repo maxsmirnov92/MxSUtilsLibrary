@@ -10,7 +10,7 @@ import android.widget.ArrayAdapter
 import androidx.appcompat.app.AlertDialog
 import net.maxsmr.commonutils.gui.actions.TypedAction
 
-open class AlertTypedDialogFragment: BaseTypedDialogFragment<AlertDialog>() {
+open class AlertTypedDialogFragment: BaseTypedDialogFragment<Dialog>() {
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         // here you may not use AlertDialog.Builder at all
@@ -34,11 +34,12 @@ open class AlertTypedDialogFragment: BaseTypedDialogFragment<AlertDialog>() {
             }
         } else {
             builder.setMessage(args.getString(ARG_MESSAGE))
-            val adapterData = args.getSerializable(ARG_ADAPTER_CONTENT) as AdapterData
-            builder.setAdapter(ArrayAdapter(context, adapterData.itemLayoutResId, adapterData.textResId, adapterData.messages)) { _, which ->
-                itemClickSubject.onNext(TypedAction(which))
-                if (adapterData.dismissOnClick) {
-                    dismiss()
+            (args.getSerializable(ARG_ADAPTER_CONTENT) as AdapterData?)?.let { adapterData ->
+                builder.setAdapter(ArrayAdapter(context, adapterData.itemLayoutResId, adapterData.textResId, adapterData.messages)) { _, which ->
+                    itemClickSubject.onNext(TypedAction(which))
+                    if (adapterData.dismissOnClick) {
+                        dismiss()
+                    }
                 }
             }
         }
@@ -58,7 +59,7 @@ open class AlertTypedDialogFragment: BaseTypedDialogFragment<AlertDialog>() {
         return builder
     }
 
-    class Builder : BaseTypedDialogFragment.Builder<AlertDialog, AlertTypedDialogFragment>() {
+    class Builder : BaseTypedDialogFragment.Builder<Dialog, AlertTypedDialogFragment>() {
 
         override fun build(context: Context): AlertTypedDialogFragment = newInstance(createArgs(context))
     }

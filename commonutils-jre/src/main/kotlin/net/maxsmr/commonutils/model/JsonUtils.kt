@@ -2,7 +2,7 @@
 
 package net.maxsmr.commonutils.model
 
-import com.google.gson.*
+import net.maxsmr.commonutils.text.isEmpty
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
@@ -42,45 +42,38 @@ fun <T> asListIndexed(array: JSONArray?, parcel: JSONParcelArrayIndexed<T>): Lis
 
 fun <T> asListIndexedNonNull(array: JSONArray?, parcel: JSONParcelArrayIndexed<T>): List<T> = asListIndexed(array, parcel, true) as List<T>
 
+fun <T> asPrimitiveList(array: JSONArray?, clazz: Class<T>, nonNull: Boolean): List<T?> = asListIndexed(array, object : JSONParcelArrayIndexed<T> {
+
+    override fun fromJSONArray(jsonArray: JSONArray, index: Int): T {
+        return when {
+            clazz.isAssignableFrom(String::class.java) -> {
+                jsonArray.optString(index) as T
+            }
+            clazz.isAssignableFrom(Int::class.java) -> {
+                jsonArray.optInt(index) as T
+            }
+            clazz.isAssignableFrom(Long::class.java) -> {
+                jsonArray.optLong(index) as T
+            }
+            clazz.isAssignableFrom(Double::class.java) -> {
+                jsonArray.optDouble(index) as T
+            }
+            clazz.isAssignableFrom(Boolean::class.java) -> {
+                jsonArray.optBoolean(index) as T
+            }
+            else -> {
+                throw RuntimeException("Incorrect primitive class: $clazz")
+            }
+        }
+    }
+}, nonNull)
+
 fun isJsonFieldJson(jsonObject: JSONObject?, fieldName: String?): Boolean {
     if (jsonObject != null) {
         val value = jsonObject.opt(fieldName)
         return value is JSONObject || value is JSONArray
     }
     return false
-}
-
-fun convertJSONObject(obj: Any?): JsonElement {
-    var value: JsonElement = JsonNull.INSTANCE
-    when (obj) {
-        is JSONObject -> {
-            value = JsonObject().apply {
-                obj.keys().forEach { key ->
-                    add(key, convertJSONObject(obj.get(key)))
-                }
-            }
-        }
-        is JSONArray -> {
-            value = JsonArray().apply {
-                for (i in 0 until obj.length()) {
-                    add(convertJSONObject(obj.get(i)))
-                }
-            }
-        }
-        is Boolean -> {
-            value = JsonPrimitive(obj)
-        }
-        is Number -> {
-            value = JsonPrimitive(obj)
-        }
-        is String -> {
-            value = JsonPrimitive(obj)
-        }
-        is Char -> {
-            value = JsonPrimitive(obj)
-        }
-    }
-    return value
 }
 
 @Throws(JSONException::class)
@@ -93,6 +86,66 @@ fun copyFields(source: JSONObject?, target: JSONObject?) {
         }
     }
 }
+
+fun JSONObject.optStringV2(key: String): String? =
+        if (isNull(key))
+            null
+        else
+            optString(key, "").takeIf { !isEmpty(it, true) }
+
+fun JSONObject.optBooleanV2(key: String): Boolean? =
+        if (isNull(key))
+            null
+        else
+            optBoolean(key)
+
+fun JSONObject.optIntV2(key: String): Int? =
+        if (isNull(key))
+            null
+        else
+            optInt(key, -1).takeIf { it != -1 }
+
+fun JSONObject.optLongV2(key: String): Long? =
+        if (isNull(key))
+            null
+        else
+            optLong(key, -1L).takeIf { it != -1L }
+
+fun JSONObject.optDoubleV2(key: String): Double? =
+        if (isNull(key))
+            null
+        else
+            optDouble(key).takeIf { !it.isNaN() }
+
+fun JSONArray.optStringV2(index: Int): String? =
+        if (isNull(index))
+            null
+        else
+            optString(index, null).takeIf { !isEmpty(it, true) }
+
+fun JSONArray.optBooleanV2(index: Int): Boolean? =
+        if (isNull(index))
+            null
+        else
+            optBoolean(index, false)
+
+fun JSONArray.optIntV2(index: Int): Int? =
+        if (isNull(index))
+            null
+        else
+            optInt(index, -1).takeIf { it != -1 }
+
+fun JSONArray.optLongV2(index: Int): Long? =
+        if (isNull(index))
+            null
+        else
+            optLong(index, -1L).takeIf { it != -1L }
+
+fun JSONArray.optDoubleV2(index: Int): Double? =
+        if (isNull(index))
+            null
+        else
+            optDouble(index).takeIf { !it.isNaN() }
 
 /**
  * @return массив объектов T из JSONParcel, исходя из того, что в каждом индексе исходного array лежит JSONObject

@@ -3,143 +3,63 @@ package net.maxsmr.commonutils.text
 import android.content.Context
 import android.content.Intent
 import android.text.*
-import android.text.style.*
+import android.text.style.CharacterStyle
+import android.text.style.ClickableSpan
+import android.text.style.ImageSpan
+import android.text.style.URLSpan
 import android.view.View
 import androidx.annotation.CallSuper
-import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
-import net.maxsmr.commonutils.*
-import kotlin.Pair
+import net.maxsmr.commonutils.getBrowseLinkIntent
+import net.maxsmr.commonutils.isPreLollipop
+import net.maxsmr.commonutils.startActivitySafe
+import net.maxsmr.commonutils.wrapIntent
+
+private const val FLAGS_DEFAULT = Spanned.SPAN_INCLUSIVE_EXCLUSIVE
 
 /**
- * key: строка, из которой происходит expandTemplate
- * value: строка-url для подстановки
+ * Добавляет спаны [spanInfo] в строку this.
+ *
+ * @param spanInfo комбинации данных о позиции для применения и стилях
  */
-typealias ExpandValueInfo = Pair<String, String>
-
 fun CharSequence.createSpanText(vararg spanInfo: RangeSpanInfo): CharSequence {
     if (this.isEmpty() || spanInfo.isEmpty()) return this
-    return SpannableString(this).apply {
-        spanInfo.forEach {
-            it.ranges(this@createSpanText).forEach { range ->
-                if (range.first in this@createSpanText.indices && range.last in 0..this@createSpanText.length) {
-                    setSpan(it.style, range.first, range.last, it.flags)
+    return SpannableString(this).also {
+        spanInfo.forEach { info ->
+            info.ranges(this).forEach { range ->
+                if (range.first in this.indices && range.last in 0..this.length) {
+                    info.styles.forEach { style ->
+                        it.setSpan(style, range.first, range.last, FLAGS_DEFAULT)
+                    }
                 }
             }
         }
     }
 }
 
-@JvmOverloads
-fun CharSequence.createSpanTextBySubstring(
-        substring: String,
-        allEntries: Boolean = false,
-        createSpanInfoFunc: (Int, Int) -> List<SimpleSpanInfo>
-): CharSequence = createSpanTextBySubstrings(
-        listOf(substring),
-        allEntries
-) { subsring, start, end ->
-    createSpanInfoFunc(start, end)
-}
-
-@JvmOverloads
-fun CharSequence.createSpanTextBySubstrings(
-        substrings: List<String>,
-        allEntries: Boolean = false,
-        createSpanInfoFunc: (String, Int, Int) -> List<SimpleSpanInfo>
-): CharSequence {
-    val result = mutableListOf<RangeSpanInfo>()
-    substrings.forEach {
-        result.addAll(this.toRangeSpanInfo(it, allEntries) { start, end ->
-            createSpanInfoFunc(it, start, end)
-        })
-    }
-    return createSpanText(*result.toTypedArray())
-}
-
-fun CharSequence.createSpanTextExpanded(spanInfoMap: Map<ISpanInfo, String>): CharSequence {
-    val parts = mutableListOf<CharSequence>()
-    spanInfoMap.forEach {
-        val part = SpannableString(it.value)
-        part.setSpan(it.key.style, 0, part.length, it.key.flags)
-        parts.add(part)
-    }
-    return TextUtils.expandTemplate(SpannableString(this), *parts.toTypedArray())
-}
-
 /**
- * @return [SpannableString], созданная по [spanInfoMap]
- * @param spanInfoMap key - вспомогательная инфа для Span с диапазоном, value - url для перехода
+ * Аналогичен [TextUtils.expandTemplate] с возможностью установки спанов аргументам [args]
+ *
+ * @param args Мапа <Аргумент шаблона, Список спанов, применяемых к этому аргументу>
  */
-fun CharSequence.createLinkableText(spanInfoMap: Map<RangeSpanInfo, String>): CharSequence {
-    val newSpanInfoMap = mutableListOf<RangeSpanInfo>()
-    spanInfoMap.forEach {
-        val ranges = it.key.ranges(this)
-        ranges.forEach { range ->
-            val span = it.key.style
-            newSpanInfoMap.add(RangeSpanInfo(range.first, range.last, UrlClickableSpan(
-                    it.value,
-                    if (span is AppClickableSpan) span.isUnderlineText else true
-            ) { view ->
-                if (span is AppClickableSpan) {
-                    // вызываем отдельно исходный action, если он был
-                    span.onClick?.invoke(view)
-                }
-            }, it.key.flags))
+fun CharSequence.createSpanTextExpanded(args: Map<String, List<CharacterStyle>>): CharSequence {
+    val parts = args.map { (part, styles) ->
+        SpannableString(part).apply {
+            styles.forEach {
+                setSpan(it, 0, part.length, FLAGS_DEFAULT)
+            }
         }
-    }
-    return createSpanText(*newSpanInfoMap.toTypedArray())
+    }.toTypedArray()
+    return TextUtils.expandTemplate(SpannableString(this), *parts)
 }
-
-/**
- * @return строка, созданная по [spanInfoMap]
- * @param spanInfoMap key - вспомогательная инфа для Span, value - см. [ExpandValueInfo]
- */
-fun CharSequence.createLinkableTextExpanded(spanInfoMap: Map<ISpanInfo, ExpandValueInfo>): CharSequence {
-    val newSpanInfoMap = mutableMapOf<ISpanInfo, String>()
-    spanInfoMap.entries.forEach {
-        val span = it.key.style
-        newSpanInfoMap[
-                SimpleSpanInfo(
-                        UrlClickableSpan(
-                                it.value.second,
-                                if (span is AppClickableSpan) span.isUnderlineText else true
-                        ) { view ->
-                            if (span is AppClickableSpan) {
-                                // вызываем отдельно исходный action, если он был
-                                span.onClick?.invoke(view)
-                            }
-                        },
-                        it.key.flags
-                )
-        ] = it.value.first
-    }
-    return createSpanTextExpanded(newSpanInfoMap)
-}
-
-@JvmOverloads
-fun CharSequence.createSelectedText(
-        @ColorInt highlightColor: Int,
-        selection: String,
-        allEntries: Boolean = false,
-        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-): CharSequence = createSpanText(
-        *toRangeSpanInfo(selection, allEntries) { _, _ ->
-            listOf(SimpleSpanInfo(
-                    ForegroundColorSpan(highlightColor),
-                    spanFlags
-            ))
-        }.toTypedArray()
-)
 
 @JvmOverloads
 fun CharSequence.appendClickableImage(
         context: Context,
         @DrawableRes drawableResId: Int,
-        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
         clickFunc: () -> Unit = {}
 ): CharSequence = createSpanText(
-        RangeSpanInfo(length - 1, length, ImageSpan(context, drawableResId, ImageSpan.ALIGN_BASELINE), spanFlags),
+        RangeSpanInfo(length - 1, length, ImageSpan(context, drawableResId, ImageSpan.ALIGN_BASELINE)),
         RangeSpanInfo(length - 1, length, AppClickableSpan(false) {
             if (!isPreLollipop()) {
                 it.cancelPendingInputEvents()
@@ -148,13 +68,12 @@ fun CharSequence.appendClickableImage(
         })
 )
 
-
 @JvmOverloads
 fun CharSequence.replaceUrlSpansByClickableSpans(
         parseHtml: Boolean,
         isUnderlineText: Boolean = false,
         action: ((URLSpan) -> Any)? = null
-): CharSequence = replaceUrlSpansByCustomSpans(parseHtml) { span ->
+): CharSequence = replaceSpansByCustomSpans(parseHtml, URLSpan::class.java) { span ->
     AppClickableSpan(isUnderlineText) {
         action?.invoke(span)
     }
@@ -164,56 +83,21 @@ fun CharSequence.replaceUrlSpansByClickableSpans(
 fun CharSequence.removeUnderlineFromUrlSpans(
         parseHtml: Boolean,
         action: ((URLSpan) -> Any)? = null
-): CharSequence = replaceUrlSpansByCustomSpans(parseHtml) { span ->
+): CharSequence = replaceSpansByCustomSpans(parseHtml, URLSpan::class.java) { span ->
     UrlClickableSpan(span.url, false) {
         action?.invoke(span)
     }
 }
 
-fun defaultBrowseClickAction(context: Context, url: String) {
-    startActivitySafe(context, wrapIntent(getBrowseLinkIntent(url),
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK))
-}
-
-fun CharSequence.toRangeSpanInfo(
-        substring: String,
-        allEntries: Boolean = false,
-        createSpanInfoFunc: (Int, Int) -> List<SimpleSpanInfo>,
-): List<RangeSpanInfo> {
-
-    val result = mutableListOf<RangeSpanInfo>()
-
-    fun List<SimpleSpanInfo>.toResult(start: Int, end: Int) {
-        forEach {
-            result.add(RangeSpanInfo(start, end, it.style, it.flags))
-        }
-    }
-    if (allEntries) {
-        indicesOf(substring, ignoreCase = true)
-                .filter { it > 0 }
-                .forEach { index ->
-                    val start = index
-                    val end = index + substring.length
-                    createSpanInfoFunc(start, end).toResult(start, end)
-                }
-    } else {
-        val start = indexOf(substring, ignoreCase = true)
-        if (start >= 0) {
-            val end = start + substring.length
-            createSpanInfoFunc(start, end).toResult(start, end)
-        }
-    }
-    return result
-}
-
-private fun CharSequence.replaceUrlSpansByCustomSpans(
+fun <Style: CharacterStyle> CharSequence.replaceSpansByCustomSpans(
         parseHtml: Boolean,
-        createSpanFunc: (URLSpan) -> CharacterStyle
+        clazz: Class<Style>,
+        createSpanFunc: (Style) -> CharacterStyle
 ): SpannableStringBuilder {
     val sequence = if (parseHtml) parseHtmlToSpannedStringOrThrow() else this
     val result = SpannableStringBuilder(sequence)
-    val urls = result.getSpans(0, sequence.length, URLSpan::class.java)
-    urls.forEach { span ->
+    val spans = result.getSpans(0, sequence.length, clazz)
+    spans.forEach { span ->
         val start = result.getSpanStart(span)
         val end = result.getSpanEnd(span)
         val flags = result.getSpanFlags(span)
@@ -223,42 +107,99 @@ private fun CharSequence.replaceUrlSpansByCustomSpans(
     return result
 }
 
-interface ISpanInfo {
-
-    val style: CharacterStyle
-    val flags: Int
+fun defaultBrowseClickAction(context: Context, url: String) {
+    startActivitySafe(context, wrapIntent(getBrowseLinkIntent(url),
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK))
 }
 
-/**
- * Простая реализация [ISpanInfo] для случая использования expandTemplate
- */
-data class SimpleSpanInfo @JvmOverloads constructor(
-        override val style: CharacterStyle,
-        override val flags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
-): ISpanInfo
+interface ISpanInfo {
+
+    val styles: List<CharacterStyle>
+
+    fun ranges(fullText: CharSequence): List<IntRange>
+}
+
 
 /**
- * Установить спан [style] в диапазоне [startIndex]..[endIndex] полной строки
+ * Местоположение для применения стилей указывается диапазоном индексов строки
  */
-data class RangeSpanInfo @JvmOverloads constructor(
+data class RangeSpanInfo(
         val startIndex: Int,
         val endIndex: Int,
-        override val style: CharacterStyle,
-        override val flags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
+        override val styles: List<CharacterStyle>
 ) : ISpanInfo {
 
-    fun ranges(fullText: CharSequence): List<IntRange> {
-        return if (startIndex > endIndex || startIndex !in 0..fullText.length || endIndex !in 0..fullText.length) {
-            emptyList()
-        } else {
-            listOf(IntRange(startIndex, endIndex))
+    constructor(
+            startIndex: Int,
+            endIndex: Int,
+            style: CharacterStyle
+    ) : this(startIndex, endIndex, listOf(style))
+
+    override fun ranges(fullText: CharSequence): List<IntRange> {
+        return listOfNotNull(
+                if (startIndex > endIndex || startIndex !in 0..fullText.length || endIndex !in 0..fullText.length) {
+                    null
+                } else {
+                    IntRange(startIndex, endIndex)
+                }
+        )
+    }
+}
+
+
+/**
+ * Устанавливает спаны для подстроки [substring] в месте ее нахождения в полной строке
+ */
+sealed class SubstringSpanInfo : ISpanInfo {
+
+    abstract val substring: String
+
+    override fun ranges(fullText: CharSequence): List<IntRange> {
+        return indices(fullText)
+                .filter { it > 0 }
+                .map { IntRange(it, it + substring.length) }
+    }
+
+    protected abstract fun indices(fullText: CharSequence): List<Int>
+
+
+    /**
+     * Для установки спанов [styles] только для первого вхождения подстроки [substring] в строку
+     */
+    data class FirstEntry(
+            override val substring: String,
+            override val styles: List<CharacterStyle>
+    ) : SubstringSpanInfo() {
+
+        constructor(substring: String, style: CharacterStyle) : this(substring, listOf(style))
+
+        override fun indices(fullText: CharSequence): List<Int> {
+            return listOf(fullText.indexOf(substring, ignoreCase = true))
+        }
+    }
+
+    /**
+     * Для установки спанов, возвращенных [createSpans], для всех вхождений подстроки [substring] в строку
+     * Фабрика используется, т.к. для каждого вхождения подстроки в строку андроиду нужен свой
+     * инстанс [CharacterStyle].
+     */
+    class AllEntries(
+            override val substring: String,
+            private val createSpans: () -> List<CharacterStyle>
+    ) : SubstringSpanInfo() {
+
+        override val styles: List<CharacterStyle>
+            get() = createSpans()
+
+        override fun indices(fullText: CharSequence): List<Int> {
+            return fullText.indicesOf(substring, ignoreCase = true)
         }
     }
 }
 
 open class AppClickableSpan @JvmOverloads constructor(
-        val isUnderlineText: Boolean = true,
-        val onClick: ((View) -> Unit)? = null
+        private val isUnderlineText: Boolean = true,
+        private val onClick: ((View) -> Unit)? = null
 ) : ClickableSpan() {
 
     @CallSuper

@@ -24,7 +24,6 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
@@ -32,15 +31,15 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputLayout
 import net.maxsmr.commonutils.*
-import net.maxsmr.commonutils.gui.listeners.DefaultTextWatcher
-import net.maxsmr.commonutils.gui.listeners.OnTextWatcher
-import net.maxsmr.commonutils.live.setValueIfNew
-import net.maxsmr.commonutils.media.toBase64
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.format.getUnformattedText
 import net.maxsmr.commonutils.graphic.scaleDownBitmap
+import net.maxsmr.commonutils.gui.listeners.AfterTextWatcher
+import net.maxsmr.commonutils.gui.listeners.DefaultTextWatcher
+import net.maxsmr.commonutils.live.setValueIfNew
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.media.toBase64
 import net.maxsmr.commonutils.number.isZero
 import net.maxsmr.commonutils.text.*
 import ru.tinkoff.decoro.Mask
@@ -202,7 +201,7 @@ fun <D> TextView.bindTo(
         ifNew: Boolean = true,
         toFieldValue: (CharSequence?) -> D
 ) {
-    addTextChangedListener(OnTextWatcher { s: CharSequence?, _: Int, _: Int, _: Int ->
+    addTextChangedListener(AfterTextWatcher { s: Editable ->
         val newValue = toFieldValue.invoke(s)
         if (ifNew) {
             field.setValueIfNew(newValue)
@@ -210,71 +209,6 @@ fun <D> TextView.bindTo(
             field.value = newValue
         }
     })
-}
-
-/**
- * Обозревание форматированного или неформатированного (второй вариант более правильный)
- * из [MutableLiveData] с целью выставления в целевую [view] форматированного значения методом refreshMask
- * @param maskWatcher уже привязанный к [view]
- */
-@JvmOverloads
-fun MutableLiveData<String>.observeFromTextUnformatted(
-        view: TextView,
-        viewLifecycleOwner: LifecycleOwner,
-        maskWatcher: MaskFormatWatcher,
-        onChanged: ((CharSequence?) -> Unit)? = null
-) {
-    observe(viewLifecycleOwner) {
-        if (it != null && it.isNotEmpty()) {
-            maskWatcher.refreshMask(it)
-        } else {
-            view.text = EMPTY_STRING
-        }
-        onChanged?.invoke(it)
-    }
-}
-
-@JvmOverloads
-fun MutableLiveData<String>.observeFromTextUnformatted(
-        view: TextView,
-        viewLifecycleOwner: LifecycleOwner,
-        mask: Mask,
-        distinct: Boolean = true,
-        onChanged: ((CharSequence?) -> Unit)? = null
-) {
-    observeFromText(view, viewLifecycleOwner, distinct) {
-        onChanged?.invoke(it)
-        getFormattedText(mask, it)
-    }
-}
-
-/**
- * Обозревание форматированного или неформатированного (второй вариант более правильный)
- * из [Field] с целью выставления в целевую [view] форматированного значения через [formatFunc]
- */
-fun MutableLiveData<String>.observeFromText(
-        view: TextView,
-        viewLifecycleOwner: LifecycleOwner,
-        distinct: Boolean = true,
-        asString: Boolean = true,
-        formatFunc: ((CharSequence?) -> CharSequence)? = null
-) {
-    observeFrom(view, viewLifecycleOwner, distinct, asString) {
-        formatFunc?.invoke(it) ?: it.toString()
-    }
-}
-
-@JvmOverloads
-fun <D> MutableLiveData<D>.observeFrom(
-        view: TextView,
-        viewLifecycleOwner: LifecycleOwner,
-        distinct: Boolean = true,
-        asString: Boolean = true,
-        formatFunc: (D?) -> CharSequence?
-) {
-    observe(viewLifecycleOwner) {
-        view.setTextChecked(formatFunc(it), distinct, asString)
-    }
 }
 
 @JvmOverloads
@@ -294,16 +228,14 @@ fun CompoundButton.bindTo(field: MutableLiveData<Boolean>, ifNew: Boolean = true
 @JvmOverloads
 fun TextView.appendClickableImageTextView(
         @DrawableRes drawableResId: Int,
-        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE,
         clickFunc: () -> Unit = {}
 ): CharSequence =
-        text.appendClickableImage(context, drawableResId, spanFlags, clickFunc)
-
+        text.appendClickableImage(context, drawableResId, clickFunc)
 
 /**
  * Убрать нижнее подчеркивание для текущего text
  */
-fun TextView.resetNotUnderlinedUrlSpans(): CharSequence =
+fun TextView.removeUnderlineFromUrlSpans(): CharSequence =
         setTextWithMovementMethod(text.removeUnderlineFromUrlSpans(false))
 
 @JvmOverloads
@@ -346,32 +278,6 @@ fun TextView.setSpanText(
 ): CharSequence =
         setTextWithMovementMethod(text.createSpanText(*spanInfo))
 
-
-/**
- * Установить спан [style] для подстроки [substring] в месте ее нахождения в полной строке
- *
- * @param allEntries true, если спан надо установить для всех вхождений подстроки [substring], false - если для первого
- * @param createSpanInfoFunc лямбда, возвращающая CharacterStyle + флаги, которые нужно применить в указанный поддиапазаон для этой [substring]
- */
-@JvmOverloads
-fun TextView.setSpanTextBySubstring(
-        text: CharSequence,
-        substring: String,
-        allEntries: Boolean = true,
-        createSpanInfoFunc: (Int, Int) -> List<SimpleSpanInfo>
-): CharSequence =
-        setTextWithMovementMethod(text.createSpanTextBySubstring(substring, allEntries, createSpanInfoFunc))
-
-@JvmOverloads
-fun TextView.setSpanTextBySubstrings(
-        text: CharSequence,
-        substrings: List<String>,
-        allEntries: Boolean = true,
-        createSpanInfoFunc: (String, Int, Int) -> List<SimpleSpanInfo>
-): CharSequence =
-        setTextWithMovementMethod(text.createSpanTextBySubstrings(substrings, allEntries, createSpanInfoFunc))
-
-
 /**
  * @param text в строке аргументы с префиксами "^" будут заменены на [CharacterStyle]
  * @param spanInfoMap маппинг информации о [Spannable] + link для перехода по клику по нему
@@ -379,27 +285,10 @@ fun TextView.setSpanTextBySubstrings(
  */
 fun TextView.setSpanTextExpanded(
         text: CharSequence,
-        spanInfoMap: Map<ISpanInfo, String>
+        args: Map<String, List<CharacterStyle>>
 ): CharSequence =
-        setTextWithMovementMethod(text.createSpanTextExpanded(spanInfoMap))
+        setTextWithMovementMethod(text.createSpanTextExpanded(args))
 
-/**
- * Альтернатива [setLinkFromHtml], в котором в кач-ве [text]
- * вместо html-разметки обычный текст с кликабельными ссылкоми
- * в указанных диапазонах
- * @param spanInfoMap маппинг информации о [Spannable] + link для перехода по клику по нему
- */
-fun TextView.setLinkableText(
-        text: CharSequence,
-        spanInfoMap: Map<RangeSpanInfo, String>
-): CharSequence =
-        setTextWithMovementMethod(text.createLinkableText(spanInfoMap))
-
-fun TextView.setLinkableTextExpanded(
-        text: CharSequence,
-        spanInfoMap: Map<ISpanInfo, ExpandValueInfo>,
-): CharSequence =
-        setTextWithMovementMethod(text.createLinkableTextExpanded(spanInfoMap))
 
 /**
  * Выставить [html] в кач-ве html текста, но для кликабельных сегментов оповещать о клике
@@ -414,27 +303,10 @@ fun TextView.replaceUrlSpans(
         html.replaceUrlSpansByClickableSpans(parseHtml, isUnderlineText, action)
 )
 
-/**
- * Установить текст с выделенным текстом
- * @param highlightColor цвет выделенного текста
- * @param str текст
- * @param selection текст для выделения (ищется первое вхождение [selection] в [str]
- */
-@JvmOverloads
-fun TextView.setTextWithSelection(
-        text: String,
-        @ColorInt highlightColor: Int,
-        selection: String,
-        allEntries: Boolean = false,
-        spanFlags: Int = Spanned.SPAN_EXCLUSIVE_EXCLUSIVE
-) {
-    setTextWithMovementMethod(text.createSelectedText(highlightColor, selection, allEntries, spanFlags))
-}
-
 @JvmOverloads
 fun TextView.setTextOrHide(
         @StringRes textResId: Int?,
-        isGoneOrInvisible: Boolean = true,
+        visibilityHide: VisibilityHide = VisibilityHide.GONE,
         distinct: Boolean = true,
         asString: Boolean = true,
         isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
@@ -443,7 +315,7 @@ fun TextView.setTextOrHide(
 ): Boolean =
         setTextOrHide(
                 textResId?.takeIf { it != 0 }?.let { context.getString(it) },
-                isGoneOrInvisible,
+                visibilityHide,
                 distinct,
                 asString,
                 isEmptyFunc,
@@ -457,23 +329,24 @@ fun TextView.setTextOrHide(
 @JvmOverloads
 fun TextView.setTextOrHide(
         text: CharSequence?,
-        isGoneOrInvisible: Boolean = true,
+        visibilityHide: VisibilityHide = VisibilityHide.GONE,
         distinct: Boolean = true,
         asString: Boolean = true,
         isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
         showFunc: (() -> Unit)? = null,
-        hideFunc: (() -> Unit)? = null
+        hideFunc: (() -> Unit)? = null,
+        formatFunc: ((CharSequence) -> CharSequence)? = null
 ): Boolean {
-    if (isEmptyFunc(text)) {
+    if (text == null || isEmptyFunc(text)) {
         this.text = EMPTY_STRING
         if (hideFunc != null) {
             hideFunc.invoke()
         } else {
-            setVisible(false, isGoneOrInvisible)
+            setVisible(false, visibilityHide)
         }
         return false
     } else {
-        setTextChecked(text, distinct, asString)
+        setTextChecked(formatFunc?.invoke(text) ?: text, distinct, asString)
         if (showFunc != null) {
             showFunc.invoke()
         } else {
@@ -486,7 +359,7 @@ fun TextView.setTextOrHide(
 @JvmOverloads
 fun TextView.setSumOrHide(
         sum: Double,
-        isGoneOrInvisible: Boolean = true,
+        visibilityHide: VisibilityHide = VisibilityHide.GONE,
         distinct: Boolean = true,
         asString: Boolean = true,
         formatFunc: ((Double) -> CharSequence)? = null,
@@ -495,14 +368,14 @@ fun TextView.setSumOrHide(
 ): Boolean = if (!sum.isZero()) {
         setTextOrHide(
                 formatFunc?.let { it(sum) } ?: sum.toString(),
-                isGoneOrInvisible,
+                visibilityHide,
                 distinct,
                 asString,
                 showFunc = showFunc,
                 hideFunc = hideFunc
         )
     } else {
-        setTextOrHide(null as String?, isGoneOrInvisible,
+        setTextOrHide(null as String?, visibilityHide,
                 distinct,
                 false,
                 showFunc = null,
@@ -1006,7 +879,7 @@ private fun reduceTextByMaxWidth(
 /**
  * @return relative coordinates to the parent
  */
-fun View.getBoundsByParent(parent: ViewGroup): Rect {
+fun View.getOffsetByParent(parent: ViewGroup): Rect {
     val offsetViewBounds = Rect()
     getDrawingRect(offsetViewBounds)
     parent.offsetDescendantRectToMyCoords(this, offsetViewBounds)
@@ -1017,8 +890,23 @@ fun View.getBoundsByParent(parent: ViewGroup): Rect {
 fun TextView.setTextDistinctFormatted(
         text: CharSequence?,
         maskWatcher: MaskFormatWatcher,
-        asString: Boolean = true
-) = setTextDistinctFormatted(text, maskWatcher.maskOriginal, asString)
+        asString: Boolean = true,
+        refreshMask: Boolean = true
+): Boolean {
+    return  if (refreshMask) {
+        if (text.isNullOrEmpty()) {
+            setText(EMPTY_STRING)
+        } else {
+            // getMask возвращает UnmodifiableMask -
+            // format на её копии не сработает
+            // maskOriginal - MaskImpl текущая изменяемая маска
+            maskWatcher.refreshMask(text)
+        }
+        true
+    } else {
+        setTextDistinctFormatted(text, maskWatcher.maskOriginal, asString)
+    }
+}
 
 @JvmOverloads
 fun TextView.setTextDistinctFormatted(
@@ -1050,12 +938,16 @@ fun TextView.setTextChecked(
 }
 
 @JvmOverloads
-fun View.setVisible(isVisible: Boolean, isGoneOrInvisible: Boolean = true) {
+fun View.setVisible(isVisible: Boolean, visibilityHide: VisibilityHide = VisibilityHide.GONE) {
     visibility = if (isVisible) {
         View.VISIBLE
     } else {
-        if (isGoneOrInvisible) View.GONE else View.INVISIBLE
+        if (visibilityHide == VisibilityHide.GONE) View.GONE else View.INVISIBLE
     }
+}
+
+enum class VisibilityHide {
+    INVISIBLE, GONE
 }
 
 fun View.hideByReferenceViews(vararg otherViews: View) {

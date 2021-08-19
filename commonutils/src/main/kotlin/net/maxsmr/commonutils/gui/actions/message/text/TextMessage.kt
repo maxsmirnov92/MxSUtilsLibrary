@@ -43,14 +43,14 @@ fun TextMessage?.orEmpty(): TextMessage = this ?: TextMessage.EMPTY
 open class TextMessage internal constructor(
         message: CharSequence?,
         @StringRes messageResId: Int?,
-        vararg args: Any,
+        vararg args: Any?,
 ) : Serializable {
 
     var message: CharSequence? = message
         private set
     var messageResId: Int? = messageResId
         private set
-    var args: Array<Arg<*>> = args.map {
+    var args: Array<Arg<*>> = args.filterNotNull().map {
         when (it) {
             is Arg<*> -> it
             is CharSequence -> CharSequenceArg(it)
@@ -63,7 +63,7 @@ open class TextMessage internal constructor(
 
     constructor(message: CharSequence, vararg args: Any) : this(message, null, *args)
 
-    constructor(@StringRes messageResId: Int, vararg args: Any) : this(null, messageResId, *args)
+    constructor(@StringRes messageResId: Int, vararg args: Any?) : this(null, messageResId, *args)
 
     open fun get(context: Context): CharSequence {
         val message = message

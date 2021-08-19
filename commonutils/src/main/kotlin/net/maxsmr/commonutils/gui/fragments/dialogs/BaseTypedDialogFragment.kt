@@ -60,7 +60,7 @@ abstract class BaseTypedDialogFragment<D : Dialog> : AppCompatDialogFragment(), 
     protected var customView: View? = null
 
     // because of onCreateDialog overriding onCreateView is restricted!
-    abstract override fun onCreateDialog(savedInstanceState: Bundle?): Dialog
+    abstract override fun onCreateDialog(savedInstanceState: Bundle?): D
 
     @CallSuper
     override fun onCreate(savedInstanceState: Bundle?) {
