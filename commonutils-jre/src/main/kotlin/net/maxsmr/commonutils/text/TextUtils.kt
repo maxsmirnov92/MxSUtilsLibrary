@@ -13,7 +13,59 @@ import java.util.*
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("TextUtils")
 
-// TODO переделать на extensions
+fun getExtension(name: String?): String {
+    if (name == null) return EMPTY_STRING
+    val index = name.lastIndexOf('.')
+    return if (index > 0 && index < name.length - 1) name.substring(index + 1) else EMPTY_STRING
+}
+
+/**
+ * убрать расширение файла
+ *
+ * @return новое имя
+ */
+fun removeExtension(name: String?): String {
+    var result: String = name ?: EMPTY_STRING
+    if (name != null && name.isNotEmpty()) {
+        val startIndex = name.lastIndexOf('.')
+        if (startIndex >= 0) {
+            result = replaceRange(name, startIndex, name.length, EMPTY_STRING).toString()
+        }
+    }
+    return result
+}
+
+/**
+ * Дописать расширение; убирает существующее, если есть
+ */
+fun appendOrReplaceExtension(name: String?, extension: String?): String {
+    name?.let {
+        val newName = removeExtension(name)
+        if (newName.isNotEmpty()) {
+            return if (!isEmpty(extension)) {
+                "$newName.$extension"
+            } else {
+                newName
+            }
+        }
+    }
+    return EMPTY_STRING
+}
+
+/**
+ * Дописать в конец имени (до расширения ".", если есть) [postfix]
+ */
+fun appendPostfix(name: String?, postfix: String?): String {
+    if (!isEmpty(postfix) && name != null) {
+        var newName = removeExtension(name) + postfix
+        val extension = getExtension(name)
+        if (extension.isNotEmpty()) {
+            newName += ".$extension"
+        }
+        return newName
+    }
+    return name ?: EMPTY_STRING
+}
 
 // region: Copied from TextUtils
 fun join(delimiter: CharSequence, tokens: Array<Any?>): String =

@@ -17,6 +17,7 @@ import android.os.Build
 import android.renderscript.*
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
+import androidx.annotation.RequiresApi
 import net.maxsmr.commonutils.gui.getFixedSize
 import net.maxsmr.commonutils.isPreKitkat
 import net.maxsmr.commonutils.*
@@ -25,6 +26,8 @@ import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 import net.maxsmr.commonutils.media.*
+import net.maxsmr.commonutils.text.getExtension
+import net.maxsmr.commonutils.text.removeExtension
 import java.io.*
 import java.nio.ByteBuffer
 import kotlin.math.abs
@@ -32,6 +35,8 @@ import kotlin.math.ceil
 import kotlin.math.roundToInt
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("GraphicUtils")
+
+val BITMAP_CONFIG_DEFAULT = Config.ARGB_8888
 
 // TODO convert to extensions?
 
@@ -159,15 +164,15 @@ fun createBitmapByPixelBuffer(
 fun createBitmapFromFile(
         file: File,
         scale: Int = 1,
-        config: Config? = null,
-        withSampleSize: Boolean = false
+        config: Config = BITMAP_CONFIG_DEFAULT,
+        withSampleSize: Boolean = isPreMarshmallow()
 ): Bitmap? {
     if (!canDecodeImage(file)) {
         logger.e("Incorrect file: $file")
         return null
     }
+    val options = BitmapFactory.Options()
     return if (withSampleSize) {
-        val options = BitmapFactory.Options()
         decodeBoundsFromFile(file, options)
         applyBitmapSampleOptions(options, scale, config)
         try {
@@ -177,6 +182,7 @@ fun createBitmapFromFile(
             null
         }
     } else {
+        options.inPreferredConfig = config
         try {
             BitmapFactory.decodeFile(file.absolutePath)
         } catch (e: Throwable) {
@@ -190,15 +196,15 @@ fun createBitmapFromFile(
 fun createBitmapFromByteArray(
         data: ByteArray?,
         scale: Int = 1,
-        config: Config? = null,
-        withSampleSize: Boolean = false
+        config: Config = BITMAP_CONFIG_DEFAULT,
+        withSampleSize: Boolean = isPreMarshmallow()
 ): Bitmap? {
     if (data == null || data.isEmpty()) {
         logger.e("data is null or empty")
         return null
     }
+    val options = BitmapFactory.Options()
     return if (withSampleSize) {
-        val options = BitmapFactory.Options()
         decodeBoundsFromByteArray(data, options)
         applyBitmapSampleOptions(options, scale, config)
         try {
@@ -208,6 +214,7 @@ fun createBitmapFromByteArray(
             null
         }
     } else {
+        options.inPreferredConfig = config
         try {
             BitmapFactory.decodeByteArray(data, 0, data.size)
         } catch (e: Throwable) {
@@ -221,8 +228,8 @@ fun createBitmapFromUri(
         uri: Uri?,
         contentResolver: ContentResolver,
         scale: Int = 1,
-        config: Config? = null,
-        withSampleSize: Boolean = false
+        config: Config = BITMAP_CONFIG_DEFAULT,
+        withSampleSize: Boolean = isPreMarshmallow()
 ): Bitmap? {
     if (uri == null) {
         logger.e("uri is null")
@@ -240,17 +247,17 @@ fun createBitmapFromUri(
 fun createBitmapFromStream(
         inputStream: InputStream?,
         scale: Int = 1,
-        config: Config? = null,
-        withSampleSize: Boolean = false,
+        config: Config = BITMAP_CONFIG_DEFAULT,
+        withSampleSize: Boolean = isPreMarshmallow(),
         closeStream: Boolean = true
 ): Bitmap? {
     if (inputStream == null) {
         logger.e("inputStream is null")
         return null
     }
+    val options = BitmapFactory.Options()
     return try {
         if (withSampleSize) {
-            val options = BitmapFactory.Options()
             decodeBoundsFromStream(inputStream, options)
             applyBitmapSampleOptions(options, scale, config)
             try {
@@ -260,6 +267,7 @@ fun createBitmapFromStream(
                 null
             }
         } else {
+            options.inPreferredConfig = config
             try {
                 BitmapFactory.decodeStream(inputStream)
             } catch (e: Throwable) {
@@ -283,15 +291,15 @@ fun createBitmapFromResource(
         resources: Resources,
         @DrawableRes resId: Int,
         scale: Int = 1,
-        config: Config? = null,
-        withSampleSize: Boolean = false
+        config: Config = BITMAP_CONFIG_DEFAULT,
+        withSampleSize: Boolean = isPreMarshmallow()
 ): Bitmap? {
     if (resId == 0) {
         logger.e("resId is not specified")
         return null
     }
+    val options = BitmapFactory.Options()
     return if (withSampleSize) {
-        val options = BitmapFactory.Options()
         decodeBoundsFromResource(resId, resources, options)
         applyBitmapSampleOptions(options, scale, config)
         try {
@@ -301,6 +309,7 @@ fun createBitmapFromResource(
             null
         }
     } else {
+        options.inPreferredConfig = config
         try {
             BitmapFactory.decodeResource(resources, resId)
         } catch (e: Throwable) {
@@ -315,7 +324,7 @@ fun createBitmapFromDrawable(
         drawable: Drawable?,
         width: Int,
         height: Int,
-        config: Config = Config.ARGB_8888
+        config: Config = BITMAP_CONFIG_DEFAULT
 ): Bitmap? {
     var width = width
     var height = height
@@ -621,9 +630,9 @@ fun compressBitmapToFile(
     var ext = getFileExtByCompressFormat(format)
     if (isEmpty(ext)) {
         logger.e("Unknown format: $format")
-        ext = file.name.extension
+        ext = getExtension(file.name)
     }
-    file = createFile(file.name.removeExtension() + "." + ext, file.parent)
+    file = createFile(removeExtension(file.name) + "." + ext, file.parent)
     if (file == null) {
         logger.e("file was not created")
         return null
@@ -1258,6 +1267,7 @@ fun renderScriptNVToRGBA(
     return null
 }
 
+@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 fun Drawable.wrapRipple(@ColorInt color: Int): Drawable =
         RippleDrawable(ColorStateList.valueOf(color), this, null)
 
@@ -1343,7 +1353,7 @@ private fun calculateInSampleSizeHalf(
 private fun applyBitmapSampleOptions(
         options: BitmapFactory.Options,
         scale: Int,
-        config: Config?,
+        config: Config,
         sampleSizeHalf: Boolean = true
 ) {
     val width = if (scale > 1) options.outWidth / scale else options.outWidth
@@ -1356,5 +1366,5 @@ private fun applyBitmapSampleOptions(
     options.inPurgeable = true
     options.inInputShareable = true
     options.inJustDecodeBounds = false
-    options.inPreferredConfig = config ?: Config.ARGB_8888
+    options.inPreferredConfig = config
 }

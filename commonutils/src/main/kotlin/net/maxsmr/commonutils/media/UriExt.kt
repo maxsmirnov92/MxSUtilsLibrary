@@ -2,12 +2,15 @@ package net.maxsmr.commonutils.media
 
 import android.content.ContentResolver
 import android.content.Context
+import android.content.Intent
 import android.content.res.Resources
 import android.database.Cursor
 import android.net.Uri
+import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.provider.OpenableColumns
 import android.util.Base64
+import androidx.annotation.RequiresApi
 import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
@@ -179,6 +182,11 @@ fun Uri.copyToOrThrow(
         deleteOrThrow(contentResolver)
     }
     return fileTo.toFileUri()
+}
+
+@RequiresApi(Build.VERSION_CODES.KITKAT)
+fun Uri.takePersistableReadPermission(contentResolver: ContentResolver) {
+    contentResolver.takePersistableUriPermission(this, Intent.FLAG_GRANT_READ_URI_PERMISSION)
 }
 
 @JvmOverloads
@@ -477,7 +485,7 @@ fun Uri.mimeType(contentResolver: ContentResolver): String = try {
 
 @Throws(RuntimeException::class)
 fun Uri.mimeTypeOrThrow(contentResolver: ContentResolver): String = when {
-    isFileScheme() -> path.mimeTypeFromName
+    isFileScheme() -> getMimeTypeFromName(path)
     isContentScheme() -> {
         try {
             contentResolver.getType(this)

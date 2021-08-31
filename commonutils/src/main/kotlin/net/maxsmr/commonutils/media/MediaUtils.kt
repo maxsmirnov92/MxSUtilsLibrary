@@ -15,6 +15,7 @@ import android.provider.MediaStore
 import android.text.TextUtils
 import android.util.Base64
 import android.webkit.MimeTypeMap
+import android.webkit.URLUtil
 import androidx.collection.ArraySet
 import androidx.core.content.FileProvider
 import androidx.exifinterface.media.ExifInterface
@@ -26,6 +27,7 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
 import net.maxsmr.commonutils.text.EMPTY_STRING
+import net.maxsmr.commonutils.text.getExtension
 import net.maxsmr.commonutils.text.isEmpty
 import java.io.*
 import java.nio.charset.Charset
@@ -39,14 +41,23 @@ const val ENV_EXTERNAL_STORAGE = "EXTERNAL_STORAGE"
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("MediaUtils")
 
-val File.mimeType get() = name.mimeTypeFromName
+val File.mimeType get() = getMimeTypeFromName(name)
 
-val String?.mimeTypeFromUrl : String get() = MimeTypeMap.getFileExtensionFromUrl(this)?.let {
-    it.mimeTypeFromName
-} ?: EMPTY_STRING
+fun getMimeTypeFromUrl(url: String?): String =
+        getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(url))
 
-val String?.mimeTypeFromName: String get() = MimeTypeMap.getSingleton().getMimeTypeFromExtension(this.extension)
-        ?: EMPTY_STRING
+fun getMimeTypeFromName(name: String?): String =
+        getMimeTypeFromExtension(getExtension(name))
+
+fun getMimeTypeFromExtension(extension: String): String =
+        MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: EMPTY_STRING
+
+fun getContentName(url: String?, name: String = EMPTY_STRING): String = if (name.isNotEmpty()) {
+    name
+} else {
+    URLUtil.guessFileName(url, null,
+            MimeTypeMap.getFileExtensionFromUrl(url)) ?: EMPTY_STRING
+}
 
 fun File.isPrivate(context: Context): Boolean {
     val internalFileDir = Environment.getDataDirectory()
