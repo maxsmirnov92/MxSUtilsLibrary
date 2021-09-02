@@ -8,6 +8,7 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import net.maxsmr.commonutils.cancelAlarm
@@ -255,19 +256,17 @@ fun <S : Service> startNoCheck(
         startForeground: Boolean = false
 ): Boolean {
     val i = createServiceIntent(context.packageName, serviceClass, args, action)
-    val isOreo = isAtLeastOreo()
-    if (startForeground && isOreo) {
-        return context.startForegroundService(i) != null
+    return if (startForeground && isAtLeastOreo()) {
+        context.startForegroundService(i) != null
     } else {
-        if (!isOreo || isSelfAppInBackground(context) == false) {
-            if (context.startService(i) != null) {
-                return true
-            }
-        } else {
-            logger.e("Cannot start service with intent $i: app is not in foreground")
+        try {
+            context.startService(i) != null
+        } catch (e: Exception) {
+            // на >=O выбросится если вызов был с опозданием после определённого интервала при уходе аппа в bg
+            logException(logger, e, "Cannot start service with intent $i")
+            false
         }
     }
-    return false
 }
 
 private fun <S : Service> stopNoCheck(context: Context, serviceClass: Class<S>): Boolean {

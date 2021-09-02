@@ -10,9 +10,7 @@ import android.graphics.Bitmap.Config
 import android.net.Uri
 import android.os.Build
 import android.provider.MediaStore
-import android.text.TextUtils
 import androidx.annotation.RequiresApi
-import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.LifecycleOwner
 import net.maxsmr.commonutils.*
@@ -109,16 +107,16 @@ class ContentPicker(
 
     @RequiresApi(Build.VERSION_CODES.KITKAT)
     fun pickContent(
-            type: String?,
-            mimeTypes: List<String>?,
-            openOrGet: Boolean = true
+        mimeType: String,
+        mimeTypes: List<String>,
+        openOrGet: Boolean = true
     ): Boolean {
         with(pickerConfigurator) {
             val pickFileRequestCode = pickParams.pickFileRequestCode ?: return false
             val intent = if (openOrGet) {
-                getOpenDocumentIntent(type, mimeTypes)
+                getOpenDocumentIntent(mimeType, mimeTypes)
             } else {
-                getContentIntent(type, mimeTypes)
+                getContentIntent(mimeType, mimeTypes)
             }
             if (!onBeforePickContent(intent)) {
                 return false
