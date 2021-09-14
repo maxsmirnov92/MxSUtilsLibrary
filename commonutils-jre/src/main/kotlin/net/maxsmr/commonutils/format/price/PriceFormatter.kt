@@ -3,7 +3,7 @@ package net.maxsmr.commonutils.format.price
 import net.maxsmr.commonutils.format.price.PriceStyle.*
 import net.maxsmr.commonutils.number.isZero
 import net.maxsmr.commonutils.text.EMPTY_STRING
-import java.math.RoundingMode
+import  net.maxsmr.commonutils.text.isEmpty
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
 
@@ -13,13 +13,11 @@ import java.text.DecimalFormatSymbols
  */
 class PriceFormatter(style: PriceStyle = ECONOMY) {
 
-    private var format: PriceFormat = PRICE_FORMAT_DEFAULT
+    private var format: KopecksFormat = PRICE_FORMAT_DEFAULT
 
     private var currency: String? = null
 
     private var currencySeparator: Char? = CHAR_SPACE_INSEPARABLE
-
-    private var fractionalPartCount = FRACTIONAL_PART_DEFAULT
 
     private var groupingSize: Int = GROUPING_SIZE_DEFAULT
 
@@ -30,33 +28,29 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
     init {
         when (style) {
             EXTENDED -> {
-                setFormat(PriceFormat.KOPEKS_ALWAYS)
-                setFractionalPart(FRACTIONAL_PART_DEFAULT)
+                setFormat(KopecksFormat.ALWAYS)
                 setGroupingSize(GROUPING_SIZE_DEFAULT)
                 setCurrencySeparator(CHAR_SPACE_INSEPARABLE)
             }
             ECONOMY -> {
-                setFormat(PriceFormat.KOPEKS_IF_NONZERO)
-                setFractionalPart(FRACTIONAL_PART_DEFAULT)
+                setFormat(KopecksFormat.IF_NONZERO)
                 setGroupingSize(GROUPING_SIZE_DEFAULT)
                 setCurrencySeparator(CHAR_SPACE_INSEPARABLE)
             }
             ROUNDED -> {
-                setFormat(PriceFormat.KOPEKS_ROUNDUP)
-                setFractionalPart(0)
+                setFormat(KopecksFormat.ROUNDUP)
                 setGroupingSize(GROUPING_SIZE_DEFAULT)
                 setCurrencySeparator(CHAR_SPACE_INSEPARABLE)
             }
             ECONOMY_EXTRA -> {
-                setFormat(PriceFormat.KOPEKS_ROUNDUP)
-                setFractionalPart(0)
+                setFormat(KopecksFormat.ROUNDUP)
                 resetGroupingSize()
                 setCurrencySeparator(null)
             }
         }
     }
 
-    fun setFormat(format: PriceFormat) = apply {
+    fun setFormat(format: KopecksFormat) = apply {
         this.format = format
     }
 
@@ -69,10 +63,6 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
 
     fun setCurrencySeparator(currencySeparator: Char?) = apply {
         this.currencySeparator = currencySeparator
-    }
-
-    fun setFractionalPart(count: Int) = apply {
-        fractionalPartCount = count
     }
 
     fun setGroupingSize(groupingSize: Int) = apply {
@@ -92,7 +82,7 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
     }
 
     @JvmOverloads
-    fun formatPrice(
+    fun format(
         price: Double?,
         isNonZero: Boolean = false,
         isNonNullOrNan: Boolean = price == null || price.isNaN()
@@ -104,57 +94,32 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
         if (isNonZero && price.isZero()) {
             return EMPTY_STRING
         }
-        val symbols = DecimalFormatSymbols()
-        symbols.groupingSeparator = groupingSeparator
-        symbols.decimalSeparator = decimalSeparator
-        var costStr: String
-        var decimalFormat: DecimalFormat
-        when (format) {
-            PriceFormat.KOPEKS_TRUNC -> {
-                decimalFormat = DecimalFormat(DECIMAL_FORMAT_NO_KOPECKS, symbols)
-            }
-            PriceFormat.KOPEKS_ROUND -> {
-                decimalFormat = DecimalFormat(DECIMAL_FORMAT_NO_KOPECKS, symbols)
-                decimalFormat.roundingMode = RoundingMode.HALF_UP
-            }
-            PriceFormat.KOPEKS_ROUNDUP -> {
-                decimalFormat = DecimalFormat(DECIMAL_FORMAT_NO_KOPECKS, symbols)
-                decimalFormat.roundingMode = RoundingMode.UP
-            }
-            PriceFormat.KOPEKS_ALWAYS -> {
-                decimalFormat = DecimalFormat(fractionalPartCount.toDecimalFormat(), symbols)
-            }
-            else -> {
-                decimalFormat = DecimalFormat(fractionalPartCount.toDecimalFormat(), symbols)
-                costStr = decimalFormat.format(price)
-                if (costStr.endsWith("00")) {
-                    decimalFormat = DecimalFormat(DECIMAL_FORMAT_NO_KOPECKS, symbols)
-                }
+        val symbols = DecimalFormatSymbols().also {
+            it.groupingSeparator = groupingSeparator
+            it.decimalSeparator = decimalSeparator
+        }
+        val decimalFormat = DecimalFormat(
+            format.decimalFormatPattern(price),
+            symbols
+        ).also {
+            it.roundingMode = format.roundingMode()
+            it.isGroupingUsed = groupingSize > 0
+            if (groupingSize > 0) {
+                it.groupingSize = groupingSize
             }
         }
-        groupingSize.let {
-            if (it > 0) {
-                decimalFormat.groupingSize = it
-                decimalFormat.isGroupingUsed = true
-            } else {
-                decimalFormat.isGroupingUsed = false
+        return buildString {
+            append(decimalFormat.format(price))
+            if (!isEmpty(currency)) {
+                currencySeparator?.let { append(it) }
+                append(currency)
             }
         }
-        costStr = decimalFormat.format(price)
-        currency?.takeIf { it.isNotEmpty() }?.let {
-            costStr = currencySeparator?.let {
-                costStr + it + currency
-            } ?: "$costStr$currency"
-        }
-        return costStr
     }
 
     companion object {
 
-        const val DECIMAL_FORMAT_NO_KOPECKS = "#0"
-        const val DECIMAL_FORMAT_KOPECKS = "#0.%s"
 
-        const val FRACTIONAL_PART_DEFAULT = 2
         const val GROUPING_SIZE_DEFAULT = 3
 
         /**
@@ -162,15 +127,6 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
          */
         const val CHAR_SPACE_INSEPARABLE = '\u00A0'
 
-        val PRICE_FORMAT_DEFAULT = PriceFormat.KOPEKS_IF_NONZERO
-
-        private fun Int.toDecimalFormat(): String {
-            if (this <= 0) return DECIMAL_FORMAT_NO_KOPECKS
-            val part = StringBuilder()
-            for (i in 0 until this) {
-                part.append('0')
-            }
-            return DECIMAL_FORMAT_KOPECKS.format(part)
-        }
+        val PRICE_FORMAT_DEFAULT = KopecksFormat.IF_NONZERO
     }
 }
