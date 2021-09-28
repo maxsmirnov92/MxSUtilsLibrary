@@ -45,8 +45,7 @@ fun getManageSettingsIntent(context: Context, packageName: String = context.pack
 
 fun getLocationSettingsIntent() = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
 
-@JvmOverloads
-fun getBrowseLinkIntent(url: String = EMPTY_STRING, withType: Boolean = true): Intent =
+fun getBrowseLinkIntent(url: String): Intent =
     getViewIntent(Uri.parse(url), mimeType = getMimeTypeFromUrl(url))
 
 fun getBrowseLocationIntent(latitude: Double, longitude: Double) = getViewIntent(
@@ -54,6 +53,9 @@ fun getBrowseLocationIntent(latitude: Double, longitude: Double) = getViewIntent
 ).apply {
     setPackage("com.google.android.apps.maps")
 }
+
+fun getGooglePaySaveUri(jwt: String) =
+    getViewIntent(Uri.parse("https://pay.google.com/gp/v/save/$jwt"))
 
 /**
  * Интент для открытия SAF (Storage Access Framework) пикера файлов. Открывает дефолтный UI для
