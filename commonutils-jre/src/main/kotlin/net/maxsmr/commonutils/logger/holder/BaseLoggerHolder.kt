@@ -83,8 +83,8 @@ abstract class BaseLoggerHolder protected constructor() {
         @JvmStatic
         @JvmOverloads
         fun formatException(e: Throwable, description: String? = null): String {
-            return ("A(n) ${e.javaClass.simpleName} occurred"
-                    + (if (isEmpty(description)) EMPTY_STRING else " by $description") + ": ${e.message}")
+            return ("A(n) ${e.javaClass.simpleName} occurred "
+                    + (if (isEmpty(description)) EMPTY_STRING else "\"$description\"") + ": ${e.message}")
         }
 
         @JvmStatic

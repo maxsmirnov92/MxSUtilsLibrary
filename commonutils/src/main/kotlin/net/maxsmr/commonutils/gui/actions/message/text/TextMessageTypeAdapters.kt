@@ -44,7 +44,7 @@ class TextMessageTypeAdapter : JsonSerializer<TextMessage>, JsonDeserializer<Tex
             messageResId = getJsonPrimitive(it, KEY_MESSAGE_RES_ID, Int::class.java)
             args.addAll(getFromJsonArray(getJsonElementAs(it[KEY_ARGS], JsonArray::class.java), object : JsonParcelArrayObjects<TextMessage.Arg<*>>() {
 
-                override fun fromJsonObject(jsonObj: JsonObject?): TextMessage.Arg<*>? = context.deserialize(jsonObj, TextMessage.Arg::class.java)
+                override fun fromJsonObject(jsonObj: JsonObject): TextMessage.Arg<*>? = context.deserialize(jsonObj, TextMessage.Arg::class.java)
 
             }, true) as List<TextMessage.Arg<*>>)
         }
