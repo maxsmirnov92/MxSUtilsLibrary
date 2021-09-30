@@ -226,7 +226,7 @@ fun startActivityForResultSafe(
 @JvmOverloads
 fun browseLink(url: String = EMPTY_STRING, context: Context, options: Bundle? = null): Boolean {
     if (!startActivitySafe(context, getBrowseLinkIntent(url), options)) {
-        return startActivitySafe(context, getBrowseLinkIntent(url, false), options)
+        return startActivitySafe(context, getBrowseLinkIntent(url), options)
     }
     return false
 }

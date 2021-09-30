@@ -10,20 +10,23 @@ import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
 
 class SharedPrefsManager @JvmOverloads constructor(
-        context: Context,
-        preferencesName: String = EMPTY_STRING,
-        mode: Int = Context.MODE_PRIVATE
+    context: Context,
+    _prefsName: String? = EMPTY_STRING,
+    mode: Int = Context.MODE_PRIVATE
 ) {
+    private val prefs: SharedPreferences
 
-    private val preferences: SharedPreferences =
-            getSharedPreferences(context, preferencesName, mode)
-
-    private val preferencesName: String =
-            if (!isEmpty(preferencesName)) preferencesName else context.packageName + "_preferences"
+    private val prefsName: String
 
     private val changeObservable = ChangeObservable()
 
-    @Throws(NullPointerException::class)
+    init {
+        with(getSharedPreferences(context, _prefsName, mode)) {
+            prefs = first
+            prefsName = second
+        }
+    }
+
     fun addPreferenceChangeListener(listener: PreferenceChangeListener) {
         changeObservable.registerObserver(listener)
     }
@@ -32,14 +35,15 @@ class SharedPrefsManager @JvmOverloads constructor(
         changeObservable.unregisterObserver(listener)
     }
 
-    @Synchronized
-    fun hasKey(key: String) = SharedPrefsHolder.hasKey(preferences, key)
+    fun hasKey(key: String) = SharedPrefsHolder.hasKey(prefs, key)
 
+    @JvmOverloads
     fun <V> getOrCreateValue(
-            key: String,
-            type: PrefType,
-            defaultValue: V?,
-            async: Boolean = true): V? {
+        key: String,
+        type: PrefType,
+        defaultValue: V?,
+        async: Boolean = true
+    ): V? {
         var value = defaultValue
         var has = false
         if (hasKey(key)) {
@@ -57,61 +61,74 @@ class SharedPrefsManager @JvmOverloads constructor(
         }
     }
 
-    @Synchronized
+    @JvmOverloads
     fun <V> getValue(
-            key: String,
-            type: PrefType,
-            defaultValue: V? = null
-    ): V? = SharedPrefsHolder.getValue(preferences, key, type, defaultValue)
+        key: String,
+        type: PrefType,
+        defaultValue: V? = null
+    ): V? = SharedPrefsHolder.getValue(prefs, key, type, defaultValue)
 
-    /**
-     * @return true if successfully saved
-     */
-    @Synchronized
-    fun <V : Any?> setValue(
-            key: String,
-            value: V?,
-            async: Boolean = true
-    ): Boolean = SharedPrefsHolder.setValue(preferences, key, value) {
-        changeObservable.dispatchChanged(preferencesName, key, it, value)
+    @JvmOverloads
+    fun <V> setValue(
+        key: String,
+        value: V?,
+        async: Boolean = true,
+        shouldSaveChanges: Boolean = true
+    ): Boolean = SharedPrefsHolder.setValue(prefs, key, value, async, shouldSaveChanges) {
+        changeObservable.dispatchChanged(prefsName, key, it, value, PrefType.fromValue(value))
     }
 
-    /**
-     * @return true if successfully saved
-     */
-    @Synchronized
-    fun removeKey(key: String, async: Boolean = true): Boolean {
-        if (SharedPrefsHolder.removeKey(preferences, key, async)) {
-            changeObservable.dispatchRemoved<Any>(preferencesName, key)
-            return true
+    @JvmOverloads
+    fun removeKey(
+        key: String,
+        async: Boolean = true,
+        shouldSaveChanges: Boolean = true
+    ): Boolean {
+        return if (SharedPrefsHolder.removeKey(prefs, key, async, shouldSaveChanges)) {
+            changeObservable.dispatchRemoved(prefsName, key)
+            true
+        } else {
+            false
         }
-        return false
     }
 
-    /**
-     * @return true if successfully saved
-     */
     @SuppressLint("CommitPrefEdits")
-    @Synchronized
-    fun clear(async: Boolean = true): Boolean {
-        if (SharedPrefsHolder.clear(preferences, async)) {
-            changeObservable.dispatchAllRemoved(preferencesName)
-            return true
+    @JvmOverloads
+    fun clear(async: Boolean = true, shouldSaveChanges: Boolean = true): Boolean {
+        return if (SharedPrefsHolder.clear(prefs, async, shouldSaveChanges)) {
+            changeObservable.dispatchAllRemoved(prefsName)
+            true
+        } else {
+            false
         }
-        return false
+    }
+
+    fun saveChanges(): Boolean {
+        return if (SharedPrefsHolder.saveChanges(prefs)) {
+            changeObservable.dispatchAllRefreshed(prefsName)
+            true
+        } else {
+            false
+        }
     }
 
     private class ChangeObservable : Observable<PreferenceChangeListener>() {
 
-        fun <T> dispatchChanged(name: String, key: String, oldValue: T?, newValue: T?) {
+        fun <T> dispatchChanged(
+            name: String,
+            key: String,
+            oldValue: T?,
+            newValue: T?,
+            prefType: PrefType?
+        ) {
             synchronized(observers) {
                 for (l in observers) {
-                    l.onPreferenceChanged(name, key, oldValue, newValue)
+                    l.onPreferenceChanged(name, key, oldValue, newValue, prefType)
                 }
             }
         }
 
-        fun <T> dispatchRemoved(name: String, key: String) {
+        fun dispatchRemoved(name: String, key: String) {
             synchronized(observers) {
                 for (l in observers) {
                     l.onPreferenceRemoved(name, key)
@@ -126,19 +143,31 @@ class SharedPrefsManager @JvmOverloads constructor(
                 }
             }
         }
+
+        fun dispatchAllRefreshed(name: String) {
+            synchronized(observers) {
+                for (l in observers) {
+                    l.onAllPreferencesRefreshed(name)
+                }
+            }
+        }
     }
 
     companion object {
 
         fun getSharedPreferences(
-                context: Context,
-                name: String,
-                mode: Int = Context.MODE_PRIVATE
-        ): SharedPreferences =
-                if (name.isEmpty()) {
-                    PreferenceManager.getDefaultSharedPreferences(context)
-                } else {
-                    context.getSharedPreferences(name, mode)
-                }
+            context: Context,
+            name: String?,
+            mode: Int = Context.MODE_PRIVATE
+        ): Pair<SharedPreferences, String> =
+            if (name == null || name.isEmpty()) {
+                @Suppress("DEPRECATION")
+                Pair(
+                    PreferenceManager.getDefaultSharedPreferences(context),
+                    context.packageName + "_preferences"
+                )
+            } else {
+                Pair(context.getSharedPreferences(name, mode), name)
+            }
     }
 }

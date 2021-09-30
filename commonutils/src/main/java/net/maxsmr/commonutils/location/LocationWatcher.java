@@ -2,6 +2,7 @@ package net.maxsmr.commonutils.location;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
+import android.content.Intent;
 import android.database.Observable;
 import android.location.Location;
 import android.location.LocationListener;
@@ -22,8 +23,10 @@ import java.util.List;
 import java.util.Set;
 
 import static net.maxsmr.commonutils.CompareUtilsKt.objectsEqual;
+import static net.maxsmr.commonutils.IntentsKt.getLocationSettingsIntent;
 import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 
+@Deprecated
 public final class LocationWatcher {
 
     private final static BaseLogger logger = BaseLoggerHolder.getInstance().getLogger(LocationWatcher.class);
@@ -151,7 +154,7 @@ public final class LocationWatcher {
             if (!result) {
                 logger.e("providers " + disabledProviders + " is not enabled");
                 if (openGpsActivity)
-                    LocationHelper.startGpsSettingsActivity(ctx);
+                    ctx.startActivity(getLocationSettingsIntent().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
                 return false;
             }
         }
@@ -174,7 +177,7 @@ public final class LocationWatcher {
         if (!result) {
             logger.e("no enabled providers");
             if (openGpsActivity)
-                LocationHelper.startGpsSettingsActivity(ctx);
+                ctx.startActivity(getLocationSettingsIntent().addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         }
 
         return result;

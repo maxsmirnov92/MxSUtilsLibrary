@@ -13,9 +13,7 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRunt
 import net.maxsmr.commonutils.shell.DEFAULT_TARGET_CODE
 import net.maxsmr.commonutils.shell.ShellCallback
 import net.maxsmr.commonutils.shell.ShellWrapper
-import net.maxsmr.commonutils.text.EMPTY_STRING
-import net.maxsmr.commonutils.text.isEmpty
-import net.maxsmr.commonutils.text.replaceRange
+import net.maxsmr.commonutils.text.*
 import java.io.*
 import java.nio.channels.FileChannel
 import java.nio.channels.FileLock
@@ -42,71 +40,16 @@ fun getEnvPathFiles(): Set<File> {
     return result
 }
 
-val File?.extension : String get() = this?.name.extension
+val File?.extension : String get() = getExtension(this?.name)
 
-val String?.extension: String get() {
-    if (this == null) return EMPTY_STRING
-    val index = this.lastIndexOf('.')
-    return if (index > 0 && index < this.length - 1) this.substring(index + 1) else EMPTY_STRING
+fun File?.removeExtension(): String = removeExtension(this?.name)
+
+fun File?.appendOrReplaceExtension(extension: String?): File? = this?.let {
+    File(this.parent, appendOrReplaceExtension(this.name, extension))
 }
-
-fun File?.removeExtension(): String =
-        this?.name.removeExtension()
-
-/**
- * убрать расширение файла
- *
- * @return новое имя
- */
-fun String?.removeExtension(): String {
-    var result: String = this ?: EMPTY_STRING
-    if (this != null && this.isNotEmpty()) {
-        val startIndex = this.lastIndexOf('.')
-        if (startIndex >= 0) {
-            result = replaceRange(this, startIndex, this.length, EMPTY_STRING).toString()
-        }
-    }
-    return result
-}
-
-fun File?.appendExtension(extension: String?): File? = this?.let {
-    File(this.parent, this.name.appendExtension(extension))
-}
-
-/**
- * Дописать расширение; убирает существующее, если есть
- */
-fun String?.appendExtension(extension: String?): String {
-    if (!isEmpty(extension) && this != null) {
-        val newName = this.removeExtension()
-        return if (newName.isNotEmpty()) {
-            "$newName.$extension"
-        } else {
-            this
-        }
-    }
-    return this ?: EMPTY_STRING
-}
-
 
 fun File?.appendPostfix(postfix: String?): File? = this?.let {
-    File(this.parent, this.name.appendPostfix(postfix))
-}
-
-/**
- * Дописать в конец имени (до расширения ".", если есть) [postfix]
- */
-fun String?.appendPostfix(postfix: String?): String {
-    if (!isEmpty(postfix) && this != null) {
-        var newName = this.removeExtension() + postfix
-        newName += postfix
-        val extension = this.extension
-        if (extension.isNotEmpty()) {
-            newName += ".$extension"
-        }
-        return newName
-    }
-    return this ?: EMPTY_STRING
+    File(this.parent, appendPostfix(this.name, postfix))
 }
 
 @JvmOverloads

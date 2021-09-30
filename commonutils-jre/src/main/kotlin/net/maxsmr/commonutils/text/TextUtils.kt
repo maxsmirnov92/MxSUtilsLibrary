@@ -13,11 +13,63 @@ import java.util.*
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("TextUtils")
 
-// TODO переделать на extensions
+fun getExtension(name: String?): String {
+    if (name == null) return EMPTY_STRING
+    val index = name.lastIndexOf('.')
+    return if (index > 0 && index < name.length - 1) name.substring(index + 1) else EMPTY_STRING
+}
+
+/**
+ * убрать расширение файла
+ *
+ * @return новое имя
+ */
+fun removeExtension(name: String?): String {
+    var result: String = name ?: EMPTY_STRING
+    if (name != null && name.isNotEmpty()) {
+        val startIndex = name.lastIndexOf('.')
+        if (startIndex >= 0) {
+            result = replaceRange(name, startIndex, name.length, EMPTY_STRING).toString()
+        }
+    }
+    return result
+}
+
+/**
+ * Дописать расширение; убирает существующее, если есть
+ */
+fun appendOrReplaceExtension(name: String?, extension: String?): String {
+    name?.let {
+        val newName = removeExtension(name)
+        if (newName.isNotEmpty()) {
+            return if (!isEmpty(extension)) {
+                "$newName.$extension"
+            } else {
+                newName
+            }
+        }
+    }
+    return EMPTY_STRING
+}
+
+/**
+ * Дописать в конец имени (до расширения ".", если есть) [postfix]
+ */
+fun appendPostfix(name: String?, postfix: String?): String {
+    if (!isEmpty(postfix) && name != null) {
+        var newName = removeExtension(name) + postfix
+        val extension = getExtension(name)
+        if (extension.isNotEmpty()) {
+            newName += ".$extension"
+        }
+        return newName
+    }
+    return name ?: EMPTY_STRING
+}
 
 // region: Copied from TextUtils
 fun join(delimiter: CharSequence, tokens: Array<Any?>): String =
-        join(delimiter, tokens.toList())
+    join(delimiter, tokens.toList())
 
 fun join(delimiter: CharSequence, tokens: Iterable<*>): String {
     val it = tokens.iterator()
@@ -32,6 +84,7 @@ fun join(delimiter: CharSequence, tokens: Iterable<*>): String {
     }
     return sb.toString()
 }
+
 fun split(text: String, expression: String): Array<String> {
     return if (text.isEmpty()) {
         arrayOf()
@@ -43,51 +96,87 @@ fun split(text: String, expression: String): Array<String> {
 
 @JvmOverloads
 fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): Boolean =
-        s == null || s.isEmpty() || shouldCheckNullString && "null".equals(s.toString(), ignoreCase = true)
+    s == null || s.isEmpty() || shouldCheckNullString && "null".equals(
+        s.toString(),
+        ignoreCase = true
+    )
 
 fun isZeroOrNull(value: CharSequence?) = value.toDoubleOrNull().isZeroOrNull()
 
 fun isNotZeroOrNull(value: CharSequence?) = !isZeroOrNull(value)
 
 fun getStubValue(value: String?, stringsProvider: () -> String): String? =
-        getStubValueWithAppend(value, null, stringsProvider)
+    getStubValueWithAppend(value, null, stringsProvider)
 
 fun getStubValue(value: Int, stringsProvider: () -> String): String? =
-        getStubValueWithAppend(value, null, stringsProvider)
+    getStubValueWithAppend(value, null, stringsProvider)
 
-fun getStubValueWithAppend(value: Int, appendWhat: String?, stringsProvider: () -> String): String? =
-        getStubValueWithAppend(if (value != 0) value.toString() else null, appendWhat, stringsProvider)
+fun getStubValueWithAppend(
+    value: Int,
+    appendWhat: String?,
+    stringsProvider: () -> String
+): String? =
+    getStubValueWithAppend(if (value != 0) value.toString() else null, appendWhat, stringsProvider)
 
-fun getStubValueWithAppend(value: String?, appendWhat: String?, stringsProvider: () -> String): String? =
-        if (!isEmpty(value)) if (!isEmpty(appendWhat)) "$value $appendWhat" else value else stringsProvider.invoke()
+fun getStubValueWithAppend(
+    value: String?,
+    appendWhat: String?,
+    stringsProvider: () -> String
+): String? =
+    if (!isEmpty(value)) if (!isEmpty(appendWhat)) "$value $appendWhat" else value else stringsProvider.invoke()
+
+@JvmOverloads
+fun CharSequence?.capFirstChar(
+    tailToLowerCase: Boolean = true,
+    locale: Locale = Locale.getDefault()
+) {
+    changeCaseFirstChar(
+        isUpperForFirst = true,
+        charCaseForTail = if (tailToLowerCase) CharCase.LOWER else CharCase.NO_CHANGE,
+        locale = locale
+    )
+}
 
 /**
- * Приводит первый символ к верхнему или нижнему регистру, а оставшиеся - не меняет
+ * Приводит первый символ к верхнему или нижнему регистру, а оставшиеся - меняет
  *
- * @param s исходная строка
  * @return строка с большой буквы
  */
-fun changeCaseFirstChar(s: CharSequence?, isUpper: Boolean): String {
+fun CharSequence?.changeCaseFirstChar(
+    isUpperForFirst: Boolean,
+    charCaseForTail: CharCase,
+    locale: Locale = Locale.getDefault()
+): String {
 
-    fun String.changeCase() =
-            if (isUpper) toUpperCase(Locale.getDefault()) else toLowerCase(Locale.getDefault())
+    fun String.changeCase(isUpper: Boolean) =
+        if (isUpper) toUpperCase(locale) else toLowerCase(locale)
 
     var result = EMPTY_STRING
-    if (s != null && !isEmpty(s)) {
-        result = s.toString()
-        result = if (s.length == 1) {
-            result.changeCase()
+    if (this != null && this.isNotEmpty()) {
+        result = this.toString()
+        result = if (this.length == 1) {
+            result.changeCase(isUpperForFirst)
         } else {
-            (result.substring(0, 1).changeCase()
-                    + result.substring(1))
+            val tail = result.substring(1)
+            (result.substring(0, 1).changeCase(isUpperForFirst)
+                    + (if (charCaseForTail == CharCase.NO_CHANGE) {
+                tail
+            } else {
+                tail.changeCase(charCaseForTail == CharCase.UPPER)
+            }))
         }
     }
     return result
 }
 
+enum class CharCase {
+    UPPER, LOWER, NO_CHANGE
+}
+
 fun insertAt(target: CharSequence, index: Int, what: CharSequence): String {
     require(!(index < 0 || index >= target.length)) { "incorrect index: $index" }
-    return target.toString().substring(0, index) + what + target.toString().substring(index, target.length)
+    return target.toString().substring(0, index) + what + target.toString()
+        .substring(index, target.length)
 }
 
 fun indexOf(s: CharSequence, c: Char): Int {
@@ -103,7 +192,11 @@ fun indexOf(s: CharSequence, c: Char): Int {
  * Аналогично [CharSequence.indexOf], только возвращает список индексов **всех** вхождений подстроки в строку
  */
 @JvmOverloads
-fun CharSequence.indicesOf(substring: String, startIndex: Int = 0, ignoreCase: Boolean = false): List<Int> {
+fun CharSequence.indicesOf(
+    substring: String,
+    startIndex: Int = 0,
+    ignoreCase: Boolean = false
+): List<Int> {
     val positions = mutableListOf<Int>()
     var searchIndex = startIndex
     var resultIndex: Int
@@ -119,15 +212,18 @@ fun CharSequence.indicesOf(substring: String, startIndex: Int = 0, ignoreCase: B
 }
 
 @JvmOverloads
-fun CharSequence.substringBefore(delimiter: Char, missingDelimiterValue: CharSequence = this): CharSequence {
+fun CharSequence.substringBefore(
+    delimiter: Char,
+    missingDelimiterValue: CharSequence = this
+): CharSequence {
     val index = indexOf(delimiter)
     return if (index == -1) missingDelimiterValue else substring(0, index)
 }
 
 fun replaceSubstrings(
-        text: String?,
-        characters: Set<String?>?,
-        replacement: String = EMPTY_STRING
+    text: String?,
+    characters: Set<String?>?,
+    replacement: String = EMPTY_STRING
 ): String? {
     var result = text
     if (characters != null)
@@ -142,11 +238,11 @@ fun replaceSubstrings(
 }
 
 fun replaceRange(s: CharSequence, start: Int, end: Int, replacement: CharSequence): CharSequence =
-        try {
-            replaceRangeOrThrow(s, start, end, replacement)
-        } catch (e: IllegalArgumentException) {
-            s
-        }
+    try {
+        replaceRangeOrThrow(s, start, end, replacement)
+    } catch (e: IllegalArgumentException) {
+        s
+    }
 
 fun replaceRangeOrThrow(s: CharSequence, start: Int, end: Int, replacement: CharSequence): String {
     checkArgs(s, start, end)
@@ -156,11 +252,11 @@ fun replaceRangeOrThrow(s: CharSequence, start: Int, end: Int, replacement: Char
 }
 
 fun removeRange(s: CharSequence, start: Int, end: Int): CharSequence =
-        try {
-            removeRangeOrThrow(s, start, end)
-        } catch (e: IllegalArgumentException) {
-            s
-        }
+    try {
+        removeRangeOrThrow(s, start, end)
+    } catch (e: IllegalArgumentException) {
+        s
+    }
 
 fun removeRangeOrThrow(s: CharSequence, start: Int, end: Int): String {
     checkArgs(s, start, end)
@@ -170,8 +266,8 @@ fun removeRangeOrThrow(s: CharSequence, start: Int, end: Int): String {
 }
 
 fun removeSubstrings(
-        text: String?,
-        characters: Set<String?>?
+    text: String?,
+    characters: Set<String?>?
 ) = replaceSubstrings(text, characters, EMPTY_STRING)
 
 fun removeNonDigits(s: CharSequence): CharSequence {
@@ -191,14 +287,20 @@ fun removeCharAt(s: CharSequence, index: Int): String {
 }
 
 fun removeChars(
-        text: CharSequence,
-        isFromStart: Boolean,
-        byChar: Char,
-        condition: CompareCondition = CompareCondition.LESS_OR_EQUAL,
-        ignoreCase: Boolean = true,
-        andRule: Boolean = false,
-        excludeByConditions: Boolean = true
-): CharSequence = removeChars(text, isFromStart, mapOf(Pair(byChar, CharConditionInfo(condition, ignoreCase))), andRule, excludeByConditions)
+    text: CharSequence,
+    isFromStart: Boolean,
+    byChar: Char,
+    condition: CompareCondition = CompareCondition.LESS_OR_EQUAL,
+    ignoreCase: Boolean = true,
+    andRule: Boolean = false,
+    excludeByConditions: Boolean = true
+): CharSequence = removeChars(
+    text,
+    isFromStart,
+    mapOf(Pair(byChar, CharConditionInfo(condition, ignoreCase))),
+    andRule,
+    excludeByConditions
+)
 
 /**
  * Убирает указанные символы с начала или конца строки
@@ -207,21 +309,21 @@ fun removeChars(
  * @param conditions условия исключения или включения указанных символов
  */
 fun removeChars(
-        text: CharSequence,
-        isFromStart: Boolean,
-        conditions: Map<Char, CharConditionInfo>,
-        andRule: Boolean = false,
-        excludeByConditions: Boolean = true
+    text: CharSequence,
+    isFromStart: Boolean,
+    conditions: Map<Char, CharConditionInfo>,
+    andRule: Boolean = false,
+    excludeByConditions: Boolean = true
 ): CharSequence =
-        removeChars(text, isFromStart, excludeByConditions) {
-            isTrue(conditions, andRule, it)
-        }
+    removeChars(text, isFromStart, excludeByConditions) {
+        isTrue(conditions, andRule, it)
+    }
 
 fun removeChars(
-        text: CharSequence,
-        isFromStart: Boolean,
-        excludeByConditions: Boolean = true,
-        predicate: (Char) -> Boolean
+    text: CharSequence,
+    isFromStart: Boolean,
+    excludeByConditions: Boolean = true,
+    predicate: (Char) -> Boolean
 ): CharSequence {
     val result = StringBuilder()
     var wasAppended = false
@@ -248,32 +350,38 @@ fun removeChars(
 }
 
 fun trimWithCondition(
-        text: CharSequence,
-        trimDirection: TrimDirection,
-        byChar: Char,
-        condition: CompareCondition = CompareCondition.LESS_OR_EQUAL,
-        ignoreCase: Boolean = true,
-        andRule: Boolean = false,
-        excludeByConditions: Boolean = true
+    text: CharSequence,
+    trimDirection: TrimDirection,
+    byChar: Char,
+    condition: CompareCondition = CompareCondition.LESS_OR_EQUAL,
+    ignoreCase: Boolean = true,
+    andRule: Boolean = false,
+    excludeByConditions: Boolean = true
 ): CharSequence =
-        trimWithCondition(text, trimDirection, mapOf(Pair(byChar, CharConditionInfo(condition, ignoreCase))), andRule, excludeByConditions)
+    trimWithCondition(
+        text,
+        trimDirection,
+        mapOf(Pair(byChar, CharConditionInfo(condition, ignoreCase))),
+        andRule,
+        excludeByConditions
+    )
 
 fun trimWithCondition(
-        text: CharSequence,
-        trimDirection: TrimDirection,
-        conditions: Map<Char, CharConditionInfo>,
-        andRule: Boolean = false,
-        excludeByConditions: Boolean = true
+    text: CharSequence,
+    trimDirection: TrimDirection,
+    conditions: Map<Char, CharConditionInfo>,
+    andRule: Boolean = false,
+    excludeByConditions: Boolean = true
 ): CharSequence =
-        trim(text, trimDirection, excludeByConditions) { ch, index ->
-            isTrue(conditions, andRule, ch)
-        }
+    trim(text, trimDirection, excludeByConditions) { ch, index ->
+        isTrue(conditions, andRule, ch)
+    }
 
 @JvmOverloads
 fun trimByLength(
-        text: CharSequence,
-        targetLength: Int,
-        postfix: CharSequence = EMPTY_STRING
+    text: CharSequence,
+    targetLength: Int,
+    postfix: CharSequence = EMPTY_STRING
 ): CharSequence {
     if (targetLength <= 0 || text.length < targetLength) {
         return text
@@ -288,10 +396,10 @@ fun trimByLength(
  * Returns a sub sequence of this char sequence having leading/trailing characters matching the [predicate] removed.
  */
 fun trim(
-        text: CharSequence,
-        trimDirection: TrimDirection,
-        excludeByPredicate: Boolean = true,
-        predicate: (Char, Int) -> Boolean
+    text: CharSequence,
+    trimDirection: TrimDirection,
+    excludeByPredicate: Boolean = true,
+    predicate: (Char, Int) -> Boolean
 ): CharSequence {
 
     fun CharSequence.trim(fromStart: Boolean): CharSequence {
@@ -309,7 +417,7 @@ fun trim(
         return this
     }
 
-    return when(trimDirection) {
+    return when (trimDirection) {
         TrimDirection.START -> {
             text.trim(true)
         }
@@ -323,10 +431,10 @@ fun trim(
 }
 
 fun appendSubstringWhileLess(
-        text: CharSequence,
-        minCharsCount: Int,
-        fromStart: Boolean,
-        substring: String
+    text: CharSequence,
+    minCharsCount: Int,
+    fromStart: Boolean,
+    substring: String
 ): CharSequence {
     val result = StringBuilder(text)
     if (substring.isNotEmpty()) {
@@ -347,10 +455,10 @@ fun appendSubstringWhileLess(
  */
 @JvmOverloads
 fun removeChars(
-        text: CharSequence,
-        targetTextSize: Int,
-        limitedChars: Collection<Char>,
-        checkClearedTextSize: Boolean = false
+    text: CharSequence,
+    targetTextSize: Int,
+    limitedChars: Collection<Char>,
+    checkClearedTextSize: Boolean = false
 ): String {
     require(targetTextSize > 0) { "Incorrect target size: $targetTextSize" }
     val result = StringBuilder()
@@ -360,7 +468,8 @@ fun removeChars(
     // кол-во символов для ограничения в целевой строке
     val limitedCharsCount = array.toList().filter { limitedChars.contains(it) }.size
     // максимально возможное кол-во ограничиваемых символов
-    val targetLimitedCharsCount = if (limitedCharsCount > removedCharsCount) limitedCharsCount - removedCharsCount else 0
+    val targetLimitedCharsCount =
+        if (limitedCharsCount > removedCharsCount) limitedCharsCount - removedCharsCount else 0
     var currentLimitedCharsCount = 0
     array.forEach {
         // является ограничиваемым
@@ -380,7 +489,7 @@ fun removeChars(
 
 @JvmOverloads
 fun createPlaceholderText(size: Int, placeholderChar: Char = ' '): String {
-    require(size > 0) {"Incorrect size: $size"}
+    require(size > 0) { "Incorrect size: $size" }
     val result = StringBuilder()
     for (i in 0 until size) {
         result.append(placeholderChar)
@@ -394,7 +503,10 @@ fun createPlaceholderText(size: Int, placeholderChar: Char = ' '): String {
  * @return модифицированная или исходная строка
  */
 @JvmOverloads
-fun CharSequence?.filterTextByRegex(allowedChars: String, allowIfEmpty: Boolean = false): CharSequence {
+fun CharSequence?.filterTextByRegex(
+    allowedChars: String,
+    allowIfEmpty: Boolean = false
+): CharSequence {
     if (this == null || this.isEmpty()) {
         return EMPTY_STRING
     }
@@ -424,9 +536,9 @@ fun getBytes(text: String, charset: Charset = Charsets.UTF_8): ByteArray? = try 
 }
 
 private fun isTrue(
-        conditions: Map<Char, CharConditionInfo>,
-        andRule: Boolean,
-        currentCh: Char
+    conditions: Map<Char, CharConditionInfo>,
+    andRule: Boolean,
+    currentCh: Char
 ): Boolean {
     return if (andRule) {
         if (conditions.isEmpty()) {
@@ -444,14 +556,14 @@ private fun isTrue(
 }
 
 private fun checkArgs(s: CharSequence, start: Int, end: Int) {
-    require(start >= 0) {"start ($start) < 0"}
-    require(start <= end) {"start ($start) > end ($end)"}
-    require(end <= s.length) {"end ($end) > length (${s.length})"}
+    require(start >= 0) { "start ($start) < 0" }
+    require(start <= end) { "start ($start) > end ($end)" }
+    require(end <= s.length) { "end ($end) > length (${s.length})" }
 }
 
 data class CharConditionInfo(
-        val condition: CompareCondition,
-        val ignoreCase: Boolean = true
+    val condition: CompareCondition,
+    val ignoreCase: Boolean = true
 )
 
 enum class TrimDirection {

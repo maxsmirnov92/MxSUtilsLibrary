@@ -120,7 +120,7 @@ class SimpleSystemLogger(tag: String) : BaseLogger(tag) {
     private class LogEntry constructor(private val level: Level, private val tag: String, private val message: String, private val timestamp: Long) {
 
         override fun toString(): String {
-            return "[" + formatDate(Date(timestamp), "dd.MM.yyyy HH:mm:ss", null) + "] " + level.name + " " + tag + ": " + message
+            return "[" + formatDate(Date(timestamp), "dd.MM.yyyy HH:mm:ss") + "] " + level.name + " " + tag + ": " + message
         }
     }
 }

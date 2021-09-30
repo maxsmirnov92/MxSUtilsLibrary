@@ -2,7 +2,6 @@ package net.maxsmr.commonutils.gui.fragments.dialogs.holder
 
 import android.content.Context
 import android.content.DialogInterface
-import androidx.appcompat.app.AlertDialog
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.FragmentManager
 import androidx.lifecycle.LifecycleOwner
@@ -57,16 +56,12 @@ abstract class ContentPickerDialogFragmentsHolder(
     protected open fun onDialogButtonClick(fragment: BaseTypedDialogFragment<*>, which: Int) {
         if (fragment.tag == TAG_PICK_CONTENT_CHOICE) {
             contentPicker?.let {
-                when (which) {
-                    DialogInterface.BUTTON_POSITIVE -> it.pickFromGallery()
-                    DialogInterface.BUTTON_NEUTRAL ->
-                        if (isAtLeastKitkat()) {
+                when {
+                    which == DialogInterface.BUTTON_POSITIVE -> it.pickFromGallery()
+                    which == DialogInterface.BUTTON_NEUTRAL && isAtLeastKitkat() ->
                             with(contentPickerOpts) {
-                                it.pickContent(type, mimeTypes, openOrGet)
+                                it.pickContent(mimeType, mimeTypes, openOrGet)
                             }
-                        } else {
-                            // do noting
-                        }
                     else -> it.pickFromCamera(true)
                 }
             }
@@ -83,8 +78,8 @@ abstract class ContentPickerDialogFragmentsHolder(
     }
 
     data class ContentPickerOpts(
-            val type: String?,
-            val mimeTypes: List<String>?,
-            val openOrGet: Boolean = true
+        val mimeType: String,
+        val mimeTypes: List<String>,
+        val openOrGet: Boolean = true
     )
 }
