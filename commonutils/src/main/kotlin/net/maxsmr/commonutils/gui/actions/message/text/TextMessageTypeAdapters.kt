@@ -37,16 +37,17 @@ class TextMessageTypeAdapter : JsonSerializer<TextMessage>, JsonDeserializer<Tex
         var message: String? = null
         var messageResId: Int? = null
         val args = mutableListOf<TextMessage.Arg<*>>()
-        getJsonElementAs(json, JsonObject::class.java)?.let {
-            pluralResId = getJsonPrimitive(it, KEY_PLURAL_RES_ID, Int::class.java)
-            quantity = getJsonPrimitive(it, KEY_QUANTITY, Int::class.java)
-            message = getJsonPrimitive(it, KEY_MESSAGE, String::class.java)
-            messageResId = getJsonPrimitive(it, KEY_MESSAGE_RES_ID, Int::class.java)
-            args.addAll(getFromJsonArray(getJsonElementAs(it[KEY_ARGS], JsonArray::class.java), object : JsonParcelArrayObjects<TextMessage.Arg<*>>() {
-
-                override fun fromJsonObject(jsonObj: JsonObject): TextMessage.Arg<*>? = context.deserialize(jsonObj, TextMessage.Arg::class.java)
-
-            }, true) as List<TextMessage.Arg<*>>)
+        // or json?.asJsonObjectOrNull?
+        json.asJsonElement(JsonObject::class.java)?.let {
+            // or it[KEY_PLURAL_RES_ID]?.asIntOrNull
+            pluralResId = it.getPrimitive(KEY_PLURAL_RES_ID, Int::class.java)
+            quantity = it.getPrimitive(KEY_QUANTITY, Int::class.java)
+            message = it.getPrimitive(KEY_MESSAGE, String::class.java)
+            messageResId = it.getPrimitive(KEY_MESSAGE_RES_ID, Int::class.java)
+            // or it[KEY_ARGS]?.asJsonArrayOrNull
+            args.addAll(it[KEY_ARGS].asJsonElement(JsonArray::class.java).parseNonNull { elem ->
+                context.deserialize<TextMessage.Arg<*>>(elem.asJsonObjectOrNull, TextMessage.Arg::class.java)
+            })
         }
         return if (typeOfT is Class<*> && PluralTextMessage::class.java.isAssignableFrom(typeOfT)) {
             PluralTextMessage(pluralResId ?: 0, quantity ?: 0, *args.toTypedArray())
@@ -75,7 +76,7 @@ class CharSequenceArgTypeAdapter : JsonSerializer<CharSequenceArg>, JsonDeserial
             }
 
     override fun deserialize(json: JsonElement?, typeOfT: Type, context: JsonDeserializationContext): CharSequenceArg? =
-            getJsonPrimitive(json, KEY_VALUE, String::class.java)?.let {
+        json.getPrimitive(KEY_VALUE, String::class.java)?.let {
                 CharSequenceArg(it)
             }
 
