@@ -41,32 +41,36 @@ const val ENV_EXTERNAL_STORAGE = "EXTERNAL_STORAGE"
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("MediaUtils")
 
-val File.mimeType get() = getMimeTypeFromName(name)
+val File.mimeType: String get() = getMimeTypeFromName(name)
 
 fun getMimeTypeFromUrl(url: String?): String =
-        getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(url))
+    getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(url))
 
 fun getMimeTypeFromName(name: String?): String =
-        getMimeTypeFromExtension(getExtension(name))
+    getMimeTypeFromExtension(getExtension(name))
 
-fun getMimeTypeFromExtension(extension: String): String =
-        MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) ?: EMPTY_STRING
+fun getMimeTypeFromExtension(extension: String?): String =
+    MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension ?: EMPTY_STRING) ?: EMPTY_STRING
 
 fun getContentName(url: String?, name: String = EMPTY_STRING): String = if (name.isNotEmpty()) {
     name
 } else {
-    URLUtil.guessFileName(url, null,
-            MimeTypeMap.getFileExtensionFromUrl(url)) ?: EMPTY_STRING
+    URLUtil.guessFileName(
+        url, null,
+        MimeTypeMap.getFileExtensionFromUrl(url)
+    ) ?: EMPTY_STRING
 }
 
 fun File.isPrivate(context: Context): Boolean {
     val internalFileDir = Environment.getDataDirectory()
     val externalFileDir = context.getExternalFilesDir(null)
-    return this.startsWith(internalFileDir) || (externalFileDir != null && this.startsWith(externalFileDir))
+    return this.startsWith(internalFileDir) || (externalFileDir != null && this.startsWith(
+        externalFileDir
+    ))
 }
 
 fun File.toContentUri(context: Context): Uri =
-        FileProvider.getUriForFile(context, "${context.packageName}.provider", this)
+    FileProvider.getUriForFile(context, "${context.packageName}.provider", this)
 
 fun File.toFileUri(): Uri = Uri.fromFile(this)
 
@@ -74,19 +78,20 @@ fun File.toFileUri(): Uri = Uri.fromFile(this)
  * @return true, если внешнее хранилище примонтировано
  */
 fun isExternalStorageMounted(): Boolean =
-        isExternalStorageMountedAndWritable() || isExternalStorageMountedReadOnly()
+    isExternalStorageMountedAndWritable() || isExternalStorageMountedReadOnly()
 
 /**
  * @return true, если внешнее хранилище примонтировано и доступно для записи
  */
 fun isExternalStorageMountedAndWritable(): Boolean =
-        Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED, ignoreCase = true)
+    Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED, ignoreCase = true)
 
 /**
  * @return true, если внешнее хранилище примонтировано и доступно только для чтения
  */
 fun isExternalStorageMountedReadOnly(): Boolean =
-        Environment.getExternalStorageState().equals(Environment.MEDIA_MOUNTED_READ_ONLY, ignoreCase = true)
+    Environment.getExternalStorageState()
+        .equals(Environment.MEDIA_MOUNTED_READ_ONLY, ignoreCase = true)
 
 @JvmOverloads
 fun getExternalFilesDirs(context: Context, type: String = EMPTY_STRING): Set<File?> {
@@ -107,11 +112,11 @@ fun getExternalFilesDirs(context: Context, type: String = EMPTY_STRING): Set<Fil
 @Suppress("DEPRECATION")
 @JvmOverloads
 fun getFilteredExternalFilesDirs(
-        context: Context,
-        includeRemovable: Boolean,
-        includePrimaryExternalStorage: Boolean,
-        onlyRootPaths: Boolean,
-        type: String = EMPTY_STRING
+    context: Context,
+    includeRemovable: Boolean,
+    includePrimaryExternalStorage: Boolean,
+    onlyRootPaths: Boolean,
+    type: String = EMPTY_STRING
 ): Set<File> {
     val result: MutableSet<File> = ArraySet()
 
@@ -137,7 +142,8 @@ fun getFilteredExternalFilesDirs(
                 if (includePrimary(path)) {
                     var secondaryPath = path
                     if (onlyRootPaths) {
-                        val index = path.lastIndexOf(File.separator + "Android" /*+ File.separator + "data"*/)
+                        val index =
+                            path.lastIndexOf(File.separator + "Android" /*+ File.separator + "data"*/)
                         if (index > 0) {
                             secondaryPath = path.substring(0, index)
                         }
@@ -164,9 +170,9 @@ fun getFilteredExternalFilesDirs(
 @TargetApi(Build.VERSION_CODES.Q)
 @JvmOverloads
 fun File.copyToExternal(
-        contentResolver: ContentResolver,
-        mimeType: String,
-        useRelativePath: Boolean = false
+    contentResolver: ContentResolver,
+    mimeType: String,
+    useRelativePath: Boolean = false
 ) = try {
     copyToExternalOrThrow(contentResolver, mimeType, useRelativePath)
     true
@@ -179,11 +185,11 @@ fun File.copyToExternal(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun File.copyToExternalOrThrow(
-        contentResolver: ContentResolver,
-        mimeType: String? = null,
-        useRelativePath: Boolean = false,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_BUFFER_SIZE
+    contentResolver: ContentResolver,
+    mimeType: String? = null,
+    useRelativePath: Boolean = false,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
     val values = ContentValues().apply {
         if (useRelativePath) {
@@ -192,8 +198,10 @@ fun File.copyToExternalOrThrow(
             }
         }
         put(MediaStore.Images.Media.DISPLAY_NAME, name)
-        put(MediaStore.Images.Media.MIME_TYPE,
-                if (!mimeType.isNullOrEmpty()) mimeType else this@copyToExternalOrThrow.mimeType)
+        put(
+            MediaStore.Images.Media.MIME_TYPE,
+            if (!mimeType.isNullOrEmpty()) mimeType else this@copyToExternalOrThrow.mimeType
+        )
     }
 
     val targetUri = MediaStore.Images.Media.getContentUri(MediaStore.VOLUME_EXTERNAL_PRIMARY)
@@ -210,16 +218,20 @@ fun File.copyToExternalOrThrow(
 
 @JvmOverloads
 fun scanFiles(
-        context: Context,
-        files: Collection<File>?,
-        onScanCompletedListener: ((String, Uri) -> Unit)? = null
+    context: Context,
+    files: Collection<File>?,
+    onScanCompletedListener: ((String, Uri) -> Unit)? = null
 ) {
     val filesMap = mutableMapOf<String, String>()
     files?.forEach {
         filesMap[it.absolutePath] = it.mimeType.takeIf { type -> type.isNotEmpty() }
-                ?: MIME_TYPE_ANY
+            ?: MIME_TYPE_ANY
     }
-    MediaScannerConnection.scanFile(context, filesMap.keys.toTypedArray(), filesMap.values.toTypedArray()) { path, uri ->
+    MediaScannerConnection.scanFile(
+        context,
+        filesMap.keys.toTypedArray(),
+        filesMap.values.toTypedArray()
+    ) { path, uri ->
         uri?.let {
             onScanCompletedListener?.invoke(path ?: EMPTY_STRING, it)
         }
@@ -269,14 +281,16 @@ fun Uri?.getPath(context: Context): String {
                 }
 
                 fun Uri.replaceRawInPath(): String {
-                    return path?.replaceFirst("^/document/raw:".toRegex(), EMPTY_STRING)?.replaceFirst("^raw:".toRegex(), EMPTY_STRING)
-                            ?: EMPTY_STRING
+                    return path?.replaceFirst("^/document/raw:".toRegex(), EMPTY_STRING)
+                        ?.replaceFirst("^raw:".toRegex(), EMPTY_STRING)
+                        ?: EMPTY_STRING
                 }
 
                 if (isAtLeastMarshmallow()) {
 
                     val fileName = this.name(context.contentResolver)
-                    val path = Environment.getExternalStorageDirectory().toString() + "/Download/" + fileName
+                    val path = Environment.getExternalStorageDirectory()
+                        .toString() + "/Download/" + fileName
                     if (!TextUtils.isEmpty(path)) {
                         return path
                     }
@@ -292,17 +306,18 @@ fun Uri?.getPath(context: Context): String {
                     val documentId: Long = documentTextId.toLongOrNull()
                     //In Android 8 and later the id is not a number
                     // "msf:" == ContentResolver.open
-                            ?: return this.replaceRawInPath()
+                        ?: return this.replaceRawInPath()
 
                     val contentUriPrefixesToTry = arrayOf(
-                            "content://downloads/public_downloads",
-                            "content://downloads/my_downloads"
+                        "content://downloads/public_downloads",
+                        "content://downloads/my_downloads"
                     )
 
                     var result: String = EMPTY_STRING
 
                     contentUriPrefixesToTry.forEach { contentUriPrefix ->
-                        val contentUri = ContentUris.withAppendedId(Uri.parse(contentUriPrefix), documentId)
+                        val contentUri =
+                            ContentUris.withAppendedId(Uri.parse(contentUriPrefix), documentId)
                         result = contentUri.getDataColumn(context.contentResolver, null, null)
                         if (result.isNotEmpty()) {
                             return@forEach
@@ -324,9 +339,12 @@ fun Uri?.getPath(context: Context): String {
                     val documentId: Long = documentTextId.toLongOrNull()
                     //In Android 8 and later the id is not a number
                     // "msf:" == ContentResolver.open
-                            ?: return this.replaceRawInPath()
+                        ?: return this.replaceRawInPath()
 
-                    val contentUri = ContentUris.withAppendedId(Uri.parse("content://downloads/public_downloads"), documentId)
+                    val contentUri = ContentUris.withAppendedId(
+                        Uri.parse("content://downloads/public_downloads"),
+                        documentId
+                    )
                     return contentUri.getDataColumn(context.contentResolver)
                 }
             }
@@ -344,7 +362,7 @@ fun Uri?.getPath(context: Context): String {
                     contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
                 }
                 return contentUri?.getDataColumn(context.contentResolver, "_id=?", listOf(split[1]))
-                        ?: EMPTY_STRING
+                    ?: EMPTY_STRING
             }
         }
     } else if (this.isContentScheme()) {
@@ -415,23 +433,31 @@ private fun getPathFromExtSD(pathData: Array<String>): String {
  */
 @JvmOverloads
 fun Uri.getDataColumn(
-        contentResolver: ContentResolver,
-        selection: String? = null,
-        selectionArgs: List<String>? = null
-): String = queryFirst(contentResolver, String::class.java, MediaStore.Images.ImageColumns.DATA, selection, selectionArgs)
-        ?: EMPTY_STRING
+    contentResolver: ContentResolver,
+    selection: String? = null,
+    selectionArgs: List<String>? = null
+): String = queryFirst(
+    contentResolver,
+    String::class.java,
+    MediaStore.Images.ImageColumns.DATA,
+    selection,
+    selectionArgs
+)
+    ?: EMPTY_STRING
 
 /**
  * @param uri The Uri to check.
  * @return Whether the Uri authority is ExternalStorageProvider.
  */
-fun isExternalStorageDocument(uri: Uri): Boolean = "com.android.externalstorage.documents" == uri.authority
+fun isExternalStorageDocument(uri: Uri): Boolean =
+    "com.android.externalstorage.documents" == uri.authority
 
 /**
  * @param uri The Uri to check.
  * @return Whether the Uri authority is DownloadsProvider.
  */
-fun isDownloadsDocument(uri: Uri): Boolean = "com.android.providers.downloads.documents" == uri.authority
+fun isDownloadsDocument(uri: Uri): Boolean =
+    "com.android.providers.downloads.documents" == uri.authority
 
 /**
  * @param uri The Uri to check.
@@ -447,7 +473,8 @@ fun isGooglePhotosUri(uri: Uri): Boolean = "com.google.android.apps.photos.conte
 
 fun isWhatsAppFile(uri: Uri): Boolean = "com.whatsapp.provider.media" == uri.authority
 
-fun isGoogleDriveUri(uri: Uri): Boolean = "com.google.android.apps.docs.storage" == uri.authority || "com.google.android.apps.docs.storage.legacy" == uri.authority
+fun isGoogleDriveUri(uri: Uri): Boolean =
+    "com.google.android.apps.docs.storage" == uri.authority || "com.google.android.apps.docs.storage.legacy" == uri.authority
 
 fun readExifLocation(imageFile: File?): Location? = try {
     readExifLocationOrThrow(imageFile)
@@ -521,7 +548,10 @@ fun writeExifLocationOrThrow(imageFile: File?, location: Location?) {
         val longitude = location.longitude
         exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE, convertLocationDoubleToString(longitude))
         exif.setAttribute(ExifInterface.TAG_GPS_LONGITUDE_REF, if (longitude > 0) "E" else "W")
-        exif.setAttribute(ExifInterface.TAG_GPS_ALTITUDE, convertLocationDoubleToString(location.altitude))
+        exif.setAttribute(
+            ExifInterface.TAG_GPS_ALTITUDE,
+            convertLocationDoubleToString(location.altitude)
+        )
         exif.setAttribute(ExifInterface.TAG_GPS_TIMESTAMP, location.time.toString())
         location.provider?.let {
             exif.setAttribute(ExifInterface.TAG_GPS_PROCESSING_METHOD, it)
@@ -559,24 +589,24 @@ fun File.getImageRotationAngle(): Int = try {
 
 @Throws(RuntimeException::class)
 fun File.getImageRotationAngleOrThrow(): Int =
-        createExifOrThrow(this).getRotationAngleOrThrow()
+    createExifOrThrow(this).getRotationAngleOrThrow()
 
 fun Uri.getImageRotationAngle(contentResolver: ContentResolver): Int? =
-        try {
-            getImageRotationAngleOrThrow(contentResolver)
-        } catch (e: RuntimeException) {
-            logger.e(e)
-            null
-        }
+    try {
+        getImageRotationAngleOrThrow(contentResolver)
+    } catch (e: RuntimeException) {
+        logger.e(e)
+        null
+    }
 
 @Throws(RuntimeException::class)
 fun Uri.getImageRotationAngleOrThrow(contentResolver: ContentResolver): Int =
-        if (isAtLeastQ()) {
-            getOrientationFromMediaStoreOrThrow(contentResolver)
-        } else {
-            val inputStream = openInputStreamOrThrow(contentResolver)
-            createExifOrThrow(inputStream).getRotationAngleOrThrow()
-        }
+    if (isAtLeastQ()) {
+        getOrientationFromMediaStoreOrThrow(contentResolver)
+    } else {
+        val inputStream = openInputStreamOrThrow(contentResolver)
+        createExifOrThrow(inputStream).getRotationAngleOrThrow()
+    }
 
 /**
  * Определяет поворот картинки
@@ -592,9 +622,11 @@ fun Uri.getOrientationFromMediaStore(contentResolver: ContentResolver): Int? = t
 @TargetApi(Build.VERSION_CODES.Q)
 @Throws(RuntimeException::class)
 fun Uri.getOrientationFromMediaStoreOrThrow(contentResolver: ContentResolver): Int =
-        queryFirstOrThrow(contentResolver,
-                Int::class.java,
-                MediaStore.Images.ImageColumns.ORIENTATION)
+    queryFirstOrThrow(
+        contentResolver,
+        Int::class.java,
+        MediaStore.Images.ImageColumns.ORIENTATION
+    )
 
 fun getRotationAngleFromExif(imageFile: File?): Int = try {
     getRotationAngleFromExifOrThrow(imageFile)
@@ -638,7 +670,8 @@ fun getRotationAngleFromExifOrThrow(contentResolver: ContentResolver, imageUri: 
 
 @Throws(RuntimeException::class)
 private fun ExifInterface.getRotationAngleOrThrow(): Int {
-    val orientation = getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
+    val orientation =
+        getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
     if (orientation == ExifInterface.ORIENTATION_UNDEFINED)
         throw RuntimeException("Orientation undefined")
     return getRotationAngleByExifOrientation(orientation)
@@ -662,7 +695,10 @@ fun writeRotationAngleToExifOrThrow(imageFile: File, degrees: Int) {
     }
     val exif = createExifOrThrow(imageFile)
     try {
-        exif.setAttribute(ExifInterface.TAG_ORIENTATION, getExifOrientationByRotationAngle(degrees).toString())
+        exif.setAttribute(
+            ExifInterface.TAG_ORIENTATION,
+            getExifOrientationByRotationAngle(degrees).toString()
+        )
         exif.saveAttributes()
     } catch (e: Exception) {
         throwRuntimeException(e)
@@ -686,31 +722,31 @@ fun copyDefaultExifInfo(sourceFile: File?, targetFile: File?) = try {
 @Throws(RuntimeException::class)
 fun copyDefaultExifInfoOrThrow(sourceFile: File?, targetFile: File?) {
     val attributes = arrayOf(
-            ExifInterface.TAG_DATETIME,
-            ExifInterface.TAG_EXPOSURE_TIME,
-            ExifInterface.TAG_FLASH,
-            ExifInterface.TAG_FOCAL_LENGTH,
-            ExifInterface.TAG_GPS_ALTITUDE,
-            ExifInterface.TAG_GPS_ALTITUDE_REF,
-            ExifInterface.TAG_GPS_DATESTAMP,
-            ExifInterface.TAG_GPS_LATITUDE,
-            ExifInterface.TAG_GPS_LATITUDE_REF,
-            ExifInterface.TAG_GPS_LONGITUDE,
-            ExifInterface.TAG_GPS_LONGITUDE_REF,
-            ExifInterface.TAG_GPS_PROCESSING_METHOD,
-            ExifInterface.TAG_GPS_TIMESTAMP,
-            ExifInterface.TAG_MAKE,
-            ExifInterface.TAG_MODEL,
-            ExifInterface.TAG_ORIENTATION,
-            ExifInterface.TAG_WHITE_BALANCE
+        ExifInterface.TAG_DATETIME,
+        ExifInterface.TAG_EXPOSURE_TIME,
+        ExifInterface.TAG_FLASH,
+        ExifInterface.TAG_FOCAL_LENGTH,
+        ExifInterface.TAG_GPS_ALTITUDE,
+        ExifInterface.TAG_GPS_ALTITUDE_REF,
+        ExifInterface.TAG_GPS_DATESTAMP,
+        ExifInterface.TAG_GPS_LATITUDE,
+        ExifInterface.TAG_GPS_LATITUDE_REF,
+        ExifInterface.TAG_GPS_LONGITUDE,
+        ExifInterface.TAG_GPS_LONGITUDE_REF,
+        ExifInterface.TAG_GPS_PROCESSING_METHOD,
+        ExifInterface.TAG_GPS_TIMESTAMP,
+        ExifInterface.TAG_MAKE,
+        ExifInterface.TAG_MODEL,
+        ExifInterface.TAG_ORIENTATION,
+        ExifInterface.TAG_WHITE_BALANCE
     )
     copyExifInfoOrThrow(sourceFile, targetFile, Arrays.asList(*attributes))
 }
 
 fun copyExifInfo(
-        sourceFile: File?,
-        targetFile: File?,
-        attributeNames: Collection<String>?
+    sourceFile: File?,
+    targetFile: File?,
+    attributeNames: Collection<String>?
 ) = try {
     copyExifInfoOrThrow(sourceFile, targetFile, attributeNames)
     true
@@ -721,9 +757,9 @@ fun copyExifInfo(
 
 @Throws(RuntimeException::class)
 fun copyExifInfoOrThrow(
-        sourceFile: File?,
-        targetFile: File?,
-        attributeNames: Collection<String>?
+    sourceFile: File?,
+    targetFile: File?,
+    attributeNames: Collection<String>?
 ) {
     val oldExif: ExifInterface = createExifOrThrow(sourceFile)
     val newExif: ExifInterface = createExifOrThrow(targetFile)
@@ -768,7 +804,10 @@ fun getExifOrientationByRotationAngle(degrees: Int): Int {
 }
 
 @JvmOverloads
-fun String?.toBase64(charset: Charset = Charset.defaultCharset(), flags: Int = Base64.DEFAULT): String = this?.toByteArray(charset).toBase64(flags)
+fun String?.toBase64(
+    charset: Charset = Charset.defaultCharset(),
+    flags: Int = Base64.DEFAULT
+): String = this?.toByteArray(charset).toBase64(flags)
 
 /**
  * Получение бинартых данных файла в формате Base64
@@ -778,11 +817,11 @@ fun String?.toBase64(charset: Charset = Charset.defaultCharset(), flags: Int = B
  */
 @JvmOverloads
 fun ByteArray?.toBase64(flags: Int = Base64.DEFAULT): String =
-        this?.let { Base64.encodeToString(this, flags) } ?: EMPTY_STRING
+    this?.let { Base64.encodeToString(this, flags) } ?: EMPTY_STRING
 
 @Throws(RuntimeException::class)
 private fun createExifOrThrow(file: File?) =
-        createExifOrThrow(file?.absolutePath)
+    createExifOrThrow(file?.absolutePath)
 
 @Throws(RuntimeException::class)
 private fun createExifOrThrow(path: String?): ExifInterface {

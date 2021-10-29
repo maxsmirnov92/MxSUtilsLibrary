@@ -1,6 +1,8 @@
 package net.maxsmr.commonutils
 
 import java.util.*
+import java.util.concurrent.TimeUnit
+import kotlin.math.abs
 
 fun Date.isLess(second: Date?): Boolean {
     second ?: return false
@@ -85,6 +87,15 @@ fun getMonthsCount(
 
 fun getMonthsCount(firstCalendar: Calendar, secondCalendar: Calendar) =
         firstCalendar.get(Calendar.MONTH) - secondCalendar.get(Calendar.MONTH) + 1 + (firstCalendar.get(Calendar.YEAR) - secondCalendar.get(Calendar.YEAR)) * 12
+
+fun Date.diff(unit: TimeUnit, time: Long): Date {
+    val diff = unit.toMillis(abs(time))
+    return Date(if (time > 0) {
+        this.time + diff
+    } else {
+        this.time - diff
+    })
+}
 
 private fun createCalendar(locale: Locale?, timeZone: TimeZone?): Calendar = when {
     timeZone != null && locale != null -> {
