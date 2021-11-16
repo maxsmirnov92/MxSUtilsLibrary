@@ -293,6 +293,18 @@ fun withMutabilityFlag(flags: Int): Int {
     }
 }
 
+fun Service.stopForegroundCompat(removeNotification: Boolean) {
+    if (removeNotification) {
+        stopForeground(true)
+    } else  {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+            stopForeground(Service.STOP_FOREGROUND_DETACH)
+        } else {
+            stopForeground(false)
+        }
+    }
+}
+
 private fun <S : Service> stopNoCheck(context: Context, serviceClass: Class<S>): Boolean {
     val service = Intent(context, serviceClass)
     return context.stopService(service)

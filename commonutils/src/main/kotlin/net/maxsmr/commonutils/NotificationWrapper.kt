@@ -11,26 +11,35 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
 @MainThread
-class NotificationWrapper(
-        private val context: Context,
-        private val params: ChannelParams
-) {
+class NotificationWrapper(private val context: Context) {
 
     private val notificationManager = NotificationManagerCompat.from(context)
 
-    fun show(notificationId: Int, config: NotificationCompat.Builder.() -> Unit) {
-        show(notificationId, create(config))
+    /**
+     * @param channelConfig дополнительный конфигуратор для [NotificationChannel] для версий выше O,
+     * плюсом к тому, что был в констуркторе [ChannelParams]
+     */
+    fun show(
+        notificationId: Int,
+        params: ChannelParams,
+        notificationConfig: NotificationCompat.Builder.() -> Unit,
+    ) {
+        show(notificationId, create(params, notificationConfig))
     }
 
     fun show(notificationId: Int, notification: Notification) {
         notificationManager.notify(notificationId, notification)
     }
 
-    fun create(config: NotificationCompat.Builder.() -> Unit): Notification {
+    fun create(
+        params: ChannelParams,
+        notificationConfig: NotificationCompat.Builder.() -> Unit,
+    ): Notification {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            notificationManager.createNotificationChannel(params.channel())
+            val channel = params.channel()
+            notificationManager.createNotificationChannel(channel)
         }
-        return NotificationCompat.Builder(context, params.id).apply(config).build()
+        return NotificationCompat.Builder(context, params.id).apply(notificationConfig).build()
     }
 
     fun cancel(notificationId: Int) {
@@ -38,10 +47,10 @@ class NotificationWrapper(
     }
 
     class ChannelParams(
-            val id: String,
-            val name: CharSequence,
-            val importance: Int = NotificationManagerCompat.IMPORTANCE_DEFAULT,
-            val config:  (NotificationChannel.() -> Unit)? = null
+        val id: String,
+        val name: CharSequence,
+        val importance: Int = NotificationManagerCompat.IMPORTANCE_DEFAULT,
+        val config: (NotificationChannel.() -> Unit)? = null,
     ) {
 
         @SuppressLint("WrongConstant")
