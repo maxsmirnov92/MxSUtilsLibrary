@@ -24,6 +24,7 @@ import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.isVisible
+import androidx.core.view.updatePadding
 import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
@@ -304,83 +305,127 @@ fun TextView.replaceUrlSpans(
 )
 
 @JvmOverloads
-fun TextView.setTextOrHide(
-        @StringRes textResId: Int?,
-        visibilityHide: VisibilityHide = VisibilityHide.GONE,
-        distinct: Boolean = true,
-        asString: Boolean = true,
-        isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
-        showFunc: (() -> Unit)? = null,
-        hideFunc: (() -> Unit)? = null
-): Boolean =
-        setTextOrHide(
-                textResId?.takeIf { it != 0 }?.let { context.getString(it) },
-                visibilityHide,
-                distinct,
-                asString,
-                isEmptyFunc,
-                showFunc,
-                hideFunc
-        )
+fun TextView.setTextOrGone(
+    text: CharSequence?,
+    distinct: Boolean = true,
+    asString: Boolean = true,
+    isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
+    formatFunc: ((CharSequence) -> CharSequence)? = null,
+    vararg dependedViews: View
+) {
+    setTextWithVisibility(
+        text,
+        VisibilityHide.GONE,
+        distinct,
+        asString,
+        isEmptyFunc,
+        formatFunc,
+        dependedViews.toList()
+    )
+}
 
-/**
- * @return true, если текст был выставлен
- */
 @JvmOverloads
-fun TextView.setTextOrHide(
+fun TextView.setTextOrInvisible(
+    text: CharSequence?,
+    distinct: Boolean = true,
+    asString: Boolean = true,
+    isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
+    formatFunc: ((CharSequence) -> CharSequence)? = null,
+    vararg dependedViews: View
+) {
+    setTextWithVisibility(
+        text,
+        VisibilityHide.INVISIBLE,
+        distinct,
+        asString,
+        isEmptyFunc,
+        formatFunc,
+        dependedViews.toList()
+    )
+}
+
+private fun TextView.setTextWithVisibility(
         text: CharSequence?,
         visibilityHide: VisibilityHide = VisibilityHide.GONE,
         distinct: Boolean = true,
         asString: Boolean = true,
         isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
-        showFunc: (() -> Unit)? = null,
-        hideFunc: (() -> Unit)? = null,
-        formatFunc: ((CharSequence) -> CharSequence)? = null
-): Boolean {
-    if (text == null || isEmptyFunc(text)) {
+        formatFunc: ((CharSequence) -> CharSequence)? = null,
+        dependedViews: Collection<View> = emptyList()
+) {
+    val isEmpty = isEmptyFunc(text)
+    if (text == null || isEmpty) {
         this.text = EMPTY_STRING
-        if (hideFunc != null) {
-            hideFunc.invoke()
-        } else {
-            setVisible(false, visibilityHide)
-        }
-        return false
+        setVisible(false, visibilityHide)
     } else {
         setTextChecked(formatFunc?.invoke(text) ?: text, distinct, asString)
-        if (showFunc != null) {
-            showFunc.invoke()
-        } else {
-            setVisible(true)
-        }
-        return true
+        setVisible(true)
     }
+    dependedViews.forEach { it.isVisible = isVisible }
 }
 
 @JvmOverloads
-fun TextView.setSumOrHide(
+fun TextView.setSumOrGone(
+    sum: Double,
+    distinct: Boolean = true,
+    asString: Boolean = true,
+    formatFunc: ((Double) -> CharSequence)? = null,
+    vararg dependedViews: View
+) {
+    setSumWithVisibility(
+        sum,
+        VisibilityHide.GONE,
+        distinct,
+        asString,
+        formatFunc,
+        dependedViews.toList()
+    )
+}
+
+@JvmOverloads
+fun TextView.setSumOrInvisible(
+    sum: Double,
+    distinct: Boolean = true,
+    asString: Boolean = true,
+    formatFunc: ((Double) -> CharSequence)? = null,
+    vararg dependedViews: View
+) {
+    setSumWithVisibility(
+        sum,
+        VisibilityHide.INVISIBLE,
+        distinct,
+        asString,
+        formatFunc,
+        dependedViews.toList()
+    )
+}
+
+private fun TextView.setSumWithVisibility(
         sum: Double,
         visibilityHide: VisibilityHide = VisibilityHide.GONE,
         distinct: Boolean = true,
         asString: Boolean = true,
         formatFunc: ((Double) -> CharSequence)? = null,
-        showFunc: (() -> Unit)? = null,
-        hideFunc: (() -> Unit)? = null
-): Boolean = if (!sum.isZero()) {
-        setTextOrHide(
-                formatFunc?.let { it(sum) } ?: sum.toString(),
-                visibilityHide,
-                distinct,
-                asString,
-                showFunc = showFunc,
-                hideFunc = hideFunc
+        dependedViews: Collection<View> = emptyList()
+) {
+    if (!sum.isZero()) {
+        setTextWithVisibility(
+            formatFunc?.let { it(sum) } ?: sum.toString(),
+            visibilityHide,
+            distinct,
+            asString,
+            dependedViews = dependedViews
         )
     } else {
-        setTextOrHide(null as String?, visibilityHide,
-                distinct,
-                false,
-                showFunc = null,
-                hideFunc = hideFunc)
+        setTextWithVisibility(
+            null as String?,
+            visibilityHide,
+            distinct,
+            false,
+            dependedViews = dependedViews
+        )
     }
+}
 
 fun ImageView.setImageResourceOrHide(@DrawableRes iconResId: Int?): Boolean = if (iconResId == null || iconResId == 0) {
         isVisible = false
@@ -676,7 +721,7 @@ fun View.setAllPadding(paddingPx: Int) {
 
 @JvmOverloads
 fun View.setPadding(startPx: Int? = null, topPx: Int? = null, endPx: Int? = null, bottomPx: Int? = null) {
-    setPadding(startPx ?: paddingStart, topPx ?: paddingTop, endPx ?: paddingEnd,
+    updatePadding(startPx ?: paddingStart, topPx ?: paddingTop, endPx ?: paddingEnd,
             bottomPx ?: paddingBottom)
 }
 
