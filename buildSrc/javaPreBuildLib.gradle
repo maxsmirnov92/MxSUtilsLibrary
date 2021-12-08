@@ -12,8 +12,5 @@ dependencies {
 
     // Jetbrains annotations
     implementation "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
-
-    // Kotlin
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
 }
 

@@ -88,10 +88,6 @@ dependencies {
     // Multi Dex
     implementation "androidx.multidex:multidex:$multidexVersion"
 
-    // Kotlin
-    implementation "org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion"
-    implementation "org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion"
-
     // Tests
     testImplementation "androidx.test:core:$testCoreVersion"
     testImplementation "androidx.test.ext:junit:$jUnitExtVersion"

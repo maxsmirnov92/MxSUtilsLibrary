@@ -30,7 +30,7 @@ open class NotifyCheckMutableLiveData<T>(
     }
 
     override fun removeObserver(observer: Observer<in T>) {
-        observers.remove(observer)
+        observers.remove(observer as ObserverWrapper<in T>)
         super.removeObserver(observer)
     }
 
