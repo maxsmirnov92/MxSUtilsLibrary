@@ -11,17 +11,17 @@ import android.widget.Checkable
  */
 interface ICheckableView : Checkable {
 
-    var _isChecked: Boolean
+    var internalChecked: Boolean
 
     fun refreshDrawableState()
 
     fun mergeDrawableStates(baseState: IntArray, additionalState: IntArray)
 
-    override fun isChecked(): Boolean = _isChecked
+    override fun isChecked(): Boolean = internalChecked
 
     override fun setChecked(b: Boolean) {
-        if (b != _isChecked) {
-            _isChecked = b
+        if (b != internalChecked) {
+            internalChecked = b
             refreshDrawableState()
         }
     }
@@ -30,7 +30,7 @@ interface ICheckableView : Checkable {
         isChecked = !isChecked
     }
 
-    fun mergeCheckedDrawableState(states: IntArray): IntArray {
+    fun mergeWithCheckedDrawableState(states: IntArray): IntArray {
         if (isChecked) {
             mergeDrawableStates(states, CHECKED_STATE_ARRAY)
         }

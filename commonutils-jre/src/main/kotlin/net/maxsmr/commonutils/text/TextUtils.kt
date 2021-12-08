@@ -101,6 +101,12 @@ fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): Boolean =
         ignoreCase = true
     )
 
+@JvmOverloads
+fun orEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): CharSequence = if (s == null || isEmpty(s, shouldCheckNullString)) EMPTY_STRING else s
+
+@JvmOverloads
+fun orEmpty(s: String?, shouldCheckNullString: Boolean = false): String = if (s == null || isEmpty(s, shouldCheckNullString)) EMPTY_STRING else s
+
 fun isZeroOrNull(value: CharSequence?) = value.toDoubleOrNull().isZeroOrNull()
 
 fun isNotZeroOrNull(value: CharSequence?) = !isZeroOrNull(value)
