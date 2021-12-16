@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils
+package net.maxsmr.commonutils.datetime
 
 import java.util.*
 import java.util.concurrent.TimeUnit
@@ -64,6 +64,15 @@ fun Date.toMonthStart(locale: Locale? = null, timeZone: TimeZone? = null): Date 
 @JvmOverloads
 fun Date.getDayOfWeek(locale: Locale? = null, timeZone: TimeZone? = null) = createCalendar(locale, timeZone).getDayOfWeek()
 
+fun Date.diff(unit: TimeUnit, time: Long): Date {
+    val diff = unit.toMillis(abs(time))
+    return Date(if (time > 0) {
+        this.time + diff
+    } else {
+        this.time - diff
+    })
+}
+
 /**
  * Получить номер текущего дня недели (начало с понедельник)
  */
@@ -88,14 +97,8 @@ fun getMonthsCount(
 fun getMonthsCount(firstCalendar: Calendar, secondCalendar: Calendar) =
         firstCalendar.get(Calendar.MONTH) - secondCalendar.get(Calendar.MONTH) + 1 + (firstCalendar.get(Calendar.YEAR) - secondCalendar.get(Calendar.YEAR)) * 12
 
-fun Date.diff(unit: TimeUnit, time: Long): Date {
-    val diff = unit.toMillis(abs(time))
-    return Date(if (time > 0) {
-        this.time + diff
-    } else {
-        this.time - diff
-    })
-}
+fun min(firstDate: Date, secondDate: Date): Date =
+    if (firstDate < secondDate) firstDate else secondDate
 
 private fun createCalendar(locale: Locale?, timeZone: TimeZone?): Calendar = when {
     timeZone != null && locale != null -> {

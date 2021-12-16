@@ -22,8 +22,12 @@ tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
 }
 
 dependencies {
+    // JSON
     api "com.google.code.gson:gson:$gsonVersion"
     api "org.json:json:$jsonVersion"
+
+    // Time
+    api "joda-time:joda-time:$jodaTimeVersion"
 }
 
 apply from: "$rootDir/buildSrc/javaPostBuildLib.gradle"
