@@ -102,10 +102,12 @@ fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): Boolean =
     )
 
 @JvmOverloads
-fun orEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): CharSequence = if (s == null || isEmpty(s, shouldCheckNullString)) EMPTY_STRING else s
+fun orEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): CharSequence =
+    if (s == null || isEmpty(s, shouldCheckNullString)) EMPTY_STRING else s
 
 @JvmOverloads
-fun orEmpty(s: String?, shouldCheckNullString: Boolean = false): String = if (s == null || isEmpty(s, shouldCheckNullString)) EMPTY_STRING else s
+fun orEmpty(s: String?, shouldCheckNullString: Boolean = false): String =
+    if (s == null || isEmpty(s, shouldCheckNullString)) EMPTY_STRING else s
 
 fun isZeroOrNull(value: CharSequence?) = value.toDoubleOrNull().isZeroOrNull()
 
@@ -540,6 +542,14 @@ fun getBytes(text: String, charset: Charset = Charsets.UTF_8): ByteArray? = try 
     logger.e(formatException(e, "toByteArray"))
     null
 }
+
+fun charsetForNameOrNull(name: String?) =
+    try {
+        Charset.forName(name)
+    } catch (e: IllegalArgumentException) {
+        logger.e(formatException(e, "Charset.forName"))
+        null
+    }
 
 private fun isTrue(
     conditions: Map<Char, CharConditionInfo>,

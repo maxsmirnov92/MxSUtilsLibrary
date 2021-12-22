@@ -1,9 +1,11 @@
 package net.maxsmr.commonutils.gui
 
 import android.annotation.SuppressLint
+import android.annotation.TargetApi
 import android.content.res.ColorStateList
 import android.graphics.*
 import android.graphics.drawable.Drawable
+import android.os.Build
 import android.text.*
 import android.text.method.LinkMovementMethod
 import android.text.style.CharacterStyle
@@ -16,10 +18,7 @@ import android.view.ViewGroup
 import android.view.inputmethod.EditorInfo
 import android.webkit.WebView
 import android.widget.*
-import androidx.annotation.ColorInt
-import androidx.annotation.ColorRes
-import androidx.annotation.DrawableRes
-import androidx.annotation.StringRes
+import androidx.annotation.*
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
 import androidx.core.view.ViewCompat
@@ -40,7 +39,6 @@ import net.maxsmr.commonutils.gui.listeners.DefaultTextWatcher
 import net.maxsmr.commonutils.live.setValueIfNew
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.media.toBase64
 import net.maxsmr.commonutils.number.isZero
 import net.maxsmr.commonutils.text.*
 import ru.tinkoff.decoro.Mask
@@ -50,6 +48,8 @@ import java.nio.charset.Charset
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("ViewExt")
 
 private const val IMAGE_VIEW_MAX_WIDTH = 4096
+
+private const val MIME_TYPE_WITH_CHARSET_FORMAT = "%s; charset=%s"
 
 /**
  * Установка [IntervalEditorActionListener] на editor action у [EditText]
@@ -155,9 +155,9 @@ fun EditText.setMaxLength(length: Int) {
     if (length >= 0) {
         val inputTextFilter = InputFilter.LengthFilter(length)
         filters = filters
-                .filterNot { it is InputFilter.LengthFilter }
-                .toTypedArray()
-                .plus(inputTextFilter)
+            .filterNot { it is InputFilter.LengthFilter }
+            .toTypedArray()
+            .plus(inputTextFilter)
     }
 }
 
@@ -166,8 +166,8 @@ fun EditText.setMaxLength(length: Int) {
  */
 fun EditText.clearMaxLength() {
     filters = filters
-            .filterNot { it is InputFilter.LengthFilter }
-            .toTypedArray()
+        .filterNot { it is InputFilter.LengthFilter }
+        .toTypedArray()
 }
 
 fun EditText.bindToTextUnformatted(field: MutableLiveData<String>, maskWatcher: MaskFormatWatcher) {
@@ -183,9 +183,9 @@ fun EditText.bindToTextUnformatted(field: MutableLiveData<String>, mask: Mask) {
 
 @JvmOverloads
 fun TextView.bindToText(
-        field: MutableLiveData<String>,
-        ifNew: Boolean = true,
-        toFieldValue: ((CharSequence?) -> String)? = null
+    field: MutableLiveData<String>,
+    ifNew: Boolean = true,
+    toFieldValue: ((CharSequence?) -> String)? = null
 ) {
     bindTo(field, ifNew) {
         toFieldValue?.invoke(it) ?: it?.toString().orEmpty()
@@ -198,9 +198,9 @@ fun TextView.bindToText(
  */
 @JvmOverloads
 fun <D> TextView.bindTo(
-        field: MutableLiveData<D>,
-        ifNew: Boolean = true,
-        toFieldValue: (CharSequence?) -> D
+    field: MutableLiveData<D>,
+    ifNew: Boolean = true,
+    toFieldValue: (CharSequence?) -> D
 ) {
     addTextChangedListener(AfterTextWatcher { s: Editable ->
         val newValue = toFieldValue.invoke(s)
@@ -228,56 +228,69 @@ fun CompoundButton.bindTo(field: MutableLiveData<Boolean>, ifNew: Boolean = true
  */
 @JvmOverloads
 fun TextView.appendClickableImageTextView(
-        @DrawableRes drawableResId: Int,
-        clickFunc: () -> Unit = {}
+    @DrawableRes drawableResId: Int,
+    clickFunc: () -> Unit = {}
 ): CharSequence =
-        text.appendClickableImage(context, drawableResId, clickFunc)
+    text.appendClickableImage(context, drawableResId, clickFunc)
 
 /**
  * Убрать нижнее подчеркивание для текущего text
  */
-fun TextView.removeUnderlineFromUrlSpans(): CharSequence =
-        setTextWithMovementMethod(text.removeUnderlineFromUrlSpans(false))
+@JvmOverloads
+fun TextView.removeUnderlineFromUrlSpans(replaceNewLine: Boolean = true): CharSequence =
+    setTextWithMovementMethod(text.removeUnderlineFromUrlSpans(false, replaceNewLine))
 
 @JvmOverloads
-fun TextView.setHtmlText(@StringRes resId: Int, clearHtml: Boolean = false) =
-        setHtmlText(resources.getString(resId), clearHtml)
+fun TextView.setHtmlText(
+    @StringRes resId: Int,
+    clearHtml: Boolean = false,
+    replaceNewLine: Boolean = true
+) = setHtmlText(resources.getString(resId), clearHtml, replaceNewLine)
 
 /**
  * Установить html текст в TextView
  */
 @JvmOverloads
-fun TextView.setHtmlText(text: CharSequence?, clearHtml: Boolean = false): CharSequence =
-        setTextWithMovementMethod(
-                if (clearHtml) {
-                    text.parseClearedHtml()
-                } else {
-                    text.parseHtmlToSpannedString()
-                }
-        )
+fun TextView.setHtmlText(
+    text: CharSequence?,
+    clearHtml: Boolean = false,
+    replaceNewLine: Boolean = true
+): CharSequence = setTextWithMovementMethod(
+    if (clearHtml) {
+        text.parseClearedHtml(replaceNewLine)
+    } else {
+        text.parseHtmlToSpannedString(replaceNewLine)
+    }
+)
 
 @JvmOverloads
-fun TextView.setLinkFromHtml(@StringRes htmlLinkResId: Int, removeUnderline: Boolean = true) =
-        setLinkFromHtml(resources.getString(htmlLinkResId), removeUnderline)
+fun TextView.setLinkFromHtml(
+    @StringRes htmlLinkResId: Int,
+    removeUnderline: Boolean = true,
+    replaceNewLine: Boolean = true
+) = setLinkFromHtml(resources.getString(htmlLinkResId), removeUnderline, replaceNewLine)
 
 /**
  * Установить ссылку из html-текста
  */
 @JvmOverloads
-fun TextView.setLinkFromHtml(htmlLink: String, removeUnderline: Boolean = true): CharSequence = if (removeUnderline) {
-    setTextWithMovementMethod(htmlLink.removeUnderlineFromUrlSpans(true))
+fun TextView.setLinkFromHtml(
+    htmlLink: String,
+    removeUnderline: Boolean = true,
+    replaceNewLine: Boolean = true
+): CharSequence = if (removeUnderline) {
+    setTextWithMovementMethod(htmlLink.removeUnderlineFromUrlSpans(true, replaceNewLine))
 } else {
-    setHtmlText(htmlLink)
+    setHtmlText(htmlLink, replaceNewLine)
 }
 
 /**
  * Выставить сформированные [RangeSpanInfo] по заданной подстроке
  */
 fun TextView.setSpanText(
-        text: CharSequence,
-        vararg spanInfo: RangeSpanInfo
-): CharSequence =
-        setTextWithMovementMethod(text.createSpanText(*spanInfo))
+    text: CharSequence,
+    vararg spanInfo: RangeSpanInfo
+): CharSequence = setTextWithMovementMethod(text.createSpanText(*spanInfo))
 
 /**
  * @param text в строке аргументы с префиксами "^" будут заменены на [CharacterStyle]
@@ -285,10 +298,9 @@ fun TextView.setSpanText(
  * (range в каждом [ISpanInfo] задействован не будет)
  */
 fun TextView.setSpanTextExpanded(
-        text: CharSequence,
-        args: Map<String, List<CharacterStyle>>
-): CharSequence =
-        setTextWithMovementMethod(text.createSpanTextExpanded(args))
+    text: CharSequence,
+    args: Map<String, List<CharacterStyle>>
+): CharSequence = setTextWithMovementMethod(text.createSpanTextExpanded(args))
 
 
 /**
@@ -296,12 +308,13 @@ fun TextView.setSpanTextExpanded(
  */
 @JvmOverloads
 fun TextView.replaceUrlSpans(
-        html: String,
-        parseHtml: Boolean,
-        isUnderlineText: Boolean = false,
-        action: ((URLSpan) -> Boolean)? = null
+    html: String,
+    parseHtml: Boolean,
+    isUnderlineText: Boolean = false,
+    replaceNewLine: Boolean = true,
+    action: ((URLSpan) -> Boolean)? = null
 ): CharSequence = setTextWithMovementMethod(
-        html.replaceUrlSpansByClickableSpans(parseHtml, isUnderlineText, action)
+    html.replaceUrlSpansByClickableSpans(parseHtml, isUnderlineText, replaceNewLine, action)
 )
 
 @JvmOverloads
@@ -345,13 +358,13 @@ fun TextView.setTextOrInvisible(
 }
 
 private fun TextView.setTextWithVisibility(
-        text: CharSequence?,
-        visibilityHide: VisibilityHide = VisibilityHide.GONE,
-        distinct: Boolean = true,
-        asString: Boolean = true,
-        isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
-        formatFunc: ((CharSequence) -> CharSequence)? = null,
-        dependedViews: Collection<View> = emptyList()
+    text: CharSequence?,
+    visibilityHide: VisibilityHide = VisibilityHide.GONE,
+    distinct: Boolean = true,
+    asString: Boolean = true,
+    isEmptyFunc: (CharSequence?) -> Boolean = { isEmpty(it) },
+    formatFunc: ((CharSequence) -> CharSequence)? = null,
+    dependedViews: Collection<View> = emptyList()
 ) {
     val isEmpty = isEmptyFunc(text)
     if (text == null || isEmpty) {
@@ -401,12 +414,12 @@ fun TextView.setSumOrInvisible(
 }
 
 private fun TextView.setSumWithVisibility(
-        sum: Double,
-        visibilityHide: VisibilityHide = VisibilityHide.GONE,
-        distinct: Boolean = true,
-        asString: Boolean = true,
-        formatFunc: ((Double) -> CharSequence)? = null,
-        dependedViews: Collection<View> = emptyList()
+    sum: Double,
+    visibilityHide: VisibilityHide = VisibilityHide.GONE,
+    distinct: Boolean = true,
+    asString: Boolean = true,
+    formatFunc: ((Double) -> CharSequence)? = null,
+    dependedViews: Collection<View> = emptyList()
 ) {
     if (!sum.isZero()) {
         setTextWithVisibility(
@@ -428,19 +441,19 @@ private fun TextView.setSumWithVisibility(
 }
 
 fun ImageView.setImageResourceOrHide(@DrawableRes iconResId: Int?): Boolean = if (iconResId == null || iconResId == 0) {
-        isVisible = false
-        false
-    } else {
-        setImageResource(iconResId)
-        isVisible = true
-        true
-    }
+    isVisible = false
+    false
+} else {
+    setImageResource(iconResId)
+    isVisible = true
+    true
+}
 
 @JvmOverloads
 fun EditText.setTextWithSelectionToEnd(
-        text: CharSequence,
-        distinct: Boolean = true,
-        asString: Boolean = true
+    text: CharSequence,
+    distinct: Boolean = true,
+    asString: Boolean = true
 ) {
     setTextChecked(text, distinct, asString)
     // после возможных фильтров текст мог измениться
@@ -461,10 +474,10 @@ fun TextInputLayout.setInputErrorTextColor(color: Int) {
 
 @JvmOverloads
 fun TextInputLayout.setInputError(
-        @StringRes messageResId: Int?,
-        errorEnabledByDefault: Boolean = false,
-        requestFocusIfError: Boolean = true,
-        distinct: Boolean = true
+    @StringRes messageResId: Int?,
+    errorEnabledByDefault: Boolean = false,
+    requestFocusIfError: Boolean = true,
+    distinct: Boolean = true
 ) {
     val message = if (messageResId == null || messageResId == 0) {
         null
@@ -476,10 +489,10 @@ fun TextInputLayout.setInputError(
 
 @JvmOverloads
 fun TextInputLayout.setInputError(
-        message: CharSequence?,
-        errorEnabledByDefault: Boolean = false,
-        requestFocusIfError: Boolean = true,
-        distinct: Boolean = true
+    message: CharSequence?,
+    errorEnabledByDefault: Boolean = false,
+    requestFocusIfError: Boolean = true,
+    distinct: Boolean = true
 ) {
     if (!distinct || error != message) {
         val isErrorEnabled = errorEnabledByDefault || !isEmpty(message)
@@ -534,9 +547,9 @@ fun View.setBackgroundTint(@ColorRes tintResId: Int) {
 @JvmOverloads
 @SuppressLint("ResourceType")
 fun View.setBackgroundTint(
-        @DrawableRes iconResId: Int,
-        @ColorInt colorResId: Int,
-        mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
+    @DrawableRes iconResId: Int,
+    @ColorInt colorResId: Int,
+    mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ): Drawable? {
     with(getColoredDrawable(context.resources, iconResId, colorResId, mode)) {
         background = this
@@ -549,9 +562,9 @@ fun View.setBackgroundTint(
  */
 @JvmOverloads
 fun ImageView.setTint(
-        @DrawableRes icon: Int,
-        @ColorInt color: Int,
-        mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
+    @DrawableRes icon: Int,
+    @ColorInt color: Int,
+    mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ): Drawable? {
     with(getColoredDrawable(context.resources, icon, color, mode)) {
         setImageDrawable(this)
@@ -578,8 +591,8 @@ fun ImageView.setTint(@ColorInt color: Int) {
  */
 @JvmOverloads
 fun ImageView.setTint(
-        colorStateList: ColorStateList?,
-        mode: PorterDuff.Mode = PorterDuff.Mode.SRC_ATOP
+    colorStateList: ColorStateList?,
+    mode: PorterDuff.Mode = PorterDuff.Mode.SRC_ATOP
 ) {
     if (isAtLeastLollipop()) {
         imageTintList = colorStateList
@@ -590,7 +603,7 @@ fun ImageView.setTint(
 }
 
 fun ImageView.getContentSize(): Pair<Int, Int> =
-        drawable?.let { Pair(it.intrinsicWidth, it.intrinsicHeight) } ?: Pair(0, 0)
+    drawable?.let { Pair(it.intrinsicWidth, it.intrinsicHeight) } ?: Pair(0, 0)
 
 fun ImageView.getRescaledImageViewSize(): Pair<Int?, Int?> {
     var measuredWidth: Int
@@ -695,7 +708,8 @@ fun CoordinatorLayout.collapseToolbar(coordinatorChild: View, appBarLayout: AppB
 }
 
 fun BottomSheetDialog.setHideable(toggle: Boolean) {
-    val behavior: BottomSheetBehavior<*>? = ReflectionUtils.getFieldValue<BottomSheetBehavior<*>, BottomSheetDialog>(BottomSheetDialog::class.java, this, "mBehavior")
+    val behavior: BottomSheetBehavior<*>? =
+        ReflectionUtils.getFieldValue<BottomSheetBehavior<*>, BottomSheetDialog>(BottomSheetDialog::class.java, this, "mBehavior")
     behavior?.let {
         it.isHideable = toggle
     }
@@ -721,8 +735,10 @@ fun View.setAllPadding(paddingPx: Int) {
 
 @JvmOverloads
 fun View.setPadding(startPx: Int? = null, topPx: Int? = null, endPx: Int? = null, bottomPx: Int? = null) {
-    updatePadding(startPx ?: paddingStart, topPx ?: paddingTop, endPx ?: paddingEnd,
-            bottomPx ?: paddingBottom)
+    updatePadding(
+        startPx ?: paddingStart, topPx ?: paddingTop, endPx ?: paddingEnd,
+        bottomPx ?: paddingBottom
+    )
 }
 
 fun RadioGroup.getSelectedIndex(): Int {
@@ -733,10 +749,10 @@ fun RadioGroup.getSelectedIndex(): Int {
 
 @JvmOverloads
 fun TextView.calculateMaxTextSize(
-        maxWidthTextLength: Int,
-        maxTextSize: Float,
-        maxTextSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
-        measuredViewWidth: Int = width
+    maxWidthTextLength: Int,
+    maxTextSize: Float,
+    maxTextSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
+    measuredViewWidth: Int = width
 ): Float {
     val text = StringBuilder()
     for (i in 0 until maxWidthTextLength) {
@@ -747,10 +763,10 @@ fun TextView.calculateMaxTextSize(
 
 @JvmOverloads
 fun TextView.calculateMaxTextSize(
-        maxWidthText: CharSequence,
-        maxTextSize: Float,
-        maxTextSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
-        measuredViewWidth: Int = width
+    maxWidthText: CharSequence,
+    maxTextSize: Float,
+    maxTextSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
+    measuredViewWidth: Int = width
 ): Float {
     if (maxWidthText.isEmpty() || maxTextSize <= 0) return maxTextSize
     if (measuredViewWidth <= 0) return maxTextSize
@@ -784,17 +800,18 @@ fun TextView.calculateMaxTextSize(
  */
 @JvmOverloads
 fun TextView.reduceTextByWidth(
-        sourceText: CharSequence = text,
-        measuredWidth: Int = width,
-        textSize: Float,
-        textSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
-        postfix: String = "...",
-        reduceStepCount: Int = postfix.length,
-        applyText: Boolean = true
+    sourceText: CharSequence = text,
+    measuredWidth: Int = width,
+    textSize: Float,
+    textSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
+    postfix: String = "...",
+    reduceStepCount: Int = postfix.length,
+    applyText: Boolean = true
 
 ): CharSequence {
     if (textSize <= 0
-            || reduceStepCount <= 0) {
+        || reduceStepCount <= 0
+    ) {
         return sourceText
     }
     if (measuredWidth <= 0) return sourceText
@@ -806,11 +823,11 @@ fun TextView.reduceTextByWidth(
     paint.textSize = TypedValue.applyDimension(textSizeUnit, textSize, context.resources.displayMetrics)
 
     val resultString = reduceTextByMaxWidth(
-            paint,
-            sourceText,
-            postfix,
-            reduceStepCount,
-            measuredWidth
+        paint,
+        sourceText,
+        postfix,
+        reduceStepCount,
+        measuredWidth
     )
     if (applyText) {
         text = resultString
@@ -825,29 +842,32 @@ fun TextView.reduceTextByWidth(
  */
 @JvmOverloads
 fun TextView.reduceTextByHeight(
-        sourceText: CharSequence = text,
-        measuredWidth: Int = width,
-        measuredHeight: Int = height,
-        startHeightIndex: Int = 0,
-        endHeightIndex: Int = sourceText.length,
-        textSize: Float,
-        textSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
-        postfix: String = "...",
-        reduceStepCount: Int = postfix.length,
-        applyText: Boolean = true
+    sourceText: CharSequence = text,
+    measuredWidth: Int = width,
+    measuredHeight: Int = height,
+    startHeightIndex: Int = 0,
+    endHeightIndex: Int = sourceText.length,
+    textSize: Float,
+    textSizeUnit: Int = TypedValue.COMPLEX_UNIT_DIP,
+    postfix: String = "...",
+    reduceStepCount: Int = postfix.length,
+    applyText: Boolean = true
 
 ): CharSequence {
     if (textSize <= 0
-            || reduceStepCount <= 0) {
+        || reduceStepCount <= 0
+    ) {
         return sourceText
     }
     if (measuredWidth <= 0
-            || measuredHeight <= 0) {
+        || measuredHeight <= 0
+    ) {
         return sourceText
     }
 
     if (startHeightIndex < 0 || startHeightIndex >= sourceText.length
-            || endHeightIndex < 0 || endHeightIndex >= sourceText.length) {
+        || endHeightIndex < 0 || endHeightIndex >= sourceText.length
+    ) {
         return sourceText
     }
 
@@ -869,11 +889,11 @@ fun TextView.reduceTextByHeight(
     val maxTextWidth = measuredWidth * linesCount
 
     val resultString = reduceTextByMaxWidth(
-            paint,
-            sourceText,
-            postfix,
-            reduceStepCount,
-            maxTextWidth
+        paint,
+        sourceText,
+        postfix,
+        reduceStepCount,
+        maxTextWidth
     )
     if (applyText) {
         text = resultString
@@ -882,11 +902,11 @@ fun TextView.reduceTextByHeight(
 }
 
 private fun reduceTextByMaxWidth(
-        paint: Paint,
-        sourceText: CharSequence,
-        postfix: String,
-        reduceStepCount: Int,
-        maxTextWidth: Int
+    paint: Paint,
+    sourceText: CharSequence,
+    postfix: String,
+    reduceStepCount: Int,
+    maxTextWidth: Int
 ): CharSequence {
 
     var measuredTextWidth = paint.measureText(sourceText.toString())
@@ -933,12 +953,12 @@ fun View.getOffsetByParent(parent: ViewGroup): Rect {
 
 @JvmOverloads
 fun TextView.setTextDistinctFormatted(
-        text: CharSequence?,
-        maskWatcher: MaskFormatWatcher,
-        asString: Boolean = true,
-        refreshMask: Boolean = true
+    text: CharSequence?,
+    maskWatcher: MaskFormatWatcher,
+    asString: Boolean = true,
+    refreshMask: Boolean = true
 ): Boolean {
-    return  if (refreshMask) {
+    return if (refreshMask) {
         if (text.isNullOrEmpty()) {
             setText(EMPTY_STRING)
         } else {
@@ -955,9 +975,9 @@ fun TextView.setTextDistinctFormatted(
 
 @JvmOverloads
 fun TextView.setTextDistinctFormatted(
-        text: CharSequence?,
-        mask: Mask,
-        asString: Boolean = true
+    text: CharSequence?,
+    mask: Mask,
+    asString: Boolean = true
 ) = setTextDistinct(getFormattedText(mask, text), asString)
 
 @JvmOverloads
@@ -971,9 +991,9 @@ fun TextView.setTextDistinct(text: CharSequence?, asString: Boolean = true): Boo
 
 @JvmOverloads
 fun TextView.setTextChecked(
-        text: CharSequence?,
-        distinct: Boolean = true,
-        asString: Boolean = true
+    text: CharSequence?,
+    distinct: Boolean = true,
+    asString: Boolean = true
 ) {
     if (!distinct) {
         this.text = text
@@ -1003,7 +1023,7 @@ fun View.hideByReferenceViews(vararg otherViews: View) {
 private fun TextView.setTextWithMovementMethod(text: CharSequence?): CharSequence {
     this.text = text
     movementMethod = LinkMovementMethod.getInstance()
-    return text ?: EMPTY_STRING
+    return orEmpty(text)
 }
 
 /**
@@ -1022,35 +1042,89 @@ fun View.screenLocation(): Rect {
 }
 
 @JvmOverloads
-fun WebView.loadDataBase64(value: String, charset: Charset = Charsets.UTF_8) {
-    loadData(value.toBase64(charset, Base64.DEFAULT), "text/html; charset=${charset}", "base64")
+fun WebView.loadDataCompat(
+    data: String,
+    mimeType: String = "text/html",
+    charset: Charset = Charsets.UTF_8,
+    baseUrlParams: BaseUrlParams? = null,
+    forceBase64: Boolean = true,
+) {
+    if (forceBase64 && Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+        loadDataBase64(data, mimeType, charset, baseUrlParams)
+    } else {
+        loadData(
+            data,
+            MIME_TYPE_WITH_CHARSET_FORMAT.format(mimeType, charset.toString()),
+            charset.name(),
+            baseUrlParams
+        )
+    }
 }
+
+@TargetApi(Build.VERSION_CODES.N)
+@JvmOverloads
+fun WebView.loadDataBase64(
+    data: String,
+    mimeType: String = "text/html",
+    charset: Charset = Charsets.UTF_8,
+    baseUrlParams: BaseUrlParams? = null,
+) {
+    loadData(
+        Base64.encodeToString(data.toByteArray(charset), Base64.DEFAULT),
+        MIME_TYPE_WITH_CHARSET_FORMAT.format(mimeType, charset),
+        "base64",
+        baseUrlParams
+    )
+}
+
+private fun WebView.loadData(
+    data: String,
+    mimeTypeWithCharset: String,
+    encoding: String,
+    baseUrlParams: BaseUrlParams?,
+) {
+    baseUrlParams?.let {
+        loadDataWithBaseURL(it.baseUrl, data, mimeTypeWithCharset, encoding, it.failUrl)
+    } ?: loadData(data, mimeTypeWithCharset, encoding)
+}
+
+data class BaseUrlParams(
+    val baseUrl: String?,
+    val failUrl: String?,
+)
 
 @JvmOverloads
 fun TextView.observePlaceholderOrLabelHint(
-        inputLayout: TextInputLayout?,
-        @StringRes placeholderTextResId: Int,
-        @StringRes labelTextResId: Int,
-        setHintFunc: ((CharSequence) -> Unit)? = null,
-        isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
-) = observePlaceholderOrLabelHint(inputLayout, context.getString(placeholderTextResId), context.getString(labelTextResId), setHintFunc, isForPlaceholderFunc)
+    inputLayout: TextInputLayout?,
+    @StringRes placeholderTextResId: Int,
+    @StringRes labelTextResId: Int,
+    setHintFunc: ((CharSequence) -> Unit)? = null,
+    isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
+) = observePlaceholderOrLabelHint(
+    inputLayout,
+    context.getString(placeholderTextResId),
+    context.getString(labelTextResId),
+    setHintFunc,
+    isForPlaceholderFunc
+)
 
 /**
  * Меняет в динамике hint в зав-ти от текста
  */
 @JvmOverloads
 fun TextView.observePlaceholderOrLabelHint(
-        inputLayout: TextInputLayout?,
-        placeholderText: CharSequence,
-        labelText: CharSequence,
-        setHintFunc: ((CharSequence) -> Unit)? = null,
-        isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
+    inputLayout: TextInputLayout?,
+    placeholderText: CharSequence,
+    labelText: CharSequence,
+    setHintFunc: ((CharSequence) -> Unit)? = null,
+    isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
 ): TextWatcher {
     val listener = object : DefaultTextWatcher() {
         override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
             val text = text
             val hint = if (isForPlaceholderFunc?.invoke(text)
-                            ?: TextUtils.isEmpty(text)) placeholderText else labelText
+                    ?: TextUtils.isEmpty(text)
+            ) placeholderText else labelText
             if (setHintFunc != null) {
                 setHintFunc.invoke(hint)
             } else {
@@ -1068,13 +1142,20 @@ fun TextView.observePlaceholderOrLabelHint(
 
 @JvmOverloads
 fun TextView.setupPlaceholderOrLabelHint(
-        inputLayout: TextInputLayout?,
-        rule: RequiredFieldRule,
-        @StringRes placeholderTextResId: Int,
-        @StringRes labelTextResId: Int,
-        setHintFunc: ((CharSequence) -> Unit)? = null,
-        isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
-) = setupPlaceholderOrLabelHint(inputLayout, rule, context.getString(placeholderTextResId), context.getString(labelTextResId), setHintFunc, isForPlaceholderFunc)
+    inputLayout: TextInputLayout?,
+    rule: RequiredFieldRule,
+    @StringRes placeholderTextResId: Int,
+    @StringRes labelTextResId: Int,
+    setHintFunc: ((CharSequence) -> Unit)? = null,
+    isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
+) = setupPlaceholderOrLabelHint(
+    inputLayout,
+    rule,
+    context.getString(placeholderTextResId),
+    context.getString(labelTextResId),
+    setHintFunc,
+    isForPlaceholderFunc
+)
 
 /**
  * В зав-ти от правила [rule] выставляет hint разово или в динамике
@@ -1082,12 +1163,12 @@ fun TextView.setupPlaceholderOrLabelHint(
  */
 @JvmOverloads
 fun TextView.setupPlaceholderOrLabelHint(
-        inputLayout: TextInputLayout?,
-        rule: RequiredFieldRule,
-        placeholderText: CharSequence,
-        labelText: CharSequence,
-        setHintFunc: ((CharSequence) -> Unit)? = null,
-        isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
+    inputLayout: TextInputLayout?,
+    rule: RequiredFieldRule,
+    placeholderText: CharSequence,
+    labelText: CharSequence,
+    setHintFunc: ((CharSequence) -> Unit)? = null,
+    isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
 ) {
     val hint: CharSequence
     when (rule) {
@@ -1096,7 +1177,8 @@ fun TextView.setupPlaceholderOrLabelHint(
         else -> {
             val text = text
             hint = if (isForPlaceholderFunc?.invoke(text)
-                            ?: TextUtils.isEmpty(text)) placeholderText else labelText
+                    ?: TextUtils.isEmpty(text)
+            ) placeholderText else labelText
             observePlaceholderOrLabelHint(inputLayout, placeholderText, labelText, setHintFunc, isForPlaceholderFunc)
         }
     }
@@ -1113,8 +1195,8 @@ fun TextView.setupPlaceholderOrLabelHint(
 
 @JvmOverloads
 fun ImageView.setImageBitmapWithResize(
-        bitmap: Bitmap?,
-        maxSize: Int = IMAGE_VIEW_MAX_WIDTH
+    bitmap: Bitmap?,
+    maxSize: Int = IMAGE_VIEW_MAX_WIDTH
 ): Bitmap? {
     val resultBitmap = scaleDownBitmap(bitmap, maxSize, recycleSource = false) ?: bitmap
     setImageBitmap(resultBitmap)
@@ -1171,7 +1253,8 @@ class EditTextKeyLimiter(private val et: EditText, private val linesLimit: Int) 
     override fun onKey(v: View, keyCode: Int, event: KeyEvent): Boolean {
         if (et === v) { // if enter is pressed start calculating
             if (keyCode == KeyEvent.KEYCODE_ENTER
-                    && event.action == KeyEvent.ACTION_UP) {
+                && event.action == KeyEvent.ACTION_UP
+            ) {
                 val text = et.text.toString().trim { it <= ' ' }
                 // find how many rows it cointains
                 val editTextRowCount: Int = text.split(NEXT_LINE).toTypedArray().size

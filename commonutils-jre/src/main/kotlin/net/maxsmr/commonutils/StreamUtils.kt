@@ -164,6 +164,7 @@ fun InputStream.readStringsOrThrow(
     }
 }
 
+@JvmOverloads
 fun InputStream.readString(charsetName: String = CHARSET_DEFAULT): String? = try {
     readStringOrThrow(charsetName)
 } catch (e: IOException) {

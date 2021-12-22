@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils.text
+package net.maxsmr.commonutils
 
 import android.content.Context
 import android.content.Intent
@@ -10,12 +10,48 @@ import android.text.style.URLSpan
 import android.view.View
 import androidx.annotation.CallSuper
 import androidx.annotation.DrawableRes
-import net.maxsmr.commonutils.getBrowseLinkIntent
-import net.maxsmr.commonutils.isPreLollipop
-import net.maxsmr.commonutils.startActivitySafe
-import net.maxsmr.commonutils.wrapIntent
+import net.maxsmr.commonutils.logger.BaseLogger
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.text.indicesOf
+import net.maxsmr.commonutils.text.orEmpty
 
 private const val FLAGS_DEFAULT = Spanned.SPAN_INCLUSIVE_EXCLUSIVE
+
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("SpanUtils")
+
+/**
+ * Попытка привести html к Spanned строке с форматированием из html
+ */
+@JvmOverloads
+fun CharSequence?.parseHtmlToSpannedString(replaceNewLine: Boolean = true): Spanned? = try {
+    parseHtmlToSpannedStringOrThrow(replaceNewLine)
+} catch (e: Throwable) {
+    logger.d(BaseLoggerHolder.formatException(e, "fromHtml"))
+    null
+}
+
+@Throws(Exception::class)
+@JvmOverloads
+fun CharSequence?.parseHtmlToSpannedStringOrThrow(replaceNewLine: Boolean = true): Spanned =
+    if (replaceNewLine) {
+        toString().replace("\n", "<br/>")
+    } else {
+        this.toString()
+    }.let {
+        if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+            @Suppress("NewApi")
+            Html.fromHtml(it, Html.FROM_HTML_MODE_COMPACT)
+        } else {
+            @Suppress("DEPRECATION")
+            Html.fromHtml(it)
+        }
+    }
+
+/**
+ * Попытка привести html к строке с потерей части форматирования.
+ */
+@JvmOverloads
+fun CharSequence?.parseClearedHtml(replaceNewLine: Boolean = true): CharSequence = orEmpty(parseHtmlToSpannedString(replaceNewLine))
 
 /**
  * Добавляет спаны [spanInfo] в строку this.
@@ -72,29 +108,29 @@ fun CharSequence.appendClickableImage(
 fun CharSequence.replaceUrlSpansByClickableSpans(
         parseHtml: Boolean,
         isUnderlineText: Boolean = false,
+        replaceNewLine: Boolean = true,
         action: ((URLSpan) -> Any)? = null
-): CharSequence = replaceSpansByCustomSpans(parseHtml, URLSpan::class.java) { span ->
-    AppClickableSpan(isUnderlineText) {
-        action?.invoke(span)
-    }
+): CharSequence = replaceSpansByCustomSpans(parseHtml, URLSpan::class.java, replaceNewLine) { span ->
+    AppClickableSpan(isUnderlineText) { action?.invoke(span) }
 }
 
 @JvmOverloads
 fun CharSequence.removeUnderlineFromUrlSpans(
         parseHtml: Boolean,
+        replaceNewLine: Boolean = true,
         action: ((URLSpan) -> Any)? = null
-): CharSequence = replaceSpansByCustomSpans(parseHtml, URLSpan::class.java) { span ->
-    UrlClickableSpan(span.url, false) {
-        action?.invoke(span)
-    }
+): CharSequence = replaceSpansByCustomSpans(parseHtml, URLSpan::class.java, replaceNewLine) { span ->
+    UrlClickableSpan(span.url, false) { action?.invoke(span) }
 }
 
+@JvmOverloads
 fun <Style: CharacterStyle> CharSequence.replaceSpansByCustomSpans(
         parseHtml: Boolean,
         clazz: Class<Style>,
-        createSpanFunc: (Style) -> CharacterStyle
+        replaceNewLine: Boolean = true,
+        createSpanFunc: (Style) -> CharacterStyle,
 ): SpannableStringBuilder {
-    val sequence = if (parseHtml) parseHtmlToSpannedStringOrThrow() else this
+    val sequence = if (parseHtml) orEmpty(parseHtmlToSpannedString(replaceNewLine)) else this
     val result = SpannableStringBuilder(sequence)
     val spans = result.getSpans(0, sequence.length, clazz)
     spans.forEach { span ->
