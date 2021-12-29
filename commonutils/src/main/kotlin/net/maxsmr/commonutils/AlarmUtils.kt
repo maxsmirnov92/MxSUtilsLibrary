@@ -7,6 +7,7 @@ import android.os.SystemClock
 import androidx.core.app.AlarmManagerCompat
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AlarmUtils")
 
@@ -58,19 +59,30 @@ fun setAlarm(
         }
     }
 
-    if (isAtLeastLollipop()) {
-        alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(triggerTime, showIntent), alarmIntent)
-    } else {
-        AlarmManagerCompat.setExact(alarmManager, alarmType.value, triggerTime, alarmIntent)
-    }
     // setExactAndAllowWhileIdle is not working in doze mode
-    return true
+    return try {
+        if (isAtLeastLollipop()) {
+            alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(triggerTime, showIntent), alarmIntent)
+        } else {
+            AlarmManagerCompat.setExact(alarmManager, alarmType.value, triggerTime, alarmIntent)
+        }
+        true
+    } catch (e: Exception) {
+        logger.e(formatException(e, "set alarm"))
+        false
+    }
 }
 
-fun cancelAlarm(context: Context, pendingIntent: PendingIntent) {
+fun cancelAlarm(context: Context, pendingIntent: PendingIntent): Boolean {
     val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager?
             ?: throw RuntimeException(AlarmManager::class.java.simpleName + " is null")
-    alarmManager.cancel(pendingIntent)
+    return try {
+        alarmManager.cancel(pendingIntent)
+        true
+    } catch (e: Exception) {
+        logger.e(formatException(e, "cancel"))
+        false
+    }
 }
 
 enum class AlarmType(val value: Int) {
