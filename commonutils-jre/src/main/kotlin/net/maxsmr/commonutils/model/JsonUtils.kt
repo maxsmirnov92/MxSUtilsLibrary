@@ -2,180 +2,268 @@
 
 package net.maxsmr.commonutils.model
 
-import net.maxsmr.commonutils.text.isEmpty
+import net.maxsmr.commonutils.text.EMPTY_STRING
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
-interface JSONPresentable {
-    @Throws(JSONException::class)
-    fun asJSON(): JSONObject?
+fun JSONObject?.isJsonField(fieldName: String?): Boolean {
+    if (this != null) {
+        val value = opt(fieldName)
+        return value is JSONObject || value is JSONArray
+    }
+    return false
 }
 
-interface JSONParcel<T> {
-    fun fromJSONObject(o: JSONObject?): T?
+/**
+ * @param target имя параметра
+ * @return значение параметра или пустая строка при отсутствии значения или при значении "NULL"
+ */
+@JvmOverloads
+fun JSONObject.optStringNonNull(target: String, fallback: String? = EMPTY_STRING): String =
+    optString(target, fallback.orEmpty()).takeIf {
+        !net.maxsmr.commonutils.text.isEmpty(it, true)
+    }.orEmpty()
+
+@JvmOverloads
+fun JSONObject.optStringNullable(key: String, fallback: String? = EMPTY_STRING) =
+    if (isNull(key)) {
+        null
+    } else {
+        optString(key, fallback.orEmpty()).takeIf { !net.maxsmr.commonutils.text.isEmpty(it, true) }
+    }
+
+@JvmOverloads
+fun JSONArray.optStringNullable(index: Int, fallback: String? = EMPTY_STRING) =
+    if (isNull(index)) {
+        null
+    } else {
+        optString(index, fallback).takeIf { !net.maxsmr.commonutils.text.isEmpty(it, true) }
+    }
+
+/**
+ * Возвращает null в ситуациях, когда оригинальный метод вернул бы fallback.
+ * Возвращает [Integer.MAX_VALUE] или [Integer.MIN_VALUE] когда извлекаемое значение в действительности [Long],
+ * который соотв. больше или меньше чем [Integer.MAX_VALUE] или [Integer.MIN_VALUE].
+ * В остальном поведение идентично [org.json.JSONObject.optInt].
+ */
+fun JSONObject.optIntNullable(key: String) = if (isNull(key)) null else toInteger(opt(key))
+
+/**
+ * Возвращает null в ситуациях, когда оригинальный метод вернул бы fallback.
+ * Возвращает [Integer.MAX_VALUE] или [Integer.MIN_VALUE] когда извлекаемое значение в действительности [Long],
+ * который соотв. больше или меньше чем [Integer.MAX_VALUE] или [Integer.MIN_VALUE].
+ * В остальном поведение идентично [org.json.JSONObject.optInt].
+ */
+fun JSONArray.optIntNullable(index: Int) = if (isNull(index)) null else toInteger(opt(index))
+
+/**
+ * Возвращает null в ситуациях, когда оригинальный метод вернул бы fallback.
+ * В остальном поведение идентично [org.json.JSONObject.optLong].
+ */
+fun JSONObject.optLongNullable(key: String) = if (isNull(key)) null else toLong(opt(key))
+
+/**
+ * Возвращает null в ситуациях, когда оригинальный метод вернул бы fallback.
+ * В остальном поведение идентично [org.json.JSONObject.optLong].
+ */
+fun JSONArray.optLongNullable(index: Int) = if (isNull(index)) null else toLong(opt(index))
+
+/**
+ * Возвращает null в ситуациях, когда оригинальный метод вернул бы fallback или [Double.NaN].
+ * В остальном поведение идентично [org.json.JSONObject.optDouble].
+ */
+fun JSONObject.optDoubleNullable(key: String) = if (isNull(key)) null else toDouble(opt(key))
+
+/**
+ * Возвращает null в ситуациях, когда оригинальный метод вернул бы fallback или [Double.NaN].
+ * В остальном поведение идентично [org.json.JSONObject.optDouble].
+ */
+fun JSONArray.optDoubleNullable(index: Int) =
+    if (isNull(index)) null else toDouble(opt(index))?.takeIf { !it.isNaN() }
+
+
+private fun toInteger(value: Any?) = when (value) {
+    is Int -> value.toInt()
+    is Long -> if (value > Int.MAX_VALUE || value < Int.MIN_VALUE) value.toDouble().toInt() else value.toInt()
+    is Number -> value.toInt()
+    else ->
+        try {
+            (value as? String)?.toDouble()?.toInt()
+        } catch (ignored: NumberFormatException) {
+            null
+        }
 }
 
+private fun toLong(value: Any?) = when (value) {
+    is Number -> value.toLong()
+    is String ->
+        try {
+            value.toDouble().toLong()
+        } catch (ignored: NumberFormatException) {
+            null
+        }
+    else -> null
+}
 
-interface JSONParcelArrayIndexed<T> {
-    fun fromJSONArray(jsonArray: JSONArray, index: Int): T
+private fun toDouble(value: Any?) = when (value) {
+    is Number -> value.toDouble()
+    is String ->
+        try {
+            value.toDouble()
+        } catch (ignored: NumberFormatException) {
+            null
+        }
+    else -> null
 }
 
 @Throws(JSONException::class)
-fun asJSONArray(list: List<JSONPresentable?>?): JSONArray {
+fun List<JSONPresentable?>.asJSONArray(): JSONArray {
     val result = JSONArray()
-    if (list != null) {
-        for (p in list) {
-            p?.let {
-                result.put(p.asJSON())
-            }
+    for (p in this) {
+        p?.let {
+            result.put(p.asJSON())
         }
     }
     return result
 }
 
-fun <T> asList(array: JSONArray?, parcel: JSONParcel<T>): List<T?> = asList(array, parcel, false)
+@Throws(JSONException::class)
+fun JSONObject?.copyFields(target: JSONObject?) {
+    if (target != null && this != null) {
+        val it = this.keys()
+        while (it.hasNext()) {
+            val key = it.next()
+            target.put(key, this[key])
+        }
+    }
+}
 
-fun <T> asListNonNull(array: JSONArray?, parcel: JSONParcel<T>): List<T> = asList(array, parcel, true) as List<T>
+fun String.asJSONObjectOrNull(): JSONObject? = try {
+    JSONObject(this)
+} catch (e: JSONException) {
+    null
+}
 
-fun <T> asListIndexed(array: JSONArray?, parcel: JSONParcelArrayIndexed<T>): List<T?> = asListIndexed(array, parcel, false)
+fun Collection<Any>.asJSONArray(): JSONArray = JSONArray().also {
+    val iterator = iterator()
+    while (iterator.hasNext()) {
+        it.put(iterator.next())
+    }
+}
 
-fun <T> asListIndexedNonNull(array: JSONArray?, parcel: JSONParcelArrayIndexed<T>): List<T> = asListIndexed(array, parcel, true) as List<T>
+fun IntArray.asJSONArray(): JSONArray = JSONArray().also {
+    val iterator = iterator()
+    while (iterator.hasNext()) {
+        it.put(iterator.next())
+    }
+}
 
-fun <T> asPrimitiveList(array: JSONArray?, clazz: Class<T>, nonNull: Boolean): List<T?> = asListIndexed(array, object : JSONParcelArrayIndexed<T> {
+fun LongArray.asJSONArray(): JSONArray = JSONArray().also {
+    val iterator = iterator()
+    while (iterator.hasNext()) {
+        it.put(iterator.next())
+    }
+}
 
-    override fun fromJSONArray(jsonArray: JSONArray, index: Int): T {
-        return when {
+/**
+ * Находит в текущем JSONObject массив с ключом [key], и парсит его,
+ * применяя fromJSONObject из [JSONParcel] к каждому элементу
+ */
+fun <T> JSONObject?.asList(key: String, parcel: JSONParcel<T?>): List<T> {
+    return this?.optJSONArray(key)?.let {
+        it.asList(parcel)
+    }.orEmpty()
+}
+
+/**
+ * @return массив объектов T из JSONParcel, исходя из того, что в каждом индексе исходного array лежит JSONObject
+ */
+fun <T> JSONArray?.asList(parcel: JSONParcel<T?>): MutableList<T> {
+    val result = mutableListOf<T>()
+    if (this != null) {
+        for (i in 0 until length()) {
+            val o = optJSONObject(i) ?: continue
+            val item: T = parcel.fromJSONObject(o) ?: continue
+            result.add(item)
+        }
+    }
+    return result
+}
+
+/**
+ * Находит в текущем JSONObject массив с ключом [key], и парсит его,
+ * применяя fromJSONArray из [JSONParcelArrayIndexed] к каждому элементу
+ */
+fun <T> JSONObject?.asListIndexed(key: String, parcel: JSONParcelArrayIndexed<T?>): List<T> {
+    return this?.optJSONArray(key)?.let {
+        it.asListIndexed(parcel)
+    }.orEmpty()
+}
+
+@Suppress("UNCHECKED_CAST")
+fun <T> JSONArray?.asPrimitiveList(clazz: Class<T>): List<T> {
+    return asListIndexed { jsonArray: JSONArray, index: Int ->
+        when {
             clazz.isAssignableFrom(String::class.java) -> {
-                jsonArray.optString(index) as T
+                return@asListIndexed jsonArray.optString(index) as T
             }
             clazz.isAssignableFrom(Int::class.java) -> {
-                jsonArray.optInt(index) as T
+                return@asListIndexed jsonArray.optInt(index) as T
             }
             clazz.isAssignableFrom(Long::class.java) -> {
-                jsonArray.optLong(index) as T
+                return@asListIndexed jsonArray.optLong(index) as T
             }
             clazz.isAssignableFrom(Double::class.java) -> {
-                jsonArray.optDouble(index) as T
+                return@asListIndexed jsonArray.optDouble(index) as T
             }
             clazz.isAssignableFrom(Boolean::class.java) -> {
-                jsonArray.optBoolean(index) as T
+                return@asListIndexed jsonArray.optBoolean(index) as T
             }
             else -> {
                 throw RuntimeException("Incorrect primitive class: $clazz")
             }
         }
     }
-}, nonNull)
-
-fun isJsonFieldJson(jsonObject: JSONObject?, fieldName: String?): Boolean {
-    if (jsonObject != null) {
-        val value = jsonObject.opt(fieldName)
-        return value is JSONObject || value is JSONArray
-    }
-    return false
-}
-
-@Throws(JSONException::class)
-fun copyFields(source: JSONObject?, target: JSONObject?) {
-    if (target != null && source != null) {
-        val it = source.keys()
-        while (it.hasNext()) {
-            val key = it.next()
-            target.put(key, source[key])
-        }
-    }
-}
-
-fun JSONObject.optStringV2(key: String): String? =
-        if (isNull(key))
-            null
-        else
-            optString(key, "").takeIf { !isEmpty(it, true) }
-
-fun JSONObject.optBooleanV2(key: String): Boolean? =
-        if (isNull(key))
-            null
-        else
-            optBoolean(key)
-
-fun JSONObject.optIntV2(key: String): Int? =
-        if (isNull(key))
-            null
-        else
-            optInt(key, -1).takeIf { it != -1 }
-
-fun JSONObject.optLongV2(key: String): Long? =
-        if (isNull(key))
-            null
-        else
-            optLong(key, -1L).takeIf { it != -1L }
-
-fun JSONObject.optDoubleV2(key: String): Double? =
-        if (isNull(key))
-            null
-        else
-            optDouble(key).takeIf { !it.isNaN() }
-
-fun JSONArray.optStringV2(index: Int): String? =
-        if (isNull(index))
-            null
-        else
-            optString(index, null).takeIf { !isEmpty(it, true) }
-
-fun JSONArray.optBooleanV2(index: Int): Boolean? =
-        if (isNull(index))
-            null
-        else
-            optBoolean(index, false)
-
-fun JSONArray.optIntV2(index: Int): Int? =
-        if (isNull(index))
-            null
-        else
-            optInt(index, -1).takeIf { it != -1 }
-
-fun JSONArray.optLongV2(index: Int): Long? =
-        if (isNull(index))
-            null
-        else
-            optLong(index, -1L).takeIf { it != -1L }
-
-fun JSONArray.optDoubleV2(index: Int): Double? =
-        if (isNull(index))
-            null
-        else
-            optDouble(index).takeIf { !it.isNaN() }
-
-/**
- * @return массив объектов T из JSONParcel, исходя из того, что в каждом индексе исходного array лежит JSONObject
- */
-private fun <T> asList(array: JSONArray?, parcel: JSONParcel<T>, nonNull: Boolean): List<T?> {
-    val result = mutableListOf<T?>()
-    if (array != null) {
-        for (i in 0 until array.length()) {
-            val o: JSONObject? = array.optJSONObject(i)
-            val item: T? = parcel.fromJSONObject(o)
-            if (!nonNull || item != null) {
-                result.add(item)
-            }
-        }
-    }
-    return result
 }
 
 /**
  * @return массив объектов T из JSONParcel, отдавая каждый индекс исходного array в parcel на его усмотрение
  */
-private fun <T> asListIndexed(array: JSONArray?, parcel: JSONParcelArrayIndexed<T>, nonNull: Boolean): List<T?> {
-    val result = mutableListOf<T?>()
-    if (array != null) {
-        for (i in 0 until array.length()) {
-            val item: T? = parcel.fromJSONArray(array, i)
-            if (!nonNull || item != null) {
-                result.add(item)
-            }
+fun <T> JSONArray?.asListIndexed(parcel: JSONParcelArrayIndexed<T?>): MutableList<T> {
+    val result = mutableListOf<T>()
+    if (this != null) {
+        for (i in 0 until length()) {
+            val item: T = parcel.fromJSONArray(this, i) ?: continue
+            result.add(item)
         }
     }
     return result
+}
+
+/**
+ * Интерфейс для классов с целью форматирования в [JSONObject]
+ */
+fun interface JSONPresentable {
+
+    @Throws(JSONException::class)
+    fun asJSON(): JSONObject?
+}
+
+fun interface JSONParcel<T> {
+
+    /**
+     * обработка Exception не предполагается: не бросать, get не вызывать
+     */
+    fun fromJSONObject(o: JSONObject): T
+}
+
+fun interface JSONParcelArray<T> {
+
+    fun fromJSONArray(jsonArray: JSONArray): T
+}
+
+fun interface JSONParcelArrayIndexed<T> {
+
+    fun fromJSONArray(jsonArray: JSONArray, index: Int): T
 }

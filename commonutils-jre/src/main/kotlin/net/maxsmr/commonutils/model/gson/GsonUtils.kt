@@ -11,6 +11,7 @@ import com.google.gson.stream.JsonReader
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
+import net.maxsmr.commonutils.text.EMPTY_STRING
 import org.json.JSONArray
 import org.json.JSONObject
 import java.lang.reflect.Type
@@ -185,6 +186,19 @@ val JsonElement?.asJsonArrayOrNull: JsonArray?
         null
     }
 
+/**
+ * @param target имя параметра
+ * @return значение параметра или пустая строка при отсутствии значения
+ */
+@JvmOverloads
+fun JsonObject.optStringNonNull(target: String, fallback: String? = EMPTY_STRING): String {
+    return if (has(target) && !this[target].isJsonNull) {
+        this[target].asString
+    } else {
+        fallback.orEmpty()
+    }
+}
+
 fun <E : JsonElement> JsonElement?.asJsonElement(clazz: Class<E>): E? = try {
     asJsonElementOrThrow(clazz)
 } catch (e: JsonParseException) {
@@ -274,7 +288,7 @@ fun <V> JsonPrimitive?.asPrimitiveOrThrow(clazz: Class<V>): V {
 }
 
 // same as asNumberOrNull getter
-fun <P : Number?> JsonElement?.asNumber(): P?  = try {
+fun <P : Number?> JsonElement?.asNumber(): P? = try {
     asNumberOrThrow()
 } catch (e: JsonParseException) {
     logException(logger, e, "asNumber")
@@ -341,24 +355,18 @@ fun <V> JsonArray?.parse(parseElement: (JsonElement) -> V?): List<V?> {
     return this?.map { parseElement(it) }.orEmpty()
 }
 
-fun <J : JsonElement?> toJsonElement(
-    string: String?,
-    clazz: Class<J>
-): J? = try {
-    toJsonElementOrThrow(string, clazz)
+fun <J : JsonElement?> toJsonElement(value: String?, clazz: Class<J>): J? = try {
+    toJsonElementOrThrow(value, clazz)
 } catch (e: JsonParseException) {
     logException(logger, e, "toJsonElement")
     null
 }
 
 @Throws(JsonParseException::class)
-fun <J : JsonElement?> toJsonElementOrThrow(
-    string: String?,
-    clazz: Class<J>
-): J {
+fun <J : JsonElement?> toJsonElementOrThrow(value: String?, clazz: Class<J>): J {
     var element: JsonElement? = null
-    if (string != null && string.isNotEmpty()) {
-        element = parseString(string) // Streams.parse(reader)
+    if (value != null && value.isNotEmpty()) {
+        element = parseString(value) // Streams.parse(reader)
     }
     return if (element != null && clazz.isInstance(element)) {
         element as J

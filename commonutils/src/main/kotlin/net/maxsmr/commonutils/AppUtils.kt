@@ -448,7 +448,6 @@ fun copyToClipboard(context: Context, label: String, text: String) {
 
 fun getDisplayMetrics(context: Context): DisplayMetrics {
     val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-            ?: throw java.lang.NullPointerException(WindowManager::class.java.simpleName + "")
     val outMetrics = DisplayMetrics()
     wm.defaultDisplay.getMetrics(outMetrics)
     return outMetrics
