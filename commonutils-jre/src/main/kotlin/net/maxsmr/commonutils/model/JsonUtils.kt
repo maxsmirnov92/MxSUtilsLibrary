@@ -2,10 +2,15 @@
 
 package net.maxsmr.commonutils.model
 
+import net.maxsmr.commonutils.logger.BaseLogger
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
+
+private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("JsonUtils")
 
 fun JSONObject?.isJsonField(fieldName: String?): Boolean {
     if (this != null) {
@@ -82,7 +87,6 @@ fun JSONObject.optDoubleNullable(key: String) = if (isNull(key)) null else toDou
 fun JSONArray.optDoubleNullable(index: Int) =
     if (isNull(index)) null else toDouble(opt(index))?.takeIf { !it.isNaN() }
 
-
 private fun toInteger(value: Any?) = when (value) {
     is Int -> value.toInt()
     is Long -> if (value > Int.MAX_VALUE || value < Int.MIN_VALUE) value.toDouble().toInt() else value.toInt()
@@ -117,15 +121,10 @@ private fun toDouble(value: Any?) = when (value) {
     else -> null
 }
 
-@Throws(JSONException::class)
-fun List<JSONPresentable?>.asJSONArray(): JSONArray {
-    val result = JSONArray()
-    for (p in this) {
-        p?.let {
-            result.put(p.asJSON())
-        }
-    }
-    return result
+fun String.toJSONObjectOrNull(): JSONObject? = try {
+    JSONObject(this)
+} catch (e: JSONException) {
+    null
 }
 
 @Throws(JSONException::class)
@@ -139,47 +138,56 @@ fun JSONObject?.copyFields(target: JSONObject?) {
     }
 }
 
-fun String.asJSONObjectOrNull(): JSONObject? = try {
-    JSONObject(this)
-} catch (e: JSONException) {
-    null
-}
+@Throws(JSONException::class)
+fun List<JSONPresentable>?.toJSONArray() = JSONArray(this?.map(JSONPresentable::asJSON))
 
-fun Collection<Any>.asJSONArray(): JSONArray = JSONArray().also {
-    val iterator = iterator()
-    while (iterator.hasNext()) {
-        it.put(iterator.next())
+fun JSONObject?.optIntArray(arrayKey: String?): IntArray {
+    if (this == null || arrayKey == null) return IntArray(0)
+    val jArray = optJSONArray(arrayKey) ?: return IntArray(0)
+    return try {
+        IntArray(jArray.length()) { jArray.getInt(it) }
+    } catch (e: JSONException) {
+        logger.e(formatException(e))
+        IntArray(0)
     }
 }
 
-fun IntArray.asJSONArray(): JSONArray = JSONArray().also {
-    val iterator = iterator()
-    while (iterator.hasNext()) {
-        it.put(iterator.next())
+fun JSONObject?.optLongArray(arrayKey: String?): LongArray {
+    if (this == null || arrayKey == null) return LongArray(0)
+    val jArray = optJSONArray(arrayKey) ?: return LongArray(0)
+    return try {
+        LongArray(jArray.length()) { jArray.getInt(it).toLong() }
+    } catch (e: JSONException) {
+        logger.e(formatException(e))
+        LongArray(0)
     }
 }
 
-fun LongArray.asJSONArray(): JSONArray = JSONArray().also {
-    val iterator = iterator()
-    while (iterator.hasNext()) {
-        it.put(iterator.next())
+fun JSONObject?.optStringArray(arrayKey: String?): Array<String> {
+    if (this == null || arrayKey == null) return emptyArray()
+    val jArray = optJSONArray(arrayKey) ?: return emptyArray()
+    return try {
+        Array(jArray.length()) { jArray.getString(it) }
+    } catch (e: JSONException) {
+        logger.e(formatException(e))
+        emptyArray()
     }
 }
 
 /**
- * Находит в текущем JSONObject массив с ключом [key], и парсит его,
- * применяя fromJSONObject из [JSONParcel] к каждому элементу
+ * Находит в текущем JSONObject массив с ключом [arrayKey], и парсит его,
+ *
+ * @return Список объектов [T] или пустой список. Игнорирует нулевые элементы.
  */
-fun <T> JSONObject?.asList(key: String, parcel: JSONParcel<T?>): List<T> {
-    return this?.optJSONArray(key)?.let {
-        it.asList(parcel)
+fun <T> JSONObject?.optList(arrayKey: String, parcel: JSONParcel<T>): List<T> =
+    this?.optJSONArray(arrayKey)?.let { jsonArray ->
+        jsonArray.optList(parcel)
     }.orEmpty()
-}
 
 /**
  * @return массив объектов T из JSONParcel, исходя из того, что в каждом индексе исходного array лежит JSONObject
  */
-fun <T> JSONArray?.asList(parcel: JSONParcel<T?>): MutableList<T> {
+fun <T> JSONArray?.optList(parcel: JSONParcel<T>): MutableList<T> {
     val result = mutableListOf<T>()
     if (this != null) {
         for (i in 0 until length()) {
@@ -192,54 +200,52 @@ fun <T> JSONArray?.asList(parcel: JSONParcel<T?>): MutableList<T> {
 }
 
 /**
- * Находит в текущем JSONObject массив с ключом [key], и парсит его,
- * применяя fromJSONArray из [JSONParcelArrayIndexed] к каждому элементу
+ * Список [String] или пустой список
  */
-fun <T> JSONObject?.asListIndexed(key: String, parcel: JSONParcelArrayIndexed<T?>): List<T> {
-    return this?.optJSONArray(key)?.let {
-        it.asListIndexed(parcel)
-    }.orEmpty()
-}
-
-@Suppress("UNCHECKED_CAST")
-fun <T> JSONArray?.asPrimitiveList(clazz: Class<T>): List<T> {
-    return asListIndexed { jsonArray: JSONArray, index: Int ->
-        when {
-            clazz.isAssignableFrom(String::class.java) -> {
-                return@asListIndexed jsonArray.optString(index) as T
-            }
-            clazz.isAssignableFrom(Int::class.java) -> {
-                return@asListIndexed jsonArray.optInt(index) as T
-            }
-            clazz.isAssignableFrom(Long::class.java) -> {
-                return@asListIndexed jsonArray.optLong(index) as T
-            }
-            clazz.isAssignableFrom(Double::class.java) -> {
-                return@asListIndexed jsonArray.optDouble(index) as T
-            }
-            clazz.isAssignableFrom(Boolean::class.java) -> {
-                return@asListIndexed jsonArray.optBoolean(index) as T
-            }
-            else -> {
-                throw RuntimeException("Incorrect primitive class: $clazz")
-            }
-        }
-    }
+fun JSONObject?.optStringList(arrayKey: String) = optListIndexed(arrayKey) { jsonArray, index ->
+    jsonArray.optStringNullable(index)
 }
 
 /**
- * @return массив объектов T из JSONParcel, отдавая каждый индекс исходного array в parcel на его усмотрение
+ * Список [Int] или пустой список
  */
-fun <T> JSONArray?.asListIndexed(parcel: JSONParcelArrayIndexed<T?>): MutableList<T> {
-    val result = mutableListOf<T>()
-    if (this != null) {
-        for (i in 0 until length()) {
-            val item: T = parcel.fromJSONArray(this, i) ?: continue
-            result.add(item)
-        }
-    }
-    return result
+fun JSONObject?.optIntList(arrayKey: String) = optListIndexed(arrayKey) { jsonArray, index ->
+    jsonArray.optIntNullable(index)
 }
+
+/**
+ * Список [Long] или пустой список
+ */
+fun JSONObject?.optLongList(arrayKey: String) = optListIndexed(arrayKey) { jsonArray, index ->
+    jsonArray.optLongNullable(index)
+}
+
+/**
+ * Список [Double] или пустой список
+ */
+fun JSONObject?.optDoubleList(arrayKey: String) = optListIndexed(arrayKey) { jsonArray, index ->
+    jsonArray.optDoubleNullable(index)
+}
+
+fun JSONObject?.optBooleanList(arrayKey: String) = optListIndexed(arrayKey) { jsonArray, index ->
+    jsonArray.optBoolean(index)
+}
+
+/**
+ * Находит в текущем JSONObject массив с ключом [arrayKey], и парсит его.
+ * @return Список объектов [T] или пустой список. Не добавляет нулевые элементы.
+ */
+fun <T> JSONObject?.optListIndexed(
+    arrayKey: String,
+    parcel: JSONParcelArrayIndexed<T>,
+) = this?.optJSONArray(arrayKey)?.let { jsonArray ->
+    val result = mutableListOf<T>()
+    for (i in 0 until jsonArray.length()) {
+        parcel.fromJSONArray(jsonArray, i)?.let(result::add)
+    }
+    return@let result
+}.orEmpty()
+
 
 /**
  * Интерфейс для классов с целью форматирования в [JSONObject]

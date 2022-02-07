@@ -6,6 +6,7 @@ import android.content.res.ColorStateList
 import android.graphics.*
 import android.graphics.drawable.Drawable
 import android.os.Build
+import android.os.Bundle
 import android.text.*
 import android.text.method.LinkMovementMethod
 import android.text.style.CharacterStyle
@@ -21,7 +22,9 @@ import android.widget.*
 import androidx.annotation.*
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import androidx.core.view.AccessibilityDelegateCompat
 import androidx.core.view.ViewCompat
+import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.core.view.isVisible
 import androidx.core.view.updatePadding
 import androidx.lifecycle.MutableLiveData
@@ -1024,6 +1027,30 @@ private fun TextView.setTextWithMovementMethod(text: CharSequence?): CharSequenc
     this.text = text
     movementMethod = LinkMovementMethod.getInstance()
     return orEmpty(text)
+}
+
+fun View.setContentDescriptionWithAccessibilityDelegate(@StringRes descriptionResId: Int) {
+    setContentDescriptionWithAccessibilityDelegate(context.getString(descriptionResId))
+}
+
+fun View.setContentDescriptionWithAccessibilityDelegate(description: String) {
+    ViewCompat.setAccessibilityDelegate(this, object : AccessibilityDelegateCompat() {
+
+        var didPerformAccessibilityAction = false
+
+        override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfoCompat) {
+            super.onInitializeAccessibilityNodeInfo(host, info)
+            if (didPerformAccessibilityAction) {
+                didPerformAccessibilityAction = false
+                info.contentDescription = description
+            }
+        }
+
+        override fun performAccessibilityAction(host: View, action: Int, args: Bundle): Boolean {
+            didPerformAccessibilityAction  = super.performAccessibilityAction(host, action, args)
+            return didPerformAccessibilityAction
+        }
+    })
 }
 
 /**
