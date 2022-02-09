@@ -4,6 +4,7 @@ import android.annotation.TargetApi
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
+import android.content.IntentSender
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
@@ -14,23 +15,10 @@ import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.io.File
 import java.util.*
 
-@JvmOverloads
-fun wrapIntent(
-    intent: Intent,
-    title: String = EMPTY_STRING,
-    flags: Int = 0
-): Intent {
-    with(intent) {
-        if (flags != 0) {
-            this.addFlags(flags)
-        }
-        return if (title.isNotEmpty()) {
-            Intent.createChooser(this, title)
-        } else {
-            this
-        }
-    }
-}
+const val URL_MARKET_FORMAT = "https://play.google.com/store/apps/details?id=%s"
+const val URL_GOOGLE_PAY_SAVE_FORMAT = "https://pay.google.com/gp/v/save/%s"
+
+const val URL_SCHEME_MAIL = "mailto"
 
 @JvmOverloads
 fun getAppSettingsIntent(context: Context, packageName: String = context.packageName): Intent =
@@ -45,8 +33,7 @@ fun getManageSettingsIntent(context: Context, packageName: String = context.pack
 
 fun getLocationSettingsIntent() = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
 
-fun getBrowseLinkIntent(url: String): Intent =
-    getViewIntent(Uri.parse(url), mimeType = getMimeTypeFromUrl(url))
+fun getWifiSettingsIntent() = Intent(Settings.ACTION_WIFI_SETTINGS)
 
 fun getBrowseLocationIntent(latitude: Double, longitude: Double) = getViewIntent(
     Uri.parse("geo:%1f,%2f".format(latitude, longitude))
@@ -54,8 +41,11 @@ fun getBrowseLocationIntent(latitude: Double, longitude: Double) = getViewIntent
     setPackage("com.google.android.apps.maps")
 }
 
+fun getPlayMarketIntent(appId: String): Intent =
+    getViewUrlIntent(URL_MARKET_FORMAT.format(appId))
+
 fun getGooglePaySaveUri(jwt: String) =
-    getViewIntent(Uri.parse("https://pay.google.com/gp/v/save/$jwt"))
+    getViewIntent(Uri.parse(URL_GOOGLE_PAY_SAVE_FORMAT.format(jwt)))
 
 /**
  * Интент для открытия SAF (Storage Access Framework) пикера файлов. Открывает дефолтный UI для
@@ -63,7 +53,7 @@ fun getGooglePaySaveUri(jwt: String) =
  * Доступ к полученным таким образом файлам постоянный (можно хранить uri для долговременного использования)
  */
 @RequiresApi(Build.VERSION_CODES.KITKAT)
-fun getOpenDocumentIntent(mimeType: String, mimeTypes: List<String>) =
+fun getOpenDocumentIntent(mimeType: String, mimeTypes: List<String>?) =
     Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
         addCategory(Intent.CATEGORY_OPENABLE)
         applyMimeTypes(mimeType, mimeTypes)
@@ -76,10 +66,49 @@ fun getOpenDocumentIntent(mimeType: String, mimeTypes: List<String>) =
  * таким образом файла для использования в дальнейшем - не лучшая идея)
  */
 @RequiresApi(Build.VERSION_CODES.KITKAT)
-fun getContentIntent(type: String, mimeTypes: List<String>) =
+fun getContentIntent(type: String, mimeTypes: List<String>?) =
     Intent(Intent.ACTION_GET_CONTENT).apply {
         applyMimeTypes(type, mimeTypes)
     }
+
+@JvmOverloads
+fun getShareIntent(
+    uri: Uri?,
+    subject: String,
+    text: String,
+    contentResolver: ContentResolver? = null,
+    mimeType: String = EMPTY_STRING,
+    mimeTypes: List<String> = emptyList(),
+    recipients: List<String> = emptyList(),
+    isMultiple: Boolean = uri == null
+): Intent = getSendIntent(isMultiple).apply {
+    putExtra(Intent.EXTRA_SUBJECT, subject)
+    putExtra(Intent.EXTRA_TEXT, text)
+    uri?.let {
+        putExtra(Intent.EXTRA_STREAM, uri)
+    }
+    if (recipients.isNotEmpty()) {
+        putExtra(Intent.EXTRA_EMAIL, recipients.toTypedArray())
+    }
+    applyDataAndMimeTypes(uri, contentResolver, mimeType, mimeTypes)
+}
+
+@JvmOverloads
+fun getViewUrlIntent(
+    url: String,
+    mimeType: String? = getMimeTypeFromUrl(url),
+    mimeTypes: List<String>? = null
+) = getViewUrlIntent(Uri.parse(url), mimeType, mimeTypes)
+
+@JvmOverloads
+fun getViewUrlIntent(
+    uri: Uri,
+    mimeType: String? = null,
+    mimeTypes: List<String>? = null
+) = getViewIntent().apply {
+    data = uri
+    applyMimeTypes(mimeType, mimeTypes)
+}
 
 /**
  * @param shouldUseFileProvider true, if intended to use FileProvider instead of file://
@@ -93,9 +122,7 @@ fun getViewFileIntent(
 ): Intent? {
     val uriAndType = getFileUriAndType(context, file, shouldUseFileProvider) ?: return null
     return getViewIntent(uriAndType.first, context.contentResolver, uriAndType.second).apply {
-        if (!shouldUseFileProvider) {
-            wrapIntent(this, flags = Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 }
 
@@ -104,9 +131,11 @@ fun getViewIntent(
     contentResolver: ContentResolver? = null,
     mimeType: String = EMPTY_STRING,
     mimeTypes: List<String> = emptyList()
-): Intent = Intent(Intent.ACTION_VIEW).apply {
+): Intent = getViewIntent().apply {
     applyDataAndMimeTypes(uri, contentResolver, mimeType, mimeTypes)
 }
+
+fun getViewIntent() = Intent(Intent.ACTION_VIEW)
 
 /**
  * @param shouldUseFileProvider true, if intended to use FileProvider (content://) instead of file://
@@ -131,43 +160,61 @@ fun getShareFileIntent(
         recipients = recipients,
         isMultiple = false
     ).apply {
-        if (!shouldUseFileProvider) {
-            wrapIntent(this, flags = Intent.FLAG_GRANT_READ_URI_PERMISSION)
-        }
+        addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 }
 
 @JvmOverloads
-fun getShareIntent(
-    uri: Uri?,
-    subject: String,
-    text: String,
-    contentResolver: ContentResolver? = null,
-    mimeType: String = EMPTY_STRING,
-    mimeTypes: List<String> = emptyList(),
-    recipients: List<String> = emptyList(),
-    isMultiple: Boolean = uri == null
-): Intent = Intent(
-    if (isMultiple) Intent.ACTION_SEND_MULTIPLE else Intent.ACTION_SEND
-).apply {
-    putExtra(Intent.EXTRA_SUBJECT, subject)
-    putExtra(Intent.EXTRA_TEXT, text)
-    uri?.let {
-        putExtra(Intent.EXTRA_STREAM, uri)
+fun getSendEmailIntent(email: String?, isMultiple: Boolean = false): Intent? {
+    val uri = if (!email.isNullOrEmpty()) {
+        Uri.fromParts(URL_SCHEME_MAIL, email, null)
+    } else {
+        Uri.parse("$URL_SCHEME_MAIL:")
     }
-    if (recipients.isNotEmpty()) {
-        putExtra(Intent.EXTRA_EMAIL, recipients.toTypedArray())
-    }
-    applyDataAndMimeTypes(uri, contentResolver, mimeType, mimeTypes)
+    return getSendEmailIntent(uri, isMultiple)
 }
 
-private fun Intent.applyMimeTypes(type: String, types: List<String>) {
+@JvmOverloads
+fun getSendEmailIntent(uri: Uri, isMultiple: Boolean = false): Intent? {
+    if (URL_SCHEME_MAIL != uri.scheme) {
+        return null
+    }
+    return getSendIntent(isMultiple).apply {
+        data = uri
+    }
+}
+
+@JvmOverloads
+fun getSendIntent(isMultiple: Boolean = false) = Intent(
+    if (isMultiple) {
+        Intent.ACTION_SEND_MULTIPLE
+    } else {
+        Intent.ACTION_SEND
+    }
+)
+
+fun Intent.wrapChooser(
+    title: String?,
+    intentSender: IntentSender? = null
+): Intent {
+    return if (!title.isNullOrEmpty()) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && intentSender != null) {
+            Intent.createChooser(this, type, intentSender)
+        } else {
+            Intent.createChooser(this, type)
+        }
+    } else {
+        this
+    }
+}
+
+private fun Intent.applyMimeTypes(type: String?, types: List<String>?) {
     this.type = if (!TextUtils.isEmpty(type)) {
         type
     } else {
         MIME_TYPE_ANY
     }
-    if (isAtLeastKitkat() && types.isNotEmpty()) {
+    if (isAtLeastKitkat() && types != null && types.isNotEmpty()) {
         putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
     }
 }

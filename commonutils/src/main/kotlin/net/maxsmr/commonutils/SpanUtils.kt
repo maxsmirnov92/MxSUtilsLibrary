@@ -143,11 +143,6 @@ fun <Style: CharacterStyle> CharSequence.replaceSpansByCustomSpans(
     return result
 }
 
-fun defaultBrowseClickAction(context: Context, url: String) {
-    startActivitySafe(context, wrapIntent(getBrowseLinkIntent(url),
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK))
-}
-
 interface ISpanInfo {
 
     val styles: List<CharacterStyle>
