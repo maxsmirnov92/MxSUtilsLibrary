@@ -10,7 +10,7 @@ ext {
     minSdkVersion = 17
 
     gradlePluginVersion = '4.1.2'
-    buildToolsVersion = '29.0.2'
+    buildToolsVersion = '30.0.3'
     kotlinVersion = '1.5.20'
     kotlinGradlePluginVersion = kotlinVersion
     androidxCoreVersion = '1.6.0'

@@ -3,6 +3,7 @@ package net.maxsmr.commonutils.gui.actions.message.text
 import android.annotation.SuppressLint
 import android.content.Context
 import androidx.annotation.PluralsRes
+import androidx.annotation.StringRes
 import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -19,9 +20,9 @@ import java.io.ObjectOutputStream
  */
 @SuppressLint("ResourceType")
 class PluralTextMessage(
-        @PluralsRes pluralResId: Int,
-        quantity: Int,
-        vararg args: Any
+    @PluralsRes pluralResId: Int,
+    quantity: Int,
+    vararg args: Any,
 ) : TextMessage(null, null, *args) {
 
     @PluralsRes
@@ -31,10 +32,40 @@ class PluralTextMessage(
     var quantity: Int = quantity
         private set
 
-    constructor(): this(0, 0)
+    fun _setMessage(message: CharSequence?) {
+        this.message = message
+    }
 
-    override fun get(context: Context): CharSequence =
-            context.resources.getQuantityString(pluralResId, quantity, *flattenArgs(context))
+    fun _setMessageResId(@StringRes resId: Int?) {
+        messageResId = resId
+    }
+
+    override fun get(context: Context): CharSequence {
+        val pluralText = context.resources.getQuantityString(pluralResId, quantity, *args.flattenArgs(context))
+        return if (!message.isNullOrEmpty() || messageResId != null) {
+            getWithArgs(context, arrayOf(pluralText))
+        } else {
+            pluralText
+        }
+    }
+
+    override fun equals(other: Any?): Boolean {
+        if (this === other) return true
+        if (other !is PluralTextMessage) return false
+        if (!super.equals(other)) return false
+
+        if (pluralResId != other.pluralResId) return false
+        if (quantity != other.quantity) return false
+
+        return true
+    }
+
+    override fun hashCode(): Int {
+        var result = super.hashCode()
+        result = 31 * result + pluralResId
+        result = 31 * result + quantity
+        return result
+    }
 
     override fun toString(): String {
         return "PluralTextMessage(pluralRes=$pluralResId, quantity=$quantity, super=${super.toString()})"

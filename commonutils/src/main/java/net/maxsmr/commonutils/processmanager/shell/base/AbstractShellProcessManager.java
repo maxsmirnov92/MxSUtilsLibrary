@@ -27,7 +27,7 @@ import static net.maxsmr.commonutils.CompareUtilsKt.stringsEqual;
 import static net.maxsmr.commonutils.FileUtilsKt.isFileExists;
 import static net.maxsmr.commonutils.AppUtilsKt.getApplicationInfo;
 import static net.maxsmr.commonutils.processmanager.model.ProcessInfo.ProcessState.S;
-import static net.maxsmr.commonutils.conversion.NumberConversionKt.toIntNotNull;
+import static net.maxsmr.commonutils.conversion.NumberConversionUtilsKt.toIntNotNull;
 import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
 import static net.maxsmr.commonutils.shell.RootShellCommandsKt.isRootAvailable;
 import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;

@@ -33,7 +33,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import static net.maxsmr.commonutils.ReflectionUtils.invokeMethodOrThrow;
-import static net.maxsmr.commonutils.conversion.NumberConversionKt.toDoubleOrNull;
+import static net.maxsmr.commonutils.conversion.NumberConversionUtilsKt.toDoubleOrNull;
 import static net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException;
 import static net.maxsmr.commonutils.text.SymbolConstsKt.EMPTY_STRING;
 import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;

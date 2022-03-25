@@ -1,48 +1,151 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <plurals name="time_suffix_nanos">
+    <!--  TIME:  -->
+    <plurals name="time_unit_nanos">
         <item quantity="one">nano</item>
         <item quantity="other">nanos</item>
     </plurals>
-    <plurals name="time_suffix_micros">
+    <plurals name="time_unit_micros">
         <item quantity="one">micro</item>
         <item quantity="other">micros</item>
     </plurals>
-    <plurals name="time_suffix_millis">
+    <plurals name="time_unit_millis">
         <item quantity="one">millisecond</item>
         <item quantity="other">millis</item>
     </plurals>
-    <plurals name="time_suffix_seconds">
+    <plurals name="time_unit_seconds">
         <item quantity="one">second</item>
         <item quantity="other">seconds</item>
     </plurals>
-    <plurals name="time_suffix_minutes">
+    <plurals name="time_unit_minutes">
         <item quantity="one">min</item>
         <item quantity="other">mins</item>
     </plurals>
-    <plurals name="time_suffix_hours">
+    <plurals name="time_unit_hours">
         <item quantity="one">hour</item>
         <item quantity="other">hours</item>
     </plurals>
-    <plurals name="time_suffix_days">
+    <plurals name="time_unit_days">
         <item quantity="one">day</item>
         <item quantity="other">days</item>
     </plurals>
+    <plurals name="time_unit_nanos_format">
+        <item quantity="one">%d nano</item>
+        <item quantity="other">%d nanos</item>
+    </plurals>
+    <plurals name="time_unit_micros_format">
+        <item quantity="one">%d micro</item>
+        <item quantity="other">%d micros</item>
+    </plurals>
+    <plurals name="time_unit_millis_format">
+        <item quantity="one">%d millisecond</item>
+        <item quantity="other">%d millis</item>
+    </plurals>
+    <plurals name="time_unit_seconds_format">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+    <plurals name="time_unit_minutes_format">
+        <item quantity="one">%d min</item>
+        <item quantity="other">%d mins</item>
+    </plurals>
+    <plurals name="time_unit_hours_format">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="time_unit_days_format">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
 
-    <plurals name="size_suffix_bytes">
+    <plurals name="time_unit_nanos_declension">
+        <item quantity="one">nano</item>
+        <item quantity="other">nanos</item>
+    </plurals>
+    <plurals name="time_unit_micros_declension">
+        <item quantity="one">micro</item>
+        <item quantity="other">micros</item>
+    </plurals>
+    <plurals name="time_unit_millis_declension">
+        <item quantity="one">millisecond</item>
+        <item quantity="other">millis</item>
+    </plurals>
+    <plurals name="time_unit_seconds_declension">
+        <item quantity="one">second</item>
+        <item quantity="other">seconds</item>
+    </plurals>
+    <plurals name="time_unit_minutes_declension">
+        <item quantity="one">min</item>
+        <item quantity="other">mins</item>
+    </plurals>
+    <plurals name="time_unit_hours_declension">
+        <item quantity="one">hour</item>
+        <item quantity="other">hours</item>
+    </plurals>
+    <plurals name="time_unit_days_declension">
+        <item quantity="one">day</item>
+        <item quantity="other">days</item>
+    </plurals>
+    <plurals name="time_unit_nanos_declension_format">
+        <item quantity="one">%d nano</item>
+        <item quantity="other">%d nanos</item>
+    </plurals>
+    <plurals name="time_unit_micros_declension_format">
+        <item quantity="one">%d micro</item>
+        <item quantity="other">%d micros</item>
+    </plurals>
+    <plurals name="time_unit_millis_declension_format">
+        <item quantity="one">%d millisecond</item>
+        <item quantity="other">%d millis</item>
+    </plurals>
+    <plurals name="time_unit_seconds_declension_format">
+        <item quantity="one">%d second</item>
+        <item quantity="other">%d seconds</item>
+    </plurals>
+    <plurals name="time_unit_minutes_declension_format">
+        <item quantity="one">%d min</item>
+        <item quantity="other">%d mins</item>
+    </plurals>
+    <plurals name="time_unit_hours_declension_format">
+        <item quantity="one">%d hour</item>
+        <item quantity="other">%d hours</item>
+    </plurals>
+    <plurals name="time_unit_days_declension_format">
+        <item quantity="one">%d day</item>
+        <item quantity="other">%d days</item>
+    </plurals>
+
+    <!--  SIZE:  -->
+    <plurals name="size_unit_bytes">
         <item quantity="one">byte</item>
         <item quantity="other">bytes</item>
     </plurals>
-    <plurals name="size_suffix_kbytes">
+    <plurals name="size_unit_kbytes">
         <item quantity="one">kByte</item>
         <item quantity="other">kBytes</item>
     </plurals>
-    <plurals name="size_suffix_mbytes">
+    <plurals name="size_unit_mbytes">
         <item quantity="one">mByte</item>
         <item quantity="other">mBytes</item>
     </plurals>
-    <plurals name="size_suffix_gbytes">
+    <plurals name="size_unit_gbytes">
         <item quantity="one">gByte</item>
         <item quantity="other">gBytes</item>
+    </plurals>
+    <plurals name="size_unit_bytes_format">
+        <item quantity="one">%d byte</item>
+        <item quantity="other">%d bytes</item>
+    </plurals>
+    <plurals name="size_unit_kbytes_format">
+        <item quantity="one">%d kByte</item>
+        <item quantity="other">%d kBytes</item>
+    </plurals>
+    <plurals name="size_unit_mbytes_format">
+        <item quantity="one">%d mByte</item>
+        <item quantity="other">%d mBytes</item>
+    </plurals>
+    <plurals name="size_unit_gbytes_format">
+        <item quantity="one">%d gByte</item>
+        <item quantity="other">%d gBytes</item>
     </plurals>
 </resources>

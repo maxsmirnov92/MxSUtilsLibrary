@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--  TIME:  -->
+    <plurals name="time_unit_nanos">
+        <item quantity="zero">наносекунд</item>
+        <item quantity="one">наносекунда</item>
+        <item quantity="two">наносекунды</item>
+        <item quantity="few">наносекунды</item>
+        <item quantity="many">наносекунд</item>
+        <item quantity="other">наносекунд</item>
+    </plurals>
+    <plurals name="time_unit_micros">
+        <item quantity="zero">микросекунд</item>
+        <item quantity="one">микросекунда</item>
+        <item quantity="two">микросекунды</item>
+        <item quantity="few">микросекунды</item>
+        <item quantity="many">микросекунд</item>
+        <item quantity="other">микросекунд</item>
+    </plurals>
+    <plurals name="time_unit_millis">
+        <item quantity="zero">миллисекунд</item>
+        <item quantity="one">миллисекунда</item>
+        <item quantity="two">миллисекунды</item>
+        <item quantity="few">миллисекунды</item>
+        <item quantity="many">миллисекунд</item>
+        <item quantity="other">миллисекунд</item>
+    </plurals>
+    <plurals name="time_unit_seconds">
+        <item quantity="zero">секунд</item>
+        <item quantity="one">секунда</item>
+        <item quantity="two">секунды</item>
+        <item quantity="few">секунды</item>
+        <item quantity="many">секунд</item>
+        <item quantity="other">секунд</item>
+    </plurals>
+    <plurals name="time_unit_minutes">
+        <item quantity="zero">минут</item>
+        <item quantity="one">минута</item>
+        <item quantity="two">минуты</item>
+        <item quantity="few">минуты</item>
+        <item quantity="many">минут</item>
+        <item quantity="other">минут</item>
+    </plurals>
+    <plurals name="time_unit_hours">
+        <item quantity="zero">часов</item>
+        <item quantity="one">час</item>
+        <item quantity="two">часа</item>
+        <item quantity="few">часа</item>
+        <item quantity="many">часов</item>
+        <item quantity="other">часов</item>
+    </plurals>
+    <plurals name="time_unit_days">
+        <item quantity="zero">дней</item>
+        <item quantity="one">день</item>
+        <item quantity="two">дня</item>
+        <item quantity="few">дня</item>
+        <item quantity="many">дней</item>
+        <item quantity="other">дней</item>
+    </plurals>
+    <plurals name="time_unit_nanos_format">
+        <item quantity="zero">%d наносекунд</item>
+        <item quantity="one">%d наносекунда</item>
+        <item quantity="two">%d наносекунды</item>
+        <item quantity="few">%d наносекунды</item>
+        <item quantity="many">%d наносекунд</item>
+        <item quantity="other">%d наносекунд</item>
+    </plurals>
+    <plurals name="time_unit_micros_format">
+        <item quantity="zero">%d микросекунд</item>
+        <item quantity="one">%d микросекунда</item>
+        <item quantity="two">%d микросекунды</item>
+        <item quantity="few">%d микросекунды</item>
+        <item quantity="many">%d микросекунд</item>
+        <item quantity="other">%d микросекунд</item>
+    </plurals>
+    <plurals name="time_unit_millis_format">
+        <item quantity="zero">%d миллисекунд</item>
+        <item quantity="one">%d миллисекунда</item>
+        <item quantity="two">%d миллисекунды</item>
+        <item quantity="few">%d миллисекунды</item>
+        <item quantity="many">%d миллисекунд</item>
+        <item quantity="other">%d миллисекунд</item>
+    </plurals>
+    <plurals name="time_unit_seconds_format">
+        <item quantity="zero">%d секунд</item>
+        <item quantity="one">%d секунда</item>
+        <item quantity="two">%d секунды</item>
+        <item quantity="few">%d секунды</item>
+        <item quantity="many">%d секунд</item>
+        <item quantity="other">%d секунд</item>
+    </plurals>
+    <plurals name="time_unit_minutes_format">
+        <item quantity="zero">%d минут</item>
+        <item quantity="one">%d минута</item>
+        <item quantity="two">%d минуты</item>
+        <item quantity="few">%d минуты</item>
+        <item quantity="many">%d минут</item>
+        <item quantity="other">%d минут</item>
+    </plurals>
+    <plurals name="time_unit_hours_format">
+        <item quantity="zero">%d часов</item>
+        <item quantity="one">%d час</item>
+        <item quantity="two">%d часа</item>
+        <item quantity="few">%d часа</item>
+        <item quantity="many">%d часов</item>
+        <item quantity="other">%d часов</item>
+    </plurals>
+    <plurals name="time_unit_days_format">
+        <item quantity="zero">%d дней</item>
+        <item quantity="one">%d день</item>
+        <item quantity="two">%d дня</item>
+        <item quantity="few">%d дня</item>
+        <item quantity="many">%d дней</item>
+        <item quantity="other">%d дней</item>
+    </plurals>
+
+    <plurals name="time_unit_nanos_declension">
+        <item quantity="zero">наносекунд</item>
+        <item quantity="one">наносекунду</item>
+        <item quantity="two">наносекунды</item>
+        <item quantity="few">наносекунд</item>
+        <item quantity="many">наносекунд</item>
+        <item quantity="other">наносекунд</item>
+    </plurals>
+    <plurals name="time_unit_micros_declension">
+        <item quantity="zero">микросекунд</item>
+        <item quantity="one">микросекунду</item>
+        <item quantity="two">микросекунды</item>
+        <item quantity="few">микросекунд</item>
+        <item quantity="many">микросекунд</item>
+        <item quantity="other">микросекунд</item>
+    </plurals>
+    <plurals name="time_unit_millis_declension">
+        <item quantity="zero">миллисекунд</item>
+        <item quantity="one">миллисекунду</item>
+        <item quantity="two">миллисекунды</item>
+        <item quantity="few">миллисекунд</item>
+        <item quantity="many">миллисекунд</item>
+        <item quantity="other">миллисекунд</item>
+    </plurals>
+    <plurals name="time_unit_seconds_declension">
+        <item quantity="zero">секунд</item>
+        <item quantity="one">секунду</item>
+        <item quantity="two">секунды</item>
+        <item quantity="few">секунд</item>
+        <item quantity="many">секунд</item>
+        <item quantity="other">секунд</item>
+    </plurals>
+    <plurals name="time_unit_minutes_declension">
+        <item quantity="zero">минут</item>
+        <item quantity="one">минуту</item>
+        <item quantity="two">минуты</item>
+        <item quantity="few">минут</item>
+        <item quantity="many">минут</item>
+        <item quantity="other">минут</item>
+    </plurals>
+    <plurals name="time_unit_hours_declension">
+        <item quantity="zero">часов</item>
+        <item quantity="one">час</item>
+        <item quantity="two">часа</item>
+        <item quantity="few">часа</item>
+        <item quantity="many">часов</item>
+        <item quantity="other">часов</item>
+    </plurals>
+    <plurals name="time_unit_days_declension">
+        <item quantity="zero">дней</item>
+        <item quantity="one">ден</item>
+        <item quantity="two">дня</item>
+        <item quantity="few">дня</item>
+        <item quantity="many">дней</item>
+        <item quantity="other">дней</item>
+    </plurals>
+    <plurals name="time_unit_nanos_declension_format">
+        <item quantity="zero">%d наносекунд</item>
+        <item quantity="one">%d наносекунду</item>
+        <item quantity="two">%d наносекунды</item>
+        <item quantity="few">%d наносекунд</item>
+        <item quantity="many">%d наносекунд</item>
+        <item quantity="other">%d наносекунд</item>
+    </plurals>
+    <plurals name="time_unit_micros_declension_format">
+        <item quantity="zero">%d микросекунд</item>
+        <item quantity="one">%d микросекунду</item>
+        <item quantity="two">%d микросекунды</item>
+        <item quantity="few">%d микросекунд</item>
+        <item quantity="many">%d микросекунд</item>
+        <item quantity="other">%d микросекунд</item>
+    </plurals>
+    <plurals name="time_unit_millis_declension_format">
+        <item quantity="zero">%d миллисекунд</item>
+        <item quantity="one">%d миллисекунду</item>
+        <item quantity="two">%d миллисекунды</item>
+        <item quantity="few">%d миллисекунд</item>
+        <item quantity="many">%d миллисекунд</item>
+        <item quantity="other">%d миллисекунд</item>
+    </plurals>
+    <plurals name="time_unit_seconds_declension_format">
+        <item quantity="zero">%d секунд</item>
+        <item quantity="one">%d секунду</item>
+        <item quantity="two">%d секунды</item>
+        <item quantity="few">%d секунд</item>
+        <item quantity="many">%d секунд</item>
+        <item quantity="other">%d секунд</item>
+    </plurals>
+    <plurals name="time_unit_minutes_declension_format">
+        <item quantity="zero">%d минут</item>
+        <item quantity="one">%d минуту</item>
+        <item quantity="two">%d минуты</item>
+        <item quantity="few">%d минут</item>
+        <item quantity="many">%d минут</item>
+        <item quantity="other">%d минут</item>
+    </plurals>
+    <plurals name="time_unit_hours_declension_format">
+        <item quantity="zero">%d часов</item>
+        <item quantity="one">%d час</item>
+        <item quantity="two">%d часа</item>
+        <item quantity="few">%d часа</item>
+        <item quantity="many">%d часов</item>
+        <item quantity="other">%d часов</item>
+    </plurals>
+    <plurals name="time_unit_days_declension_format">
+        <item quantity="zero">%d дней</item>
+        <item quantity="one">%d день</item>
+        <item quantity="two">%d дня</item>
+        <item quantity="few">%d дня</item>
+        <item quantity="many">%d дней</item>
+        <item quantity="other">%d дней</item>
+    </plurals>
+</resources>
