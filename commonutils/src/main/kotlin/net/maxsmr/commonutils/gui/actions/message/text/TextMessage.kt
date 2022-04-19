@@ -122,9 +122,13 @@ open class TextMessage internal constructor(
         override fun get(context: Context): T = value
     }
 
-    data class ResArg(@StringRes val value: Int) : Arg<String> {
+    data class ResArg(@StringRes val value: Int, val args: List<Any>? = null) : Arg<String> {
 
-        override fun get(context: Context): String = context.getString(value)
+        override fun get(context: Context): String = if (args == null || args.isEmpty()) {
+            context.getString(value)
+        } else {
+            context.getString(value, *args.toTypedArray())
+        }
     }
 
     data class CharSequenceArg(val value: CharSequence) : Arg<CharSequence> {
