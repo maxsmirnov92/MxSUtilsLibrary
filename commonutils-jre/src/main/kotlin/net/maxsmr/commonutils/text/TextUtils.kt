@@ -13,11 +13,7 @@ import java.util.*
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("TextUtils")
 
-fun getExtension(name: String?): String {
-    if (name == null) return EMPTY_STRING
-    val index = name.lastIndexOf('.')
-    return if (index > 0 && index < name.length - 1) name.substring(index + 1) else EMPTY_STRING
-}
+fun getExtension(name: String?) = name?.substringAfterLast('.').orEmpty()
 
 /**
  * убрать расширение файла

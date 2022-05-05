@@ -1,5 +1,16 @@
 package net.maxsmr.tasksutils.storage.sync.collection;
 
+import static net.maxsmr.commonutils.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.FileUtilsKt.checkDir;
+import static net.maxsmr.commonutils.FileUtilsKt.deleteFile;
+import static net.maxsmr.commonutils.FileUtilsKt.getExtension;
+import static net.maxsmr.commonutils.FileUtilsKt.getFiles;
+import static net.maxsmr.commonutils.FileUtilsKt.isFileValid;
+import static net.maxsmr.commonutils.FileUtilsKt.sortFilesByLastModified;
+import static net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException;
+
+import androidx.annotation.NonNull;
+
 import net.maxsmr.commonutils.FileUtilsKt;
 import net.maxsmr.commonutils.GetMode;
 import net.maxsmr.commonutils.IDeleteNotifier;
@@ -17,15 +28,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Iterator;
 import java.util.Set;
-
-import static net.maxsmr.commonutils.CompareUtilsKt.stringsEqual;
-import static net.maxsmr.commonutils.FileUtilsKt.checkDir;
-import static net.maxsmr.commonutils.FileUtilsKt.deleteFiles;
-import static net.maxsmr.commonutils.FileUtilsKt.deleteFile;
-import static net.maxsmr.commonutils.FileUtilsKt.getExtension;
-import static net.maxsmr.commonutils.FileUtilsKt.getFiles;
-import static net.maxsmr.commonutils.FileUtilsKt.isFileValid;
-import static net.maxsmr.commonutils.FileUtilsKt.sortFilesByLastModified;
 
 public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> extends AbstractSyncStorage<I> {
 
@@ -204,6 +206,31 @@ public abstract class AbstractCollectionSyncStorage<I extends RunnableInfo> exte
             @Override
             public boolean confirmDeleteFile(@NotNull File file) {
                 return stringsEqual(extension, getExtension(file), true);
+            }
+
+            @Override
+            public boolean shouldProceed(@NonNull File current, @NonNull Set<? extends File> deleted, int currentLevel) {
+                return true;
+            }
+
+            @Override
+            public boolean confirmDeleteFolder(@NonNull File folder) {
+                return true;
+            }
+
+            @Override
+            public void onDeleteFileFailed(@NonNull File file) {
+
+            }
+
+            @Override
+            public void onDeleteFolderFailed(@NonNull File folder) {
+
+            }
+
+            @Override
+            public void onExceptionOccurred(@NonNull RuntimeException e) {
+                logException(logger, e);
             }
         });
         return true;

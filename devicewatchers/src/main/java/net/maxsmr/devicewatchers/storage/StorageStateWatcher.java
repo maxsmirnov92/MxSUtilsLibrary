@@ -32,8 +32,11 @@ import static net.maxsmr.commonutils.FileUtilsKt.deleteFiles;
 import static net.maxsmr.commonutils.FileUtilsKt.getFiles;
 import static net.maxsmr.commonutils.FileUtilsKt.getPartitionSpace;
 import static net.maxsmr.commonutils.FileUtilsKt.isDirExists;
+import static net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.logException;
 import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.tasksutils.ScheduledThreadPoolExecutorManager.ScheduleMode.FIXED_DELAY;
+
+import androidx.annotation.NonNull;
 
 public final class StorageStateWatcher {
 
@@ -236,6 +239,21 @@ public final class StorageStateWatcher {
                                     public boolean shouldProceed(@NotNull File current, @NotNull Set<? extends File> collected, int currentLevel, boolean wasAdded) {
                                         return isEnabled;
                                     }
+
+                                    @Override
+                                    public boolean onGetFile(@NonNull File file, @NonNull Set<? extends File> collected, int currentLevel) {
+                                        return true;
+                                    }
+
+                                    @Override
+                                    public boolean onGetFolder(@NonNull File folder, @NonNull Set<? extends File> collected, int currentLevel) {
+                                        return true;
+                                    }
+
+                                    @Override
+                                    public void onExceptionOccurred(@NonNull RuntimeException e) {
+                                        logException(logger, e);
+                                    }
                                 });
                                 mapping.put(new StorageWatchSettings.DeleteOptionPair(entry.getValue(), entry.getKey()), filesSet);
                             }
@@ -315,6 +333,10 @@ public final class StorageStateWatcher {
                                                     logger.e("onDeleteFolderFailed(), folder=" + folder);
                                                 }
 
+                                                @Override
+                                                public void onExceptionOccurred(@NonNull RuntimeException e) {
+                                                    logException(logger, e);
+                                                }
                                             }).size();
                                         }
 

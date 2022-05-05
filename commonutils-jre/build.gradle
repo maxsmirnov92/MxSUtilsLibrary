@@ -17,7 +17,6 @@ jar {
 tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
     kotlinOptions {
         jvmTarget = "$jvmVersion"
-        freeCompilerArgs = ["$jvmDefaultArg"]
     }
 }
 

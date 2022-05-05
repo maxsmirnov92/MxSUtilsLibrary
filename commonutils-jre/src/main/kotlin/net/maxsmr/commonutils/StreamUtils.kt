@@ -347,14 +347,12 @@ fun InputStream.unzipStreamOrThrow(
 
 interface IStreamNotifier {
 
-    @JvmDefault
     val notifyInterval: Long
         get() = 0
 
     /**
      * @return true if should proceed
      */
-    @JvmDefault
     fun onProcessing(
             inputStream: InputStream,
             outputStream: OutputStream,

@@ -2,6 +2,8 @@ package net.maxsmr.commonutils.states
 
 import java.io.Serializable
 
+// TODO refactor
+
 fun <D> createEmptyState() = null.getOrCreate<D>().first
 
 /**
@@ -65,19 +67,16 @@ interface ILoadState<D> : Serializable {
     fun successLoad(result: D): Boolean
     fun errorLoad(error: Throwable): Boolean
 
-    @JvmDefault
     fun isSuccessLoad(dataValidator: ((D?) -> Boolean)? = { it != null }) =
             !isLoading && error == null
                     && (dataValidator == null || dataValidator(data))
 
-    @JvmDefault
     fun getStatus(dataValidator: ((D?) -> Boolean)? = { it != null }): Status = when {
             isLoading -> Status.LOADING
             isSuccessLoad(dataValidator) -> Status.SUCCESS
             else -> Status.ERROR
         }
 
-    @JvmDefault
     fun hasData() = data != null
 }
 

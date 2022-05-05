@@ -1955,7 +1955,7 @@ enum class GetMode {
 }
 
 interface IFsNotifier {
-    @JvmDefault
+    
     fun onExceptionOccurred(e: RuntimeException) {
         logException(logger, e)
     }
@@ -1965,26 +1965,26 @@ interface IGetNotifier : IFsNotifier {
     /**
      * @return false if client code doesn't want to append this file to result
      */
-    @JvmDefault
+    
     fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean = true
 
     /**
      * @return 1st false - if client code doesn't want to append this folder to result, 2nd false - if not intended to go deeper
      */
-    @JvmDefault
+    
     fun onGetFolder(folder: File, collected: Set<File>, currentLevel: Int): Boolean = true
 
     /**
      * @return false to interrupt collecting
      */
-    @JvmDefault
+    
     fun shouldProceed(current: File, collected: Set<File>, currentLevel: Int, wasAdded: Boolean): Boolean = true
 }
 
 interface ISingleCopyNotifier : IFsNotifier {
     val notifyInterval: Long get() = 0L
 
-    @JvmDefault
+    
     fun shouldProceed(sourceFile: File, targetFile: File, bytesCopied: Long, bytesTotal: Long): Boolean = true
 }
 
@@ -1992,38 +1992,38 @@ interface IMultipleCopyNotifier : IFsNotifier {
     /**
      * @return false if process should be interrupted
      */
-    @JvmDefault
+    
     fun onCollecting(current: File, collected: Set<File>, currentLevel: Int): Boolean = true
 
     /**
      * @return false if process should be interrupted
      */
-    @JvmDefault
+    
     fun shouldProceed(currentFile: File, targetDir: File, copied: Set<File>, filesProcessed: Long, filesTotal: Long): Boolean = true
 
     /**
      * true if copying confirmed by client code, false to cancel
      */
-    @JvmDefault
+    
     fun confirmMoveOrCopy(currentFile: File, targetDir: File): Boolean = true
 
     /**
      * @return target file to copy in or null for default
      */
-    @JvmDefault
+    
     fun onBeforeMoveOrCopy(currentFile: File, targetDir: File): File? = null
 
     /**
      * @return true if specified destination file is should be replaced (it currently exists)
      */
-    @JvmDefault
+    
     fun confirmReplace(targetFile: File): ReplaceOptions = ReplaceOptions()
 
-    @JvmDefault
+    
     fun onSucceeded(currentFile: File, resultFile: File) {
     }
 
-    @JvmDefault
+    
     fun onFailed(currentFile: File, targetDir: File) {
     }
 
@@ -2047,36 +2047,36 @@ interface IDeleteNotifier : IFsNotifier {
     /**
      * @return false to interrupt collecting
      */
-    @JvmDefault
+    
     fun shouldProceed(current: File, deleted: Set<File>, currentLevel: Int): Boolean = true
 
     /**
      * @return false if client code doesn't want to delete this file
      */
-    @JvmDefault
+    
     fun confirmDeleteFile(file: File): Boolean = true
 
     /**
      * @return false if client code doesn't want to delete this folder
      */
-    @JvmDefault
+    
     fun confirmDeleteFolder(folder: File): Boolean = true
 
-    @JvmDefault
+    
     fun onDeleteFileFailed(file: File) {
     }
 
-    @JvmDefault
+    
     fun onDeleteFolderFailed(folder: File) {
     }
 }
 
 interface IShellGetNotifier : IGetNotifier {
-    @JvmDefault
+    
     fun onStartFailed(t: Throwable?, forFile: File) {
     }
 
-    @JvmDefault
+    
     fun onExitCode(exitCode: Int, forFile: File) {
     }
 }
