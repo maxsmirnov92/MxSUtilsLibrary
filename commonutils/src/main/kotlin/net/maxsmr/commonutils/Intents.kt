@@ -10,6 +10,7 @@ import android.os.Build
 import android.provider.Settings
 import android.text.TextUtils
 import androidx.annotation.RequiresApi
+import net.maxsmr.commonutils.SendAction.*
 import net.maxsmr.commonutils.media.*
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.io.File
@@ -80,8 +81,8 @@ fun getShareIntent(
     mimeType: String = EMPTY_STRING,
     mimeTypes: List<String> = emptyList(),
     recipients: List<String> = emptyList(),
-    isMultiple: Boolean = uri == null
-): Intent = getSendIntent(isMultiple).apply {
+    sendAction: SendAction = SEND
+): Intent = getSendIntent(sendAction).apply {
     putExtra(Intent.EXTRA_SUBJECT, subject)
     putExtra(Intent.EXTRA_TEXT, text)
     uri?.let {
@@ -158,38 +159,37 @@ fun getShareFileIntent(
         context.contentResolver,
         uriAndType?.second ?: EMPTY_STRING,
         recipients = recipients,
-        isMultiple = false
+        sendAction = SEND
     ).apply {
         addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
     }
 }
 
 @JvmOverloads
-fun getSendEmailIntent(email: String?, isMultiple: Boolean = false): Intent? {
+fun getSendEmailIntent(email: String?, sendAction: SendAction = SENDTO): Intent? {
     val uri = if (!email.isNullOrEmpty()) {
         Uri.fromParts(URL_SCHEME_MAIL, email, null)
     } else {
         Uri.parse("$URL_SCHEME_MAIL:")
     }
-    return getSendEmailIntent(uri, isMultiple)
+    return getSendEmailIntent(uri, sendAction)
 }
 
 @JvmOverloads
-fun getSendEmailIntent(uri: Uri, isMultiple: Boolean = false): Intent? {
+fun getSendEmailIntent(uri: Uri, sendAction: SendAction = SENDTO): Intent? {
     if (URL_SCHEME_MAIL != uri.scheme) {
         return null
     }
-    return getSendIntent(isMultiple).apply {
+    return getSendIntent(sendAction).apply {
         data = uri
     }
 }
 
-@JvmOverloads
-fun getSendIntent(isMultiple: Boolean = false) = Intent(
-    if (isMultiple) {
-        Intent.ACTION_SEND_MULTIPLE
-    } else {
-        Intent.ACTION_SEND
+fun getSendIntent(sendAction: SendAction) = Intent(
+    when(sendAction) {
+        SEND_MULTIPLE -> Intent.ACTION_SEND_MULTIPLE
+        SENDTO -> Intent.ACTION_SENDTO
+        else -> Intent.ACTION_SEND
     }
 )
 
@@ -209,10 +209,10 @@ fun Intent.wrapChooser(
 }
 
 private fun Intent.applyMimeTypes(type: String?, types: List<String>?) {
-    this.type = if (!TextUtils.isEmpty(type)) {
-        type
-    } else {
-        MIME_TYPE_ANY
+    this.type = when {
+        type == null -> null
+        !TextUtils.isEmpty(type) -> type
+        else -> MIME_TYPE_ANY
     }
     if (isAtLeastKitkat() && types != null && types.isNotEmpty()) {
         putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
@@ -251,4 +251,8 @@ private fun getFileUriAndType(
         file.toFileUri()
     }
     return Pair(fileUri, getMimeTypeFromExtension(file.extension))
+}
+
+enum class SendAction {
+    SEND_MULTIPLE, SENDTO, SEND
 }

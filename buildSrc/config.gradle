@@ -28,7 +28,7 @@ ext {
     googleServicesVersion = '4.2.0'
 
     commonsNetVersion = '3.3'
-    gsonVersion = '2.8.6'
+    gsonVersion = '2.9.0'
     jsonVersion = '20210307'
     jodaTimeVersion = '2.9.4'
 

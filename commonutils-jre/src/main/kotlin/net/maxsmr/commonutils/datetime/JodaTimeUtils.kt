@@ -3,22 +3,28 @@ package net.maxsmr.commonutils.datetime
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
+import net.maxsmr.commonutils.text.EMPTY_STRING
 import org.joda.time.*
-import java.util.*
+import org.joda.time.base.BaseLocal
+import org.joda.time.format.DateTimeFormat
+import org.joda.time.format.DateTimeFormatter
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("JodaTimeUtils")
 
+const val DEFAULT_DATE_PATTERN = "dd.MM.yyyy"
+
 /**
- * Время между [targetDate] и текущим временем
+ * Время между [targetDateTimeFormatted] и текущим временем
  * @param isBefore при true предполагается, что сравниваемое время должно быть в прошлом
  */
 @JvmOverloads
 fun timeBetweenCurrent(
-    targetDate: Date,
+    targetDateTimeFormatted: String,
     unit: JodaTimeUnit,
+    pattern: String = DEFAULT_DATE_PATTERN,
     isBefore: Boolean = true,
 ): Int? = try {
-    timeBetweenCurrentOrThrow(targetDate, unit, isBefore)
+    timeBetweenCurrentOrThrow(targetDateTimeFormatted, unit, pattern, isBefore)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
@@ -27,22 +33,33 @@ fun timeBetweenCurrent(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun timeBetweenCurrentOrThrow(
-    targetDate: Date,
+    targetDateTimeFormatted: String,
     unit: JodaTimeUnit,
+    pattern: String = DEFAULT_DATE_PATTERN,
     isBefore: Boolean = true,
 ): Int {
-    val currentTime = System.currentTimeMillis()
-    return timeBetweenOrThrow(targetDate.time, currentTime, unit, isBefore)
+    val compareDateTime = parseLocalDateTime(targetDateTimeFormatted, LocalType.DATETIME, pattern)
+        ?: throw RuntimeException("Incorrect targetDateTimeFormatted: '$targetDateTimeFormatted'")
+    return timeBetweenOrThrow(compareDateTime, LocalDateTime.now(), unit, isBefore)
 }
 
 @JvmOverloads
 fun timeBetween(
-    firstMillis: Long,
-    secondMillis: Long,
+    oneDateTimeFormatted: String,
+    otherDateTimeFormatted: String,
+    oneDateTimePattern: String = DEFAULT_DATE_PATTERN,
+    otherDateTimePattern: String = DEFAULT_DATE_PATTERN,
     unit: JodaTimeUnit,
     isBefore: Boolean = true,
 ): Int? = try {
-    timeBetweenOrThrow(firstMillis, secondMillis, unit, isBefore)
+    timeBetweenOrThrow(
+        oneDateTimeFormatted,
+        otherDateTimeFormatted,
+        oneDateTimePattern,
+        otherDateTimePattern,
+        unit,
+        isBefore
+    )
 } catch (e: RuntimeException) {
     logger.e(e)
     null
@@ -51,20 +68,53 @@ fun timeBetween(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun timeBetweenOrThrow(
-    firstMillis: Long,
-    secondMillis: Long,
+    oneDateTimeFormatted: String,
+    otherDateTimeFormatted: String,
+    oneDateTimePattern: String = DEFAULT_DATE_PATTERN,
+    otherDateTimePattern: String = DEFAULT_DATE_PATTERN,
     unit: JodaTimeUnit,
     isBefore: Boolean = true,
-): Int = timeBetweenOrThrow(Date(firstMillis), Date(secondMillis), unit, isBefore)
+): Int {
+    val oneDateTime = parseLocalDateTime(oneDateTimeFormatted, LocalType.DATETIME, oneDateTimePattern)
+        ?: throw RuntimeException("Incorrect oneDateFormatted: '$oneDateTimeFormatted'")
+    val otherDateTime = parseLocalDateTime(otherDateTimeFormatted, LocalType.DATETIME, otherDateTimePattern)
+        ?: throw RuntimeException("Incorrect otherDateFormatted: '$otherDateTimeFormatted'")
+    return timeBetweenOrThrow(oneDateTime, otherDateTime, unit, isBefore)
+}
 
 @JvmOverloads
 fun timeBetween(
-    firstDate: Date,
-    secondDate: Date,
+    oneMillis: Long,
+    otherMillis: Long,
     unit: JodaTimeUnit,
     isBefore: Boolean = true,
 ): Int? = try {
-    timeBetweenOrThrow(firstDate, secondDate, unit, isBefore)
+    timeBetweenOrThrow(oneMillis, otherMillis, unit, isBefore)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+/**
+ * С использованием UTC времени с 1970
+ */
+@Throws(RuntimeException::class)
+@JvmOverloads
+fun timeBetweenOrThrow(
+    oneMillis: Long,
+    otherMillis: Long,
+    unit: JodaTimeUnit,
+    isBefore: Boolean = true,
+): Int = timeBetweenOrThrow(LocalDate(oneMillis), LocalDate(otherMillis), unit, isBefore)
+
+@JvmOverloads
+fun timeBetween(
+    oneDate: BaseLocal,
+    otherDate: BaseLocal,
+    unit: JodaTimeUnit,
+    isBefore: Boolean = true,
+): Int? = try {
+    timeBetweenOrThrow(oneDate, otherDate, unit, isBefore)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
@@ -73,30 +123,20 @@ fun timeBetween(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun timeBetweenOrThrow(
-    firstDate: Date,
-    secondDate: Date,
+    oneDate: BaseLocal,
+    otherDate: BaseLocal,
     unit: JodaTimeUnit,
     isBefore: Boolean = true,
 ): Int {
-
-    fun Date.fromDateFields() = try {
-        LocalDate.fromDateFields(this)
-    } catch (e: RuntimeException) {
-        throw RuntimeException(formatException(e, "fromDateFields for date '$this'"))
-    }
-
-    val one = firstDate.fromDateFields()
-    val other = secondDate.fromDateFields()
-
-    val first: LocalDate
-    val second: LocalDate
-    val isSecondAfter = secondDate.time > firstDate.time
+    val first: BaseLocal
+    val second: BaseLocal
+    val isSecondAfter = otherDate.isAfter(oneDate)
     if (isSecondAfter) {
-        first = one
-        second = other
+        first = oneDate
+        second = otherDate
     } else {
-        first = other
-        second = one
+        first = otherDate
+        second = oneDate
     }
     val diff: Int = try {
         when (unit) {
@@ -104,6 +144,9 @@ fun timeBetweenOrThrow(
             JodaTimeUnit.MONTHS -> Months.monthsBetween(first, second).months
             JodaTimeUnit.WEEKS -> Weeks.weeksBetween(first, second).weeks
             JodaTimeUnit.DAYS -> Days.daysBetween(first, second).days
+            JodaTimeUnit.HOURS -> Hours.hoursBetween(first, second).hours
+            JodaTimeUnit.MINUTES -> Minutes.minutesBetween(first, second).minutes
+            JodaTimeUnit.SECONDS -> Seconds.secondsBetween(first, second).seconds
         }
     } catch (e: RuntimeException) {
         throw RuntimeException(formatException(e, "org.joda.time between"))
@@ -123,9 +166,56 @@ fun timeBetweenOrThrow(
     }
 }
 
+@JvmOverloads
+fun parseLocalDateTime(
+    dateTimeFormatted: String?,
+    type: LocalType,
+    pattern: String,
+    formatterConfigFunc: ((DateTimeFormatter) -> Unit)? = null,
+): BaseLocal? {
+    return try {
+        val formatter = DateTimeFormat.forPattern(pattern)
+        formatterConfigFunc?.invoke(formatter)
+        when (type) {
+            LocalType.TIME -> LocalTime.parse(dateTimeFormatted, formatter)
+            LocalType.DATE -> LocalDate.parse(dateTimeFormatted, formatter)
+            LocalType.DATETIME -> LocalDateTime.parse(dateTimeFormatted, formatter)
+        }
+    } catch (e: Exception) {
+        logger.e(formatException(e, "org.joda.time parse, dateTimeFormatted: '$dateTimeFormatted'"))
+        null
+    }
+}
+
+@JvmOverloads
+fun formatLocalDateTime(
+    dateTime: BaseLocal?,
+    pattern: String,
+    formatterConfigFunc: ((DateTimeFormatter) -> Unit)? = null,
+): String {
+    return try {
+        val formatter = DateTimeFormat.forPattern(pattern)
+        formatterConfigFunc?.invoke(formatter)
+        formatter.print(dateTime)
+    } catch (e: Exception) {
+        logger.e(formatException(e, "org.joda.time format, dateTime: '$dateTime'"))
+        EMPTY_STRING
+    }
+}
+
+
 enum class JodaTimeUnit {
+    SECONDS,
+    MINUTES,
+    HOURS,
     DAYS,
     MONTHS,
     WEEKS,
     YEARS
+}
+
+enum class LocalType {
+    TIME,
+    DATE,
+    DATETIME
 }
