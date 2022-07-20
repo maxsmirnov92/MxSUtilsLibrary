@@ -1018,6 +1018,12 @@ enum class VisibilityHide {
     INVISIBLE, GONE
 }
 
+fun CompoundButton.setCheckedDistinct(checked: Boolean) {
+    if (isChecked != checked) {
+        isChecked = checked
+    }
+}
+
 fun View.hideByReferenceViews(vararg otherViews: View) {
     val isGone = otherViews.all { it.visibility == View.GONE }
     visibility = if (isGone) View.GONE else View.INVISIBLE

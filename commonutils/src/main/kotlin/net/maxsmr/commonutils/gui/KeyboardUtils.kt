@@ -6,6 +6,8 @@ import android.graphics.Rect
 import android.view.View
 import android.view.ViewTreeObserver
 import android.view.inputmethod.InputMethodManager
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
@@ -14,37 +16,33 @@ private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("KeyboardUt
 fun getKeyboardHeight(rootView: View, targetView: View): Int {
     val rect = Rect()
     targetView.getWindowVisibleDisplayFrame(rect)
-    val usableViewHeight = rootView.height - (if (rect.top != 0) rootView.context.resources.getStatusBarHeight() else 0) - rootView.getViewInset()
+    val usableViewHeight =
+        rootView.height - (if (rect.top != 0) rootView.context.resources.getStatusBarHeight() else 0) - rootView.getViewInset()
     return usableViewHeight - (rect.bottom - rect.top)
 }
 
 /**
- * Добавление слушателя [OnSoftInputStateListener] на состояние клавиатуры
+ * Добавление слушателя на состояние клавиатуры
  *
  * @param rootView корневай [View] на экране
  */
 fun addSoftInputStateListener(
-        rootView: View,
-        openedAction: () -> Unit,
-        closedAction: () -> Unit
+    rootView: View,
+    keyboardVisibilityChangeListener: (Boolean) -> Unit,
 ): ViewTreeObserver.OnGlobalLayoutListener {
-    val listener = object : ViewTreeObserver.OnGlobalLayoutListener {
-        private val HEIGHT_ROOT_THRESHOLD = 100
-        override fun onGlobalLayout() {
-            val heightDiff = rootView.rootView.height - rootView.height
-            if (heightDiff > HEIGHT_ROOT_THRESHOLD) {
-                openedAction()
-            } else {
-                closedAction()
-            }
+    ViewTreeObserver.OnGlobalLayoutListener {
+        val insets = ViewCompat.getRootWindowInsets(rootView)
+        insets?.let {
+            keyboardVisibilityChangeListener(insets.isVisible(WindowInsetsCompat.Type.ime()))
         }
+    }.let { listener ->
+        rootView.viewTreeObserver.addOnGlobalLayoutListener(listener)
+        return listener
     }
-    rootView.viewTreeObserver.addOnGlobalLayoutListener(listener)
-    return listener
 }
 
 fun isKeyboardShown(activity: Activity): Boolean =
-        isKeyboardShown(activity.currentFocus)
+    isKeyboardShown(activity.currentFocus)
 
 fun isKeyboardShown(view: View?): Boolean {
     if (view == null) {
@@ -62,38 +60,38 @@ fun isKeyboardShown(view: View?): Boolean {
 
 @JvmOverloads
 fun showKeyboard(
-        activity: Activity,
-        flags: Int = InputMethodManager.SHOW_IMPLICIT
+    activity: Activity,
+    flags: Int = InputMethodManager.SHOW_IMPLICIT
 ): Boolean =
-        showKeyboard(activity.currentFocus, flags, false)
+    showKeyboard(activity.currentFocus, flags, false)
 
 @JvmOverloads
 fun showKeyboard(
-        hostView: View?,
-        flags: Int = InputMethodManager.SHOW_IMPLICIT,
-        requestFocus: Boolean = true
+    hostView: View?,
+    flags: Int = InputMethodManager.SHOW_IMPLICIT,
+    requestFocus: Boolean = true
 ): Boolean {
     if (hostView == null) return false
     if (requestFocus) {
         hostView.requestFocus()
     }
     val imm = hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
-            ?: return false
+        ?: return false
     return imm.showSoftInput(hostView, flags)
 }
 
 @JvmOverloads
 fun hideKeyboard(
-        activity: Activity,
-        flags: Int = 0,
-        clearFocus: Boolean = true
+    activity: Activity,
+    flags: Int = 0,
+    clearFocus: Boolean = true
 ) = hideKeyboard(activity.currentFocus, flags, clearFocus)
 
 @JvmOverloads
 fun hideKeyboard(
-        hostView: View?,
-        flags: Int = 0,
-        clearFocus: Boolean = true
+    hostView: View?,
+    flags: Int = 0,
+    clearFocus: Boolean = true
 ): Boolean {
     hostView?.let {
         if (clearFocus) {
@@ -101,7 +99,7 @@ fun hideKeyboard(
         }
         hostView.windowToken?.let {
             val imm = hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
-                    ?: return false
+                ?: return false
             return imm.hideSoftInputFromWindow(it, flags)
         }
     }
