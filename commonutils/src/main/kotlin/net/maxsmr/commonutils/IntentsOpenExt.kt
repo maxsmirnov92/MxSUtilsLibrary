@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
@@ -16,27 +17,25 @@ private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("OpenIntent
 @JvmOverloads
 fun Context.openSystemBrowser(
     url: String?,
-    mimeType: String? = null,
-    mimeTypes: List<String>? = null,
+    flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
     errorHandler: ((ActivityNotFoundException?) -> Unit)? = null,
 ): Boolean {
     return if (url.isNullOrEmpty()) {
         false
     } else {
-        openSystemBrowser(Uri.parse(url), mimeType, mimeTypes, options, errorHandler)
+        openSystemBrowser(Uri.parse(url), flags, options, errorHandler)
     }
 }
 
 @JvmOverloads
 fun Context.openSystemBrowser(
     uri: Uri,
-    mimeType: String? = null,
-    mimeTypes: List<String>? = null,
+    flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
     errorHandler: ((ActivityNotFoundException?) -> Unit)? = null,
 ): Boolean {
-    return startActivitySafe(getViewUrlIntent(uri, mimeType, mimeTypes), options, errorHandler)
+    return startActivitySafe(getViewUrlIntent(uri, this).addFlags(flags), options, errorHandler)
 }
 
 @JvmOverloads
@@ -98,7 +97,7 @@ private fun Any.startActivitySafeForAny(
     val context: Context = when (this) {
         is Context -> this
         is Activity -> this
-        is Fragment -> requireActivity()
+        is Fragment -> requireContext()
         else -> return false
     }
     if (!context.canHandleActivityIntent(intent)) {
@@ -107,12 +106,12 @@ private fun Any.startActivitySafeForAny(
         return false
     }
     return try {
-        if (requestCode != null
-            && (context is Activity || context is Fragment)
-        ) {
-            when (context) {
-                is Activity -> context.startActivityForResult(intent, requestCode, options)
-                is Fragment -> context.startActivityForResult(intent, requestCode, options)
+        if (requestCode != null) {
+            when (this) {
+                is Activity -> startActivityForResult(intent, requestCode, options)
+                is Fragment -> startActivityForResult(intent, requestCode, options)
+                is Context -> startActivity(intent, options)
+                else -> return false
             }
         } else {
             context.startActivity(intent, options)

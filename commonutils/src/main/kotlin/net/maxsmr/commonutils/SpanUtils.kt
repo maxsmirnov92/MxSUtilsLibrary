@@ -51,7 +51,7 @@ fun CharSequence?.parseHtmlToSpannedStringOrThrow(replaceNewLine: Boolean = true
  * Попытка привести html к строке с потерей части форматирования.
  */
 @JvmOverloads
-fun CharSequence?.parseClearedHtml(replaceNewLine: Boolean = true): CharSequence = orEmpty(parseHtmlToSpannedString(replaceNewLine))
+fun CharSequence?.parseClearedHtml(replaceNewLine: Boolean = true): String = parseHtmlToSpannedString(replaceNewLine)?.toString().orEmpty()
 
 /**
  * Добавляет спаны [spanInfo] в строку this.

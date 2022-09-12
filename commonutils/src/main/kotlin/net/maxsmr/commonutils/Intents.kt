@@ -7,6 +7,8 @@ import android.content.Intent
 import android.content.IntentSender
 import android.net.Uri
 import android.os.Build
+import android.os.PowerManager
+import android.provider.Browser
 import android.provider.Settings
 import android.text.TextUtils
 import androidx.annotation.RequiresApi
@@ -14,7 +16,6 @@ import net.maxsmr.commonutils.SendAction.*
 import net.maxsmr.commonutils.media.*
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.io.File
-import java.util.*
 
 const val URL_MARKET_FORMAT = "https://play.google.com/store/apps/details?id=%s"
 const val URL_GOOGLE_PAY_SAVE_FORMAT = "https://pay.google.com/gp/v/save/%s"
@@ -36,6 +37,19 @@ fun getLocationSettingsIntent() = Intent(Settings.ACTION_LOCATION_SOURCE_SETTING
 
 fun getWifiSettingsIntent() = Intent(Settings.ACTION_WIFI_SETTINGS)
 
+@TargetApi(Build.VERSION_CODES.M)
+fun getIgnoreBatteryOptimizationsIntent(context: Context): Intent? {
+        val packageName = context.packageName
+        val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager? ?: return null
+        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+            return Intent().apply {
+                action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                data = Uri.parse("package:$packageName")
+            }
+        }
+    return null
+}
+
 fun getBrowseLocationIntent(latitude: Double, longitude: Double) = getViewIntent(
     Uri.parse("geo:%1f,%2f".format(latitude, longitude))
 ).apply {
@@ -54,10 +68,10 @@ fun getGooglePaySaveUri(jwt: String) =
  * Доступ к полученным таким образом файлам постоянный (можно хранить uri для долговременного использования)
  */
 @RequiresApi(Build.VERSION_CODES.KITKAT)
-fun getOpenDocumentIntent(mimeType: String, mimeTypes: List<String>?) =
+fun getOpenDocumentIntent(intentType: String, mimeTypes: List<String>?) =
     Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
         addCategory(Intent.CATEGORY_OPENABLE)
-        applyMimeTypes(mimeType, mimeTypes)
+        applyMimeTypes(intentType, mimeTypes)
     }
 
 /**
@@ -67,48 +81,44 @@ fun getOpenDocumentIntent(mimeType: String, mimeTypes: List<String>?) =
  * таким образом файла для использования в дальнейшем - не лучшая идея)
  */
 @RequiresApi(Build.VERSION_CODES.KITKAT)
-fun getContentIntent(type: String, mimeTypes: List<String>?) =
+fun getContentIntent(intentType: String, mimeTypes: List<String>?) =
     Intent(Intent.ACTION_GET_CONTENT).apply {
-        applyMimeTypes(type, mimeTypes)
+        applyMimeTypes(intentType, mimeTypes)
     }
 
 @JvmOverloads
 fun getShareIntent(
     uri: Uri?,
-    subject: String,
-    text: String,
+    subject: String?,
+    text: String?,
     contentResolver: ContentResolver? = null,
-    mimeType: String = EMPTY_STRING,
+    intentType: String? = EMPTY_STRING,
     mimeTypes: List<String> = emptyList(),
     recipients: List<String> = emptyList(),
     sendAction: SendAction = SEND
 ): Intent = getSendIntent(sendAction).apply {
-    putExtra(Intent.EXTRA_SUBJECT, subject)
-    putExtra(Intent.EXTRA_TEXT, text)
+    subject?.let {
+        putExtra(Intent.EXTRA_SUBJECT, subject)
+    }
+    text?.let {
+        putExtra(Intent.EXTRA_TEXT, text)
+    }
     uri?.let {
         putExtra(Intent.EXTRA_STREAM, uri)
     }
     if (recipients.isNotEmpty()) {
         putExtra(Intent.EXTRA_EMAIL, recipients.toTypedArray())
     }
-    applyDataAndMimeTypes(uri, contentResolver, mimeType, mimeTypes)
+    applyDataAndMimeTypes(uri, contentResolver, intentType, mimeTypes)
 }
 
-@JvmOverloads
-fun getViewUrlIntent(
-    url: String,
-    mimeType: String? = getMimeTypeFromUrl(url),
-    mimeTypes: List<String>? = null
-) = getViewUrlIntent(Uri.parse(url), mimeType, mimeTypes)
+fun getViewUrlIntent(url: String, context: Context? = null) = getViewUrlIntent(Uri.parse(url), context)
 
-@JvmOverloads
-fun getViewUrlIntent(
-    uri: Uri,
-    mimeType: String? = null,
-    mimeTypes: List<String>? = null
-) = getViewIntent().apply {
+fun getViewUrlIntent(uri: Uri, context: Context? = null) = getViewIntent().apply {
     data = uri
-    applyMimeTypes(mimeType, mimeTypes)
+    context?.let {
+        putExtra(Browser.EXTRA_APPLICATION_ID, context.packageName)
+    }
 }
 
 /**
@@ -130,10 +140,10 @@ fun getViewFileIntent(
 fun getViewIntent(
     uri: Uri,
     contentResolver: ContentResolver? = null,
-    mimeType: String = EMPTY_STRING,
+    intentType: String = EMPTY_STRING,
     mimeTypes: List<String> = emptyList()
 ): Intent = getViewIntent().apply {
-    applyDataAndMimeTypes(uri, contentResolver, mimeType, mimeTypes)
+    applyDataAndMimeTypes(uri, contentResolver, intentType, mimeTypes)
 }
 
 fun getViewIntent() = Intent(Intent.ACTION_VIEW)
@@ -208,14 +218,29 @@ fun Intent.wrapChooser(
     }
 }
 
-private fun Intent.applyMimeTypes(type: String?, types: List<String>?) {
+/**
+ * Разделяет интент this, под который могут подходить несколько приложений, на список отдельных
+ * интентов под каждое приложение
+ */
+fun Intent.flatten(context: Context): List<Intent> {
+    return context.packageManager.queryIntentActivities(this, 0).map {
+        Intent(this).apply { setPackage(it.activityInfo.packageName) }
+    }
+}
+
+private fun Intent.applyMimeTypes(intentType: String?, mimeTypes: List<String>?) {
     this.type = when {
-        type == null -> null
-        !TextUtils.isEmpty(type) -> type
+        // при заполнении несколькими основной тип не должен оставаться нульным
+        intentType == null -> if (mimeTypes != null && mimeTypes.isNotEmpty()) mimeTypes[0] else null
+        !TextUtils.isEmpty(intentType) -> intentType
         else -> MIME_TYPE_ANY
     }
-    if (isAtLeastKitkat() && types != null && types.isNotEmpty()) {
-        putExtra(Intent.EXTRA_MIME_TYPES, types.toTypedArray())
+    if (mimeTypes != null && mimeTypes.isNotEmpty()) {
+        if (isAtLeastKitkat()) {
+            putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
+        } else {
+            this.type = TextUtils.join("|", mimeTypes)
+        }
     }
 }
 
@@ -226,13 +251,13 @@ private fun Intent.applyMimeTypes(type: String?, types: List<String>?) {
 private fun Intent.applyDataAndMimeTypes(
     uri: Uri?,
     contentResolver: ContentResolver?,
-    type: String,
-    types: List<String>
+    intentType: String?,
+    mimeTypes: List<String>
 ) {
-    if (uri != null && contentResolver != null && type.isEmpty() && types.isEmpty()) {
+    if (uri != null && contentResolver != null && intentType.isNullOrEmpty() && mimeTypes.isEmpty()) {
         applyMimeTypes(uri.mimeType(contentResolver), emptyList())
     } else {
-        applyMimeTypes(type, types)
+        applyMimeTypes(intentType, mimeTypes)
     }
     data = uri
 }

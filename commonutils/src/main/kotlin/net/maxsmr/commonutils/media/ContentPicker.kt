@@ -23,6 +23,7 @@ import kotlin.Pair
 
 private const val MIME_TYPE_IMAGE = "image/*"
 
+@Deprecated("implement ConcretePicker")
 class ContentPicker(
     private val owner: LifecycleOwner,
     private val pickerConfigurator: BasePickerConfigurator

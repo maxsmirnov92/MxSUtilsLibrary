@@ -50,7 +50,7 @@ fun getMimeTypeFromName(name: String?): String =
     getMimeTypeFromExtension(getExtension(name))
 
 fun getMimeTypeFromExtension(extension: String?): String =
-    MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension ?: EMPTY_STRING) ?: EMPTY_STRING
+    extension?.let {  MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)}.orEmpty()
 
 fun getContentName(url: String?, name: String = EMPTY_STRING): String = if (name.isNotEmpty()) {
     name
