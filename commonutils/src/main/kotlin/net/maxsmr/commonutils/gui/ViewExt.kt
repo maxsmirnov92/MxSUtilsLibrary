@@ -39,6 +39,7 @@ import net.maxsmr.commonutils.format.getUnformattedText
 import net.maxsmr.commonutils.graphic.scaleDownBitmap
 import net.maxsmr.commonutils.gui.listeners.AfterTextWatcher
 import net.maxsmr.commonutils.gui.listeners.DefaultTextWatcher
+import net.maxsmr.commonutils.live.field.Field
 import net.maxsmr.commonutils.live.setValueIfNew
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
@@ -154,7 +155,7 @@ fun EditText.setSelectionToEnd() {
  * @param length целочисленное значение, соответствующее максимальному
  * количеству символов, допустимых к набору в [EditText].
  */
-fun EditText.setMaxLength(length: Int) {
+fun TextView.setMaxLength(length: Int) {
     if (length >= 0) {
         val inputTextFilter = InputFilter.LengthFilter(length)
         filters = filters
@@ -167,18 +168,18 @@ fun EditText.setMaxLength(length: Int) {
 /**
  * Снятие лимита на количество символов допустимых к набору в [EditText]
  */
-fun EditText.clearMaxLength() {
+fun TextView.clearMaxLength() {
     filters = filters
         .filterNot { it is InputFilter.LengthFilter }
         .toTypedArray()
 }
 
-fun EditText.bindToTextUnformatted(field: MutableLiveData<String>, maskWatcher: MaskFormatWatcher) {
-    bindToTextUnformatted(field, maskWatcher.maskOriginal)
+fun TextView.bindToTextUnformatted(data: MutableLiveData<String>, maskWatcher: MaskFormatWatcher) {
+    bindToTextUnformatted(data, maskWatcher.maskOriginal)
 }
 
-fun EditText.bindToTextUnformatted(field: MutableLiveData<String>, mask: Mask) {
-    bindToText(field) {
+fun TextView.bindToTextUnformatted(data: MutableLiveData<String>, mask: Mask) {
+    bindToTextNotNull(data) {
         getUnformattedText(mask, it)
         // или maskWatcher.mask.toUnformattedString()
     }
@@ -186,45 +187,120 @@ fun EditText.bindToTextUnformatted(field: MutableLiveData<String>, mask: Mask) {
 
 @JvmOverloads
 fun TextView.bindToText(
-    field: MutableLiveData<String>,
+    data: MutableLiveData<String?>,
     ifNew: Boolean = true,
-    toFieldValue: ((CharSequence?) -> String)? = null
+    toDataValue: ((CharSequence?) -> String?)? = null
 ) {
-    bindTo(field, ifNew) {
-        toFieldValue?.invoke(it) ?: it?.toString().orEmpty()
+    bindTo(data, ifNew) {
+        if (toDataValue != null) {
+            toDataValue.invoke(it)
+        } else {
+            it?.toString()
+        }
+    }
+}
+
+@JvmOverloads
+fun TextView.bindToTextNotNull(
+    data: MutableLiveData<String>,
+    ifNew: Boolean = true,
+    toDataValue: ((CharSequence?) -> String)? = null
+) {
+    bindTo(data, ifNew) {
+        toDataValue?.invoke(it) ?: it?.toString().orEmpty()
     }
 }
 
 /**
- * При срабатывании [TextWatcher] для укзанного [EditText]
- * будет выставляться значение в [field]
+ * При срабатывании [TextWatcher] для указанного [EditText]
+ * будет выставляться значение в [data]
  */
 @JvmOverloads
 fun <D> TextView.bindTo(
-    field: MutableLiveData<D>,
+    data: MutableLiveData<D>,
     ifNew: Boolean = true,
-    toFieldValue: (CharSequence?) -> D
+    toDataValue: (CharSequence?) -> D
 ) {
     addTextChangedListener(AfterTextWatcher { s: Editable ->
-        val newValue = toFieldValue.invoke(s)
+        val newValue = toDataValue.invoke(s)
         if (ifNew) {
-            field.setValueIfNew(newValue)
+            data.setValueIfNew(newValue)
         } else {
-            field.value = newValue
+            data.value = newValue
         }
     })
 }
 
+/**
+ * При срабатывании [TextWatcher] для указанного [EditText]
+ * будет выставляться значение в [field]
+ */
+fun <D> TextView.bindTo(field: Field<D>, toFieldValue: ((CharSequence?) -> D)) {
+    addTextChangedListener(AfterTextWatcher { s: Editable ->
+        field.value = toFieldValue.invoke(s)
+    })
+}
+
+
 @JvmOverloads
-fun CompoundButton.bindTo(field: MutableLiveData<Boolean>, ifNew: Boolean = true) {
+fun CompoundButton.bindTo(data: MutableLiveData<Boolean>, ifNew: Boolean = true) {
     setOnCheckedChangeListener { _, isChecked ->
         if (ifNew) {
-            field.setValueIfNew(isChecked)
+            data.setValueIfNew(isChecked)
         } else {
-            field.value = isChecked
+            data.value = isChecked
         }
     }
 }
+
+// region: Field
+
+fun TextView.bindToTextUnformatted(field: Field<String>, maskWatcher: MaskFormatWatcher) {
+    bindToTextUnformatted(field, maskWatcher.maskOriginal)
+}
+
+fun TextView.bindToTextUnformatted(field: Field<String>, mask: Mask) {
+    bindToTextNotNull(field) {
+        getUnformattedText(mask, it)
+        // или maskWatcher.mask.toUnformattedString()
+    }
+}
+
+/**
+ * Для варианта [Field] с возможным нулабельным значением;
+ * @param toFieldValue может вернуть null или отсутствовать
+ */
+@JvmOverloads
+fun TextView.bindToText(
+    field: Field<String?>,
+    toFieldValue: ((CharSequence?) -> String?)? = null
+) {
+    bindTo(field) {
+        if (toFieldValue != null) {
+            toFieldValue.invoke(it)
+        } else {
+            it?.toString()
+        }
+    }
+}
+
+@JvmOverloads
+fun TextView.bindToTextNotNull(
+    field: Field<String>,
+    toFieldValue: ((CharSequence?) -> String)? = null
+) {
+    bindTo(field) {
+        toFieldValue?.invoke(it) ?: it?.toString().orEmpty()
+    }
+}
+
+fun CompoundButton.bindTo(field: Field<Boolean>) {
+    setOnCheckedChangeListener { _, isChecked ->
+        field.value = isChecked
+    }
+}
+
+// endregion
 
 /**
  * Добавить кликабельную картинку вместо последнего символа в строке
@@ -1053,7 +1129,7 @@ fun View.setContentDescriptionWithAccessibilityDelegate(description: String) {
         }
 
         override fun performAccessibilityAction(host: View, action: Int, args: Bundle): Boolean {
-            didPerformAccessibilityAction  = super.performAccessibilityAction(host, action, args)
+            didPerformAccessibilityAction = super.performAccessibilityAction(host, action, args)
             return didPerformAccessibilityAction
         }
     })
@@ -1263,22 +1339,6 @@ class ProtectRangeInputFilter(private val startIndex: Int, private val endIndex:
             source
         }
     }
-}
-
-class DisableErrorTextWatcher(private val layouts: Collection<TextInputLayout>) : TextWatcher {
-
-    var isClearingEnabled = true
-
-    override fun onTextChanged(s: CharSequence, start: Int, before: Int, count: Int) {
-        for (l in layouts) {
-            if (isClearingEnabled) {
-                l.clearInputError()
-            }
-        }
-    }
-
-    override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
-    override fun afterTextChanged(s: Editable) {}
 }
 
 class EditTextKeyLimiter(private val et: EditText, private val linesLimit: Int) : View.OnKeyListener {

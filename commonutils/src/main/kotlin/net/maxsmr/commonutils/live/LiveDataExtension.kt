@@ -59,7 +59,7 @@ fun MutableLiveData<String>.observeFromText(
         owner: LifecycleOwner,
         distinct: Boolean = true,
         asString: Boolean = true,
-        formatFunc: ((String?) -> CharSequence)? = null
+        formatFunc: ((String) -> CharSequence?)? = null
 ) {
     observeFrom(view, owner, distinct, asString) {
         formatFunc?.invoke(it) ?: it
@@ -72,7 +72,7 @@ fun <D> MutableLiveData<D>.observeFrom(
         owner: LifecycleOwner,
         distinct: Boolean = true,
         asString: Boolean = true,
-        formatFunc: (D?) -> CharSequence?
+        formatFunc: (D) -> CharSequence?
 ) {
     observe(owner) {
         view.setTextChecked(formatFunc(it), distinct, asString)
@@ -128,43 +128,82 @@ fun <T> LiveData<T>.once(): LiveData<T> {
 }
 
 /**
- * Реализует преобразование `Transformations.map` над LiveData в стиле цепочек RxJava
+ * Реализует преобразование [Transformations.map] над LiveData в стиле цепочек RxJava
  */
-fun <X, Y> LiveData<X>.map(body: (X?) -> Y?): LiveData<Y> {
+fun <X, Y> LiveData<X>.map(body: (X) -> Y): LiveData<Y> {
     return Transformations.map(this, body)
 }
 
-fun <X, Y> LiveData<X>.mapNotNull(body: (X) -> Y): LiveData<Y> {
+fun <X, Y> LiveData<X>.mapNotNull(body: (X) -> Y?): MutableLiveData<Y> {
     val result = MediatorLiveData<Y>()
-    result.addSource(this) { x -> if (x != null) result.value = body(x) }
+    result.addSource(this) { x ->
+        body(x)?.let {
+            result.value = it
+        }
+    }
     return result
 }
 
 /**
- * Реализует преобразование `Transformations.switchMap` над LiveData в стиле цепочек RxJava
+ * Реализует преобразование [Transformations.switchMap] над LiveData в стиле цепочек RxJava
  */
-fun <X, Y> LiveData<X>.switchMap(body: (X?) -> LiveData<Y>): LiveData<Y> {
+fun <X, Y> LiveData<X>.switchMap(body: (X) -> LiveData<Y>): LiveData<Y> {
     return Transformations.switchMap(this, body)
 }
 
 /**
+ * С гарантиями того, что возможные нульные данные
+ * из [LiveData] вызова [body]
+ * не попадут в результирующую
+ */
+fun <X, Y> LiveData<X>.switchMapNotNull(body: (X) -> LiveData<Y?>): LiveData<Y> {
+    val result = MediatorLiveData<Y>()
+    result.addSource(this, object : Observer<X> {
+        var source: LiveData<Y?>? = null
+        override fun onChanged(x: X) {
+            val newLiveData: LiveData<Y?> = body(x)
+            if (source === newLiveData) {
+                return
+            }
+            source?.let {
+                result.removeSource(it)
+            }
+            source = newLiveData
+            result.addSource(newLiveData) { y ->
+                y?.let {
+                    result.setValue(y)
+                }
+            }
+        }
+    })
+    return result
+}
+
+fun <T> LiveData<T>.distinct(preventNull: Boolean = false): LiveData<T> =
+    distinct(preventNull) { it }
+
+/**
  * Реализует преобразование `AppTransformations.distinct` над LiveData в стиле цепочек RxJava
  */
-fun <T> LiveData<T>.distinct(preventNull: Boolean = false): LiveData<T> {
+fun <T, K> LiveData<T>.distinct(
+    preventNull: Boolean = false,
+    mapper: (T) -> K,
+): LiveData<T> {
     val distinctLiveData = MediatorLiveData<T>()
     distinctLiveData.addSource(this, object : Observer<T> {
 
         private var initialized = false
-        private var lastObj: T? = null
+        private var lastObj: K? = null
 
-        override fun onChanged(obj: T?) {
+        override fun onChanged(obj: T) {
+            val curr = mapper(obj)
             if (!initialized) {
                 initialized = true
-                lastObj = obj
-                distinctLiveData.postValue(lastObj)
-            } else if (!preventNull && obj == null && lastObj != null || obj != lastObj) {
-                lastObj = obj
-                distinctLiveData.postValue(lastObj)
+                lastObj = curr
+                distinctLiveData.postValue(obj)
+            } else if ((!preventNull || curr != null) && curr != lastObj) {
+                lastObj = curr
+                distinctLiveData.postValue(obj)
             }
         }
     })

@@ -55,7 +55,6 @@ fun <T> Gson.fromJsonOrNull(jsonString: String?, type: Type): T? {
 /**
  * Преобразует строку [jsonString] в список сущностей указанного типа [T],
  * информация о котором содержится в [type],
- * используя [gson]
  */
 fun <T> Gson.fromJsonArrayOrNull(jsonString: String?, type: Class<Array<T>?>): List<T> {
     val array: Array<T>? = fromJsonOrNull(jsonString, type)

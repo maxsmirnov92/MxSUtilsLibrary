@@ -45,9 +45,9 @@ fun RecyclerView.isScrollable(isFromStart: Boolean = false): Boolean? {
 
 @JvmOverloads
 fun RecyclerView.setOnScrollChangesListener(
-        layoutManager: LinearLayoutManager,
-        controlState: Int = ALL_STATES,
-        listener: ((RecyclerScrollState) -> Unit)
+    layoutManager: LinearLayoutManager,
+    controlState: Int = ALL_STATES,
+    listener: ((RecyclerScrollState) -> Unit)
 ) {
     addOnScrollListener(object : RecyclerView.OnScrollListener() {
 
@@ -109,15 +109,15 @@ fun ViewGroup.calculateCoordsForScroll(
 
 @JvmOverloads
 fun ViewGroup.scrollToView(
-        activity: Activity?,
-        target: View,
-        isVertically: Boolean,
-        fromStart: Boolean = true,
-        smoothScroll: Boolean = true,
-        changeFocus: Boolean = false,
+    target: View,
+    isVertically: Boolean,
+    fromStart: Boolean = true,
+    smoothScroll: Boolean = true,
+    changeFocus: Boolean = false,
+    activity: Activity?,
 ) {
     val coords = calculateCoordsForScroll(target, isVertically, fromStart)
-    scrollTo(activity, coords.first, coords.second, smoothScroll, changeFocus)
+    scrollTo(coords.first, coords.second, smoothScroll, changeFocus, activity)
 }
 
 /**
@@ -125,17 +125,17 @@ fun ViewGroup.scrollToView(
  */
 @JvmOverloads
 fun ViewGroup.scrollTo(
-        activity: Activity?,
-        x: Int,
-        y: Int,
-        smoothScroll: Boolean = true,
-        changeFocus: Boolean = false
+    x: Int,
+    y: Int,
+    smoothScroll: Boolean = true,
+    changeFocus: Boolean = false,
+    activity: Activity?,
 ) {
     if (changeFocus) {
         // если не очистить текущий фокус,
         // может не сработать
         activity?.currentFocus?.clearFocus()
-        when(this) {
+        when (this) {
             is ScrollView -> {
                 fullScroll(View.FOCUS_DOWN)
             }
@@ -149,7 +149,7 @@ fun ViewGroup.scrollTo(
 
     }
     if (smoothScroll) {
-        when(this) {
+        when (this) {
             is ScrollView -> {
                 smoothScrollTo(x, y)
             }
@@ -211,17 +211,17 @@ fun AppBarLayout.scrollByOffset(offset: Int, animationDuration: Long = SCROLL_AN
 }
 
 private fun ViewGroup.detectScrollChangesByParams(scrollX: Int, scrollY: Int, oldScrollX: Int, oldScrollY: Int): ScrollState =
-        when {
-            scrollX == (getChildAt(0).measuredWidth - measuredWidth) && scrollX != oldScrollX -> END
-            scrollX > oldScrollX -> RIGHT
-            scrollX < oldScrollX -> LEFT
-            scrollX == 0 && oldScrollX != 0 -> START
-            scrollY == (getChildAt(0).measuredHeight - measuredHeight) && scrollY != oldScrollY -> BOTTOM
-            scrollY < oldScrollY -> UP
-            scrollY > oldScrollY -> DOWN
-            scrollY == 0 && oldScrollY != 0 -> TOP
-            else -> UNKNOWN
-        }
+    when {
+        scrollX == (getChildAt(0).measuredWidth - measuredWidth) && scrollX != oldScrollX -> END
+        scrollX > oldScrollX -> RIGHT
+        scrollX < oldScrollX -> LEFT
+        scrollX == 0 && oldScrollX != 0 -> START
+        scrollY == (getChildAt(0).measuredHeight - measuredHeight) && scrollY != oldScrollY -> BOTTOM
+        scrollY < oldScrollY -> UP
+        scrollY > oldScrollY -> DOWN
+        scrollY == 0 && oldScrollY != 0 -> TOP
+        else -> UNKNOWN
+    }
 
 enum class ScrollState {
     // горизонтальный:
@@ -229,6 +229,7 @@ enum class ScrollState {
     RIGHT,
     START,
     END,
+
     // вертикальный:
     DOWN,
     UP,

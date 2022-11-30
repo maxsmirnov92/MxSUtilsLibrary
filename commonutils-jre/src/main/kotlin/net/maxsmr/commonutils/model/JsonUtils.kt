@@ -138,7 +138,6 @@ fun JSONObject?.copyFields(target: JSONObject?) {
     }
 }
 
-@Throws(JSONException::class)
 fun List<JSONPresentable>?.toJSONArray() = JSONArray(this?.map(JSONPresentable::asJSON))
 
 fun JSONObject?.optIntArray(arrayKey: String?): IntArray {
