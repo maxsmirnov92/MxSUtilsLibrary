@@ -1,10 +1,12 @@
 package net.maxsmr.commonutils
 
+import android.annotation.TargetApi
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import androidx.fragment.app.Fragment
@@ -36,18 +38,6 @@ fun Context.openSystemBrowser(
     errorHandler: ((ActivityNotFoundException?) -> Unit)? = null,
 ): Boolean {
     return startActivitySafe(getViewUrlIntent(uri, this).addFlags(flags), options, errorHandler)
-}
-
-@JvmOverloads
-fun Context.canHandleActivityIntent(
-    intent: Intent,
-    flags: Int = 0
-): Boolean {
-    val pm = packageManager
-    if (pm.resolveActivity(intent, flags) != null) {
-        return true
-    }
-    return false
 }
 
 @JvmOverloads
@@ -96,14 +86,8 @@ private fun Any.startActivitySafeForAny(
 ): Boolean {
     val context: Context = when (this) {
         is Context -> this
-        is Activity -> this
         is Fragment -> requireContext()
         else -> return false
-    }
-    if (!context.canHandleActivityIntent(intent)) {
-        // при оборачивании в chooser вёрнёт true при отсутствии аппов
-        errorHandler?.invoke(null)
-        return false
     }
     return try {
         if (requestCode != null) {

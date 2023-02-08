@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils.live
 
+import android.os.CountDownTimer
 import android.os.Handler
 import android.widget.TextView
 import androidx.lifecycle.*
@@ -287,6 +288,11 @@ fun <T> LiveData<T>.updateEvery(intervalMillis: Long): LiveData<T> {
     }
     return liveData
 }
+
+fun <X, Y> LiveData<X>.updateEveryWithTransform(
+    paramsFunc: (X) -> Pair<Long, Long>?,
+    transformFunc: (X?, Long, Boolean) -> Y,
+): LiveData<Y> = UpdatingTransformLiveData(this, paramsFunc, transformFunc)
 
 /**
  * Присваивает [LiveData] новое значение, только если оно изменилось
@@ -580,5 +586,107 @@ private class UpdatingLiveData<X>(private val intervalMillis: Long) : MediatorLi
     override fun onInactive() {
         super.onInactive()
         handler.removeCallbacks(updateRunnable)
+    }
+}
+
+/**
+ * @param sourceLiveData исходная [LiveData] с данными для преобразования
+ * @param paramsFunc лямбда, дающая в зав-ти от текущих данных [X]
+ * целевое время для отсчёта (0 - без таймера, выставление в эту LD сразу) + интервал
+ * @param transformFunc функция преобразования исходных [X] в [Y]
+ * [X] - текущее значение в [sourceLiveData]
+ * [Long] - оставшиеся миллисекунды до конца (0, если не запускался) при старте таймера
+ * [Long] - оставшиеся миллисекунды до конца (0, если не запускался) текущие
+ * [Boolean] - был ли в этот раз запущен таймер
+ */
+private class UpdatingTransformLiveData<X, Y>(
+    private val sourceLiveData: LiveData<X>,
+    private val paramsFunc: (X) -> Pair<Long, Long>?,
+    private val transformFunc: (X?, Long, Boolean) -> Y,
+) : MediatorLiveData<Y>() {
+
+    private var observer: UpdatingObserver? = null
+
+    private var timer: CountDownTimer? = null
+
+    override fun onActive() {
+        super.onActive()
+        // кол-во подписчиков 0 -> 1
+        with(UpdatingObserver()) {
+            sourceLiveData.observeForever(this)
+            observer = this
+        }
+        // таймер с отложенными значениями запускать не надо
+        // и запоминать их заранее тоже - реагируем на значение в UpdatingObserver по месту
+    }
+
+    override fun onInactive() {
+        super.onInactive()
+        // кол-во подписчиков стало 0
+        dispose()
+    }
+
+    fun dispose() {
+        disposeTimer()
+        observer?.let {
+            sourceLiveData.removeObserver(it)
+            observer = null
+        }
+    }
+
+    private fun update(millisUntilFinished: Long, timerWasStarted: Boolean) {
+        this.value = transformFunc(sourceLiveData.value,
+            millisUntilFinished.takeIf { it >= 0 } ?: 0,
+            timerWasStarted)
+    }
+
+    private fun startTimer(params: Pair<Long, Long>) {
+        with(Timer(params.first, params.second)) {
+            timer = this
+            start()
+        }
+    }
+
+    private fun disposeTimer() {
+        timer?.let {
+            it.cancel()
+            timer = null
+        }
+    }
+
+    inner class UpdatingObserver : Observer<X> {
+
+        override fun onChanged(t: X) {
+            // при каждом изменении исходного значения
+            // прекращаем текущий счёт, если был начат
+            disposeTimer()
+            paramsFunc(t)?.takeIf { it.first > 0 && it.second > 0 }?.let { params ->
+                if (hasActiveObservers()) {
+                    // и запускаем с новыми параметрами, при наличии активных слушателей
+                    startTimer(params)
+                }
+            } ?: update(0, false)
+            // отсчёт не требуется, просто рефрешим
+        }
+    }
+
+    /**
+     * Цель таймера - досчитать до указанного значения,
+     * меняя за каждый интервал значение в целевой [MediatorLiveData]
+     * с использованием предоставленной [transformFunc]
+     */
+    inner class Timer(
+        millisInFuture: Long,
+        intervalMillis: Long,
+    ) : CountDownTimer(millisInFuture, intervalMillis) {
+
+        override fun onTick(millisUntilFinished: Long) {
+            update(millisUntilFinished, true)
+        }
+
+        override fun onFinish() {
+            update(0,true)
+            timer = null
+        }
     }
 }
