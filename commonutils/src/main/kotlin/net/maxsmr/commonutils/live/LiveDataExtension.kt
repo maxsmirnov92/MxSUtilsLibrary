@@ -297,14 +297,21 @@ fun <X, Y> LiveData<X>.updateEveryWithTransform(
 /**
  * Присваивает [LiveData] новое значение, только если оно изменилось
  */
-fun <T> MutableLiveData<T>.setValueIfNew(newValue: T?, eagerNotify: Boolean = false) {
-    if (eagerNotify || this.value != newValue) value = newValue
+fun <T> MutableLiveData<T>.setValueIfNew(newValue: T?): Boolean {
+    if (this.value != newValue) {
+        value = newValue
+        return true
+    }
+    return false
 }
 
-fun <T> MutableLiveData<T>.postValueIfNew(newValue: T?, eagerNotify: Boolean = false) {
-    if (eagerNotify || this.value != newValue) postValue(newValue)
+fun <T> MutableLiveData<T>.postValueIfNew(newValue: T): Boolean {
+    if (this.value != newValue) {
+        postValue(newValue)
+        return true
+    }
+    return false
 }
-
 /**
  * Присваивает [NotifyCheckMutableLiveData] новое значение, только если оно изменилось
  */

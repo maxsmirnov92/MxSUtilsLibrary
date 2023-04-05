@@ -16,7 +16,7 @@ import java.io.Serializable
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 class Field<T> private constructor(
     private val _value: MutableLiveData<T>,
-    private val setValueFunction: (T?) -> Unit,
+    private val setValueFunction: (T?) -> Boolean,
     private val getValueFunction: () -> T?,
 ) {
 
@@ -31,7 +31,8 @@ class Field<T> private constructor(
     val valueLive: LiveData<T> get() = _value
 
     /**
-     * [LiveData] с изменением на предмет пустоты в динамике
+     * [LiveData] с изменением на предмет пустоты в динамике;
+     * Если поле необязательное - обозревать нет необходимости.
      */
     val isEmptyLive: LiveData<Boolean> get() = valueLive.map { validateEmpty() }.distinct()
 
@@ -50,7 +51,7 @@ class Field<T> private constructor(
     val error: TextMessage? get() = errorLive.value
 
     /**
-     * Возвращает true, если ошибка не выставлялась ранее, иначе false
+     * Возвращает true, если ошибка выставлялась ранее, иначе false
      */
     val hasError: Boolean get() = error != null
 
@@ -73,6 +74,9 @@ class Field<T> private constructor(
             }
         }
 
+    var wasChangedValue: Boolean = false
+        private set
+
     /**
      * Текущее значение поля;
      * Для сеттера нулабельный тип является потенциально ошибочным
@@ -80,14 +84,16 @@ class Field<T> private constructor(
     var value: T?
         get() = getValueFunction()
         set(value) {
-            setValueFunction(value)
+            if (setValueFunction(value)) {
+                wasChangedValue = true
+            }
         }
 
 
     var validators: Array<out Validator<T>> = emptyArray()
         set(value) {
             field = value
-            _value.recharge()
+            recharge()
         }
 
     private var hintMessage: TextMessage? = null
@@ -108,12 +114,12 @@ class Field<T> private constructor(
     /**
      * Валидация в зав-ти от обязательности данного поля
      */
-    fun validateAndSetByRequired() : Boolean {
+    fun validateAndSetByRequired(): Boolean {
         return if (!required && isEmpty) {
             // при необязательном пустом поле
-            // последняя выставленная ошибка
-            // (или её отстутствие в зав-ти от логики)
-            !hasError
+            // считаем что валидация прошла
+            clearError()
+            true
         } else {
             // при обязательности -
             // валидация по всем как обычно
@@ -370,12 +376,13 @@ class Field<T> private constructor(
         protected open fun fieldValue(): MutableLiveData<T> =
             handle?.getLiveData(key, initialValue) ?: MutableLiveData<T>(initialValue)
 
-        protected open fun valueSetter(fieldValue: MutableLiveData<T>, distinctUntilChanged: Boolean): (T?) -> Unit = {
+        protected open fun valueSetter(fieldValue: MutableLiveData<T>, distinctUntilChanged: Boolean): (T?) -> Boolean = {
             it.checkPersistable()
             if (distinctUntilChanged) {
                 fieldValue.setValueIfNew(it)
             } else {
                 fieldValue.value = it
+                true
             }
         }
 
@@ -397,11 +404,12 @@ class Field<T> private constructor(
         initialValue: String = EMPTY_STRING,
     ) : Builder<String>(initialValue) {
 
-        override fun valueSetter(fieldValue: MutableLiveData<String>, distinctUntilChanged: Boolean): (String?) -> Unit = {
+        override fun valueSetter(fieldValue: MutableLiveData<String>, distinctUntilChanged: Boolean): (String?) -> Boolean = {
             if (distinctUntilChanged) {
                 fieldValue.setValueIfNew(it.orEmpty())
             } else {
                 fieldValue.value = it.orEmpty()
+                true
             }
         }
 
