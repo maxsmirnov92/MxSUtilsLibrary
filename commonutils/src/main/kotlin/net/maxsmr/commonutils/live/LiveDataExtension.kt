@@ -115,6 +115,18 @@ fun <T> LiveData<T>.observeOnce(lifecycleOwner: LifecycleOwner, observer: Observ
     observe(lifecycleOwner, OnceObserver<T>(this, observer))
 }
 
+fun <T> LiveData<T>.observeOnceIf(observer: Observer<T>? = null, observeIf: (T?) -> Boolean) {
+    observeForever(OnceIfObserver(this, observer, observeIf))
+}
+
+fun <T> LiveData<T>.observeOnceIf(
+    lifecycleOwner: LifecycleOwner,
+    observer: Observer<T>? = null,
+    observeIf: (T?) -> Boolean,
+) {
+    observe(lifecycleOwner, OnceIfObserver(this, observer, observeIf))
+}
+
 /**
  * эмиссирует только первое значение,
  * следующие объекты игнорирует
@@ -571,6 +583,22 @@ private class OnceObserver<T>(val liveData: LiveData<T>, val observer: Observer<
     override fun onChanged(data: T?) {
         observer.onChanged(data)
         liveData.removeObserver(this)
+    }
+}
+
+private class OnceIfObserver<T>(
+    val liveData: LiveData<T>,
+    val observer: Observer<T>?,
+    val observeIf: (T?) -> Boolean,
+) : Observer<T?> {
+
+    // нулабельное T в кач-ве перестраховки,
+    // т.к. всегда можно выставить value=null
+    override fun onChanged(data: T?) {
+        if (observeIf(data)) {
+            observer?.onChanged(data)
+            liveData.removeObserver(this)
+        }
     }
 }
 
