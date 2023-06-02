@@ -195,6 +195,13 @@ fun getSendEmailIntent(uri: Uri, sendAction: SendAction = SENDTO): Intent? {
     }
 }
 
+@JvmOverloads
+fun getSendTextIntent(text: CharSequence, sendAction: SendAction = SEND) =
+    getSendIntent(sendAction).apply {
+        putExtra(Intent.EXTRA_TEXT, text)
+        type = "text/plain"
+    }
+
 fun getSendIntent(sendAction: SendAction) = Intent(
     when(sendAction) {
         SEND_MULTIPLE -> Intent.ACTION_SEND_MULTIPLE
@@ -231,11 +238,11 @@ fun Intent.flatten(context: Context): List<Intent> {
 private fun Intent.applyMimeTypes(intentType: String?, mimeTypes: List<String>?) {
     this.type = when {
         // при заполнении несколькими основной тип не должен оставаться нульным
-        intentType == null -> if (mimeTypes != null && mimeTypes.isNotEmpty()) mimeTypes[0] else null
+        intentType == null -> if (!mimeTypes.isNullOrEmpty()) mimeTypes[0] else null
         !TextUtils.isEmpty(intentType) -> intentType
         else -> MIME_TYPE_ANY
     }
-    if (mimeTypes != null && mimeTypes.isNotEmpty()) {
+    if (!mimeTypes.isNullOrEmpty()) {
         if (isAtLeastKitkat()) {
             putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())
         } else {

@@ -37,7 +37,7 @@ fun Context.openSystemBrowser(
     options: Bundle? = null,
     errorHandler: ((ActivityNotFoundException?) -> Unit)? = null,
 ): Boolean {
-    return startActivitySafe(getViewUrlIntent(uri, this).addFlags(flags), options, errorHandler)
+    return startActivitySafe(getViewUrlIntent(uri, this).addFlags(flags), options = options, errorHandler = errorHandler)
 }
 
 @JvmOverloads
@@ -52,11 +52,10 @@ fun Context.canHandleActivityIntentQuery(
 @JvmOverloads
 fun Context.startActivitySafe(
     intent: Intent,
+    requestCode: Int? = null,
     options: Bundle? = null,
     errorHandler: ((ActivityNotFoundException?) -> Unit)? = null,
-): Boolean {
-    return startActivitySafeForAny(intent, options = options, errorHandler = errorHandler)
-}
+): Boolean = startActivitySafeForAny(intent, requestCode, options = options, errorHandler = errorHandler)
 
 @JvmOverloads
 fun Activity.startActivitySafe(
