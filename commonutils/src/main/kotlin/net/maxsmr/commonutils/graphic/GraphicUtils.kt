@@ -41,7 +41,7 @@ val BITMAP_CONFIG_DEFAULT = Config.ARGB_8888
 // TODO convert to extensions?
 
 fun isBitmapValid(b: Bitmap?): Boolean =
-        b != null && !b.isRecycled && getBitmapByteCount(b) > 0
+    b != null && !b.isRecycled && getBitmapByteCount(b) > 0
 
 fun getBitmapByteCount(b: Bitmap?): Int {
     if (b == null || b.isRecycled) return 0
@@ -60,11 +60,11 @@ fun getBitmapByteCount(b: Bitmap?): Int {
  */
 @JvmOverloads
 fun copyBitmap(
-        bitmap: Bitmap?,
-        @ColorInt
-        backgroundColor: Int = Color.BLACK,
-        config: Config? = null,
-        recycle: Boolean = true
+    bitmap: Bitmap?,
+    @ColorInt
+    backgroundColor: Int = Color.BLACK,
+    config: Config? = null,
+    recycle: Boolean = true
 ): Bitmap? {
     if (bitmap == null) {
         logger.e("bitmap is null: $bitmap")
@@ -92,8 +92,8 @@ fun copyBitmap(
 @TargetApi(Build.VERSION_CODES.KITKAT)
 @JvmOverloads
 fun reconfigureBitmap(
-        bitmap: Bitmap?,
-        config: Config = Config.ARGB_8888
+    bitmap: Bitmap?,
+    config: Config = Config.ARGB_8888
 ): Bitmap? {
     if (bitmap == null) {
         logger.e("bitmap is null: $bitmap")
@@ -115,8 +115,8 @@ fun reconfigureBitmap(
 
 @JvmOverloads
 fun getBitmapPixelBuffer(
-        bitmap: Bitmap?,
-        recycleSource: Boolean = true
+    bitmap: Bitmap?,
+    recycleSource: Boolean = true
 ): Pair<ByteArray, Config>? {
     if (bitmap == null || !isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
@@ -126,8 +126,8 @@ fun getBitmapPixelBuffer(
         val buffer = ByteBuffer.allocate(bitmap.height * bitmap.rowBytes)
         bitmap.copyPixelsToBuffer(buffer)
         return Pair(
-                if (buffer.hasArray()) buffer.array() else null,
-                bitmap.config
+            if (buffer.hasArray()) buffer.array() else null,
+            bitmap.config
         )
     } catch (e: Throwable) {
         logger.e(formatException(e))
@@ -141,10 +141,10 @@ fun getBitmapPixelBuffer(
 
 @JvmOverloads
 fun createBitmapByPixelBuffer(
-        data: ByteArray?,
-        width: Int,
-        height: Int,
-        config: Config = Config.ARGB_8888
+    data: ByteArray?,
+    width: Int,
+    height: Int,
+    config: Config = Config.ARGB_8888
 ): Bitmap? {
     if (data == null || data.isEmpty()) {
         logger.e("data is null or empty")
@@ -162,10 +162,10 @@ fun createBitmapByPixelBuffer(
 
 @JvmOverloads
 fun createBitmapFromFile(
-        file: File,
-        scale: Int = 1,
-        config: Config = BITMAP_CONFIG_DEFAULT,
-        withSampleSize: Boolean = isPreMarshmallow()
+    file: File,
+    scale: Int = 1,
+    config: Config = BITMAP_CONFIG_DEFAULT,
+    withSampleSize: Boolean = isPreMarshmallow()
 ): Bitmap? {
     if (!canDecodeImage(file)) {
         logger.e("Incorrect file: $file")
@@ -194,10 +194,10 @@ fun createBitmapFromFile(
 
 @JvmOverloads
 fun createBitmapFromByteArray(
-        data: ByteArray?,
-        scale: Int = 1,
-        config: Config = BITMAP_CONFIG_DEFAULT,
-        withSampleSize: Boolean = isPreMarshmallow()
+    data: ByteArray?,
+    scale: Int = 1,
+    config: Config = BITMAP_CONFIG_DEFAULT,
+    withSampleSize: Boolean = isPreMarshmallow()
 ): Bitmap? {
     if (data == null || data.isEmpty()) {
         logger.e("data is null or empty")
@@ -225,31 +225,31 @@ fun createBitmapFromByteArray(
 }
 
 fun createBitmapFromUri(
-        uri: Uri?,
-        contentResolver: ContentResolver,
-        scale: Int = 1,
-        config: Config = BITMAP_CONFIG_DEFAULT,
-        withSampleSize: Boolean = isPreMarshmallow()
+    uri: Uri?,
+    contentResolver: ContentResolver,
+    scale: Int = 1,
+    config: Config = BITMAP_CONFIG_DEFAULT,
+    withSampleSize: Boolean = isPreMarshmallow()
 ): Bitmap? {
     if (uri == null) {
         logger.e("uri is null")
         return null
     }
     return createBitmapFromStream(
-            uri.openInputStream(contentResolver),
-            scale,
-            config,
-            withSampleSize
+        uri.openInputStream(contentResolver),
+        scale,
+        config,
+        withSampleSize
     )
 }
 
 @JvmOverloads
 fun createBitmapFromStream(
-        inputStream: InputStream?,
-        scale: Int = 1,
-        config: Config = BITMAP_CONFIG_DEFAULT,
-        withSampleSize: Boolean = isPreMarshmallow(),
-        closeStream: Boolean = true
+    inputStream: InputStream?,
+    scale: Int = 1,
+    config: Config = BITMAP_CONFIG_DEFAULT,
+    withSampleSize: Boolean = isPreMarshmallow(),
+    closeStream: Boolean = true
 ): Bitmap? {
     if (inputStream == null) {
         logger.e("inputStream is null")
@@ -288,11 +288,11 @@ fun createBitmapFromStream(
 
 @JvmOverloads
 fun createBitmapFromResource(
-        resources: Resources,
-        @DrawableRes resId: Int,
-        scale: Int = 1,
-        config: Config = BITMAP_CONFIG_DEFAULT,
-        withSampleSize: Boolean = isPreMarshmallow()
+    resources: Resources,
+    @DrawableRes resId: Int,
+    scale: Int = 1,
+    config: Config = BITMAP_CONFIG_DEFAULT,
+    withSampleSize: Boolean = isPreMarshmallow()
 ): Bitmap? {
     if (resId == 0) {
         logger.e("resId is not specified")
@@ -321,10 +321,10 @@ fun createBitmapFromResource(
 
 @JvmOverloads
 fun createBitmapFromDrawable(
-        drawable: Drawable?,
-        width: Int,
-        height: Int,
-        config: Config = BITMAP_CONFIG_DEFAULT
+    drawable: Drawable?,
+    width: Int,
+    height: Int,
+    config: Config = BITMAP_CONFIG_DEFAULT
 ): Bitmap? {
     var width = width
     var height = height
@@ -356,24 +356,43 @@ fun createBitmapFromDrawable(
 }
 
 @JvmOverloads
-fun createScaledBitmapByWidth(
-        bitmap: Bitmap?,
-        scaledWidth: Float,
-        filter: Boolean = true,
-        recycleSource: Boolean = true
+fun Bitmap?.scale(
+    scale: Float,
+    filter: Boolean = true,
+    recycleSource: Boolean = true,
 ): Bitmap? {
-    if (bitmap == null || !isBitmapValid(bitmap)) {
-        logger.e("Incorrect bitmap: $bitmap")
+    if (this == null || !isBitmapValid(this)) {
+        logger.e("Incorrect bitmap: $this")
+        return null
+    }
+    if (scale <= 0) {
+        logger.e("Incorrect scale: $scale")
+        return null
+    }
+    if (scale == 1f) {
+        return this
+    }
+    return scaleByWidth(width * scale, filter, recycleSource)
+}
+
+@JvmOverloads
+fun Bitmap?.scaleByWidth(
+    scaledWidth: Float,
+    filter: Boolean = true,
+    recycleSource: Boolean = true
+): Bitmap? {
+    if (this == null || !isBitmapValid(this)) {
+        logger.e("Incorrect bitmap: $this")
         return null
     }
     if (scaledWidth <= 0) {
         logger.e("Incorrect scaledWidth: $scaledWidth")
         return null
     }
-    val width = bitmap.width
-    val height = bitmap.height
+    val width = width
+    val height = height
     if (width == scaledWidth.toInt()) {
-        return bitmap
+        return this
     }
 //        float aspectRatio;
 //        aspectRatio = (float) (width / height);
@@ -382,13 +401,13 @@ fun createScaledBitmapByWidth(
     val scale = scaledWidth / width.toFloat()
     val scaledHeight = ceil(height.toFloat() * scale)
     return try {
-        Bitmap.createScaledBitmap(bitmap, scaledWidth.toInt(), scaledHeight.toInt(), filter)
+        Bitmap.createScaledBitmap(this, scaledWidth.toInt(), scaledHeight.toInt(), filter)
     } catch (e: Throwable) {
         logger.e(formatException(e, "createScaledBitmap"))
         null
     } finally {
         if (recycleSource) {
-            bitmap.recycle()
+            recycle()
         }
     }
 }
@@ -398,11 +417,11 @@ fun createScaledBitmapByWidth(
  */
 @JvmOverloads
 fun createResizedBitmapFitXY(
-        bitmap: Bitmap?,
-        width: Int,
-        height: Int,
-        config: Config? = null,
-        recycleSource: Boolean = true
+    bitmap: Bitmap?,
+    width: Int,
+    height: Int,
+    config: Config? = null,
+    recycleSource: Boolean = true
 ): Bitmap? {
     if (bitmap == null || !isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
@@ -443,14 +462,14 @@ fun createResizedBitmapFitXY(
 
 @JvmOverloads
 fun createResizedBitmapIfNeeded(
-        bitmap: Bitmap?,
-        parentWidth: Int,
-        parentHeight: Int,
-        sizeThreshold: Float,
-        aspectRatioThreshold: Float,
-        parentAspectRatio: Float = parentWidth.toFloat() / parentHeight,
-        config: Config? = null,
-        recycleSource: Boolean = true
+    bitmap: Bitmap?,
+    parentWidth: Int,
+    parentHeight: Int,
+    sizeThreshold: Float,
+    aspectRatioThreshold: Float,
+    parentAspectRatio: Float = parentWidth.toFloat() / parentHeight,
+    config: Config? = null,
+    recycleSource: Boolean = true
 ): Bitmap? {
 
     if (bitmap == null || !isBitmapValid(bitmap)) {
@@ -472,12 +491,13 @@ fun createResizedBitmapIfNeeded(
      * Get size delta in pixels for one dimension of image and screen
      */
     fun getSizeDelta(bitmapSize: Int, screenSize: Int): Int =
-            bitmapSize - screenSize
+        bitmapSize - screenSize
 
 
     val bitmapAspectRatio = bitmap.width.toFloat() / bitmap.height
     if (getSizeDelta(bitmap.width, parentWidth) > sizeThreshold
-            || getSizeDelta(bitmap.height, parentHeight) > sizeThreshold) {
+        || getSizeDelta(bitmap.height, parentHeight) > sizeThreshold
+    ) {
         // if at least one dimension of wallpaper is bigger then screen's with the set threshold — check aspect ratio and resize it if needed
         val aspectRatioDelta = abs(bitmapAspectRatio - parentAspectRatio)
         if (aspectRatioDelta >= aspectRatioThreshold) {
@@ -489,10 +509,10 @@ fun createResizedBitmapIfNeeded(
 
 @JvmOverloads
 fun scaleDownBitmap(
-        bitmap: Bitmap?,
-        maxSize: Int,
-        filter: Boolean = true,
-        recycleSource: Boolean = true
+    bitmap: Bitmap?,
+    maxSize: Int,
+    filter: Boolean = true,
+    recycleSource: Boolean = true
 ): Bitmap? {
     if (bitmap == null || !isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
@@ -500,7 +520,7 @@ fun scaleDownBitmap(
     }
     val fixedSize = getFixedSize(bitmap.width, bitmap.height, maxSize)
     // без отбрасывания дробной части будет более точный коэффициент, а значит и посчитанный height
-    return createScaledBitmapByWidth(bitmap, fixedSize.x, filter, recycleSource)
+    return bitmap.scaleByWidth(fixedSize.x, filter, recycleSource)
 }
 
 fun canDecodeImage(file: File): Boolean {
@@ -529,15 +549,15 @@ fun canDecodeImage(@DrawableRes resId: Int?, resources: Resources): Boolean {
 }
 
 fun canDecodeVideo(file: File?): Boolean =
-        extractMediaDurationFromFile(file) != null
+    extractMediaDurationFromFile(file) != null
 
 fun canDecodeVideo(uri: Uri?): Boolean =
-        extractMediaDurationFromUri(uri) != null
+    extractMediaDurationFromUri(uri) != null
 
 @JvmOverloads
 fun decodeBoundsFromFile(
-        file: File?,
-        options: BitmapFactory.Options = BitmapFactory.Options()
+    file: File?,
+    options: BitmapFactory.Options = BitmapFactory.Options()
 ): Point {
     if (file == null || !isFileValid(file)) return Point(0, 0)
     options.inJustDecodeBounds = true
@@ -547,8 +567,8 @@ fun decodeBoundsFromFile(
 
 @JvmOverloads
 fun decodeBoundsFromByteArray(
-        data: ByteArray?,
-        options: BitmapFactory.Options = BitmapFactory.Options()
+    data: ByteArray?,
+    options: BitmapFactory.Options = BitmapFactory.Options()
 ): Point {
     if (data == null || data.isEmpty()) return Point(0, 0)
     options.inJustDecodeBounds = true
@@ -558,9 +578,9 @@ fun decodeBoundsFromByteArray(
 
 @JvmOverloads
 fun decodeBoundsFromUri(
-        uri: Uri?,
-        contentResolver: ContentResolver,
-        options: BitmapFactory.Options = BitmapFactory.Options()
+    uri: Uri?,
+    contentResolver: ContentResolver,
+    options: BitmapFactory.Options = BitmapFactory.Options()
 ): Point {
     if (uri == null) return Point(0, 0)
     return decodeBoundsFromStream(uri.openInputStream(contentResolver), options)
@@ -568,8 +588,8 @@ fun decodeBoundsFromUri(
 
 @JvmOverloads
 fun decodeBoundsFromStream(
-        stream: InputStream?,
-        options: BitmapFactory.Options = BitmapFactory.Options()
+    stream: InputStream?,
+    options: BitmapFactory.Options = BitmapFactory.Options()
 ): Point {
     if (stream == null) return Point(0, 0)
     options.inJustDecodeBounds = true
@@ -579,9 +599,9 @@ fun decodeBoundsFromStream(
 
 @JvmOverloads
 fun decodeBoundsFromResource(
-        @DrawableRes resId: Int?,
-        resources: Resources,
-        options: BitmapFactory.Options = BitmapFactory.Options()
+    @DrawableRes resId: Int?,
+    resources: Resources,
+    options: BitmapFactory.Options = BitmapFactory.Options()
 ): Point {
     if (resId == null) return Point(0, 0)
     options.inJustDecodeBounds = true
@@ -597,10 +617,17 @@ fun getFileExtByCompressFormat(compressFormat: CompressFormat?): String? {
     return when (compressFormat) {
         CompressFormat.PNG -> "png"
         CompressFormat.JPEG -> "jpg"
-        CompressFormat.WEBP,
-        CompressFormat.WEBP_LOSSLESS,
-        CompressFormat.WEBP_LOSSY -> "webp"
-        else -> null
+        CompressFormat.WEBP -> "webp"
+        else -> {
+            if (isAtLeastR()) {
+                if (compressFormat == CompressFormat.WEBP_LOSSLESS
+                    || compressFormat == CompressFormat.WEBP_LOSSY
+                ) {
+                    return "webp"
+                }
+            }
+            null
+        }
     }
 }
 
@@ -609,10 +636,10 @@ fun getFileExtByCompressFormat(compressFormat: CompressFormat?): String? {
  */
 @JvmOverloads
 fun compressBitmapToFile(
-        file: File?,
-        bitmap: Bitmap?,
-        format: CompressFormat = CompressFormat.JPEG,
-        quality: Int = 100
+    file: File?,
+    bitmap: Bitmap?,
+    format: CompressFormat = CompressFormat.JPEG,
+    quality: Int = 100
 ): File? {
     var file = file
     if (file == null) {
@@ -645,11 +672,11 @@ fun compressBitmapToFile(
 
 @JvmOverloads
 fun compressBitmapToUri(
-        uri: Uri,
-        contentResolver: ContentResolver,
-        bitmap: Bitmap?,
-        format: CompressFormat = CompressFormat.JPEG,
-        quality: Int = 100
+    uri: Uri,
+    contentResolver: ContentResolver,
+    bitmap: Bitmap?,
+    format: CompressFormat = CompressFormat.JPEG,
+    quality: Int = 100
 ): Boolean {
     val stream = uri.openOutputStream(contentResolver) ?: return false
     return compressBitmapToStream(stream, bitmap, format, quality)
@@ -657,11 +684,11 @@ fun compressBitmapToUri(
 
 @JvmOverloads
 fun compressBitmapToStream(
-        outputStream: OutputStream?,
-        bitmap: Bitmap?,
-        format: CompressFormat = CompressFormat.JPEG,
-        quality: Int = 100,
-        closeStream: Boolean = true
+    outputStream: OutputStream?,
+    bitmap: Bitmap?,
+    format: CompressFormat = CompressFormat.JPEG,
+    quality: Int = 100,
+    closeStream: Boolean = true
 ): Boolean {
     if (outputStream == null) {
         logger.e("outputStream is null");
@@ -691,9 +718,9 @@ fun compressBitmapToStream(
 
 @JvmOverloads
 fun compressBitmapToByteArray(
-        bitmap: Bitmap?,
-        format: CompressFormat = CompressFormat.JPEG,
-        quality: Int = 100
+    bitmap: Bitmap?,
+    format: CompressFormat = CompressFormat.JPEG,
+    quality: Int = 100
 ): ByteArray? {
     if (bitmap == null || !isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
@@ -725,13 +752,13 @@ fun compressBitmapToByteArray(
 }
 
 fun compressImage(
-        imageFile: File?,
-        compressedImageFile: File?,
-        maxSize: Long,
-        maxRetries: Int,
-        qualityDecrementStep: Int,
-        config: Config,
-        format: CompressFormat
+    imageFile: File?,
+    compressedImageFile: File?,
+    maxSize: Long,
+    maxRetries: Int,
+    qualityDecrementStep: Int,
+    config: Config,
+    format: CompressFormat
 ): File? {
     var compressedImageFile = compressedImageFile
     if (maxSize < 0) {
@@ -777,11 +804,11 @@ fun compressImage(
 
 @JvmOverloads
 fun fixFontSize(
-        bitmap: Bitmap?,
-        fontSize: Int,
-        text: String,
-        paint: Paint?,
-        scale: Double = 0.01
+    bitmap: Bitmap?,
+    fontSize: Int,
+    text: String,
+    paint: Paint?,
+    scale: Double = 0.01
 ): Int {
     if (bitmap == null || !isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
@@ -812,31 +839,32 @@ fun fixFontSize(
 
 @JvmOverloads
 fun cropBitmap(
-        bitmap: Bitmap?,
-        fromX: Int,
-        fromY: Int,
-        toX: Int,
-        toY: Int,
-        config: Config? = null,
-        recycleSource: Boolean = true
+    bitmap: Bitmap?,
+    fromX: Int,
+    fromY: Int,
+    toX: Int,
+    toY: Int,
+    config: Config? = null,
+    recycleSource: Boolean = true
 ): Bitmap? {
     if (bitmap == null || !isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
         return null
     }
     if (fromX < 0
-            || fromY < 0
-            || toX <= 0
-            || toY <= 0
-            || toX <= fromX
-            || toY <= fromY) {
+        || fromY < 0
+        || toX <= 0
+        || toY <= 0
+        || toX <= fromX
+        || toY <= fromY
+    ) {
         logger.e("Incorrect coords")
         return null
     }
     val rectWidth = toX - fromX
     val rectHeight = toY - fromY
     val overlayBitmap = createBitmapSafe(rectWidth, rectHeight, config ?: bitmap.config)
-            ?: return null
+        ?: return null
     val p = Paint()
     p.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
     return try {
@@ -856,10 +884,10 @@ fun cropBitmap(
 
 @JvmOverloads
 fun rotateBitmap(
-        bitmap: Bitmap?,
-        angle: Int,
-        filter: Boolean = true,
-        recycleSource: Boolean = true
+    bitmap: Bitmap?,
+    angle: Int,
+    filter: Boolean = true,
+    recycleSource: Boolean = true
 ): Bitmap? {
     if (bitmap == null || !isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
@@ -882,9 +910,9 @@ fun rotateBitmap(
 
 @JvmOverloads
 fun mirrorBitmap(
-        bitmap: Bitmap?,
-        filter: Boolean = true,
-        recycleSource: Boolean = true
+    bitmap: Bitmap?,
+    filter: Boolean = true,
+    recycleSource: Boolean = true
 ): Bitmap? {
     if (bitmap == null || !isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
@@ -903,33 +931,34 @@ fun mirrorBitmap(
 
 @JvmOverloads
 fun cutBitmap(
-        bitmap: Bitmap?,
-        range: Rect,
-        filter: Boolean = true,
-        recycleSource: Boolean = true
+    bitmap: Bitmap?,
+    range: Rect,
+    filter: Boolean = true,
+    recycleSource: Boolean = true
 ): Bitmap? {
     if (bitmap == null || !isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
         return null
     }
     if (range.left < 0
-            || range.left >= bitmap.width
-            || range.top < 0
-            || range.top >= bitmap.height
-            || range.width() > bitmap.width - range.left
-            || range.height() > bitmap.height - range.top) {
+        || range.left >= bitmap.width
+        || range.top < 0
+        || range.top >= bitmap.height
+        || range.width() > bitmap.width - range.left
+        || range.height() > bitmap.height - range.top
+    ) {
         logger.e("Incorrect bounds: $range")
         return null
     }
     return try {
         createBitmapSafe(
-                bitmap,
-                range.left,
-                range.top,
-                range.width(),
-                range.height(),
-                null,
-                filter
+            bitmap,
+            range.left,
+            range.top,
+            range.width(),
+            range.height(),
+            null,
+            filter
         )
     } finally {
         if (recycleSource) {
@@ -952,7 +981,7 @@ fun curveImage(bitmap: Bitmap?, corners: Point): Bitmap? {
 
     // We have to make sure our rounded corners have an
     // alpha channel in most cases
-    val rounder = createBitmapSafe(w,h,c) ?: return null
+    val rounder = createBitmapSafe(w, h, c) ?: return null
 
     // We're going to apply this paint eventually using a
     // porter-duff xfer mode.
@@ -972,7 +1001,7 @@ fun curveImage(bitmap: Bitmap?, corners: Point): Bitmap? {
 
         // Now we apply the 'magic sauce' to the paint
         paint.xfermode = PorterDuffXfermode(PorterDuff.Mode.DST_IN)
-        val result = createBitmapSafe(w,h,c) ?: return null
+        val result = createBitmapSafe(w, h, c) ?: return null
         val resultCanvas = Canvas(result)
         resultCanvas.drawBitmap(bitmap, 0f, 0f, null)
         resultCanvas.drawBitmap(rounder, 0f, 0f, paint)
@@ -985,11 +1014,11 @@ fun curveImage(bitmap: Bitmap?, corners: Point): Bitmap? {
 
 @JvmOverloads
 fun writeTextOnBitmap(
-        bitmap: Bitmap?,
-        text: String,
-        @ColorInt textColor: Int,
-        fontSize: Int = 0,
-        textPos: Point? = null
+    bitmap: Bitmap?,
+    text: String,
+    @ColorInt textColor: Int,
+    fontSize: Int = 0,
+    textPos: Point? = null
 ): Bitmap? {
     if (bitmap == null || !isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
@@ -1029,9 +1058,9 @@ fun writeTextOnBitmap(
 }
 
 fun createPreviewFromVideoFile(
-        videoFile: File,
-        gridSize: Int,
-        writeDuration: Boolean
+    videoFile: File,
+    gridSize: Int,
+    writeDuration: Boolean
 ): Bitmap? {
     if (!canDecodeVideo(videoFile)) {
         logger.e("Incorrect video file: '$videoFile'")
@@ -1059,9 +1088,9 @@ fun createPreviewFromVideoFile(
  */
 @JvmOverloads
 fun combineImagesToOne(
-        chunkImages: Collection<Bitmap?>?,
-        gridSize: Int,
-        recycleSource: Boolean = true
+    chunkImages: Collection<Bitmap?>?,
+    gridSize: Int,
+    recycleSource: Boolean = true
 ): Bitmap? {
     if (chunkImages == null || chunkImages.isEmpty()) {
         logger.e("chunkImages is null or empty")
@@ -1092,8 +1121,10 @@ fun combineImagesToOne(
         if (chunk != null) {
             if (chunkWidth > 0 && chunkHeight > 0) {
                 if (chunk.width != chunkWidth || chunk.height != chunkHeight) {
-                    logger.e("Chunk images in list have different dimensions, previous: " + chunkWidth + "x" + chunkHeight
-                            + ", current: " + chunk.width + "x" + chunk.height)
+                    logger.e(
+                        "Chunk images in list have different dimensions, previous: " + chunkWidth + "x" + chunkHeight
+                                + ", current: " + chunk.width + "x" + chunk.height
+                    )
                     return null
                 }
             } else {
@@ -1211,11 +1242,11 @@ fun convertRgbToYuv420SP(aRGB: IntArray?, width: Int, height: Int): ByteArray? {
 
 @TargetApi(Build.VERSION_CODES.JELLY_BEAN_MR1)
 fun renderScriptNVToRGBA(
-        context: Context,
-        width: Int,
-        height: Int,
-        nv: ByteArray?,
-        config: Config = Config.ARGB_8888
+    context: Context,
+    width: Int,
+    height: Int,
+    nv: ByteArray?,
+    config: Config = Config.ARGB_8888
 ): Bitmap? {
     if (width <= 0 || height <= 0) {
         logger.e("Incorrect size: $width x $height")
@@ -1269,12 +1300,12 @@ fun renderScriptNVToRGBA(
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 fun Drawable.wrapRipple(@ColorInt color: Int): Drawable =
-        RippleDrawable(ColorStateList.valueOf(color), this, null)
+    RippleDrawable(ColorStateList.valueOf(color), this, null)
 
 fun createBitmapSafe(
-        width: Int,
-        height: Int,
-        config: Config
+    width: Int,
+    height: Int,
+    config: Config
 ): Bitmap? {
     return try {
         Bitmap.createBitmap(width, height, config)
@@ -1285,13 +1316,13 @@ fun createBitmapSafe(
 }
 
 fun createBitmapSafe(
-        bitmap: Bitmap,
-        x: Int = 0,
-        y: Int = 0,
-        width: Int = bitmap.width,
-        height: Int = bitmap.height,
-        matrix: Matrix? = null,
-        filter: Boolean = true
+    bitmap: Bitmap,
+    x: Int = 0,
+    y: Int = 0,
+    width: Int = bitmap.width,
+    height: Int = bitmap.height,
+    matrix: Matrix? = null,
+    filter: Boolean = true
 ): Bitmap? {
     return try {
         Bitmap.createBitmap(bitmap, x, y, width, height, matrix, filter)
@@ -1302,9 +1333,9 @@ fun createBitmapSafe(
 }
 
 private fun calculateInSampleSize(
-        options: BitmapFactory.Options?,
-        reqWidth: Int,
-        reqHeight: Int
+    options: BitmapFactory.Options?,
+    reqWidth: Int,
+    reqHeight: Int
 ): Int {
     if (reqWidth <= 0 || reqHeight <= 0) {
         return 0
@@ -1332,9 +1363,10 @@ private fun calculateInSampleSize(
 }
 
 private fun calculateInSampleSizeHalf(
-        options: BitmapFactory.Options,
-        reqWidth: Int,
-        reqHeight: Int): Int {
+    options: BitmapFactory.Options,
+    reqWidth: Int,
+    reqHeight: Int
+): Int {
     val height = options.outHeight
     val width = options.outWidth
     var inSampleSize = 1
@@ -1342,7 +1374,8 @@ private fun calculateInSampleSizeHalf(
         val halfHeight = height / 2
         val halfWidth = width / 2
         while (halfWidth / inSampleSize > reqWidth
-                && halfHeight / inSampleSize > reqHeight) {
+            && halfHeight / inSampleSize > reqHeight
+        ) {
             inSampleSize *= 2
         }
     }
@@ -1351,10 +1384,10 @@ private fun calculateInSampleSizeHalf(
 
 
 private fun applyBitmapSampleOptions(
-        options: BitmapFactory.Options,
-        scale: Int,
-        config: Config,
-        sampleSizeHalf: Boolean = true
+    options: BitmapFactory.Options,
+    scale: Int,
+    config: Config,
+    sampleSizeHalf: Boolean = true
 ) {
     val width = if (scale > 1) options.outWidth / scale else options.outWidth
     val height = if (scale > 1) options.outHeight / scale else options.outHeight

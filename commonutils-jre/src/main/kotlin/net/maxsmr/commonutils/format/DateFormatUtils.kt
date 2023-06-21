@@ -7,11 +7,11 @@ import java.util.*
 
 @JvmOverloads
 fun parseDate(
-        dateText: String,
-        pattern: String,
-        locale: Locale = Locale.getDefault(),
-        timeZone: TimeZone? = null,
-        dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
+    dateText: String,
+    pattern: String,
+    locale: Locale = Locale.getDefault(),
+    timeZone: TimeZone? = null,
+    dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
 ): Date? {
     if (pattern.isEmpty()) return null
     return parseDate(dateText, createSdf(pattern, locale, timeZone), dateFormatConfigurator)
@@ -19,9 +19,9 @@ fun parseDate(
 
 @JvmOverloads
 fun parseDate(
-        dateText: String,
-        dateFormat: SimpleDateFormat,
-        dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
+    dateText: String,
+    dateFormat: SimpleDateFormat,
+    dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
 ): Date? {
     with(dateFormat) {
         dateFormatConfigurator?.invoke(this)
@@ -35,11 +35,11 @@ fun parseDate(
 
 @JvmOverloads
 fun formatDate(
-        date: Date,
-        pattern: String,
-        locale: Locale = Locale.getDefault(),
-        timeZone: TimeZone? = null,
-        dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
+    date: Date,
+    pattern: String,
+    locale: Locale = Locale.getDefault(),
+    timeZone: TimeZone? = null,
+    dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
 ): String {
     if (pattern.isEmpty()) return EMPTY_STRING
     return formatDate(date, createSdf(pattern, locale, timeZone), dateFormatConfigurator)
@@ -47,9 +47,9 @@ fun formatDate(
 
 @JvmOverloads
 fun formatDate(
-        date: Date,
-        dateFormat: SimpleDateFormat,
-        dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
+    date: Date,
+    dateFormat: SimpleDateFormat,
+    dateFormatConfigurator: ((SimpleDateFormat) -> Unit)? = null
 ): String {
     with(dateFormat) {
         dateFormatConfigurator?.invoke(this)
@@ -65,6 +65,7 @@ private fun createSdf(pattern: String, locale: Locale?, timeZone: TimeZone?) = w
     locale != null -> {
         SimpleDateFormat(pattern, locale)
     }
+
     else -> {
         SimpleDateFormat(pattern, Locale.getDefault())
     }
