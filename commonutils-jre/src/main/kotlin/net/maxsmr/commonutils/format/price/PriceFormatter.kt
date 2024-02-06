@@ -22,7 +22,7 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
 
     private var groupingSize: Int = GROUPING_SIZE_DEFAULT
 
-    private var groupingSeparator: Char = CHAR_SPACE_INSEPARABLE
+    private var groupingSeparator: Char? = CHAR_SPACE_INSEPARABLE
 
     private var decimalSeparator: Char = '.'
 
@@ -74,7 +74,7 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
         this.groupingSize = 0
     }
 
-    fun setGroupingSeparator(groupingSeparator: Char) = apply {
+    fun setGroupingSeparator(groupingSeparator: Char?) = apply {
         this.groupingSeparator = groupingSeparator
     }
 
@@ -123,11 +123,11 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
         if (ifNonNullOrNan && (price == null || price.isNaN())) {
             return EMPTY_STRING
         }
-        val price = price?.takeIf { !it.isNaN() } ?: .0
-        if (ifNonZero && price.isZero()) {
+        val priceNotNull = price?.takeIf { !it.isNaN() } ?: .0
+        if (ifNonZero && priceNotNull.isZero()) {
             return EMPTY_STRING
         }
-        return format(price, createDecimalFormat(price))
+        return format(priceNotNull, createDecimalFormat(priceNotNull))
     }
 
     private fun format(price: Double, format: DecimalFormat): String = buildString {
@@ -140,7 +140,9 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
 
     private fun createDecimalFormat(price: Double): DecimalFormat {
         val symbols = DecimalFormatSymbols().also {
-            it.groupingSeparator = groupingSeparator
+            groupingSeparator?.let { s ->
+                it.groupingSeparator = s
+            }
             it.decimalSeparator = decimalSeparator
         }
         return DecimalFormat(

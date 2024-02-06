@@ -148,4 +148,29 @@
         <item quantity="one">%d gByte</item>
         <item quantity="other">%d gBytes</item>
     </plurals>
+
+    <plurals name="rubles_quantity">
+        <item quantity="zero">%d рублей</item>
+        <item quantity="one">%d рубль</item>
+        <item quantity="two">%d рубля</item>
+        <item quantity="few">%d рубля</item>
+        <item quantity="many">%d рублей</item>
+        <item quantity="other">%d рублей</item>
+    </plurals>
+    <plurals name="kopecks_quantity">
+        <item quantity="zero">%d копеек</item>
+        <item quantity="one">%d копейка</item>
+        <item quantity="two">%d копейки</item>
+        <item quantity="few">%d копейки</item>
+        <item quantity="many">%d копеек</item>
+        <item quantity="other">%d копеек</item>
+    </plurals>
+    <plurals name="loyalty_price_quantity">
+        <item quantity="zero">%d баллов</item>
+        <item quantity="one">%d балл</item>
+        <item quantity="two">%d балла</item>
+        <item quantity="few">%d балла</item>
+        <item quantity="many">%d баллов</item>
+        <item quantity="other">%d баллов</item>
+    </plurals>
 </resources>

@@ -511,7 +511,7 @@ fun CharSequence?.filterTextByRegex(
     allowedChars: String,
     allowIfEmpty: Boolean = false
 ): CharSequence {
-    if (this == null || this.isEmpty()) {
+    if (this.isNullOrEmpty()) {
         return EMPTY_STRING
     }
     if (allowedChars.isEmpty()) {

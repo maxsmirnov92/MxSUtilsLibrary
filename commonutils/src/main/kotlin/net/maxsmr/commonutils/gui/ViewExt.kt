@@ -16,6 +16,8 @@ import android.util.TypedValue
 import android.view.KeyEvent
 import android.view.View
 import android.view.ViewGroup
+import android.view.accessibility.AccessibilityEvent
+import android.view.accessibility.AccessibilityNodeInfo
 import android.view.inputmethod.EditorInfo
 import android.webkit.WebView
 import android.widget.*
@@ -1111,24 +1113,69 @@ private fun TextView.setTextWithMovementMethod(text: CharSequence?): CharSequenc
     return orEmpty(text)
 }
 
-fun View.setContentDescriptionWithAccessibilityDelegate(@StringRes descriptionResId: Int) {
-    setContentDescriptionWithAccessibilityDelegate(context.getString(descriptionResId))
+fun View.setTextWithAccessibilityDelegate(@StringRes descriptionResId: Int) {
+    setTextWithAccessibilityDelegate(context.getString(descriptionResId))
 }
 
-fun View.setContentDescriptionWithAccessibilityDelegate(description: String) {
+fun View.setTextWithAccessibilityDelegate(description: String) {
+    setAccessibilityAction { info ->
+        info.text = description
+    }
+}
+
+fun View.setClickTextWithAccessibilityDelegate(@StringRes labelResId: Int) {
+    setClickTextWithAccessibilityDelegate(context.getString(labelResId))
+}
+
+fun View.setClickTextWithAccessibilityDelegate(label: String) {
+    setAccessibilityAction { info ->
+        info.addAction(
+            AccessibilityNodeInfoCompat.AccessibilityActionCompat(
+                AccessibilityNodeInfo.ACTION_CLICK,
+                label
+            )
+        )
+    }
+}
+
+/**
+ * Может использоваться для отключения озвучивания процентов в SeekBar
+ */
+fun View.disableTalkback() {
     ViewCompat.setAccessibilityDelegate(this, object : AccessibilityDelegateCompat() {
 
+        override fun sendAccessibilityEvent(host: View, eventType: Int) {
+            if (eventType != AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_DESCRIPTION) {
+                super.sendAccessibilityEvent(host, eventType)
+            }
+        }
+
+        override fun performAccessibilityAction(host: View, action: Int, args: Bundle?): Boolean {
+            if (action in arrayOf(
+                    AccessibilityNodeInfo.ACTION_SCROLL_FORWARD,
+                    AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
+                )
+            ) {
+                super.sendAccessibilityEvent(host, AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_DESCRIPTION)
+            }
+            return super.performAccessibilityAction(host, action, args)
+        }
+    })
+}
+
+private fun View.setAccessibilityAction(action: (AccessibilityNodeInfoCompat) -> Unit) {
+    ViewCompat.setAccessibilityDelegate(this, object : AccessibilityDelegateCompat() {
         var didPerformAccessibilityAction = false
 
         override fun onInitializeAccessibilityNodeInfo(host: View, info: AccessibilityNodeInfoCompat) {
             super.onInitializeAccessibilityNodeInfo(host, info)
             if (didPerformAccessibilityAction) {
                 didPerformAccessibilityAction = false
-                info.contentDescription = description
+                action(info)
             }
         }
 
-        override fun performAccessibilityAction(host: View, action: Int, args: Bundle): Boolean {
+        override fun performAccessibilityAction(host: View, action: Int, args: Bundle?): Boolean {
             didPerformAccessibilityAction = super.performAccessibilityAction(host, action, args)
             return didPerformAccessibilityAction
         }
