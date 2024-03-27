@@ -18,7 +18,6 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LifecycleOwner
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
-import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import net.maxsmr.commonutils.processmanager.AbstractProcessManager
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
@@ -29,34 +28,34 @@ import java.util.*
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AppUtils")
 
 fun isPackageInstalled(context: Context, packageName: String): Boolean =
-        getApplicationInfo(context, packageName) != null
+    getApplicationInfo(context, packageName) != null
 
 fun getSelfVersionName(context: Context): String =
-        getVersionName(getSelfPackageInfo(context, PackageManager.GET_META_DATA))
+    getVersionName(getSelfPackageInfo(context, PackageManager.GET_META_DATA))
 
 fun getSelfVersionCode(context: Context): Long? =
-        getVersionCode(getSelfPackageInfo(context, PackageManager.GET_META_DATA))
+    getVersionCode(getSelfPackageInfo(context, PackageManager.GET_META_DATA))
 
 fun getVersionName(context: Context, packageName: String): String =
-        getVersionName(getPackageInfo(context, packageName, PackageManager.GET_META_DATA))
+    getVersionName(getPackageInfo(context, packageName, PackageManager.GET_META_DATA))
 
 fun getVersionCode(context: Context, packageName: String): Long? =
-        getVersionCode(getPackageInfo(context, packageName, PackageManager.GET_META_DATA))
+    getVersionCode(getPackageInfo(context, packageName, PackageManager.GET_META_DATA))
 
 fun getArchiveVersionName(context: Context, apkFile: File?): String =
-        getVersionName(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
+    getVersionName(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
 
 fun getArchiveVersionCode(context: Context, apkFile: File?): Long? =
-        getVersionCode(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
+    getVersionCode(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
 
 @JvmOverloads
 fun getSelfApplicationInfo(context: Context, flags: Int = 0): ApplicationInfo? =
-        getApplicationInfo(context, context.packageName, flags)
+    getApplicationInfo(context, context.packageName, flags)
 
 fun getApplicationInfo(
-        context: Context,
-        packageName: String,
-        flags: Int = 0
+    context: Context,
+    packageName: String,
+    flags: Int = 0
 ): ApplicationInfo? {
     val packageManager = context.packageManager
     return try {
@@ -64,18 +63,17 @@ fun getApplicationInfo(
     } catch (e: PackageManager.NameNotFoundException) {
         null
     }
-
 }
 
 @JvmOverloads
 fun getSelfPackageInfo(context: Context, flags: Int = 0): PackageInfo? =
-        getPackageInfo(context, context.packageName)
+    getPackageInfo(context, context.packageName)
 
 @JvmOverloads
 fun getPackageInfo(
-        context: Context,
-        packageName: String,
-        flags: Int = 0
+    context: Context,
+    packageName: String,
+    flags: Int = 0
 ): PackageInfo? {
     val packageManager = context.packageManager
     if (!isEmpty(packageName)) {
@@ -91,9 +89,9 @@ fun getPackageInfo(
 
 @JvmOverloads
 fun getArchivePackageInfo(
-        context: Context,
-        apkFile: File?,
-        flags: Int = 0
+    context: Context,
+    apkFile: File?,
+    flags: Int = 0
 ): PackageInfo? {
     if (apkFile != null && isFileValid(apkFile)) {
         val packageManager = context.packageManager
@@ -123,12 +121,12 @@ fun getArchiveLaunchIntentForPackage(context: Context, apkFile: File): Intent? {
 }
 
 fun getSelfLaunchIntentForPackage(context: Context): Intent? =
-        getLaunchIntentForPackage(context, context.packageName)
+    getLaunchIntentForPackage(context, context.packageName)
 
 @JvmOverloads
 fun launchSelf(context: Context, flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK) {
     val activityIntent = getSelfLaunchIntentForPackage(context)
-            ?: throw RuntimeException("Cannot launch: self package ${context.packageName} intent not found")
+        ?: throw RuntimeException("Cannot launch: self package ${context.packageName} intent not found")
     if (flags != 0) {
         activityIntent.flags = flags
     }
@@ -163,74 +161,6 @@ fun disableFileUriStrictMode(): Boolean {
     return result
 }
 
-@JvmOverloads
-fun canHandleActivityIntent(
-        context: Context,
-        intent: Intent?,
-        flags: Int = 0
-): Boolean {
-    var result = false
-    if (intent != null) {
-        val pm = context.packageManager
-        if (pm.resolveActivity(intent, flags) != null) {
-            result = true
-        }
-    }
-    return result
-}
-
-@JvmOverloads
-fun canHandleActivityIntentQuery(
-        context: Context,
-        intent: Intent?,
-        flags: Int = 0
-): Boolean {
-    val resolveInfos =
-            if (intent != null) context.packageManager.queryIntentActivities(intent, flags) else null
-    return resolveInfos != null && resolveInfos.isNotEmpty()
-}
-
-@JvmOverloads
-fun startActivitySafe(
-        context: Context,
-        intent: Intent?,
-        options: Bundle? = null
-): Boolean {
-    if (canHandleActivityIntent(context, intent)) {
-        context.startActivity(intent, options)
-        return true
-    }
-    return false
-}
-
-@JvmOverloads
-fun startActivityForResultSafe(
-        activity: Activity?,
-        fragment: Fragment?,
-        intent: Intent?,
-        requestCode: Int,
-        options: Bundle? = null
-): Boolean {
-    val context = activity ?: fragment?.requireContext() ?: throw NullPointerException("activity and fragment is null")
-    if (canHandleActivityIntent(context, intent)) {
-        if (fragment != null) {
-            fragment.startActivityForResult(intent, requestCode, options)
-        } else {
-            activity?.startActivityForResult(intent, requestCode, options)
-        }
-        return true
-    }
-    return false
-}
-
-@JvmOverloads
-fun browseLink(url: String = EMPTY_STRING, context: Context, options: Bundle? = null): Boolean {
-    if (!startActivitySafe(context, getBrowseLinkIntent(url), options)) {
-        return startActivitySafe(context, getBrowseLinkIntent(url), options)
-    }
-    return false
-}
-
 fun getPackageActivitiesCount(packageInfo: PackageInfo): Int {
     return if (packageInfo.activities == null || packageInfo.activities.isEmpty()) {
         0
@@ -243,9 +173,9 @@ fun getPackageActivitiesCount(packageInfo: PackageInfo): Int {
  * Check if app requires update
  */
 fun isPackageRequireUpdate(
-        context: Context,
-        packageName: String,
-        targetVersionCode: Long
+    context: Context,
+    packageName: String,
+    targetVersionCode: Long
 ): Boolean {
     val currentVersionCode = getVersionCode(context, packageName)
     if (currentVersionCode == null) {
@@ -258,7 +188,7 @@ fun isPackageRequireUpdate(
 }
 
 fun getSelfApplicationLabel(context: Context): String? =
-        getApplicationLabel(context, context.packageName)
+    getApplicationLabel(context, context.packageName)
 
 /**
  * Get application title by package name
@@ -272,7 +202,7 @@ fun getApplicationLabel(context: Context, packageName: String): String? {
 }
 
 fun getApplicationUid(context: Context): Int? =
-        getApplicationUid(context, context.packageName)
+    getApplicationUid(context, context.packageName)
 
 /**
  * @return uid for specified name or null if not found
@@ -283,9 +213,9 @@ fun getApplicationUid(context: Context, packageName: String): Int? {
 }
 
 fun isSelfAppInBackground(
-        context: Context,
-        manager: AbstractProcessManager,
-        includeSystemPackages: Boolean
+    context: Context,
+    manager: AbstractProcessManager,
+    includeSystemPackages: Boolean
 ): Boolean = try {
     isSelfAppInBackgroundOrThrow(context, manager, includeSystemPackages)
 } catch (e: RuntimeException) {
@@ -295,15 +225,15 @@ fun isSelfAppInBackground(
 
 @Throws(RuntimeException::class)
 fun isSelfAppInBackgroundOrThrow(
-        context: Context,
-        manager: AbstractProcessManager,
-        includeSystemPackages: Boolean
+    context: Context,
+    manager: AbstractProcessManager,
+    includeSystemPackages: Boolean
 ): Boolean = isAppInBackgroundOrThrow(context.packageName, manager, includeSystemPackages)
 
 fun isAppInBackground(
-        packageName: String,
-        manager: AbstractProcessManager,
-        includeSystemPackages: Boolean
+    packageName: String,
+    manager: AbstractProcessManager,
+    includeSystemPackages: Boolean
 ): Boolean = try {
     isAppInBackgroundOrThrow(packageName, manager, includeSystemPackages)
 } catch (e: RuntimeException) {
@@ -313,9 +243,9 @@ fun isAppInBackground(
 
 @Throws(RuntimeException::class)
 fun isAppInBackgroundOrThrow(
-        packageName: String,
-        manager: AbstractProcessManager,
-        includeSystemPackages: Boolean
+    packageName: String,
+    manager: AbstractProcessManager,
+    includeSystemPackages: Boolean
 ): Boolean {
     if (!isEmpty(packageName)) {
         for (info in manager.getProcesses(includeSystemPackages)) {
@@ -354,7 +284,7 @@ fun isAppInBackground(context: Context, packageName: String): Boolean? {
 @Throws(RuntimeException::class)
 fun isAppInBackgroundOrThrow(context: Context, packageName: String): Boolean {
     val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager?
-            ?: throw RuntimeException(ActivityManager::class.java.simpleName + " is null")
+        ?: throw RuntimeException(ActivityManager::class.java.simpleName + " is null")
     if (!isEmpty(packageName)) {
         val runningProcesses = am.runningAppProcesses
         if (runningProcesses != null) {
@@ -369,10 +299,10 @@ fun isAppInBackgroundOrThrow(context: Context, packageName: String): Boolean {
 }
 
 fun getPidsByName(
-        packageName: String?,
-        manager: AbstractProcessManager,
-        includeSystemPackages: Boolean,
-        matchFlags: Int = MatchStringOption.EQUALS.flag
+    packageName: String?,
+    manager: AbstractProcessManager,
+    includeSystemPackages: Boolean,
+    matchFlags: Int = MatchStringOption.EQUALS.flag
 ): Set<Int> {
     val pids = LinkedHashSet<Int>()
     if (!isEmpty(packageName)) {
@@ -408,7 +338,7 @@ fun getVersionCode(info: PackageInfo?): Long? {
 }
 
 fun isSystemApp(packageInfo: PackageInfo?): Boolean =
-        isSystemApp(packageInfo?.applicationInfo)
+    isSystemApp(packageInfo?.applicationInfo)
 
 /**
  * @return null if not found
@@ -441,14 +371,13 @@ fun forceLocaleInApp(context: Context, locale: Locale) {
 
 fun copyToClipboard(context: Context, label: String, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?
-            ?: throw NullPointerException(ClipboardManager::class.java.simpleName + " is null")
+        ?: throw NullPointerException(ClipboardManager::class.java.simpleName + " is null")
     val clip = ClipData.newPlainText(label, text)
     clipboard.setPrimaryClip(clip)
 }
 
 fun getDisplayMetrics(context: Context): DisplayMetrics {
     val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
-            ?: throw java.lang.NullPointerException(WindowManager::class.java.simpleName + "")
     val outMetrics = DisplayMetrics()
     wm.defaultDisplay.getMetrics(outMetrics)
     return outMetrics
@@ -463,9 +392,9 @@ fun convertPxToDp(px: Float, context: Context): Float {
 
 @JvmOverloads
 fun convertAnyToPx(
-        value: Float,
-        unit: Int = TypedValue.COMPLEX_UNIT_DIP,
-        context: Context
+    value: Float,
+    unit: Int = TypedValue.COMPLEX_UNIT_DIP,
+    context: Context
 ): Float {
     // OR simply px = value * density (if DIP)
     return if (value <= 0) {
@@ -504,16 +433,15 @@ fun Context.fragmentActivity(maxDepth: Int = 20): FragmentActivity? = try {
 @JvmOverloads
 @Throws(RuntimeException::class)
 fun Context.fragmentActivityOrThrow(maxDepth: Int = 20): FragmentActivity {
-    require(maxDepth > 0) { "Incorrect maxDepth: $maxDepth"}
+    require(maxDepth > 0) { "Incorrect maxDepth: $maxDepth" }
     var curContext = this
     var depth = maxDepth
     while (--depth > 0 && curContext !is FragmentActivity) {
         curContext = (curContext as ContextWrapper).baseContext
     }
-    return if(curContext is FragmentActivity) {
+    return if (curContext is FragmentActivity) {
         curContext
-    }
-    else {
+    } else {
         throw RuntimeException("FragmentActivity not found")
     }
 }
@@ -528,7 +456,7 @@ fun Context.lifecycleOwner(maxDepth: Int = 20): LifecycleOwner? = try {
 @JvmOverloads
 @Throws(RuntimeException::class)
 fun Context.lifecycleOwnerOrThrow(maxDepth: Int = 20): LifecycleOwner {
-    require(maxDepth > 0) { "Incorrect maxDepth: $maxDepth"}
+    require(maxDepth > 0) { "Incorrect maxDepth: $maxDepth" }
     var curContext = this
     var depth = maxDepth
     while (--depth > 0 && curContext !is LifecycleOwner) {
@@ -583,6 +511,7 @@ fun Any.asActivityOrThrow(): Activity {
     }
 }
 
+// TODO move to DeviceUtils
 enum class DeviceType {
     PHONE, HYBRID, TABLET
 }

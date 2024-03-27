@@ -13,11 +13,7 @@ import java.util.*
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("TextUtils")
 
-fun getExtension(name: String?): String {
-    if (name == null) return EMPTY_STRING
-    val index = name.lastIndexOf('.')
-    return if (index > 0 && index < name.length - 1) name.substring(index + 1) else EMPTY_STRING
-}
+fun getExtension(name: String?) = name?.substringAfterLast('.').orEmpty()
 
 /**
  * убрать расширение файла
@@ -100,6 +96,14 @@ fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): Boolean =
         s.toString(),
         ignoreCase = true
     )
+
+@JvmOverloads
+fun orEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): CharSequence =
+    if (s == null || isEmpty(s, shouldCheckNullString)) EMPTY_STRING else s
+
+@JvmOverloads
+fun orEmpty(s: String?, shouldCheckNullString: Boolean = false): String =
+    if (s == null || isEmpty(s, shouldCheckNullString)) EMPTY_STRING else s
 
 fun isZeroOrNull(value: CharSequence?) = value.toDoubleOrNull().isZeroOrNull()
 
@@ -507,7 +511,7 @@ fun CharSequence?.filterTextByRegex(
     allowedChars: String,
     allowIfEmpty: Boolean = false
 ): CharSequence {
-    if (this == null || this.isEmpty()) {
+    if (this.isNullOrEmpty()) {
         return EMPTY_STRING
     }
     if (allowedChars.isEmpty()) {
@@ -534,6 +538,14 @@ fun getBytes(text: String, charset: Charset = Charsets.UTF_8): ByteArray? = try 
     logger.e(formatException(e, "toByteArray"))
     null
 }
+
+fun charsetForNameOrNull(name: String?) =
+    try {
+        Charset.forName(name)
+    } catch (e: IllegalArgumentException) {
+        logger.e(formatException(e, "Charset.forName"))
+        null
+    }
 
 private fun isTrue(
     conditions: Map<Char, CharConditionInfo>,

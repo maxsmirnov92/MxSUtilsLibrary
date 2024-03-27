@@ -3,13 +3,13 @@ package net.maxsmr.commonutils.gui.actions.message.text
 import android.content.Context
 import androidx.annotation.StringRes
 import com.google.gson.internal.LazilyParsedNumber
+import net.maxsmr.commonutils.gui.actions.message.text.TextMessage.Arg
+import net.maxsmr.commonutils.gui.actions.message.text.TextMessage.ResArg
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
 import java.io.Serializable
-
-fun TextMessage?.orEmpty(): TextMessage = this ?: TextMessage.EMPTY
 
 /**
  * Класс для формирования текстового сообщения в условиях отсутствия контекста (например, во ViewModel).
@@ -41,49 +41,24 @@ fun TextMessage?.orEmpty(): TextMessage = this ?: TextMessage.EMPTY
  * @see PluralTextMessage
  */
 open class TextMessage internal constructor(
-        message: CharSequence?,
-        @StringRes messageResId: Int?,
-        vararg args: Any?,
+    message: CharSequence?,
+    @StringRes messageResId: Int?,
+    vararg args: Any?,
 ) : Serializable {
 
     var message: CharSequence? = message
-        private set
+        protected set
+
+    @StringRes
     var messageResId: Int? = messageResId
-        private set
-    var args: Array<Arg<*>> = args.filterNotNull().map {
-        when (it) {
-            is Arg<*> -> it
-            is CharSequence -> CharSequenceArg(it)
-            is Number -> NumArg(it)
-            is TextMessage -> MessageArg(it)
-            else -> throw IllegalArgumentException("Unexpected arg $it")
-        }
-    }.toTypedArray()
-        private set
+        protected set
+
+    var args: Array<Arg<*>> = args.transformArgs()
+        protected set
 
     constructor(message: CharSequence, vararg args: Any) : this(message, null, *args)
 
     constructor(@StringRes messageResId: Int, vararg args: Any?) : this(null, messageResId, *args)
-
-    open fun get(context: Context): CharSequence {
-        val message = message
-        val messageRes = messageResId
-        return when {
-            !message.isNullOrEmpty() -> {
-                if (args.isEmpty()) message else String.format(message.toString(), *flattenArgs(context))
-            }
-            messageRes != null && messageRes != 0 -> {
-                context.getString(messageRes, *flattenArgs(context))
-            }
-            else -> EMPTY_STRING
-        }
-    }
-
-    fun argValueAt(context: Context, index: Int): String? = args.getOrNull(index)?.get(context)?.toString()
-
-    protected fun flattenArgs(context: Context): Array<Any> {
-        return args.map { it.get(context) }.toTypedArray()
-    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -103,6 +78,30 @@ open class TextMessage internal constructor(
         return result
     }
 
+    override fun toString(): String {
+        return "TextMessage(message=$message, messageResId=$messageResId, args=${args.contentToString()})"
+    }
+
+    open fun get(context: Context): CharSequence {
+        return getWithArgs(context, args.flattenArgs(context))
+    }
+
+    fun argValueAt(context: Context, index: Int): String? = args.getOrNull(index)?.get(context)?.toString()
+
+    protected fun getWithArgs(context: Context, args: Array<Any>): CharSequence {
+        val message = message
+        val messageRes = messageResId
+        return when {
+            !message.isNullOrEmpty() -> {
+                if (args.isEmpty()) message else String.format(message.toString(), *args)
+            }
+            messageRes != null && messageRes != 0 -> {
+                context.getString(messageRes, *args)
+            }
+            else -> EMPTY_STRING
+        }
+    }
+
     @Throws(ClassNotFoundException::class, IOException::class)
     private fun readObject(aInputStream: ObjectInputStream) {
         readFields(aInputStream)
@@ -113,87 +112,132 @@ open class TextMessage internal constructor(
         writeFields(aOutputStream)
     }
 
-    override fun toString(): String {
-        return "TextMessage(message=$message, messageResId=$messageResId, args=${args.contentToString()})"
-    }
-
     interface Arg<out T : Any> : Serializable {
 
         fun get(context: Context): T
     }
 
     private data class NumArg<T : Number>(val value: T) : Arg<T> {
+
         override fun get(context: Context): T = value
     }
 
-    data class ResArg(@StringRes val value: Int) : Arg<String> {
-        override fun get(context: Context): String = context.getString(value)
+    data class ResArg(@StringRes val value: Int, val args: List<Any>? = null) : Arg<String> {
+
+        override fun get(context: Context): String = if (args == null || args.isEmpty()) {
+            context.getString(value)
+        } else {
+            context.getString(value, *args.toTypedArray())
+        }
     }
 
     data class CharSequenceArg(val value: CharSequence) : Arg<CharSequence> {
+
         override fun get(context: Context): CharSequence = value
     }
 
     private data class MessageArg(val value: TextMessage) : Arg<CharSequence> {
+
         override fun get(context: Context): CharSequence = value.get(context)
     }
 
     companion object {
 
-        @JvmStatic
+        @JvmField
         val EMPTY = TextMessage(null, null)
+
+        @JvmStatic
+        fun TextMessage?.orEmpty(): TextMessage = this ?: EMPTY
 
         @Throws(ClassNotFoundException::class, IOException::class)
         fun TextMessage.readFields(aInputStream: ObjectInputStream) {
             message = aInputStream.readUTF()
             messageResId = aInputStream.readInt()
-            val args = mutableListOf<Arg<Any>>()
-            val count = aInputStream.readInt()
-            for (i in 0 until count) {
-                try {
-                    Class.forName(aInputStream.readUTF())
-                } catch (e: ClassNotFoundException) {
-                    null
-                }?.let { argsClass ->
-                    when {
-                        argsClass.isAssignableFrom(NumArg::class.java) -> NumArg(LazilyParsedNumber(aInputStream.readUTF()))
-                        argsClass.isAssignableFrom(ResArg::class.java) -> ResArg(aInputStream.readInt())
-                        argsClass.isAssignableFrom(CharSequenceArg::class.java) -> CharSequenceArg(aInputStream.readUTF())
-                        argsClass.isAssignableFrom(MessageArg::class.java) -> MessageArg(aInputStream.readObject() as TextMessage)
-                        else -> null
-                    }?.let {
-                        args.add(it)
-                    }
-                }
-            }
-            this.args = args.toTypedArray()
+            args = aInputStream.readArgs()
         }
 
         @Throws(IOException::class)
         fun TextMessage.writeFields(aOutputStream: ObjectOutputStream) {
             aOutputStream.writeUTF(message?.toString() ?: EMPTY_STRING)
             aOutputStream.writeInt(messageResId ?: 0)
-            aOutputStream.writeInt(args.size)
-            args.forEach {
-                when (it) {
-                    is NumArg -> {
-                        aOutputStream.writeUTF(NumArg::class.java.name)
-                        aOutputStream.writeUTF(it.value.toString())
-                    }
-                    is ResArg -> {
-                        aOutputStream.writeUTF(ResArg::class.java.name)
-                        aOutputStream.writeInt(it.value)
-                    }
-                    is CharSequenceArg -> {
-                        aOutputStream.writeUTF(CharSequenceArg::class.java.name)
-                        aOutputStream.writeUTF(it.value.toString())
-                    }
-                    is MessageArg -> {
-                        aOutputStream.writeUTF(MessageArg::class.java.name)
-                        aOutputStream.writeObject(it.value)
+            aOutputStream.writeArgs(args)
+        }
+
+        fun ObjectInputStream.readArgs(): Array<Arg<*>>  {
+            val args = mutableListOf<Arg<Any>>()
+            val count = readInt()
+            for (i in 0 until count) {
+                try {
+                    Class.forName(readUTF())
+                } catch (e: ClassNotFoundException) {
+                    null
+                }?.let { argsClass ->
+                    when {
+                        argsClass.isAssignableFrom(NumArg::class.java) -> NumArg(LazilyParsedNumber(readUTF()))
+                        argsClass.isAssignableFrom(ResArg::class.java) -> ResArg(readInt())
+                        argsClass.isAssignableFrom(CharSequenceArg::class.java) -> CharSequenceArg(readUTF())
+                        argsClass.isAssignableFrom(MessageArg::class.java) -> MessageArg(readObject() as TextMessage)
+                        else -> null
+                    }?.let {
+                        args.add(it)
                     }
                 }
             }
+            return args.toTypedArray()
+        }
+
+        fun ObjectOutputStream.writeArgs(args: Array<Arg<*>>) {
+            writeInt(args.size)
+            args.forEach {
+                when (it) {
+                    is NumArg -> {
+                        writeUTF(NumArg::class.java.name)
+                        writeUTF(it.value.toString())
+                    }
+                    is ResArg -> {
+                        writeUTF(ResArg::class.java.name)
+                        writeInt(it.value)
+                    }
+                    is CharSequenceArg -> {
+                        writeUTF(CharSequenceArg::class.java.name)
+                        writeUTF(it.value.toString())
+                    }
+                    is MessageArg -> {
+                        writeUTF(MessageArg::class.java.name)
+                        writeObject(it.value)
+                    }
+                }
+            }
+        }
+
+        fun <T : Any> Array<out T?>.transformArgs(): Array<Arg<*>> {
+            val result = mutableListOf<Any?>()
+            forEach {
+                if (it is Collection<Any?>) {
+                    it.forEach { item ->
+                        result.add(item)
+                    }
+                } else {
+                    result.add(it)
+                }
+            }
+            result.toTypedArray()
+
+            return result.filterNotNull().map {
+                when (it) {
+                    is Arg<*> -> it
+                    is CharSequence -> CharSequenceArg(it)
+                    is Number -> NumArg(it)
+                    is TextMessage -> MessageArg(it)
+                    else -> {
+                        throw IllegalArgumentException("Unexpected arg $it")
+                    }
+                }
+            }.toTypedArray()
+        }
+
+        fun Array<Arg<*>>.flattenArgs(context: Context): Array<Any> {
+            return map { it.get(context) }.toTypedArray()
         }
     }
 }

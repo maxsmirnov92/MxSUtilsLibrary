@@ -1,4 +1,5 @@
 <resources>
     <string name="app_name">Common Utils</string>
     <string name="empty_data">No data</string>
+    <string name="divider_comma">,\u00A0</string>
 </resources>

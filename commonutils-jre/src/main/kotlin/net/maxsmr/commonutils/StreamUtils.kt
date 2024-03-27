@@ -164,6 +164,7 @@ fun InputStream.readStringsOrThrow(
     }
 }
 
+@JvmOverloads
 fun InputStream.readString(charsetName: String = CHARSET_DEFAULT): String? = try {
     readStringOrThrow(charsetName)
 } catch (e: IOException) {
@@ -346,14 +347,12 @@ fun InputStream.unzipStreamOrThrow(
 
 interface IStreamNotifier {
 
-    @JvmDefault
     val notifyInterval: Long
         get() = 0
 
     /**
      * @return true if should proceed
      */
-    @JvmDefault
     fun onProcessing(
             inputStream: InputStream,
             outputStream: OutputStream,

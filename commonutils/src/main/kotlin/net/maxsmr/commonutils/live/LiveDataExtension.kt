@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils.live
 
+import android.os.CountDownTimer
 import android.os.Handler
 import android.widget.TextView
 import androidx.lifecycle.*
@@ -59,7 +60,7 @@ fun MutableLiveData<String>.observeFromText(
         owner: LifecycleOwner,
         distinct: Boolean = true,
         asString: Boolean = true,
-        formatFunc: ((String?) -> CharSequence)? = null
+        formatFunc: ((String) -> CharSequence?)? = null
 ) {
     observeFrom(view, owner, distinct, asString) {
         formatFunc?.invoke(it) ?: it
@@ -72,7 +73,7 @@ fun <D> MutableLiveData<D>.observeFrom(
         owner: LifecycleOwner,
         distinct: Boolean = true,
         asString: Boolean = true,
-        formatFunc: (D?) -> CharSequence?
+        formatFunc: (D) -> CharSequence?
 ) {
     observe(owner) {
         view.setTextChecked(formatFunc(it), distinct, asString)
@@ -114,6 +115,18 @@ fun <T> LiveData<T>.observeOnce(lifecycleOwner: LifecycleOwner, observer: Observ
     observe(lifecycleOwner, OnceObserver<T>(this, observer))
 }
 
+fun <T> LiveData<T>.observeOnceIf(observer: Observer<T>? = null, observeIf: (T?) -> Boolean) {
+    observeForever(OnceIfObserver(this, observer, observeIf))
+}
+
+fun <T> LiveData<T>.observeOnceIf(
+    lifecycleOwner: LifecycleOwner,
+    observer: Observer<T>? = null,
+    observeIf: (T?) -> Boolean,
+) {
+    observe(lifecycleOwner, OnceIfObserver(this, observer, observeIf))
+}
+
 /**
  * эмиссирует только первое значение,
  * следующие объекты игнорирует
@@ -128,43 +141,82 @@ fun <T> LiveData<T>.once(): LiveData<T> {
 }
 
 /**
- * Реализует преобразование `Transformations.map` над LiveData в стиле цепочек RxJava
+ * Реализует преобразование [Transformations.map] над LiveData в стиле цепочек RxJava
  */
-fun <X, Y> LiveData<X>.map(body: (X?) -> Y?): LiveData<Y> {
+fun <X, Y> LiveData<X>.map(body: (X) -> Y): LiveData<Y> {
     return Transformations.map(this, body)
 }
 
-fun <X, Y> LiveData<X>.mapNotNull(body: (X) -> Y): LiveData<Y> {
+fun <X, Y> LiveData<X>.mapNotNull(body: (X) -> Y?): MutableLiveData<Y> {
     val result = MediatorLiveData<Y>()
-    result.addSource(this) { x -> if (x != null) result.value = body(x) }
+    result.addSource(this) { x ->
+        body(x)?.let {
+            result.value = it
+        }
+    }
     return result
 }
 
 /**
- * Реализует преобразование `Transformations.switchMap` над LiveData в стиле цепочек RxJava
+ * Реализует преобразование [Transformations.switchMap] над LiveData в стиле цепочек RxJava
  */
-fun <X, Y> LiveData<X>.switchMap(body: (X?) -> LiveData<Y>): LiveData<Y> {
+fun <X, Y> LiveData<X>.switchMap(body: (X) -> LiveData<Y>): LiveData<Y> {
     return Transformations.switchMap(this, body)
 }
 
 /**
+ * С гарантиями того, что возможные нульные данные
+ * из [LiveData] вызова [body]
+ * не попадут в результирующую
+ */
+fun <X, Y> LiveData<X>.switchMapNotNull(body: (X) -> LiveData<Y?>): LiveData<Y> {
+    val result = MediatorLiveData<Y>()
+    result.addSource(this, object : Observer<X> {
+        var source: LiveData<Y?>? = null
+        override fun onChanged(x: X) {
+            val newLiveData: LiveData<Y?> = body(x)
+            if (source === newLiveData) {
+                return
+            }
+            source?.let {
+                result.removeSource(it)
+            }
+            source = newLiveData
+            result.addSource(newLiveData) { y ->
+                y?.let {
+                    result.setValue(y)
+                }
+            }
+        }
+    })
+    return result
+}
+
+fun <T> LiveData<T>.distinct(preventNull: Boolean = false): LiveData<T> =
+    distinct(preventNull) { it }
+
+/**
  * Реализует преобразование `AppTransformations.distinct` над LiveData в стиле цепочек RxJava
  */
-fun <T> LiveData<T>.distinct(preventNull: Boolean = false): LiveData<T> {
+fun <T, K> LiveData<T>.distinct(
+    preventNull: Boolean = false,
+    mapper: (T) -> K,
+): LiveData<T> {
     val distinctLiveData = MediatorLiveData<T>()
     distinctLiveData.addSource(this, object : Observer<T> {
 
         private var initialized = false
-        private var lastObj: T? = null
+        private var lastObj: K? = null
 
-        override fun onChanged(obj: T?) {
+        override fun onChanged(obj: T) {
+            val curr = mapper(obj)
             if (!initialized) {
                 initialized = true
-                lastObj = obj
-                distinctLiveData.postValue(lastObj)
-            } else if (!preventNull && obj == null && lastObj != null || obj != lastObj) {
-                lastObj = obj
-                distinctLiveData.postValue(lastObj)
+                lastObj = curr
+                distinctLiveData.postValue(obj)
+            } else if ((!preventNull || curr != null) && curr != lastObj) {
+                lastObj = curr
+                distinctLiveData.postValue(obj)
             }
         }
     })
@@ -249,17 +301,29 @@ fun <T> LiveData<T>.updateEvery(intervalMillis: Long): LiveData<T> {
     return liveData
 }
 
+fun <X, Y> LiveData<X>.updateEveryWithTransform(
+    paramsFunc: (X) -> Pair<Long, Long>?,
+    transformFunc: (X?, Long, Boolean) -> Y,
+): LiveData<Y> = UpdatingTransformLiveData(this, paramsFunc, transformFunc)
+
 /**
  * Присваивает [LiveData] новое значение, только если оно изменилось
  */
-fun <T> MutableLiveData<T>.setValueIfNew(newValue: T?, eagerNotify: Boolean = false) {
-    if (eagerNotify || this.value != newValue) value = newValue
+fun <T> MutableLiveData<T>.setValueIfNew(newValue: T?): Boolean {
+    if (this.value != newValue) {
+        value = newValue
+        return true
+    }
+    return false
 }
 
-fun <T> MutableLiveData<T>.postValueIfNew(newValue: T?, eagerNotify: Boolean = false) {
-    if (eagerNotify || this.value != newValue) postValue(newValue)
+fun <T> MutableLiveData<T>.postValueIfNew(newValue: T): Boolean {
+    if (this.value != newValue) {
+        postValue(newValue)
+        return true
+    }
+    return false
 }
-
 /**
  * Присваивает [NotifyCheckMutableLiveData] новое значение, только если оно изменилось
  */
@@ -522,6 +586,22 @@ private class OnceObserver<T>(val liveData: LiveData<T>, val observer: Observer<
     }
 }
 
+private class OnceIfObserver<T>(
+    val liveData: LiveData<T>,
+    val observer: Observer<T>?,
+    val observeIf: (T?) -> Boolean,
+) : Observer<T?> {
+
+    // нулабельное T в кач-ве перестраховки,
+    // т.к. всегда можно выставить value=null
+    override fun onChanged(data: T?) {
+        if (observeIf(data)) {
+            observer?.onChanged(data)
+            liveData.removeObserver(this)
+        }
+    }
+}
+
 private class UpdatingLiveData<X>(private val intervalMillis: Long) : MediatorLiveData<X>() {
     private val handler = Handler()
     private val updateRunnable = Runnable {
@@ -541,5 +621,107 @@ private class UpdatingLiveData<X>(private val intervalMillis: Long) : MediatorLi
     override fun onInactive() {
         super.onInactive()
         handler.removeCallbacks(updateRunnable)
+    }
+}
+
+/**
+ * @param sourceLiveData исходная [LiveData] с данными для преобразования
+ * @param paramsFunc лямбда, дающая в зав-ти от текущих данных [X]
+ * целевое время для отсчёта (0 - без таймера, выставление в эту LD сразу) + интервал
+ * @param transformFunc функция преобразования исходных [X] в [Y]
+ * [X] - текущее значение в [sourceLiveData]
+ * [Long] - оставшиеся миллисекунды до конца (0, если не запускался) при старте таймера
+ * [Long] - оставшиеся миллисекунды до конца (0, если не запускался) текущие
+ * [Boolean] - был ли в этот раз запущен таймер
+ */
+private class UpdatingTransformLiveData<X, Y>(
+    private val sourceLiveData: LiveData<X>,
+    private val paramsFunc: (X) -> Pair<Long, Long>?,
+    private val transformFunc: (X?, Long, Boolean) -> Y,
+) : MediatorLiveData<Y>() {
+
+    private var observer: UpdatingObserver? = null
+
+    private var timer: CountDownTimer? = null
+
+    override fun onActive() {
+        super.onActive()
+        // кол-во подписчиков 0 -> 1
+        with(UpdatingObserver()) {
+            sourceLiveData.observeForever(this)
+            observer = this
+        }
+        // таймер с отложенными значениями запускать не надо
+        // и запоминать их заранее тоже - реагируем на значение в UpdatingObserver по месту
+    }
+
+    override fun onInactive() {
+        super.onInactive()
+        // кол-во подписчиков стало 0
+        dispose()
+    }
+
+    fun dispose() {
+        disposeTimer()
+        observer?.let {
+            sourceLiveData.removeObserver(it)
+            observer = null
+        }
+    }
+
+    private fun update(millisUntilFinished: Long, timerWasStarted: Boolean) {
+        this.value = transformFunc(sourceLiveData.value,
+            millisUntilFinished.takeIf { it >= 0 } ?: 0,
+            timerWasStarted)
+    }
+
+    private fun startTimer(params: Pair<Long, Long>) {
+        with(Timer(params.first, params.second)) {
+            timer = this
+            start()
+        }
+    }
+
+    private fun disposeTimer() {
+        timer?.let {
+            it.cancel()
+            timer = null
+        }
+    }
+
+    inner class UpdatingObserver : Observer<X> {
+
+        override fun onChanged(t: X) {
+            // при каждом изменении исходного значения
+            // прекращаем текущий счёт, если был начат
+            disposeTimer()
+            paramsFunc(t)?.takeIf { it.first > 0 && it.second > 0 }?.let { params ->
+                if (hasActiveObservers()) {
+                    // и запускаем с новыми параметрами, при наличии активных слушателей
+                    startTimer(params)
+                }
+            } ?: update(0, false)
+            // отсчёт не требуется, просто рефрешим
+        }
+    }
+
+    /**
+     * Цель таймера - досчитать до указанного значения,
+     * меняя за каждый интервал значение в целевой [MediatorLiveData]
+     * с использованием предоставленной [transformFunc]
+     */
+    inner class Timer(
+        millisInFuture: Long,
+        intervalMillis: Long,
+    ) : CountDownTimer(millisInFuture, intervalMillis) {
+
+        override fun onTick(millisUntilFinished: Long) {
+            update(millisUntilFinished, true)
+        }
+
+        override fun onFinish() {
+            update(0,true)
+            timer = null
+        }
     }
 }

@@ -11,12 +11,12 @@ open class CheckableConstraintLayout @JvmOverloads constructor(
         defStyleAttr: Int = 0
 ) : ConstraintLayout(context, attrs, defStyleAttr), ICheckableView {
 
-    override var _isChecked: Boolean = false
+    override var internalChecked: Boolean = false
 
     override fun mergeDrawableStates(baseState: IntArray, additionalState: IntArray) {
         View.mergeDrawableStates(baseState, additionalState)
     }
 
     override fun onCreateDrawableState(extraSpace: Int): IntArray =
-            mergeCheckedDrawableState(super.onCreateDrawableState(extraSpace + 1))
+            mergeWithCheckedDrawableState(super.onCreateDrawableState(extraSpace + 1))
 }

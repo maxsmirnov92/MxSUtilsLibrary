@@ -27,13 +27,13 @@ class PropertyBasedAdapter<T: Any> : JsonSerializer<T>, JsonDeserializer<T> {
 
     @Throws(JsonParseException::class)
     override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): T? {
-        getJsonPrimitive(json, KEY_CLASS_META, String::class.java)?.let { className ->
+        json.getPrimitive(KEY_CLASS_META, String::class.java)?.let { className ->
             val clz: Class<*> = try {
                 Class.forName(className)
             } catch (e: ClassNotFoundException) {
                 throw JsonParseException(e)
             }
-            return context.deserialize(getJsonElement(json, KEY_SOURCE, JsonElement::class.java), clz)
+            return context.deserialize(json.getJsonElement(KEY_SOURCE, JsonElement::class.java), clz)
         }
         throw JsonParseException("$KEY_CLASS_META not specified for json: $json")
     }

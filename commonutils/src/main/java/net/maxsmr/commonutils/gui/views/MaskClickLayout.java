@@ -35,10 +35,10 @@ import java.util.List;
 
 import static android.graphics.Bitmap.createScaledBitmap;
 import static net.maxsmr.commonutils.CompareUtilsKt.stringsEqual;
+import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.scaleByWidth;
 import static net.maxsmr.commonutils.gui.ViewExtKt.getContentSize;
 import static net.maxsmr.commonutils.gui.ViewExtKt.getRescaledImageViewSize;
 import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.createBitmapFromResource;
-import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.createScaledBitmapByWidth;
 import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.mirrorBitmap;
 import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.rotateBitmap;
 
@@ -555,7 +555,7 @@ public class MaskClickLayout extends FrameLayout {
             if (clickMask.options.scaleToParent) {
                 DisplayMetrics metrics = new DisplayMetrics();
                 ((WindowManager) getContext().getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(metrics);
-                Bitmap scaledBackground = createScaledBitmapByWidth(background, metrics.widthPixels);
+                Bitmap scaledBackground = scaleByWidth(background, metrics.widthPixels);
                 background.recycle();
                 background = scaledBackground;
             }

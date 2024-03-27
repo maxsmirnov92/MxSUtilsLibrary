@@ -12,40 +12,52 @@ import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import net.maxsmr.commonutils.text.EMPTY_STRING
-import net.maxsmr.commonutils.text.isEmpty
 import org.json.JSONArray
 import org.json.JSONObject
 import java.lang.reflect.Type
 import java.util.*
 
-//Вспомогательные утилиты для работы с json
-//посредством [Gson]
+// Вспомогательные утилиты для работы с json
+// посредством [Gson]
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("GsonUtils")
 
 /**
- * Преобразует строку [jsonString] в инстанс указанного типа [T],
+ * Преобразует строку [jsonString] в инстанс указанного **generic** типа [T],
  * информация о котором содержится в [classOfT],
- * используя [gson]
+ * используя [this]
  */
-fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, classOfT: Class<T>): T? =
-        fromJsonObjectString<T>(gson, jsonString, classOfT as Type)
+fun <T> Gson.fromJsonOrNull(jsonString: String?, classOfT: Class<T>): T? =
+    fromJsonOrNull<T>(jsonString, classOfT as Type)
 
 /**
- * Преобразует строку [jsonString] в инстанс указанного типа [T],
+ * Преобразует строку [jsonString] в инстанс указанного **generic** типа [T],
  * информация о котором содержится в [typeToken],
- * используя [gson]
+ * используя [this]
  */
-fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, typeToken: TypeToken<T>): T? =
-        fromJsonObjectString<T>(gson, jsonString, typeToken.type)
+fun <T> Gson.fromJsonOrNull(jsonString: String?, typeToken: TypeToken<T>): T? =
+    fromJsonOrNull(jsonString, typeToken.type)
+
+/**
+ * Использовать, если [T] **сам** является generic типом.
+ *
+ * Аналог [Gson.fromJson] (перегрузка с [Type] параметром), возвращающий null в случае возникновения исключения.
+ */
+fun <T> Gson.fromJsonOrNull(jsonString: String?, type: Type): T? {
+    return try {
+        fromJson(jsonString, type)
+    } catch (e: JsonParseException) {
+        logException(logger, e, "fromJsonOrNull")
+        null
+    }
+}
 
 /**
  * Преобразует строку [jsonString] в список сущностей указанного типа [T],
  * информация о котором содержится в [type],
- * используя [gson]
  */
-fun <T> fromJsonArrayString(gson: Gson, jsonString: String?, type: Class<Array<T>?>): List<T> {
-    val array: Array<T>? = fromJsonObjectString(gson, jsonString, type)
+fun <T> Gson.fromJsonArrayOrNull(jsonString: String?, type: Class<Array<T>?>): List<T> {
+    val array: Array<T>? = fromJsonOrNull(jsonString, type)
     return if (array != null) {
         listOf(*array)
     } else {
@@ -54,228 +66,196 @@ fun <T> fromJsonArrayString(gson: Gson, jsonString: String?, type: Class<Array<T
 }
 
 /**
- * Преобразует строку [jsonString] в инстанс указанного типа [T],
- * информация о котором содержится в [type],
- * используя [gson]
+ * Использовать, если [T] **сам** является generic типом.
+ *
+` * Аналог [Gson.toJson] (перегрузка с [Type] параметром),
+ * возвращающий null в случае возникновения исключения.
  */
-fun <T> fromJsonObjectString(gson: Gson, jsonString: String?, type: Type): T? {
-    if (!isEmpty(jsonString)) {
-        try {
-            return gson.fromJson(jsonString, type)
-        } catch (e: JsonParseException) {
-            logException(logger, e, "fromJson")
-        }
+fun <T : Any> Gson.toJsonOrNull(obj: T, type: Type): String? {
+    return try {
+        return toJson(obj, type)
+    } catch (e: JsonParseException) {
+        logException(logger, e, "toJsonOrNull")
+        null
     }
-    return null
 }
 
 /**
- * Преобразует объект [obj] указанного типа [T]
- * в строку, используя [gson]
+ * Использовать, если [T] **сам не** является generic типом (но может иметь generic поля).
+ *
+ * Аналог [Gson.toJson] со следующими отличиями:
+ * - возвращает null в случае возникновения любого исключения
+ * - возвращает null в случае, если [obj] == null (в дефолтном методе возвращается [JsonNull])
  */
-@JvmOverloads
-fun <T : Any> toJsonString(
-        gson: Gson,
-        obj: T,
-        type: Type = obj.javaClass
-): String {
-    try {
-        return gson.toJson(obj, type)
+fun <T : Any> Gson.toJsonOrNull(obj: T): String? {
+    return try {
+        return toJson(obj)
     } catch (e: JsonParseException) {
-        logException(logger, e, "toJson", false)
+        logException(logger, e, "toJsonOrNull")
+        null
     }
-    return EMPTY_STRING
 }
 
 /**
  * Преобразует коллекцию объектов [listOfObjects] указанного типа [T]
  * в маппинг: объект - json-строка, используя [gson]
  */
-fun <T : Any> toJsonStringMap(
-        gson: Gson,
-        listOfObjects: Collection<T>?,
-        type: Type
-): Map<T, String> {
-    val result: MutableMap<T, String> = LinkedHashMap()
+fun <T : Any> Gson.toJsonStringMap(
+    listOfObjects: Collection<T>?,
+    type: Type
+): Map<T, String?> {
+    val result: MutableMap<T, String?> = LinkedHashMap()
     if (listOfObjects != null) {
         for (o in listOfObjects) {
-            result[o] = toJsonString(gson, o, type)
+            result[o] = toJsonOrNull(o, type)
         }
     }
     return result
 }
 
-fun isJsonFieldNull(jsonObject: JsonObject, memberName: String?): Boolean {
-    val element = getJsonElementAs(jsonObject[memberName], JsonElement::class.java)
-    return element == null || element.isJsonNull
-}
-
-fun <J : JsonElement?> toJsonElement(
-    string: String?,
-    clazz: Class<J>
-): J? = try {
-    toJsonElementOrThrow(string, clazz)
-} catch (e: JsonParseException) {
-    logException(logger, e, "toJsonElement", false)
-    null
-}
-
-@Throws(JsonParseException::class)
-fun <J : JsonElement?> toJsonElementOrThrow(
-    string: String?,
-    clazz: Class<J>
-): J {
-    var element: JsonElement? = null
-    if (string != null && string.isNotEmpty()) {
-        try {
-            element = parseString(string)
-        } catch (e: JsonParseException) {
-            throw e
-        }
+val JsonElement?.asLongOrNull: Long?
+    get() = try {
+        this?.asLong
+    } catch (e: RuntimeException) {
+        logException(logger, e, "asLong")
+        null
     }
-    return if (element != null && clazz.isInstance(element)) {
-        element as J
+
+val JsonElement?.asDoubleOrNull: Double?
+    get() = try {
+        this?.asDouble
+    } catch (e: RuntimeException) {
+        logException(logger, e, "asDouble")
+        null
+    }
+
+val JsonElement?.asFloatOrNull: Float?
+    get() = try {
+        this?.asFloat
+    } catch (e: RuntimeException) {
+        logException(logger, e, "asFloat")
+        null
+    }
+
+val JsonElement?.asIntOrNull: Int?
+    get() = try {
+        this?.asInt
+    } catch (e: RuntimeException) {
+        logException(logger, e, "asInt")
+        null
+    }
+
+val JsonElement?.asNumberOrNull: Number?
+    get() = try {
+        this?.asNumber
+    } catch (e: RuntimeException) {
+        logException(logger, e, "asNumber")
+        null
+    }
+
+val JsonElement?.asStringOrNull: String?
+    get() = try {
+        this?.asString
+    } catch (e: RuntimeException) {
+        logException(logger, e, "asString")
+        null
+    }
+
+val JsonElement?.asBooleanOrNull: Boolean?
+    get() = try {
+        this?.asBoolean
+    } catch (e: RuntimeException) {
+        logException(logger, e, "asBoolean")
+        null
+    }
+
+val JsonElement?.asJsonObjectOrNull: JsonObject?
+    get() = try {
+        this?.asJsonObject
+    } catch (e: IllegalStateException) {
+        logException(logger, e, "asJsonObject")
+        null
+    }
+
+val JsonElement?.asJsonArrayOrNull: JsonArray?
+    get() = try {
+        this?.asJsonArray
+    } catch (e: IllegalStateException) {
+        logException(logger, e, "asJsonArray")
+        null
+    }
+
+/**
+ * @param target имя параметра
+ * @return значение параметра или пустая строка при отсутствии значения
+ */
+@JvmOverloads
+fun JsonObject.optStringNonNull(target: String, fallback: String? = EMPTY_STRING): String {
+    return if (has(target) && !this[target].isJsonNull) {
+        this[target].asString
     } else {
-        throw JsonParseException("Json element $element is not instance of $clazz")
+        fallback.orEmpty()
     }
 }
 
-fun <J : JsonElement?> toJsonElement(
-    parser: JsonReader,
-    clazz: Class<J>,
-): J? = try {
-    toJsonElementOrThrow(parser, clazz)
+fun <E : JsonElement> JsonElement?.asJsonElement(clazz: Class<E>): E? = try {
+    asJsonElementOrThrow(clazz)
 } catch (e: JsonParseException) {
-    logException(logger, e, "toJsonElement", false)
+    logException(logger, e, "getJsonElementAs")
     null
 }
 
 @Throws(JsonParseException::class)
-fun <J : JsonElement?> toJsonElementOrThrow(parser: JsonReader, clazz: Class<J>): J {
-    val element: JsonElement? = try {
-        Streams.parse(parser)
-    } catch (e: JsonParseException) {
-        throw e
-    }
-    return if (element != null && clazz.isInstance(element)) {
-        element as J
-    } else {
-        throw JsonParseException("Json element $element is not instance of $clazz")
-    }
-}
-
-fun <P : Number?> getPrimitiveNumber(element: JsonElement?): P?  = try {
-    getPrimitiveNumberOrThrow(element)
-} catch (e: JsonParseException) {
-    logException(logger, e, "getPrimitiveNumber", false)
-    null
-}
-
-@Throws(JsonParseException::class)
-fun <P : Number?> getPrimitiveNumberOrThrow(element: JsonElement?): P {
-    if (element !is JsonPrimitive) {
-        throw JsonParseException("Json element $element is not JsonPrimitive")
-    }
-    return if (element.isNumber) {
-        element.asNumber as P
-    } else {
-        throw JsonParseException("Json element $element is not Number")
-    }
-}
-
-fun getPrimitiveString(element: JsonElement?): String? = try {
-    getPrimitiveStringOrThrow(element)
-} catch (e: JsonParseException) {
-    logException(logger, e, "getPrimitiveString", false)
-    null
-}
-
-@Throws(JsonParseException::class)
-fun getPrimitiveStringOrThrow(element: JsonElement?): String {
-    if (element !is JsonPrimitive) {
-        throw JsonParseException("Json element $element is not JsonPrimitive")
-    }
-    return if (element.isString) {
-        element.asString
-    } else {
-        throw JsonParseException("Json element $element is not String")
-    }
-}
-
-fun getPrimitiveBoolean(element: JsonElement?): Boolean? = try {
-    getPrimitiveBooleanOrThrow(element)
-} catch (e: JsonParseException) {
-    logException(logger, e, "getPrimitiveBoolean", false)
-    null
-}
-
-@Throws(JsonParseException::class)
-fun getPrimitiveBooleanOrThrow(element: JsonElement?): Boolean {
-    if (element !is JsonPrimitive) {
-        throw JsonParseException("Json element $element is not JsonPrimitive")
-    }
-    return if (element.isBoolean) {
-        element.asBoolean
-    } else {
-        throw JsonParseException("Json element $element is not Boolean")
-    }
-}
-
-fun <E : JsonElement> getJsonElementAs(jsonElement: JsonElement?, clazz: Class<E>): E? = try {
-    getJsonElementAsOrThrow(jsonElement, clazz)
-} catch (e: JsonParseException) {
-    logException(logger, e, "getJsonElementAs", false)
-    null
-}
-
-@Throws(JsonParseException::class)
-fun <E : JsonElement> getJsonElementAsOrThrow(element: JsonElement?, clazz: Class<E>): E {
+fun <E : JsonElement> JsonElement?.asJsonElementOrThrow(clazz: Class<E>): E {
     return when {
-        element is JsonNull && JsonNull::class.java.isAssignableFrom(clazz) ->
-            element as E
-        element is JsonPrimitive && JsonPrimitive::class.java.isAssignableFrom(clazz) ->
-            element as E
-        element is JsonObject && JsonObject::class.java.isAssignableFrom(clazz) ->
-            element as E
-        element is JsonArray && JsonArray::class.java.isAssignableFrom(clazz) ->
-            element as E
-        else -> throw JsonParseException("Incorrect type of json element $element")
+        this is JsonNull && JsonNull::class.java.isAssignableFrom(clazz) ->
+            this as E
+        this is JsonPrimitive && JsonPrimitive::class.java.isAssignableFrom(clazz) ->
+            this as E
+        this is JsonObject && JsonObject::class.java.isAssignableFrom(clazz) ->
+            this as E
+        this is JsonArray && JsonArray::class.java.isAssignableFrom(clazz) ->
+            this as E
+        JsonElement::class.java.isAssignableFrom(clazz) -> {
+            this as E
+        }
+        else -> throw JsonParseException("Incorrect type of json element $this")
     }
 }
 
-fun <V> getJsonPrimitiveAsNonNull(forElement: JsonElement?, clazz: Class<V>, defaultValue: V): V =
-    getJsonPrimitiveAs(forElement, clazz, defaultValue) ?: defaultValue
+fun <V> JsonElement?.asPrimitiveNonNull(clazz: Class<V>, defaultValue: V): V =
+    asPrimitive(clazz, defaultValue) ?: defaultValue
 
 @JvmOverloads
-fun <V> getJsonPrimitiveAs(element: JsonElement?, clazz: Class<V>, defaultValue: V? = null): V? = try {
-    getJsonPrimitiveAsOrThrow(element, clazz)
+fun <V> JsonElement?.asPrimitive(clazz: Class<V>, defaultValue: V? = null): V? = try {
+    asPrimitiveOrThrow(clazz)
 } catch (e: JsonParseException) {
-    logException(logger, e, "getJsonPrimitiveAs", false)
+    logException(logger, e, "getJsonPrimitiveAs")
     defaultValue
 }
 
 @Throws(JsonParseException::class)
-fun <V> getJsonPrimitiveAsOrThrow(element: JsonElement?, clazz: Class<V>): V =
-    getJsonPrimitiveAsOrThrow(getJsonElementAsOrThrow(element, JsonPrimitive::class.java), clazz)
+fun <V> JsonElement?.asPrimitiveOrThrow(clazz: Class<V>): V =
+    asJsonElementOrThrow(JsonPrimitive::class.java).asPrimitiveOrThrow(clazz)
 
-fun <V> getJsonPrimitiveAsNonNull(forElement: JsonPrimitive?, clazz: Class<V>, defaultValue: V): V =
-    getJsonPrimitiveAs(forElement, clazz, defaultValue) ?: defaultValue
+fun <V> JsonPrimitive?.asPrimitiveNonNull(clazz: Class<V>, defaultValue: V): V =
+    asPrimitive(clazz, defaultValue) ?: defaultValue
 
 @JvmOverloads
-fun <V> getJsonPrimitiveAs(element: JsonPrimitive?, clazz: Class<V>, defaultValue: V? = null): V? = try {
-    getJsonPrimitiveAsOrThrow(element, clazz)
+fun <V> JsonPrimitive?.asPrimitive(clazz: Class<V>, defaultValue: V? = null): V? = try {
+    asPrimitiveOrThrow(clazz)
 } catch (e: JsonParseException) {
-    logException(logger, e, "getJsonPrimitiveAs", false)
+    logException(logger, e, "getJsonPrimitiveAs")
     defaultValue
 }
 
 @Throws(JsonParseException::class)
-fun <V> getJsonPrimitiveAsOrThrow(element: JsonPrimitive?, clazz: Class<V>): V {
-    return if (element != null) {
-        if (element.isString && String::class.java.isAssignableFrom(clazz)) {
-            element.asString as V
-        } else if (element.isNumber) {
-            val numberValue = element.asNumber
+fun <V> JsonPrimitive?.asPrimitiveOrThrow(clazz: Class<V>): V {
+    return if (this != null) {
+        if (this.isString && String::class.java.isAssignableFrom(clazz)) {
+            this.asString as V
+        } else if (this.isNumber) {
+            val numberValue = this.asNumber
             when {
                 numberValue is LazilyParsedNumber -> {
                     when {
@@ -286,65 +266,112 @@ fun <V> getJsonPrimitiveAsOrThrow(element: JsonPrimitive?, clazz: Class<V>): V {
                         Float::class.java.isAssignableFrom(clazz) -> numberValue.toFloat() as V
                         Byte::class.java.isAssignableFrom(clazz) -> numberValue.toByte() as V
                         Char::class.java.isAssignableFrom(clazz) -> numberValue.toChar() as V
-                        else -> throw JsonParseException("Json element $element is not known primitive")
+                        else -> throw JsonParseException("Json element $this is not known primitive")
                     }
                 }
                 Number::class.java.isAssignableFrom(clazz) -> {
                     numberValue as V
                 }
                 else -> {
-                    throw JsonParseException("Json element $element is not Number")
+                    throw JsonParseException("Json element $this is not Number")
                 }
             }
-        } else if (element.isBoolean && Boolean::class.java.isAssignableFrom(clazz)) {
-            element.asBoolean as V
+        } else if (this.isBoolean && Boolean::class.java.isAssignableFrom(clazz)) {
+            this.asBoolean as V
         } else {
-            throw JsonParseException("Json element $element is not Boolean")
+            throw JsonParseException("Json element $this is not Boolean")
         }
     } else {
-        throw JsonParseException("Json element $element is null")
+        throw JsonParseException("Json element $this is null")
     }
 }
 
-fun <E : JsonElement> getJsonElement(jsonElement: JsonElement?, memberName: String?, clazz: Class<E>): E? = try {
-    getJsonElementOrThrow(jsonElement, memberName, clazz)
+// same as asNumberOrNull getter
+fun <P : Number?> JsonElement?.asNumber(): P? = try {
+    asNumberOrThrow()
 } catch (e: JsonParseException) {
-    logException(logger, e, "getJsonElement", false)
+    logException(logger, e, "asNumber")
     null
 }
 
 @Throws(JsonParseException::class)
-fun <E : JsonElement> getJsonElementOrThrow(jsonElement: JsonElement?, memberName: String?, clazz: Class<E>): E {
-    return getJsonElementAsOrThrow(getJsonElementAsOrThrow(jsonElement, JsonObject::class.java)[memberName], clazz)
+fun <P : Number?> JsonElement?.asNumberOrThrow(): P {
+    if (this !is JsonPrimitive) {
+        throw JsonParseException("Json element $this is not JsonPrimitive")
+    }
+    return if (this.isNumber) {
+        this.asNumber as P
+    } else {
+        throw JsonParseException("Json element $this is not Number")
+    }
 }
 
-fun <V> getJsonPrimitiveNonNull(jsonElement: JsonElement?, memberName: String?, clazz: Class<V>, defaultValue: V): V =
-    getJsonPrimitive(jsonElement, memberName, clazz) ?: defaultValue
+fun JsonElement.isJsonFieldNull(memberName: String?): Boolean {
+    val obj = this.asJsonElement(JsonObject::class.java) ?: return false
+    val element = obj[memberName].asJsonElement(JsonElement::class.java)
+    return element == null || element.isJsonNull
+}
 
-fun <V> getJsonPrimitive(jsonElement: JsonElement?, memberName: String?, clazz: Class<V>): V? = try {
-    getJsonPrimitiveOrThrow(jsonElement, memberName, clazz)
+fun <V> JsonElement?.getPrimitiveNonNull(memberName: String?, clazz: Class<V>, defaultValue: V): V =
+    getPrimitive(memberName, clazz) ?: defaultValue
+
+fun <V> JsonElement?.getPrimitive(memberName: String?, clazz: Class<V>): V? = try {
+    getPrimitiveOrThrow(memberName, clazz)
 } catch (e: JsonParseException) {
-    logException(logger, e, "getJsonPrimitive", false)
+    logException(logger, e, "getPrimitive")
     null
 }
 
 @Throws(JsonParseException::class)
-fun <V> getJsonPrimitiveOrThrow(jsonElement: JsonElement?, memberName: String?, clazz: Class<V>): V {
-    return getJsonPrimitiveAsOrThrow(getJsonElementOrThrow(jsonElement, memberName, JsonPrimitive::class.java), clazz)
+fun <V> JsonElement?.getPrimitiveOrThrow(memberName: String?, clazz: Class<V>): V =
+    getJsonElementOrThrow(memberName, JsonPrimitive::class.java).asPrimitiveOrThrow(clazz)
+
+
+fun <E : JsonElement> JsonElement?.getJsonElement(memberName: String?, clazz: Class<E>): E? = try {
+    getJsonElementOrThrow(memberName, clazz)
+} catch (e: JsonParseException) {
+    logException(logger, e, "getJsonElement")
+    null
 }
 
-@JvmOverloads
-fun <V> getFromJsonArray(array: JsonArray?, parcel: JsonParcelArray<V>, nonNull: Boolean = false): List<V?> {
-    val result = mutableListOf<V?>()
-    array?.let {
-        for (i in 0 until array.size()) {
-            val item = parcel.fromJsonArray(array, i)
-            if (!nonNull || item != null) {
-                result.add(item)
-            }
-        }
+@Throws(JsonParseException::class)
+fun <E : JsonElement> JsonElement?.getJsonElementOrThrow(memberName: String?, clazz: Class<E>): E =
+    asJsonElementOrThrow(JsonObject::class.java)[memberName].asJsonElementOrThrow(clazz)
+
+
+fun JsonArray.getOrNull(index: Int) = try {
+    get(index)
+} catch (e: IndexOutOfBoundsException) {
+    logException(logger, e, "get")
+    null
+}
+
+fun <V> JsonArray?.parseNonNull(parseElement: (JsonElement) -> V?): List<V> {
+    return this?.mapNotNull { parseElement(it) }.orEmpty()
+}
+
+fun <V> JsonArray?.parse(parseElement: (JsonElement) -> V?): List<V?> {
+    return this?.map { parseElement(it) }.orEmpty()
+}
+
+fun <J : JsonElement?> toJsonElement(value: String?, clazz: Class<J>): J? = try {
+    toJsonElementOrThrow(value, clazz)
+} catch (e: JsonParseException) {
+    logException(logger, e, "toJsonElement")
+    null
+}
+
+@Throws(JsonParseException::class)
+fun <J : JsonElement?> toJsonElementOrThrow(value: String?, clazz: Class<J>): J {
+    var element: JsonElement? = null
+    if (value != null && value.isNotEmpty()) {
+        element = parseString(value) // Streams.parse(reader)
     }
-    return result
+    return if (element != null && clazz.isInstance(element)) {
+        element as J
+    } else {
+        throw JsonParseException("Json element $element is not instance of $clazz")
+    }
 }
 
 fun Any?.toJsonElement(): JsonElement {
@@ -392,16 +419,12 @@ fun JsonArray.mergeJsonArray(fromAnother: JsonArray) {
     }
 }
 
-interface JsonParcelArray<T> {
-
-    fun fromJsonArray(jsonArray: JsonArray?, index: Int): T?
+fun JsonReader.nextJsonElement(): JsonElement? = try {
+    nextJsonElementOrThrow()
+} catch (e: JsonParseException) {
+    logException(logger, e, "nextJsonElement")
+    null
 }
 
-abstract class JsonParcelArrayObjects<T>: JsonParcelArray<T> {
-
-    abstract fun fromJsonObject(jsonObj: JsonObject): T?
-
-    override fun fromJsonArray(jsonArray: JsonArray?, index: Int): T? {
-        return jsonArray?.let { fromJsonObject(getJsonElementAsOrThrow(jsonArray.get(index), JsonObject::class.java)) }
-    }
-}
+@Throws(JsonParseException::class)
+fun JsonReader.nextJsonElementOrThrow(): JsonElement = Streams.parse(this)

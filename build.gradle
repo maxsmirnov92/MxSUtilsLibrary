@@ -5,7 +5,6 @@ buildscript {
     apply from: 'buildSrc/config.gradle'
 
     repositories {
-        jcenter()
         google()
         maven { url "https://plugins.gradle.org/m2/" }
     }
@@ -13,8 +12,8 @@ buildscript {
     dependencies {
 
         classpath "com.android.tools.build:gradle:$gradlePluginVersion"
-        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:$bintrayGradleVersion"
-        classpath "com.github.dcendents:android-maven-gradle-plugin:$mavenGradleVersion"
+//        classpath "com.jfrog.bintray.gradle:gradle-bintray-plugin:$bintrayGradleVersion"
+//        classpath "com.github.dcendents:android-maven-gradle-plugin:$mavenGradleVersion"
 
         classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlinGradlePluginVersion"
 
@@ -26,17 +25,9 @@ buildscript {
 allprojects {
 
     repositories {
-        jcenter()
         google()
         mavenCentral()
         maven { url 'https://dl.bintray.com/maxsmirnov92/maven' }
         maven { url 'https://dl.google.com/dl/android/maven2' }
     }
 }
-
-//plugins {
-//    id 'kotlin-parcelize'
-//}
-
-//apply plugin: "org.jetbrains.kotlin.android.extensions"
-//apply plugin: "org.jetbrains.kotlin.multiplatform"

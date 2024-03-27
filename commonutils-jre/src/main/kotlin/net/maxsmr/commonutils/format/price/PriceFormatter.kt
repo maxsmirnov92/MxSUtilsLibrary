@@ -6,6 +6,7 @@ import net.maxsmr.commonutils.text.EMPTY_STRING
 import  net.maxsmr.commonutils.text.isEmpty
 import java.text.DecimalFormat
 import java.text.DecimalFormatSymbols
+import java.text.ParseException
 
 /**
  * Форматирует цену из Double в строку, используя заданный [format]
@@ -21,7 +22,7 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
 
     private var groupingSize: Int = GROUPING_SIZE_DEFAULT
 
-    private var groupingSeparator: Char = CHAR_SPACE_INSEPARABLE
+    private var groupingSeparator: Char? = CHAR_SPACE_INSEPARABLE
 
     private var decimalSeparator: Char = '.'
 
@@ -73,7 +74,7 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
         this.groupingSize = 0
     }
 
-    fun setGroupingSeparator(groupingSeparator: Char) = apply {
+    fun setGroupingSeparator(groupingSeparator: Char?) = apply {
         this.groupingSeparator = groupingSeparator
     }
 
@@ -81,24 +82,70 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
         this.decimalSeparator = decimalSeparator
     }
 
+    /**
+     * Кол-во для getQuantityString в соот-ии с [price]
+     * и текущим форматом
+     */
+    fun quantity(
+        price: Double?,
+        ifNonZero: Boolean = false,
+        ifNonNullOrNan: Boolean = true,
+    ): Int {
+        if (ifNonNullOrNan && (price == null || price.isNaN())) {
+            return 0
+        }
+        val price = price?.takeIf { !it.isNaN() } ?: .0
+        if (ifNonZero && price.isZero()) {
+            return 0
+        }
+        val format = createDecimalFormat(price)
+        val formattedPrice = format(price, format)
+        return try {
+            format.parse(formattedPrice)?.toInt() ?: 0
+        } catch (e: ParseException) {
+            0
+        }
+    }
+
+    /**
+     * Форматирует цену из Double в String согласно заданным в этом инстансе форматтера параметрам
+     *
+     * @param price цена для форматирования
+     * @param ifNonZero true, если в случае [price] == 0 вместо форматирования надо вернуть [EMPTY_STRING], иначе false
+     * @param ifNonNullOrNan true, если в случае [price] == [Double.NaN] или [price] == null вместо форматирования надо вернуть [EMPTY_STRING], иначе false
+     */
     @JvmOverloads
     fun format(
         price: Double?,
-        isNonZero: Boolean = false,
-        isNonNullOrNan: Boolean = price == null || price.isNaN()
+        ifNonZero: Boolean = false,
+        ifNonNullOrNan: Boolean = true,
     ): String {
-        if (isNonNullOrNan && (price == null || price.isNaN())) {
+        if (ifNonNullOrNan && (price == null || price.isNaN())) {
             return EMPTY_STRING
         }
-        val price = price?.takeIf { !it.isNaN() } ?: .0
-        if (isNonZero && price.isZero()) {
+        val priceNotNull = price?.takeIf { !it.isNaN() } ?: .0
+        if (ifNonZero && priceNotNull.isZero()) {
             return EMPTY_STRING
         }
+        return format(priceNotNull, createDecimalFormat(priceNotNull))
+    }
+
+    private fun format(price: Double, format: DecimalFormat): String = buildString {
+        append(format.format(price))
+        if (!isEmpty(currency)) {
+            currencySeparator?.let { append(it) }
+            append(currency)
+        }
+    }
+
+    private fun createDecimalFormat(price: Double): DecimalFormat {
         val symbols = DecimalFormatSymbols().also {
-            it.groupingSeparator = groupingSeparator
+            groupingSeparator?.let { s ->
+                it.groupingSeparator = s
+            }
             it.decimalSeparator = decimalSeparator
         }
-        val decimalFormat = DecimalFormat(
+        return DecimalFormat(
             format.decimalFormatPattern(price),
             symbols
         ).also {
@@ -106,13 +153,6 @@ class PriceFormatter(style: PriceStyle = ECONOMY) {
             it.isGroupingUsed = groupingSize > 0
             if (groupingSize > 0) {
                 it.groupingSize = groupingSize
-            }
-        }
-        return buildString {
-            append(decimalFormat.format(price))
-            if (!isEmpty(currency)) {
-                currencySeparator?.let { append(it) }
-                append(currency)
             }
         }
     }

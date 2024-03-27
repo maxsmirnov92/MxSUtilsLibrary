@@ -45,9 +45,9 @@ fun RecyclerView.isScrollable(isFromStart: Boolean = false): Boolean? {
 
 @JvmOverloads
 fun RecyclerView.setOnScrollChangesListener(
-        layoutManager: LinearLayoutManager,
-        controlState: Int = ALL_STATES,
-        listener: ((RecyclerScrollState) -> Unit)
+    layoutManager: LinearLayoutManager,
+    controlState: Int = ALL_STATES,
+    listener: ((RecyclerScrollState) -> Unit)
 ) {
     addOnScrollListener(object : RecyclerView.OnScrollListener() {
 
@@ -89,15 +89,19 @@ fun NestedScrollView.setOnScrollChangesListener(listener: ((ScrollState) -> Unit
     }
 }
 
-fun ViewGroup.calculateCoordsForScroll(target: View, isVertically: Boolean): Pair<Int, Int> {
+fun ViewGroup.calculateCoordsForScroll(
+    target: View,
+    isVertically: Boolean,
+    fromStart: Boolean = true,
+): Pair<Int, Int> {
     val x: Int
     val y: Int
     val coords = target.getOffsetByParent(this)
     if (isVertically) {
         x = 0
-        y = coords.top
+        y = if (fromStart) coords.top else coords.bottom
     } else {
-        x = coords.left
+        x = if (fromStart) coords.left else coords.right
         y = 0
     }
     return Pair(x, y)
@@ -105,14 +109,15 @@ fun ViewGroup.calculateCoordsForScroll(target: View, isVertically: Boolean): Pai
 
 @JvmOverloads
 fun ViewGroup.scrollToView(
-        activity: Activity?,
-        target: View,
-        isVertically: Boolean,
-        smoothScroll: Boolean = true,
-        changeFocus: Boolean = false
+    target: View,
+    isVertically: Boolean,
+    fromStart: Boolean = true,
+    smoothScroll: Boolean = true,
+    changeFocus: Boolean = false,
+    activity: Activity?,
 ) {
-    val coords = calculateCoordsForScroll(target, isVertically)
-    scrollTo(activity, coords.first, coords.second, smoothScroll, changeFocus)
+    val coords = calculateCoordsForScroll(target, isVertically, fromStart)
+    scrollTo(coords.first, coords.second, smoothScroll, changeFocus, activity)
 }
 
 /**
@@ -120,17 +125,17 @@ fun ViewGroup.scrollToView(
  */
 @JvmOverloads
 fun ViewGroup.scrollTo(
-        activity: Activity?,
-        x: Int,
-        y: Int,
-        smoothScroll: Boolean = true,
-        changeFocus: Boolean = false
+    x: Int,
+    y: Int,
+    smoothScroll: Boolean = true,
+    changeFocus: Boolean = false,
+    activity: Activity?,
 ) {
     if (changeFocus) {
         // если не очистить текущий фокус,
         // может не сработать
         activity?.currentFocus?.clearFocus()
-        when(this) {
+        when (this) {
             is ScrollView -> {
                 fullScroll(View.FOCUS_DOWN)
             }
@@ -144,7 +149,7 @@ fun ViewGroup.scrollTo(
 
     }
     if (smoothScroll) {
-        when(this) {
+        when (this) {
             is ScrollView -> {
                 smoothScrollTo(x, y)
             }
@@ -206,17 +211,17 @@ fun AppBarLayout.scrollByOffset(offset: Int, animationDuration: Long = SCROLL_AN
 }
 
 private fun ViewGroup.detectScrollChangesByParams(scrollX: Int, scrollY: Int, oldScrollX: Int, oldScrollY: Int): ScrollState =
-        when {
-            scrollX == (getChildAt(0).measuredWidth - measuredWidth) && scrollX != oldScrollX -> END
-            scrollX > oldScrollX -> RIGHT
-            scrollX < oldScrollX -> LEFT
-            scrollX == 0 && oldScrollX != 0 -> START
-            scrollY == (getChildAt(0).measuredHeight - measuredHeight) && scrollY != oldScrollY -> BOTTOM
-            scrollY < oldScrollY -> UP
-            scrollY > oldScrollY -> DOWN
-            scrollY == 0 && oldScrollY != 0 -> TOP
-            else -> UNKNOWN
-        }
+    when {
+        scrollX == (getChildAt(0).measuredWidth - measuredWidth) && scrollX != oldScrollX -> END
+        scrollX > oldScrollX -> RIGHT
+        scrollX < oldScrollX -> LEFT
+        scrollX == 0 && oldScrollX != 0 -> START
+        scrollY == (getChildAt(0).measuredHeight - measuredHeight) && scrollY != oldScrollY -> BOTTOM
+        scrollY < oldScrollY -> UP
+        scrollY > oldScrollY -> DOWN
+        scrollY == 0 && oldScrollY != 0 -> TOP
+        else -> UNKNOWN
+    }
 
 enum class ScrollState {
     // горизонтальный:
@@ -224,6 +229,7 @@ enum class ScrollState {
     RIGHT,
     START,
     END,
+
     // вертикальный:
     DOWN,
     UP,

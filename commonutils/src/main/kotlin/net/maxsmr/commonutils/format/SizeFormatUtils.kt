@@ -80,6 +80,7 @@ fun filePairsWithSizeToString(context: Context, files: Collection<Map.Entry<Pair
     return join(NEXT_LINE, result)
 }
 
+// FIXME PluralTextMessage
 /**
  * @param sizeUnit unit for [size]
  * @param sizeUnitsToExclude list of units to avoid in result string
@@ -97,16 +98,16 @@ fun sizeToString(
     map.forEach {
         when (it.key) {
             SizeUnit.BYTES -> {
-                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_suffix_bytes, it.value)))
+                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_unit_bytes, it.value)))
             }
             SizeUnit.KBYTES -> {
-                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_suffix_kbytes, it.value)))
+                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_unit_kbytes, it.value)))
             }
             SizeUnit.MBYTES -> {
-                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_suffix_mbytes, it.value)))
+                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_unit_mbytes, it.value)))
             }
             SizeUnit.GBYTES -> {
-                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_suffix_gbytes, it.value)))
+                result.add(String.format(FORMAT_SIZE, it.value, stringsProvider(R.plurals.size_unit_gbytes, it.value)))
             }
             else -> {
                 // do noting
