@@ -1,8 +1,10 @@
 package net.maxsmr.commonutils.live.field
 
+import android.widget.EditText
 import android.widget.TextView
 import androidx.lifecycle.LifecycleOwner
 import net.maxsmr.commonutils.format.getFormattedText
+import net.maxsmr.commonutils.gui.setSelectionToEnd
 import net.maxsmr.commonutils.gui.setTextDistinct
 import net.maxsmr.commonutils.gui.setTextDistinctFormatted
 import ru.tinkoff.decoro.Mask
@@ -23,7 +25,9 @@ fun Field<String>.observeFromTextFormatted(
 ) {
     valueLive.observe(owner) {
         onChanged?.invoke(it)
-        view.setTextDistinctFormatted(it, maskWatcher, asString)
+        if (view.setTextDistinctFormatted(it, maskWatcher, asString)) {
+            (view as? EditText)?.setSelectionToEnd()
+        }
     }
 }
 
@@ -65,6 +69,8 @@ fun <D> Field<D>.observeFrom(
         formatFunc: (D) -> CharSequence?
 ) {
     valueLive.observe(owner) {
-        view.setTextDistinct(formatFunc(it), asString)
+        if (view.setTextDistinct(formatFunc(it), asString)) {
+            (view as? EditText)?.setSelectionToEnd()
+        }
     }
 }
