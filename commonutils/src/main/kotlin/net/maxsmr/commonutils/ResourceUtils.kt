@@ -128,7 +128,7 @@ fun getDimensionFromAttrs(context: Context, attrs: IntArray): Int {
  * Получение высоты ActionBar из аттрибутов
  */
 fun getActionBarHeight(context: Context): Int {
-    val attrs = context.theme.obtainStyledAttributes(intArrayOf(R.attr.actionBarSize))
+    val attrs = context.theme.obtainStyledAttributes(intArrayOf(android.R.attr.actionBarSize))
     val actionBarHeight = attrs.getDimension(0, 0f)
     try {
         return actionBarHeight.toInt()

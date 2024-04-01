@@ -29,7 +29,7 @@ class LiveSubject<T> @JvmOverloads constructor(
     override val observable: Observable<T> = subject.hide()
 
     fun onNext(event: T) {
-        subject.onNext(event)
+        subject.onNext(event as (T & Any))
     }
 
     enum class SubjectType {

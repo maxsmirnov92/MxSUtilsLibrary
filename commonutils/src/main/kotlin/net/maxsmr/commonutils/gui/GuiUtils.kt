@@ -52,7 +52,7 @@ fun KeyEvent?.isEnterKeyPressed(actionId: Int): Boolean =
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 fun Activity.setDefaultStatusBarColor() {
-    setStatusBarColor(getColorFromAttrs(window.context, intArrayOf(R.attr.colorPrimaryDark)))
+    setStatusBarColor(getColorFromAttrs(window.context, intArrayOf(android.R.attr.colorPrimaryDark)))
 }
 
 /**
@@ -81,7 +81,7 @@ fun Activity.setStatusBarColor(@ColorInt color: Int) {
 
 @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 fun Activity.setDefaultNavigationColor() {
-    setNavigationBarColor(getColorFromAttrs(window.context, intArrayOf(R.attr.colorPrimaryDark)))
+    setNavigationBarColor(getColorFromAttrs(window.context, intArrayOf(android.R.attr.colorPrimaryDark)))
 }
 
 /**

@@ -1,5 +1,9 @@
 apply from: "$rootDir/buildSrc/androidLib.gradle"
 
+android {
+    namespace "net.maxsmr.taskutils"
+}
+
 dependencies {
     api project(':commonutils')
 //    api "net.maxsmr:commonutils:${project.getModuleVersionNameByPath(":commonutils")}"

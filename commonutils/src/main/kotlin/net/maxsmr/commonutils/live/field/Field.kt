@@ -7,6 +7,7 @@ import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.map
 import net.maxsmr.commonutils.gui.actions.message.text.TextMessage
 import net.maxsmr.commonutils.live.*
 import net.maxsmr.commonutils.text.EMPTY_STRING

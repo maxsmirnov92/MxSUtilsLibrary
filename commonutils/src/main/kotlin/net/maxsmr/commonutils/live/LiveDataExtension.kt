@@ -140,12 +140,6 @@ fun <T> LiveData<T>.once(): LiveData<T> {
     return result
 }
 
-/**
- * Реализует преобразование [Transformations.map] над LiveData в стиле цепочек RxJava
- */
-fun <X, Y> LiveData<X>.map(body: (X) -> Y): LiveData<Y> {
-    return Transformations.map(this, body)
-}
 
 fun <X, Y> LiveData<X>.mapNotNull(body: (X) -> Y?): MutableLiveData<Y> {
     val result = MediatorLiveData<Y>()
@@ -158,13 +152,6 @@ fun <X, Y> LiveData<X>.mapNotNull(body: (X) -> Y?): MutableLiveData<Y> {
 }
 
 /**
- * Реализует преобразование [Transformations.switchMap] над LiveData в стиле цепочек RxJava
- */
-fun <X, Y> LiveData<X>.switchMap(body: (X) -> LiveData<Y>): LiveData<Y> {
-    return Transformations.switchMap(this, body)
-}
-
-/**
  * С гарантиями того, что возможные нульные данные
  * из [LiveData] вызова [body]
  * не попадут в результирующую
@@ -173,8 +160,8 @@ fun <X, Y> LiveData<X>.switchMapNotNull(body: (X) -> LiveData<Y?>): LiveData<Y> 
     val result = MediatorLiveData<Y>()
     result.addSource(this, object : Observer<X> {
         var source: LiveData<Y?>? = null
-        override fun onChanged(x: X) {
-            val newLiveData: LiveData<Y?> = body(x)
+        override fun onChanged(value: X) {
+            val newLiveData: LiveData<Y?> = body(value)
             if (source === newLiveData) {
                 return
             }
@@ -208,15 +195,15 @@ fun <T, K> LiveData<T>.distinct(
         private var initialized = false
         private var lastObj: K? = null
 
-        override fun onChanged(obj: T) {
-            val curr = mapper(obj)
+        override fun onChanged(value: T) {
+            val curr = mapper(value)
             if (!initialized) {
                 initialized = true
                 lastObj = curr
-                distinctLiveData.postValue(obj)
+                distinctLiveData.postValue(value)
             } else if ((!preventNull || curr != null) && curr != lastObj) {
                 lastObj = curr
-                distinctLiveData.postValue(obj)
+                distinctLiveData.postValue(value)
             }
         }
     })
@@ -364,7 +351,7 @@ fun <T> concat(vararg data: LiveData<List<T>>): LiveData<List<T>> {
         // Предотвращает многократное срабатывание при начальном формировании общего списка
         private var initialized = 0
 
-        override fun onChanged(obj: List<T>?) {
+        override fun onChanged(value: List<T>) {
             if (++initialized >= data.size) {
                 concatLiveData.postValue(data.flatMap { it.value ?: emptyList() })
             }
@@ -579,9 +566,10 @@ private fun <D> MutableLiveData<ILoadState<D>>.setOrPost(
 
 // endregion
 
-private class OnceObserver<T>(val liveData: LiveData<T>, val observer: Observer<T>) : Observer<T> {
-    override fun onChanged(data: T?) {
-        observer.onChanged(data)
+private class OnceObserver<T>(val liveData: LiveData<T>, val observer: Observer<T>?) : Observer<T> {
+
+    override fun onChanged(data: T) {
+        observer?.onChanged(data)
         liveData.removeObserver(this)
     }
 }
@@ -590,13 +578,29 @@ private class OnceIfObserver<T>(
     val liveData: LiveData<T>,
     val observer: Observer<T>?,
     val observeIf: (T?) -> Boolean,
-) : Observer<T?> {
+) : Observer<T> {
 
     // нулабельное T в кач-ве перестраховки,
     // т.к. всегда можно выставить value=null
-    override fun onChanged(data: T?) {
-        if (observeIf(data)) {
-            observer?.onChanged(data)
+    override fun onChanged(value: T) {
+        if (observeIf(value)) {
+            observer?.onChanged(value)
+            liveData.removeObserver(this)
+        }
+    }
+}
+
+private class OnceRemoveIfObserver<T>(
+    val liveData: LiveData<T>,
+    val observer: Observer<T>?,
+    val removeIf: (T?) -> Boolean,
+) : Observer<T> {
+
+    // нулабельное T в кач-ве перестраховки,
+    // т.к. всегда можно выставить value=null
+    override fun onChanged(value: T) {
+        observer?.onChanged(value)
+        if (removeIf(value)) {
             liveData.removeObserver(this)
         }
     }

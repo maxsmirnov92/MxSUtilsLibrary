@@ -1,5 +1,9 @@
 apply from: "$rootDir/buildSrc/androidLib.gradle"
 
+android {
+    namespace "net.maxsmr.devicewatchers"
+}
+
 dependencies {
     api project(':tasksutils')
 //    api "net.maxsmr:tasksutils:${project.getModuleVersionNameByPath(":tasksutils")}"

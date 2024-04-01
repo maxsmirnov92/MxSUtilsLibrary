@@ -56,9 +56,9 @@ open class NotifyCheckMutableLiveData<T>(
 
         val shouldNotify = AtomicBoolean(true)
 
-        override fun onChanged(t: T?) {
+        override fun onChanged(value: T) {
             if (shouldNotify.get()) {
-                observer.onChanged(t)
+                observer.onChanged(value)
             }
         }
     }

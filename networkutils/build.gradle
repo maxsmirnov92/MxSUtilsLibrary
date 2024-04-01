@@ -1,5 +1,9 @@
 apply from: "$rootDir/buildSrc/androidLib.gradle"
 
+android {
+    namespace "net.maxsmr.networkutils"
+}
+
 dependencies {
     api "commons-net:commons-net:$commonsNetVersion"
 

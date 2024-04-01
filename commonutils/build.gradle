@@ -1,5 +1,9 @@
 apply from: "$rootDir/buildSrc/androidLib.gradle"
 
+android {
+    namespace "net.maxsmr.commonutils"
+}
+
 dependencies {
     // Android + Support
     api "androidx.core:core-ktx:$androidxCoreVersion"

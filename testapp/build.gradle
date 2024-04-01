@@ -5,6 +5,10 @@ ext {
     slf4jVersion = "1.7.30"
 }
 
+android {
+    namespace "net.maxsmr.testapp"
+}
+
 dependencies {
     implementation "de.mindpipe.android:android-logging-log4j:$log4jVersion"
     implementation "org.slf4j:slf4j-log4j12:$slf4jVersion"
