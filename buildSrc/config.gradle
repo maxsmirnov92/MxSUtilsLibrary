@@ -5,7 +5,7 @@ ext {
 //    bintrayGradleVersion = "1+"
 //    mavenGradleVersion = "1+"
 
-    compileSdkVersion = 31
+    compileSdkVersion = 34
     targetSdkVersion = 30
     minSdkVersion = 17
 

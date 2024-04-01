@@ -19,6 +19,7 @@ private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("OpenIntent
 @JvmOverloads
 fun Context.openSystemBrowser(
     url: String?,
+    mimeType: String? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
     errorHandler: ((ActivityNotFoundException?) -> Unit)? = null,
@@ -26,18 +27,19 @@ fun Context.openSystemBrowser(
     return if (url.isNullOrEmpty()) {
         false
     } else {
-        openSystemBrowser(Uri.parse(url), flags, options, errorHandler)
+        openSystemBrowser(Uri.parse(url), mimeType, flags, options, errorHandler)
     }
 }
 
 @JvmOverloads
 fun Context.openSystemBrowser(
     uri: Uri,
+    mimeType: String? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
     errorHandler: ((ActivityNotFoundException?) -> Unit)? = null,
 ): Boolean {
-    return startActivitySafe(getViewUrlIntent(uri, this).addFlags(flags), options = options, errorHandler = errorHandler)
+    return startActivitySafe(getViewUrlIntent(uri, mimeType, context = this).addFlags(flags), options = options, errorHandler = errorHandler)
 }
 
 @JvmOverloads

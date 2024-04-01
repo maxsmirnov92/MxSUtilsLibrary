@@ -28,6 +28,11 @@ import androidx.core.view.AccessibilityDelegateCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
 import androidx.core.view.isVisible
+import androidx.core.view.marginBottom
+import androidx.core.view.marginLeft
+import androidx.core.view.marginRight
+import androidx.core.view.marginTop
+import androidx.core.view.updateLayoutParams
 import androidx.core.view.updatePadding
 import androidx.lifecycle.MutableLiveData
 import androidx.recyclerview.widget.RecyclerView
@@ -822,6 +827,19 @@ fun View.setPadding(startPx: Int? = null, topPx: Int? = null, endPx: Int? = null
     )
 }
 
+@JvmOverloads
+fun View.updateMargin(
+    @Px left: Int = marginLeft,
+    @Px top: Int = marginTop,
+    @Px right: Int = marginRight,
+    @Px bottom: Int = marginBottom,
+) {
+    if (layoutParams !is ViewGroup.MarginLayoutParams) return
+    updateLayoutParams<ViewGroup.MarginLayoutParams> {
+        setMargins(left, top, right, bottom)
+    }
+}
+
 fun RadioGroup.getSelectedIndex(): Int {
     val radioButtonId = checkedRadioButtonId
     val radioButton = findViewById<RadioButton>(radioButtonId) ?: null
@@ -1100,6 +1118,15 @@ fun CompoundButton.setCheckedDistinct(checked: Boolean) {
     if (isChecked != checked) {
         isChecked = checked
     }
+}
+
+/**
+ * Аналог [updateLayoutParams] с единственным отличием, что если каст LP к [T] не пройдет, вместо
+ * краша просто не выполнится [block]
+ */
+inline fun <reified T : ViewGroup.LayoutParams> View.updateLayoutParamsSafe(block: T.() -> Unit) {
+    layoutParams ?: return
+    updateLayoutParams { (this as? T)?.block() }
 }
 
 fun View.hideByReferenceViews(vararg otherViews: View) {

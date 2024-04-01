@@ -186,7 +186,11 @@ fun Uri.copyToOrThrow(
 
 @RequiresApi(Build.VERSION_CODES.KITKAT)
 fun Uri.takePersistableReadPermission(contentResolver: ContentResolver) {
-    contentResolver.takePersistableUriPermission(this, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    try {
+        contentResolver.takePersistableUriPermission(this, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+    } catch (e: Exception) {
+        logger.w(e)
+    }
 }
 
 @JvmOverloads

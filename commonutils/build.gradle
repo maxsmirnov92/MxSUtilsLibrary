@@ -17,10 +17,6 @@ dependencies {
     api "androidx.lifecycle:lifecycle-runtime-ktx:$lifecycleRuntimeVersion"
     api "androidx.lifecycle:lifecycle-extensions:$lifecycleExtensionsVersion"
 
-    // Rx
-    api "io.reactivex.rxjava2:rxjava:$rxJavaVersion"
-    api "io.reactivex.rxjava2:rxandroid:$rxAndroidVersion"
-
     // Tinkoff decoro
     api "ru.tinkoff.decoro:decoro:$tinkoffDecoroVersion"
 

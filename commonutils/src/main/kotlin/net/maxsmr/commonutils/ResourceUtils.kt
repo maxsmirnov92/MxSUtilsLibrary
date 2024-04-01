@@ -137,6 +137,24 @@ fun getActionBarHeight(context: Context): Int {
     }
 }
 
+fun getStatusBarHeight(context: Context): Int {
+    var result = 0
+    val resourceId = context.resources.getIdentifier("status_bar_height", "dimen", "android")
+    if (resourceId > 0) {
+        result = context.resources.getDimensionPixelSize(resourceId)
+    }
+    return result
+}
+
+fun getNavigationBarHeight(context: Context): Int {
+    val resources = context.resources
+    val resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android")
+    return if (resourceId > 0) {
+        resources.getDimensionPixelSize(resourceId)
+    } else 0
+}
+
+
 @JvmOverloads
 fun readStringsFromAsset(
         context: Context,

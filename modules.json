@@ -54,6 +54,15 @@
     "dir": ":devicewatchers"
   },
   {
+    "id": "rx-extensions",
+    "type": "lib",
+    "versionName": "0.1",
+    "versionCode": 1,
+    "stable": true,
+    "unstableVersion": 0,
+    "dir": ":rx-extensions"
+  },
+  {
     "id": "testapp",
     "type": "app",
     "versionName": "1.0",

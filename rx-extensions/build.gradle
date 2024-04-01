@@ -1,0 +1,13 @@
+apply from: "$rootDir/buildSrc/androidLib.gradle"
+
+android {
+    namespace "net.maxsmr.rx_extensions"
+}
+
+dependencies {
+    api project(':commonutils')
+
+    // Rx
+    api "io.reactivex.rxjava2:rxjava:$rxJavaVersion"
+    api "io.reactivex.rxjava2:rxandroid:$rxAndroidVersion"
+}

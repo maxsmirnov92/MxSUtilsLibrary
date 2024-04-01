@@ -39,14 +39,14 @@ fun getWifiSettingsIntent() = Intent(Settings.ACTION_WIFI_SETTINGS)
 
 @TargetApi(Build.VERSION_CODES.M)
 fun getIgnoreBatteryOptimizationsIntent(context: Context): Intent? {
-        val packageName = context.packageName
-        val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager? ?: return null
-        if (!pm.isIgnoringBatteryOptimizations(packageName)) {
-            return Intent().apply {
-                action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-                data = Uri.parse("package:$packageName")
-            }
+    val packageName = context.packageName
+    val pm = context.getSystemService(Context.POWER_SERVICE) as PowerManager? ?: return null
+    if (!pm.isIgnoringBatteryOptimizations(packageName)) {
+        return Intent().apply {
+            action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+            data = Uri.parse("package:$packageName")
         }
+    }
     return null
 }
 
@@ -68,10 +68,10 @@ fun getGooglePaySaveUri(jwt: String) =
  * Доступ к полученным таким образом файлам постоянный (можно хранить uri для долговременного использования)
  */
 @RequiresApi(Build.VERSION_CODES.KITKAT)
-fun getOpenDocumentIntent(intentType: String, mimeTypes: List<String>?) =
+fun getOpenDocumentIntent(mimeType: String?, mimeTypes: List<String>?): Intent =
     Intent(Intent.ACTION_OPEN_DOCUMENT).apply {
         addCategory(Intent.CATEGORY_OPENABLE)
-        applyMimeTypes(intentType, mimeTypes)
+        applyMimeTypes(mimeType, mimeTypes)
     }
 
 /**
@@ -81,7 +81,7 @@ fun getOpenDocumentIntent(intentType: String, mimeTypes: List<String>?) =
  * таким образом файла для использования в дальнейшем - не лучшая идея)
  */
 @RequiresApi(Build.VERSION_CODES.KITKAT)
-fun getContentIntent(intentType: String, mimeTypes: List<String>?) =
+fun getContentIntent(intentType: String?, mimeTypes: List<String>?) =
     Intent(Intent.ACTION_GET_CONTENT).apply {
         applyMimeTypes(intentType, mimeTypes)
     }
@@ -112,10 +112,20 @@ fun getShareIntent(
     applyDataAndMimeTypes(uri, contentResolver, intentType, mimeTypes)
 }
 
-fun getViewUrlIntent(url: String, context: Context? = null) = getViewUrlIntent(Uri.parse(url), context)
+@JvmOverloads
+fun getViewUrlIntent(
+    url: String,
+    mimeType: String? = getMimeTypeFromUrl(url),
+    context: Context? = null
+) = getViewUrlIntent(Uri.parse(url), mimeType, context)
 
-fun getViewUrlIntent(uri: Uri, context: Context? = null) = getViewIntent().apply {
-    data = uri
+@JvmOverloads
+fun getViewUrlIntent(
+    uri: Uri,
+    mimeType: String? = getMimeTypeFromUrl(uri.toString()),
+    context: Context? = null
+) = getViewIntent().apply {
+    setDataAndType(uri, getIntentType(mimeType, null))
     context?.let {
         putExtra(Browser.EXTRA_APPLICATION_ID, context.packageName)
     }
@@ -203,7 +213,7 @@ fun getSendTextIntent(text: CharSequence, sendAction: SendAction = SEND) =
     }
 
 fun getSendIntent(sendAction: SendAction) = Intent(
-    when(sendAction) {
+    when (sendAction) {
         SEND_MULTIPLE -> Intent.ACTION_SEND_MULTIPLE
         SENDTO -> Intent.ACTION_SENDTO
         else -> Intent.ACTION_SEND
@@ -235,13 +245,15 @@ fun Intent.flatten(context: Context): List<Intent> {
     }
 }
 
+private fun getIntentType(intentType: String?, mimeTypes: List<String>?) = when {
+    // при заполнении несколькими основной тип не должен оставаться нульным
+    intentType == null -> if (!mimeTypes.isNullOrEmpty()) mimeTypes[0] else null
+    !TextUtils.isEmpty(intentType) -> intentType
+    else -> MIME_TYPE_ANY
+}
+
 private fun Intent.applyMimeTypes(intentType: String?, mimeTypes: List<String>?) {
-    this.type = when {
-        // при заполнении несколькими основной тип не должен оставаться нульным
-        intentType == null -> if (!mimeTypes.isNullOrEmpty()) mimeTypes[0] else null
-        !TextUtils.isEmpty(intentType) -> intentType
-        else -> MIME_TYPE_ANY
-    }
+    this.type = getIntentType(intentType, mimeTypes)
     if (!mimeTypes.isNullOrEmpty()) {
         if (isAtLeastKitkat()) {
             putExtra(Intent.EXTRA_MIME_TYPES, mimeTypes.toTypedArray())

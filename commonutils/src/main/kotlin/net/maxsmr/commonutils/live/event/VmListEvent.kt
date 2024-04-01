@@ -1,7 +1,6 @@
 package net.maxsmr.commonutils.live.event
 
 import androidx.annotation.MainThread
-import net.maxsmr.commonutils.gui.actions.BaseViewModelAction
 import net.maxsmr.commonutils.Predicate.Methods.filterIndexed
 import net.maxsmr.commonutils.Predicate.Methods.findIndexed
 import net.maxsmr.commonutils.collection.sort.BaseOptionalComparator
@@ -17,16 +16,16 @@ import java.util.*
  * со вспомогательной опциями в [ItemInfo]
  */
 @MainThread
-class VmListEvent<A : BaseViewModelAction<*>>() {
+class VmListEvent<T>() {
 
-    private val list: LinkedList<ItemInfo<A>> = LinkedList()
+    private val list: LinkedList<ItemInfo<T>> = LinkedList()
 
     @JvmOverloads
-    constructor(value: A, options: AddOptions = AddOptions()): this() {
+    constructor(value: T, options: AddOptions = AddOptions()): this() {
         add(value, options)
     }
 
-    constructor(collection: Map<A, AddOptions>): this() {
+    constructor(collection: Map<T, AddOptions>): this() {
         addAll(collection)
     }
 
@@ -58,8 +57,8 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
     }
 
     @JvmOverloads
-    fun getAll(remove: Boolean, predicate: ((ItemInfo<A>) -> Boolean)? = null): List<ItemInfo<A>> {
-        val result = mutableListOf<ItemInfo<A>>()
+    fun getAll(remove: Boolean, predicate: ((ItemInfo<T>) -> Boolean)? = null): List<ItemInfo<T>> {
+        val result = mutableListOf<ItemInfo<T>>()
         if (remove) {
             do {
                 val value = get(true)
@@ -84,7 +83,7 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
         return result
     }
 
-    fun get(remove: Boolean): ItemInfo<A>? = if (list.isNotEmpty()) {
+    fun get(remove: Boolean): ItemInfo<T>? = if (list.isNotEmpty()) {
         if (remove) {
             list.pollFirst()
         } else {
@@ -95,7 +94,7 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
     }
 
     @JvmOverloads
-    fun add(value: A, options: AddOptions = AddOptions()) {
+    fun add(value: T, options: AddOptions = AddOptions()) {
         val tag = options.tag
         val existingItems = if (tag.isNotEmpty()) {
             filterIndexed(list) { it.tag == tag }
@@ -115,7 +114,7 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
             }
             is UniqueStrategy.Custom -> {
                 @Suppress("UNCHECKED_CAST")
-                options.unique.lambda(list as List<ItemInfo<BaseViewModelAction<*>>>)
+                options.unique.lambda(list as List<ItemInfo<*>>)
             }
             else -> {
             // не меняем
@@ -126,19 +125,19 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
     }
 
     @JvmOverloads
-    fun addAll(collection: Collection<A>, options: AddOptions = AddOptions()) {
+    fun addAll(collection: Collection<T>, options: AddOptions = AddOptions()) {
         collection.forEach {
             add(it, options)
         }
     }
 
-    fun addAll(collection: Map<A, AddOptions>) {
+    fun addAll(collection: Map<T, AddOptions>) {
         collection.forEach {
             add(it.key, it.value)
         }
     }
 
-    fun removeFirstByTag(tag: String): ItemInfo<A>? {
+    fun removeFirstByTag(tag: String): ItemInfo<T>? {
         findIndexed(list) {
             it.tag == tag
         }?.let {
@@ -148,7 +147,7 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
         return null
     }
 
-    fun removeAllByTag(tag: String): List<ItemInfo<A>> {
+    fun removeAllByTag(tag: String): List<ItemInfo<T>> {
         val new = list.filter { it.tag != tag }
         list.clear()
         list.addAll(new)
@@ -160,38 +159,38 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
     }
 
     @JvmOverloads
-    fun new(value: A, options: AddOptions = AddOptions()): VmListEvent<A> {
-        val event = VmListEvent<A>()
+    fun new(value: T, options: AddOptions = AddOptions()): VmListEvent<T> {
+        val event = VmListEvent<T>()
         event.list.addAll(list)
         event.add(value, options)
         return event
     }
 
-    fun new(collection: Map<A, AddOptions>): VmListEvent<A> {
-        val event = VmListEvent<A>()
+    fun new(collection: Map<T, AddOptions>): VmListEvent<T> {
+        val event = VmListEvent<T>()
         event.list.addAll(list)
         addAll(collection)
         return event
     }
 
     @JvmOverloads
-    fun new(collection: Collection<A>, options: AddOptions = AddOptions()): VmListEvent<A> {
-        val event = VmListEvent<A>()
+    fun new(collection: Collection<T>, options: AddOptions = AddOptions()): VmListEvent<T> {
+        val event = VmListEvent<T>()
         event.list.addAll(list)
         addAll(collection, options)
         return event
     }
 
     /**
-     * @param priority приоритет добавляемого [A] по отношению к тем, что уже есть в [list]
+     * @param priority приоритет добавляемого [T] по отношению к тем, что уже есть в [list]
      * @param checkSingle обработка событий из очереди, следующих за данным возможна только после текущего
-     * (например, следующий(ие) snack может быть выведен только после того как закроется этот - см. конкретные параметры в [A])
+     * (например, следующий(ие) snack может быть выведен только после того как закроется этот - см. конкретные параметры в [T])
      */
     data class AddOptions @JvmOverloads constructor(
-            val tag: String = EMPTY_STRING,
-            val priority: Priority = Priority.NORMAL,
-            val unique: UniqueStrategy = UniqueStrategy.None,
-            val checkSingle: Boolean = true
+        val tag: String = EMPTY_STRING,
+        val priority: Priority = Priority.NORMAL,
+        val unique: UniqueStrategy = UniqueStrategy.None,
+        val checkSingle: Boolean = true
     ) {
 
         enum class Priority(val value: Int) {
@@ -203,8 +202,8 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
         }
     }
 
-    data class ItemInfo<A : BaseViewModelAction<*>>(
-            val item: A,
+    data class ItemInfo<T>(
+            val item: T,
             val tag: String,
             val priority: Int,
             val isSingle: Boolean
@@ -235,7 +234,7 @@ class VmListEvent<A : BaseViewModelAction<*>>() {
         /**
          * Решение о попадании сообщения в очередь принимается в [lambda]
          */
-        class Custom(val lambda: (List<ItemInfo<BaseViewModelAction<*>>>) -> Boolean): UniqueStrategy()
+        class Custom(val lambda: (List<ItemInfo<*>>) -> Boolean): UniqueStrategy()
     }
 
     private class ItemComparator: BaseOptionalComparator<ItemComparator.SortOption, ItemInfo<*>>(

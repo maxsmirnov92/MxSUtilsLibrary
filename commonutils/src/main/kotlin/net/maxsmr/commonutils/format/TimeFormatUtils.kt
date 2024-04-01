@@ -6,7 +6,7 @@ import androidx.annotation.StringRes
 import net.maxsmr.commonutils.R
 import net.maxsmr.commonutils.conversion.decomposeTime
 import net.maxsmr.commonutils.conversion.decomposeTimeSingle
-import net.maxsmr.commonutils.gui.actions.message.text.PluralTextMessage
+import net.maxsmr.commonutils.gui.message.PluralTextMessage
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.TimeUnit.*
 

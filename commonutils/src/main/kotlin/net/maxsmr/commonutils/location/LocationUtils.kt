@@ -3,8 +3,11 @@ package net.maxsmr.commonutils.location
 import android.content.Context
 import android.graphics.Point
 import android.graphics.PointF
+import android.location.Address
 import android.location.Geocoder
 import android.location.Location
+import android.os.Build
+import androidx.annotation.RequiresApi
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
@@ -17,7 +20,7 @@ private const val GAIA_CIRC_X = 40075.017f
 private const val GAIA_CIRC_Y = 40007.860f
 
 @JvmOverloads
-fun getFromLocation(
+fun getAddressFromLocation(
     location: Location,
     context: Context,
     locale: Locale = Locale.getDefault()
@@ -25,11 +28,32 @@ fun getFromLocation(
     val geocoder = Geocoder(context, locale)
     try {
         val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-        if (addresses.isNotEmpty()) {
-            addresses[0]?.let {
+            addresses?.getOrNull(0)?.let {
                 return FullAddress(it)
             }
-        }
+
+    } catch (e: Exception) {
+        logException(logger, e, "getFromLocation")
+    }
+    return null
+}
+
+@RequiresApi(Build.VERSION_CODES.TIRAMISU)
+fun getAddressFromLocationAsync(
+    location: Location,
+    context: Context,
+    locale: Locale = Locale.getDefault(),
+    callback: (FullAddress) -> Unit
+): FullAddress? {
+    val geocoder = Geocoder(context, locale)
+    try {
+        geocoder.getFromLocation(location.latitude, location.longitude, 1, object : Geocoder.GeocodeListener {
+            override fun onGeocode(addresses: MutableList<Address>) {
+                addresses.getOrNull(0)?.let {
+                    callback(FullAddress(it))
+                }
+            }
+        })
     } catch (e: Exception) {
         logException(logger, e, "getFromLocation")
     }
@@ -40,16 +64,12 @@ fun getFromLocation(
  * Very poor math function for converting Earth's degrees to kilometers.
  */
 fun angularDistanceToKilometers(x1: Double, y1: Double, x2: Double, y2: Double): Double {
-    var x1 = x1
-    var y1 = y1
-    var x2 = x2
-    var y2 = y2
-    x1 = x1 / 360.0 * GAIA_CIRC_X
-    x2 = x2 / 360.0 * GAIA_CIRC_X
-    y1 = y1 / 360.0 * GAIA_CIRC_Y
-    y2 = y2 / 360.0 * GAIA_CIRC_Y
-    val dX = (x1 - x2).pow(2.0)
-    val dY = (y1 - y2).pow(2.0)
+    val _x1 = x1 / 360.0 * GAIA_CIRC_X
+    val _x2 = x2 / 360.0 * GAIA_CIRC_X
+    val _y1 = y1 / 360.0 * GAIA_CIRC_Y
+    val _y2 = y2 / 360.0 * GAIA_CIRC_Y
+    val dX = (_x1 - _x2).pow(2.0)
+    val dY = (_y1 - _y2).pow(2.0)
     return sqrt(dX + dY)
 }
 
@@ -77,7 +97,7 @@ fun distance(begin: PointF, end: PointF): Int {
 }
 
 /**
- * Вычисление скпорости передвижения, используется [.distance]
+ * Вычисление скорости передвижения, используется [.distance]
  *
  * @param begin начальная точка [Location]
  * @param end конечная точка [Location]

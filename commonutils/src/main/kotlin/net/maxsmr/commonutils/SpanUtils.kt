@@ -58,7 +58,7 @@ fun CharSequence?.parseClearedHtml(replaceNewLine: Boolean = true): String = par
  *
  * @param spanInfo комбинации данных о позиции для применения и стилях
  */
-fun CharSequence.createSpanText(vararg spanInfo: RangeSpanInfo): CharSequence {
+fun CharSequence.createSpanText(vararg spanInfo: ISpanInfo): CharSequence {
     if (this.isEmpty() || spanInfo.isEmpty()) return this
     return SpannableString(this).also {
         spanInfo.forEach { info ->
