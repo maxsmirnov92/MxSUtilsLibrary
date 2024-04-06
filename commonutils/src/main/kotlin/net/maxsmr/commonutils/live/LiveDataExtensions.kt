@@ -3,19 +3,22 @@ package net.maxsmr.commonutils.live
 import android.os.CountDownTimer
 import android.os.Handler
 import android.widget.TextView
-import androidx.lifecycle.*
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.LiveData
+import androidx.lifecycle.MediatorLiveData
+import androidx.lifecycle.MutableLiveData
+import androidx.lifecycle.Observer
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.gui.setTextChecked
 import net.maxsmr.commonutils.gui.setTextDistinctFormatted
 import net.maxsmr.commonutils.live.wrappers.NotifyCheckMutableLiveData
 import net.maxsmr.commonutils.states.ILoadState
 import net.maxsmr.commonutils.states.LoadState
-import net.maxsmr.commonutils.states.getOrCreate
 import net.maxsmr.commonutils.validation.BaseValidator
 import ru.tinkoff.decoro.Mask
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 
-// region Field
+// region Field replacement
 
 /**
  * Обозревание форматированного или неформатированного (второй вариант более правильный)
@@ -24,11 +27,11 @@ import ru.tinkoff.decoro.watchers.MaskFormatWatcher
  */
 @JvmOverloads
 fun MutableLiveData<String>.observeFromTextFormatted(
-        view: TextView,
-        owner: LifecycleOwner,
-        maskWatcher: MaskFormatWatcher,
-        asString: Boolean = true,
-        onChanged: ((String?) -> Unit)? = null
+    view: TextView,
+    owner: LifecycleOwner,
+    maskWatcher: MaskFormatWatcher,
+    asString: Boolean = true,
+    onChanged: ((String?) -> Unit)? = null
 ) {
     observe(owner) {
         onChanged?.invoke(it)
@@ -38,12 +41,12 @@ fun MutableLiveData<String>.observeFromTextFormatted(
 
 @JvmOverloads
 fun MutableLiveData<String>.observeFromTextFormatted(
-        view: TextView,
-        owner: LifecycleOwner,
-        mask: Mask,
-        distinct: Boolean = true,
-        asString: Boolean = true,
-        onChanged: ((String?) -> Unit)? = null
+    view: TextView,
+    owner: LifecycleOwner,
+    mask: Mask,
+    distinct: Boolean = true,
+    asString: Boolean = true,
+    onChanged: ((String?) -> Unit)? = null
 ) {
     observeFromText(view, owner, distinct, asString) {
         onChanged?.invoke(it)
@@ -56,11 +59,11 @@ fun MutableLiveData<String>.observeFromTextFormatted(
  * из [MutableLiveData] с целью выставления в целевую [view] форматированного значения через [formatFunc]
  */
 fun MutableLiveData<String>.observeFromText(
-        view: TextView,
-        owner: LifecycleOwner,
-        distinct: Boolean = true,
-        asString: Boolean = true,
-        formatFunc: ((String) -> CharSequence?)? = null
+    view: TextView,
+    owner: LifecycleOwner,
+    distinct: Boolean = true,
+    asString: Boolean = true,
+    formatFunc: ((String) -> CharSequence?)? = null
 ) {
     observeFrom(view, owner, distinct, asString) {
         formatFunc?.invoke(it) ?: it
@@ -69,11 +72,11 @@ fun MutableLiveData<String>.observeFromText(
 
 @JvmOverloads
 fun <D> MutableLiveData<D>.observeFrom(
-        view: TextView,
-        owner: LifecycleOwner,
-        distinct: Boolean = true,
-        asString: Boolean = true,
-        formatFunc: (D) -> CharSequence?
+    view: TextView,
+    owner: LifecycleOwner,
+    distinct: Boolean = true,
+    asString: Boolean = true,
+    formatFunc: (D) -> CharSequence?
 ) {
     observe(owner) {
         view.setTextChecked(formatFunc(it), distinct, asString)
@@ -179,41 +182,10 @@ fun <X, Y> LiveData<X>.switchMapNotNull(body: (X) -> LiveData<Y?>): LiveData<Y> 
     return result
 }
 
-fun <T> LiveData<T>.distinct(preventNull: Boolean = false): LiveData<T> =
-    distinct(preventNull) { it }
-
-/**
- * Реализует преобразование `AppTransformations.distinct` над LiveData в стиле цепочек RxJava
- */
-fun <T, K> LiveData<T>.distinct(
-    preventNull: Boolean = false,
-    mapper: (T) -> K,
-): LiveData<T> {
-    val distinctLiveData = MediatorLiveData<T>()
-    distinctLiveData.addSource(this, object : Observer<T> {
-
-        private var initialized = false
-        private var lastObj: K? = null
-
-        override fun onChanged(value: T) {
-            val curr = mapper(value)
-            if (!initialized) {
-                initialized = true
-                lastObj = curr
-                distinctLiveData.postValue(value)
-            } else if ((!preventNull || curr != null) && curr != lastObj) {
-                lastObj = curr
-                distinctLiveData.postValue(value)
-            }
-        }
-    })
-    return distinctLiveData
-}
-
 /**
  * Реализует фильтрацию данных LiveData в стиле цепочек RxJava
  */
-fun <X> LiveData<X>.filter(condition: (X?) -> Boolean): LiveData<X> {
+fun <X> LiveData<X>.filter(condition: (X) -> Boolean): LiveData<X> {
     val result = MediatorLiveData<X>()
     result.addSource(this) { x -> if (condition(x)) result.value = x }
     return result
@@ -222,10 +194,14 @@ fun <X> LiveData<X>.filter(condition: (X?) -> Boolean): LiveData<X> {
 /**
  * Реализует фильтрацию данных LiveData в стиле цепочек RxJava
  */
-fun <X> LiveData<X>.filterNotNull(): LiveData<X> {
+fun <X> LiveData<X?>.filterNotNull(): LiveData<X> {
     val result = MediatorLiveData<X>()
     result.addSource(this) { x -> if (x != null) result.value = x }
     return result
+}
+
+inline fun <reified Y> LiveData<*>.filterIsInstance(): LiveData<Y> {
+    return filter { it is Y }.mapNotNull { it as Y }
 }
 
 /**
@@ -246,8 +222,8 @@ fun <X> LiveData<X>.doOnNext(action: (X?) -> Unit): LiveData<X> {
 fun <X> LiveData<X>.skip(count: Int): LiveData<X> {
     var counter = 0
     return this
-            .doOnNext { counter++ }
-            .filter { counter > count }
+        .doOnNext { counter++ }
+        .filter { counter > count }
 }
 
 /**
@@ -311,6 +287,7 @@ fun <T> MutableLiveData<T>.postValueIfNew(newValue: T): Boolean {
     }
     return false
 }
+
 /**
  * Присваивает [NotifyCheckMutableLiveData] новое значение, только если оно изменилось
  */
@@ -338,7 +315,36 @@ fun <T> MutableLiveData<T>.postRecharge() {
  *
  * @param preventNull - если старое значение not null, а новое null, предотвращает эмиссию нового значения
  */
+fun <T> LiveData<T>.distinct(preventNull: Boolean = false): LiveData<T> =
+    distinct(preventNull) { it }
 
+/**
+ * Реализует преобразование `AppTransformations.distinct` над LiveData в стиле цепочек RxJava
+ */
+fun <T, K> LiveData<T>.distinct(
+    preventNull: Boolean = false,
+    mapper: (T) -> K,
+): LiveData<T> {
+    val distinctLiveData = MediatorLiveData<T>()
+    distinctLiveData.addSource(this, object : Observer<T> {
+
+        private var initialized = false
+        private var lastObj: K? = null
+
+        override fun onChanged(value: T) {
+            val curr = mapper(value)
+            if (!initialized) {
+                initialized = true
+                lastObj = curr
+                distinctLiveData.postValue(value)
+            } else if ((!preventNull || curr != null) && curr != lastObj) {
+                lastObj = curr
+                distinctLiveData.postValue(value)
+            }
+        }
+    })
+    return distinctLiveData
+}
 
 /**
  * Возвращает LiveData со списком, сформированным путем объединения всех элементов из исходных списков
@@ -369,6 +375,21 @@ fun <X, Y, Z> zip(x: LiveData<X>, z: LiveData<Z>, merge: (x: X?, z: Z?) -> Y?): 
     }
     mergeLiveData.addSource(z) { zValue ->
         mergeLiveData.value = merge(x.value, zValue)
+    }
+    return mergeLiveData
+}
+
+fun <X, Y, Z> zipNotNull(x: LiveData<X>, z: LiveData<Z>, merge: (x: X?, z: Z?) -> Y?): LiveData<Y> {
+    val mergeLiveData = MediatorLiveData<Y>()
+    mergeLiveData.addSource(x) { xValue ->
+        merge(xValue, z.value)?.let { result ->
+            mergeLiveData.value = result
+        }
+    }
+    mergeLiveData.addSource(z) { zValue ->
+        merge(x.value, zValue)?.let { result ->
+            mergeLiveData.value = result
+        }
     }
     return mergeLiveData
 }
@@ -433,37 +454,13 @@ fun <X, Y> combineLatest(sources: List<LiveData<out X>>, combine: (List<X?>) -> 
 
 // region LoadState
 
-fun <D> MutableLiveData<ILoadState<D>>.setEmptyLoadState(
-        setOrPost: Boolean = false,
-        eagerNotify: Boolean = false
-) = setLoadState(null, null, null, setOrPost, eagerNotify)
-
-/**
- * Поместить изменённый или тот же [LoadState] в [LiveData]
- * @param eagerNotify требуется ли поместить значение даже при отсутствии изменений
- */
-fun <D> MutableLiveData<ILoadState<D>>.setLoadState(
-        data: D? = null,
-        isLoading: Boolean? = null,
-        error: Throwable? = null,
-        setOrPost: Boolean = false,
-        eagerNotify: Boolean = false,
-        shouldNotify: Boolean = true
-): ILoadState<D> {
-    val state = value
-    val result = state.getOrCreate(data, isLoading, error)
-    if (eagerNotify || result.second) {
-        setOrPost(result.first, setOrPost, shouldNotify)
-    }
-    return result.first
-}
-
-fun <D> MutableLiveData<ILoadState<D>>.preLoad(
-        setOrPost: Boolean = false,
-        eagerNotify: Boolean = false,
-        shouldNotify: Boolean = true,
-        createEmptyStateFunc: () -> ILoadState<D> = { LoadState() }
-): ILoadState<D> {
+@JvmOverloads
+fun <D, S: ILoadState<D>> MutableLiveData<S>.preLoad(
+    setOrPost: Boolean = false,
+    eagerNotify: Boolean = false,
+    shouldNotify: Boolean = true,
+    createEmptyStateFunc: () -> S
+): S {
     var hasChanged = false
     var state = value
     if (state == null) {
@@ -477,13 +474,14 @@ fun <D> MutableLiveData<ILoadState<D>>.preLoad(
     return state
 }
 
-fun <D> MutableLiveData<ILoadState<D>>.successLoad(
-        data: D,
-        setOrPost: Boolean = false,
-        eagerNotify: Boolean = false,
-        shouldNotify: Boolean = true,
-        createEmptyStateFunc: () -> ILoadState<D> = { LoadState() }
-): ILoadState<D> {
+@JvmOverloads
+fun <D, S: ILoadState<D>> MutableLiveData<S>.successLoad(
+    data: D,
+    setOrPost: Boolean = false,
+    eagerNotify: Boolean = false,
+    shouldNotify: Boolean = true,
+    createEmptyStateFunc: () -> S
+): S {
     var hasChanged = false
     var state = value
     if (state == null) {
@@ -497,13 +495,14 @@ fun <D> MutableLiveData<ILoadState<D>>.successLoad(
     return state
 }
 
-fun <D> MutableLiveData<ILoadState<D>>.errorLoad(
-        error: Throwable,
-        setOrPost: Boolean = false,
-        eagerNotify: Boolean = false,
-        shouldNotify: Boolean = true,
-        createEmptyStateFunc: () -> ILoadState<D> = { LoadState() }
-): ILoadState<D> {
+@JvmOverloads
+fun <D, S: ILoadState<D>> MutableLiveData<S>.errorLoad(
+    error: Throwable,
+    setOrPost: Boolean = false,
+    eagerNotify: Boolean = false,
+    shouldNotify: Boolean = true,
+    createEmptyStateFunc: () -> S
+): S {
     var hasChanged = false
     var state = value
     if (state == null) {
@@ -516,6 +515,37 @@ fun <D> MutableLiveData<ILoadState<D>>.errorLoad(
     }
     return state
 }
+
+@JvmOverloads
+fun <D> MutableLiveData<LoadState<D>>.preLoad(
+    setOrPost: Boolean = false,
+    eagerNotify: Boolean = false,
+    shouldNotify: Boolean = true,
+): LoadState<D> =  preLoad(setOrPost, eagerNotify, shouldNotify) {
+    LoadState.empty()
+}
+
+@JvmOverloads
+fun <D> MutableLiveData<LoadState<D>>.errorLoad(
+    error: Throwable,
+    setOrPost: Boolean = false,
+    eagerNotify: Boolean = false,
+    shouldNotify: Boolean = true,
+): LoadState<D> = errorLoad(error, setOrPost, eagerNotify, shouldNotify) {
+    LoadState.empty()
+}
+
+@JvmOverloads
+fun <D> MutableLiveData<LoadState<D>>.successLoad(
+    data: D,
+    setOrPost: Boolean = false,
+    eagerNotify: Boolean = false,
+    shouldNotify: Boolean = true,
+): LoadState<D> =  successLoad(data, setOrPost, eagerNotify, shouldNotify) {
+    LoadState.empty()
+}
+
+// endregion
 
 fun <D> MutableLiveData<D>.bindValidate(vararg validators: BaseValidator<D>) {
     observeForever { data ->
@@ -544,12 +574,12 @@ fun MutableLiveData<*>.bindClearError(vararg validators: BaseValidator<*>) {
     }
 }
 
-private fun <D> MutableLiveData<ILoadState<D>>.setOrPost(
-        state: ILoadState<D>,
-        setOrPost: Boolean,
-        shouldNotify: Boolean
+private fun <D, S : ILoadState<D>> MutableLiveData<S>.setOrPost(
+    state: S,
+    setOrPost: Boolean,
+    shouldNotify: Boolean
 ) {
-    if (this is NotifyCheckMutableLiveData<ILoadState<D>>) {
+    if (this is NotifyCheckMutableLiveData<S>) {
         if (setOrPost) {
             setValue(state, shouldNotify)
         } else {
@@ -563,8 +593,6 @@ private fun <D> MutableLiveData<ILoadState<D>>.setOrPost(
         }
     }
 }
-
-// endregion
 
 private class OnceObserver<T>(val liveData: LiveData<T>, val observer: Observer<T>?) : Observer<T> {
 
@@ -724,7 +752,7 @@ private class UpdatingTransformLiveData<X, Y>(
         }
 
         override fun onFinish() {
-            update(0,true)
+            update(0, true)
             timer = null
         }
     }
