@@ -50,13 +50,19 @@ fun getMimeTypeFromName(name: String?): String =
     getMimeTypeFromExtension(getExtension(name))
 
 fun getMimeTypeFromExtension(extension: String?): String =
-    extension?.let {  MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension)}.orEmpty()
+    extension?.let { MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) }.orEmpty()
 
-fun getContentName(url: String?, name: String = EMPTY_STRING): String = if (name.isNotEmpty()) {
-    name
-} else {
+fun getExtensionFromMimeType(mimeType: String?): String =
+    mimeType?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) }.orEmpty()
+
+fun getContentName(
+    name: String = EMPTY_STRING,
+    url: String?,
+    contentDisposition: String? = null,
+): String = name.ifEmpty {
     URLUtil.guessFileName(
-        url, null,
+        url,
+        contentDisposition,
         MimeTypeMap.getFileExtensionFromUrl(url)
     ) ?: EMPTY_STRING
 }
@@ -266,6 +272,7 @@ fun Uri?.getPath(context: Context): String {
                     EMPTY_STRING
                 }
             }
+
             isDownloadsDocument(this) -> {
                 // DownloadsProvider
 
@@ -348,6 +355,7 @@ fun Uri?.getPath(context: Context): String {
                     return contentUri.getDataColumn(context.contentResolver)
                 }
             }
+
             isMediaDocument(this) -> {
                 // MediaProvider
                 val docId = DocumentsContract.getDocumentId(this)

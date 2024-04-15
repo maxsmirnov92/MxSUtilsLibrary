@@ -1,11 +1,13 @@
 package net.maxsmr.commonutils.location
 
 import android.content.Context
+import android.content.pm.PackageManager
 import android.graphics.Point
 import android.graphics.PointF
 import android.location.Address
 import android.location.Geocoder
 import android.location.Location
+import android.location.LocationManager
 import android.os.Build
 import androidx.annotation.RequiresApi
 import net.maxsmr.commonutils.logger.BaseLogger
@@ -27,10 +29,11 @@ fun getAddressFromLocation(
 ): FullAddress? {
     val geocoder = Geocoder(context, locale)
     try {
-        val addresses = geocoder.getFromLocation(location.latitude, location.longitude, 1)
-            addresses?.getOrNull(0)?.let {
+        geocoder.getFromLocation(location.latitude, location.longitude, 1)?.let { addresses ->
+            addresses.getOrNull(0)?.let {
                 return FullAddress(it)
             }
+        }
 
     } catch (e: Exception) {
         logException(logger, e, "getFromLocation")
@@ -107,6 +110,37 @@ fun speed(begin: Location, end: Location): Double {
     val interval = begin.time - end.time
     val distance = distance(
         PointF(begin.latitude.toFloat(), begin.longitude.toFloat()),
-        PointF(end.latitude.toFloat(), end.longitude.toFloat())).toDouble()
+        PointF(end.latitude.toFloat(), end.longitude.toFloat())
+    ).toDouble()
     return if (interval > 0) distance / interval.toDouble() else 0.0
+}
+
+/**
+ * Проверка наличия функции GPS на устройстве
+ */
+fun isGpsAvailable(isGpsOnly: Boolean, context: Context): Boolean {
+    val pm: PackageManager = context.packageManager
+    return pm.hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS) || !isGpsOnly && pm.hasSystemFeature(
+        PackageManager.FEATURE_LOCATION_NETWORK)
+}
+
+/**
+ * Проверка того, что функция GPS включена на устройстве
+ */
+fun isGpsEnabled(isGpsOnly: Boolean, context: Context): Boolean {
+    return checkLocationProviderEnabled(isGpsOnly, context) != null
+}
+
+/**
+ * Проверка того, что функция GPS включена на устройстве
+ * @return имя доступного провайдера
+ */
+private fun checkLocationProviderEnabled(gpsOnly: Boolean, context: Context): String? {
+    val manager = context.getSystemService(Context.LOCATION_SERVICE) as LocationManager
+    if (manager.isProviderEnabled(LocationManager.GPS_PROVIDER)) {
+        return LocationManager.GPS_PROVIDER
+    } else if (!gpsOnly && manager.isProviderEnabled(LocationManager.NETWORK_PROVIDER)) {
+        return LocationManager.NETWORK_PROVIDER
+    }
+    return null
 }

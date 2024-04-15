@@ -59,7 +59,7 @@ interface ILoadState<D> : Serializable {
          */
         @JvmStatic
         @JvmOverloads
-        fun <D, S: ILoadState<D>> stateOf(
+        fun <D, S : ILoadState<D>> stateOf(
             current: S?,
             data: D? = null,
             wasLoaded: Boolean? = null,
@@ -94,6 +94,17 @@ interface ILoadState<D> : Serializable {
                 hasChanged = true
             }
             return Pair(result, hasChanged)
+        }
+
+        @JvmStatic
+        @JvmOverloads
+        fun <D> ILoadState<*>.copyOf(data: D? = null): LoadState<D> {
+            val result = LoadState<D>()
+            result.data = data
+            result.wasLoaded = this.wasLoaded
+            result.isLoading = this.isLoading
+            result.error = this.error
+            return result
         }
     }
 }
@@ -172,14 +183,14 @@ data class LoadState<D>(
 
         @JvmStatic
         fun <D> empty(): LoadState<D> =
-            stateOf(null, createEmptyStateFunc = {LoadState<D>()}).first
+            stateOf(null, createEmptyStateFunc = { LoadState<D>() }).first
 
         @JvmStatic
         fun <D> loading(): LoadState<D> =
             stateOf(null,
                 wasLoaded = false,
                 isLoading = true,
-                createEmptyStateFunc = {LoadState<D>()}).first
+                createEmptyStateFunc = { LoadState<D>() }).first
 
         @JvmStatic
         fun <D> success(data: D): LoadState<D> =
@@ -187,7 +198,7 @@ data class LoadState<D>(
                 wasLoaded = true,
                 isLoading = false,
                 data = data,
-                createEmptyStateFunc = {LoadState<D>()}).first
+                createEmptyStateFunc = { LoadState<D>() }).first
 
         @JvmStatic
         fun <D> error(error: Throwable): LoadState<D> =
@@ -195,7 +206,7 @@ data class LoadState<D>(
                 wasLoaded = true,
                 isLoading = false,
                 error = error,
-                createEmptyStateFunc = {LoadState<D>()}).first
+                createEmptyStateFunc = { LoadState<D>() }).first
     }
 }
 

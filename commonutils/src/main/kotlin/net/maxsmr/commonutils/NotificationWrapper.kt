@@ -11,7 +11,10 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 
 @MainThread
-class NotificationWrapper(private val context: Context) {
+class NotificationWrapper(
+    private val context: Context,
+    private val notificationPermissionChecker: () -> Boolean
+) {
 
     private val notificationManager = NotificationManagerCompat.from(context)
 
@@ -28,7 +31,9 @@ class NotificationWrapper(private val context: Context) {
     }
 
     fun show(notificationId: Int, notification: Notification) {
-        notificationManager.notify(notificationId, notification)
+        if (notificationPermissionChecker()) {
+            notificationManager.notify(notificationId, notification)
+        }
     }
 
     fun create(

@@ -143,6 +143,19 @@ fun <T> LiveData<T>.once(): LiveData<T> {
     return result
 }
 
+/**
+ * Отписывается от последующих событий, если [predicate] возвращает true
+ */
+fun <T> LiveData<T>.unsubscribeIf(predicate: (T) -> Boolean): LiveData<T> {
+    val result = MediatorLiveData<T>()
+    result.addSource(this) {
+        if (predicate(it)) {
+            result.removeSource(this)
+        }
+        result.postValue(it)
+    }
+    return result
+}
 
 fun <X, Y> LiveData<X>.mapNotNull(body: (X) -> Y?): MutableLiveData<Y> {
     val result = MediatorLiveData<Y>()

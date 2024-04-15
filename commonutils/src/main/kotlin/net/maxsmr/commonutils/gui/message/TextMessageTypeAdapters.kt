@@ -5,6 +5,7 @@ import net.maxsmr.commonutils.gui.message.TextMessage.CharSequenceArg
 import net.maxsmr.commonutils.model.gson.*
 import java.lang.reflect.Type
 
+// TODO kotlinx serialization
 class TextMessageTypeAdapter : JsonSerializer<TextMessage>, JsonDeserializer<TextMessage> {
 
     override fun serialize(src: TextMessage?, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {

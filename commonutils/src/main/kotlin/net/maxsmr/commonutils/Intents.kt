@@ -7,6 +7,7 @@ import android.content.Intent
 import android.content.IntentSender
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Browser
 import android.provider.Settings
@@ -16,8 +17,11 @@ import net.maxsmr.commonutils.SendAction.*
 import net.maxsmr.commonutils.media.*
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.io.File
+import java.io.Serializable
 
-const val URL_MARKET_FORMAT = "https://play.google.com/store/apps/details?id=%s"
+const val URL_PLAY_MARKET_FORMAT = "https://play.google.com/store/apps/details?id=%s"
+const val ACTION_HUAWEI_MARKET = "com.huawei.appmarket.intent.action.AppDetail"
+
 const val URL_GOOGLE_PAY_SAVE_FORMAT = "https://pay.google.com/gp/v/save/%s"
 
 const val URL_SCHEME_MAIL = "mailto"
@@ -57,7 +61,13 @@ fun getBrowseLocationIntent(latitude: Double, longitude: Double) = getViewIntent
 }
 
 fun getPlayMarketIntent(appId: String): Intent =
-    getViewUrlIntent(URL_MARKET_FORMAT.format(appId))
+    getViewUrlIntent(URL_PLAY_MARKET_FORMAT.format(appId), null)
+
+fun getHuaweiMarketIntent(appId: String): Intent =
+    Intent(ACTION_HUAWEI_MARKET).apply {
+        setPackage("com.huawei.appmarket")
+        putExtra("APP_PACKAGENAME", appId)
+    }
 
 fun getGooglePaySaveUri(jwt: String) =
     getViewIntent(Uri.parse(URL_GOOGLE_PAY_SAVE_FORMAT.format(jwt)))
@@ -242,6 +252,22 @@ fun Intent.wrapChooser(
 fun Intent.flatten(context: Context): List<Intent> {
     return context.packageManager.queryIntentActivities(this, 0).map {
         Intent(this).apply { setPackage(it.activityInfo.packageName) }
+    }
+}
+
+fun <T: Serializable> Intent.getSerializableExtraCompat(name: String, clazz: Class<T>): T? {
+    return if (isAtLeastTiramisu()) {
+        getSerializableExtra(name, clazz)
+    } else {
+        getSerializableExtra(name) as? T
+    }
+}
+
+fun <T: Serializable> Bundle.getSerializableCompat(name: String, clazz: Class<T>): T? {
+    return if (isAtLeastTiramisu()) {
+        getSerializable(name, clazz)
+    } else {
+        getSerializable(name) as? T
     }
 }
 

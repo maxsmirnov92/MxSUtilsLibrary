@@ -12,6 +12,15 @@ java {
     targetCompatibility = sourceCompatibilityVersion
 }
 
+task sourcesJar(type: Jar) {
+    archiveClassifier  = 'sources'
+    from java.sourceSets.main.java.srcDirs
+}
+
+artifacts {
+    archives sourcesJar
+}
+
 dependencies {
     api fileTree(dir: 'libs', include: ['*.jar'])
 

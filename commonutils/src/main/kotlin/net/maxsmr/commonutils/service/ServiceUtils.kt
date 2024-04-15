@@ -8,11 +8,12 @@ import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
-import android.os.Build
 import android.os.Bundle
 import android.text.TextUtils
 import net.maxsmr.commonutils.cancelAlarm
+import net.maxsmr.commonutils.isAtLeastNougat
 import net.maxsmr.commonutils.isAtLeastOreo
+import net.maxsmr.commonutils.isAtLeastS
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
@@ -209,7 +210,7 @@ fun createServiceIntent(
 ): Intent {
     require(!TextUtils.isEmpty(packageName)) { "Empty package name: $packageName" }
     val componentName = ComponentName(packageName, serviceClass.name)
-    val serviceIntent = if (action != null && action.isNotEmpty()) {
+    val serviceIntent = if (!action.isNullOrEmpty()) {
         Intent(action)
     } else {
         Intent()
@@ -239,7 +240,7 @@ fun createServicePendingIntent(
         args,
         action
     )
-    val modifiedFlags = withMutabilityFlag(flags)
+    val modifiedFlags = withMutabilityFlag(flags, false)
     return if (isForeground && isAtLeastOreo()) {
         PendingIntent.getForegroundService(
             context,
@@ -283,21 +284,20 @@ fun <S : Service> startNoCheck(
     }
 }
 
-fun withMutabilityFlag(flags: Int): Int {
-    return if (flags and PendingIntent.FLAG_UPDATE_CURRENT > 0
-        && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
-    ) {
-        flags or PendingIntent.FLAG_IMMUTABLE
+fun withMutabilityFlag(flags: Int, mutable: Boolean): Int {
+    val mutableFlag = if (mutable) {
+        if (isAtLeastS()) PendingIntent.FLAG_MUTABLE else 0
     } else {
-        flags
+        PendingIntent.FLAG_IMMUTABLE
     }
+    return flags or mutableFlag
 }
 
 fun Service.stopForegroundCompat(removeNotification: Boolean) {
     if (removeNotification) {
         stopForeground(true)
-    } else  {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
+    } else {
+        if (isAtLeastNougat()) {
             stopForeground(Service.STOP_FOREGROUND_DETACH)
         } else {
             stopForeground(false)

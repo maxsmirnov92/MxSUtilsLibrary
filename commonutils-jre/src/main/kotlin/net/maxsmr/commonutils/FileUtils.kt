@@ -40,7 +40,7 @@ fun getEnvPathFiles(): Set<File> {
     return result
 }
 
-val File?.extension : String get() = getExtension(this?.name)
+val File?.extension: String get() = getExtension(this?.name)
 
 fun File?.removeExtension(): String = removeExtension(this?.name)
 
@@ -54,10 +54,10 @@ fun File?.appendPostfix(postfix: String?): File? = this?.let {
 
 @JvmOverloads
 fun getPartitionSpace(
-        fileName: String?,
-        parentPath: String? = null,
-        unit: SizeUnit = SizeUnit.BYTES,
-        totalOrFree: Boolean,
+    fileName: String?,
+    parentPath: String? = null,
+    unit: SizeUnit = SizeUnit.BYTES,
+    totalOrFree: Boolean,
 ): Double = try {
     getPartitionSpaceOrThrow(fileName, parentPath, unit, totalOrFree)
 } catch (e: RuntimeException) {
@@ -65,9 +65,9 @@ fun getPartitionSpace(
 }
 
 fun getPartitionSpace(
-        file: File?,
-        unit: SizeUnit = SizeUnit.BYTES,
-        totalOrFree: Boolean,
+    file: File?,
+    unit: SizeUnit = SizeUnit.BYTES,
+    totalOrFree: Boolean,
 ): Double = try {
     getPartitionSpaceOrThrow(file, unit, totalOrFree)
 } catch (e: RuntimeException) {
@@ -77,17 +77,17 @@ fun getPartitionSpace(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun getPartitionSpaceOrThrow(
-        fileName: String?,
-        parentPath: String? = null,
-        unit: SizeUnit = SizeUnit.BYTES,
-        totalOrFree: Boolean
+    fileName: String?,
+    parentPath: String? = null,
+    unit: SizeUnit = SizeUnit.BYTES,
+    totalOrFree: Boolean
 ): Double = getPartitionSpaceOrThrow(toFile(fileName, parentPath), unit, totalOrFree)
 
 @Throws(RuntimeException::class)
 fun getPartitionSpaceOrThrow(
-        file: File?,
-        unit: SizeUnit = SizeUnit.BYTES,
-        totalOrFree: Boolean,
+    file: File?,
+    unit: SizeUnit = SizeUnit.BYTES,
+    totalOrFree: Boolean,
 ): Double {
     if (file == null) {
         throw NullPointerException("file is null")
@@ -134,9 +134,9 @@ fun File?.lock(isStrict: Boolean = false): FileLockInfo? {
         channel = randomAccFile.channel
         try {
             return FileLockInfo(
-                    if (!isStrict) channel.tryLock() else channel.lock(),
-                    channel,
-                    randomAccFile
+                if (!isStrict) channel.tryLock() else channel.lock(),
+                channel,
+                randomAccFile
             )
         } catch (e: IOException) {
             logException(logger, e, "tryLock")
@@ -164,9 +164,9 @@ fun FileLockInfo?.releaseSafe(): Boolean {
 }
 
 data class FileLockInfo(
-        val fileLock: FileLock,
-        val fileChannel: FileChannel,
-        val randomAccFile: RandomAccessFile
+    val fileLock: FileLock,
+    val fileChannel: FileChannel,
+    val randomAccFile: RandomAccessFile
 )
 
 @JvmOverloads
@@ -187,7 +187,7 @@ fun isFileValid(file: File?): Boolean = try {
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun isFileValidOrThrow(fileName: String?, parentPath: String? = null): Boolean =
-        isFileValidOrThrow(toFile(fileName, parentPath))
+    isFileValidOrThrow(toFile(fileName, parentPath))
 
 @Throws(RuntimeException::class)
 fun isFileValidOrThrow(file: File?): Boolean = getFileLengthOrThrow(file) > 0
@@ -210,7 +210,7 @@ fun getFileLength(file: File?): Long = try {
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun getFileLengthOrThrow(fileName: String?, parentPath: String? = null): Long =
-        getFileLengthOrThrow(toFile(fileName, parentPath))
+    getFileLengthOrThrow(toFile(fileName, parentPath))
 
 @Throws(RuntimeException::class)
 fun getFileLengthOrThrow(file: File?): Long {
@@ -226,22 +226,22 @@ fun getFileLengthOrThrow(file: File?): Long {
 
 @JvmOverloads
 fun isFileReadOnlyAccessible(file: File?, isFile: Boolean = true) =
-        isFileReadAccessible(file, isFile) && !isFileWriteAccessible(file, isFile)
+    isFileReadAccessible(file, isFile) && !isFileWriteAccessible(file, isFile)
 
 @JvmOverloads
 fun isFileReadAccessible(file: File?, isFile: Boolean = true) =
-        isFileAccessible(file, isFile, forRead = true, forWrite = false)
+    isFileAccessible(file, isFile, forRead = true, forWrite = false)
 
 @JvmOverloads
 fun isFileWriteAccessible(file: File?, isFile: Boolean = true) =
-        isFileAccessible(file, isFile, forRead = false, forWrite = true)
+    isFileAccessible(file, isFile, forRead = false, forWrite = true)
 
 @JvmOverloads
 fun isFileAccessible(
-        file: File?,
-        isFile: Boolean = true,
-        forRead: Boolean = true,
-        forWrite: Boolean = true
+    file: File?,
+    isFile: Boolean = true,
+    forRead: Boolean = true,
+    forWrite: Boolean = true
 ): Boolean = try {
     isFileAccessibleOrThrow(file, isFile, forRead, forWrite)
 } catch (e: RuntimeException) {
@@ -252,10 +252,10 @@ fun isFileAccessible(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun isFileAccessibleOrThrow(
-        file: File?,
-        isFile: Boolean = true,
-        forRead: Boolean = true,
-        forWrite: Boolean = true
+    file: File?,
+    isFile: Boolean = true,
+    forRead: Boolean = true,
+    forWrite: Boolean = true
 ): Boolean {
     if (file == null) {
         throw NullPointerException("file is null")
@@ -295,7 +295,7 @@ fun isFileExists(file: File?): Boolean = try {
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun isFileExistsOrThrow(fileName: String?, parentPath: String? = null): Boolean =
-        isFileExistsOrThrow(toFile(fileName, parentPath))
+    isFileExistsOrThrow(toFile(fileName, parentPath))
 
 @Throws(RuntimeException::class)
 fun isFileExistsOrThrow(file: File?): Boolean = isFileOrDirExistsOrThrow(file, true)
@@ -319,18 +319,18 @@ fun isDirExists(dir: File?): Boolean = try {
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun isDirExistsOrThrow(dirName: String?, parentPath: String? = null): Boolean =
-        isDirExistsOrThrow(toFile(dirName, parentPath))
+    isDirExistsOrThrow(toFile(dirName, parentPath))
 
 @Throws(RuntimeException::class)
 fun isDirExistsOrThrow(dir: File?): Boolean = isFileOrDirExistsOrThrow(dir, false)
 
 @Throws(RuntimeException::class)
 private fun isFileOrDirExistsOrThrow(file: File?, isFile: Boolean?): Boolean =
-        try {
-            file != null && file.exists() && (isFile == null || (if (isFile) file.isFile else file.isDirectory))
-        } catch (e: SecurityException) {
-            throw RuntimeException(formatException(e), e)
-        }
+    try {
+        file != null && file.exists() && (isFile == null || (if (isFile) file.isFile else file.isDirectory))
+    } catch (e: SecurityException) {
+        throw RuntimeException(formatException(e), e)
+    }
 
 @JvmOverloads
 fun isDirEmpty(dirName: String?, parentPath: String? = null): Boolean = try {
@@ -350,17 +350,17 @@ fun isDirEmpty(dir: File?): Boolean = try {
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun isDirEmptyOrThrow(dirName: String?, parentPath: String? = null): Boolean =
-        isDirEmptyOrThrow(toFile(dirName, parentPath))
+    isDirEmptyOrThrow(toFile(dirName, parentPath))
 
 @Throws(RuntimeException::class)
 fun isDirEmptyOrThrow(dir: File?): Boolean {
     if (dir != null && isDirExistsOrThrow(dir)) {
         val files: Array<File>? =
-                try {
-                    dir.listFiles()
-                } catch (e: SecurityException) {
-                    throw RuntimeException(formatException(e, "listFiles on dir '$dir'"), e)
-                }
+            try {
+                dir.listFiles()
+            } catch (e: SecurityException) {
+                throw RuntimeException(formatException(e, "listFiles on dir '$dir'"), e)
+            }
         return files == null || files.isEmpty()
     }
     return false
@@ -380,7 +380,7 @@ fun checkFileOrThrow(file: File?, createIfNotExists: Boolean = true) {
 
 @JvmOverloads
 fun checkFile(fileName: String?, parentPath: String? = null, createIfNotExists: Boolean = true): Boolean =
-        checkFile(toFile(fileName, parentPath), createIfNotExists)
+    checkFile(toFile(fileName, parentPath), createIfNotExists)
 
 @JvmOverloads
 fun checkFile(file: File?, createIfNotExists: Boolean = true): Boolean {
@@ -401,7 +401,7 @@ fun checkDirOrThrow(dir: File?, createIfNotExists: Boolean = true) {
 
 @JvmOverloads
 fun checkDir(dirName: String?, parentPath: String? = null, createIfNotExists: Boolean = true): Boolean =
-        checkDir(toFile(dirName, parentPath), createIfNotExists)
+    checkDir(toFile(dirName, parentPath), createIfNotExists)
 
 @JvmOverloads
 fun checkDir(dir: File?, createIfNotExists: Boolean = true): Boolean {
@@ -431,9 +431,9 @@ fun checkPath(fileName: String?, parentPath: String?, createIfNotExists: Boolean
 
 @JvmOverloads
 fun createFile(
-        fileName: String?,
-        parentPath: String? = null,
-        recreate: Boolean = true
+    fileName: String?,
+    parentPath: String? = null,
+    recreate: Boolean = true
 ): File? = try {
     createFileOrThrow(fileName, parentPath, recreate)
 } catch (e: RuntimeException) {
@@ -452,15 +452,15 @@ fun createFile(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun createFileOrThrow(
-        fileName: String?,
-        parentPath: String? = null,
-        recreate: Boolean = true
+    fileName: String?,
+    parentPath: String? = null,
+    recreate: Boolean = true
 ): File {
     if (!parentPath.isNullOrEmpty()) {
         createDirOrThrow(parentPath)
     }
     val newFile = toFile(fileName, parentPath)
-            ?: throw RuntimeException("Incorrect fileName ('$fileName') or parentPath ('$parentPath')")
+        ?: throw RuntimeException("Incorrect fileName ('$fileName') or parentPath ('$parentPath')")
     if (isFileExistsOrThrow(newFile)) {
         if (recreate) {
             deleteFileOrThrow(newFile)
@@ -483,9 +483,9 @@ fun createFileOrThrow(
 
 @JvmOverloads
 fun createDir(
-        dirName: String?,
-        parentPath: String? = null,
-        throwIfExists: Boolean = false
+    dirName: String?,
+    parentPath: String? = null,
+    throwIfExists: Boolean = false
 ): File? = try {
     createDirOrThrow(dirName, parentPath, throwIfExists)
 } catch (e: RuntimeException) {
@@ -499,12 +499,12 @@ fun createDir(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun createDirOrThrow(
-        dirName: String?,
-        parentPath: String? = null,
-        throwIfExists: Boolean = false
+    dirName: String?,
+    parentPath: String? = null,
+    throwIfExists: Boolean = false
 ): File {
     val dir = toFile(dirName, parentPath)
-            ?: throw RuntimeException("Incorrect dirName or parentPath")
+        ?: throw RuntimeException("Incorrect dirName or parentPath")
     if (isDirExistsOrThrow(dir)) {
         if (throwIfExists) {
             throw RuntimeException("Cannot create dir '$dir': already exists")
@@ -642,9 +642,9 @@ fun isBinaryFileOrThrow(f: File?): Boolean {
 
 @JvmOverloads
 fun readBytesFromFile(
-        file: File?,
-        offset: Int = 0,
-        length: Int = 0
+    file: File?,
+    offset: Int = 0,
+    length: Int = 0
 ): ByteArray? = try {
     readBytesFromFileOrThrow(file, offset, length)
 } catch (e: RuntimeException) {
@@ -655,9 +655,9 @@ fun readBytesFromFile(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun readBytesFromFileOrThrow(
-        file: File?,
-        offset: Int = 0,
-        length: Int = 0
+    file: File?,
+    offset: Int = 0,
+    length: Int = 0
 ): ByteArray {
     if (file == null) {
         throw NullPointerException("file is null")
@@ -674,9 +674,9 @@ fun readBytesFromFileOrThrow(
 
 @JvmOverloads
 fun readStringsFromFile(
-        file: File?,
-        count: Int = 0,
-        charsetName: String = CHARSET_DEFAULT
+    file: File?,
+    count: Int = 0,
+    charsetName: String = CHARSET_DEFAULT
 ): List<String> = try {
     readStringsFromFileOrThrow(file, count, charsetName)
 } catch (e: RuntimeException) {
@@ -687,9 +687,9 @@ fun readStringsFromFile(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun readStringsFromFileOrThrow(
-        file: File?,
-        count: Int = 0,
-        charsetName: String = CHARSET_DEFAULT
+    file: File?,
+    count: Int = 0,
+    charsetName: String = CHARSET_DEFAULT
 ): List<String> {
     if (file == null || !isFileValidOrThrow(file)) {
         throw RuntimeException("Incorrect file: '$file'")
@@ -703,9 +703,9 @@ fun readStringsFromFileOrThrow(
 
 @JvmOverloads
 fun writeBytesToFile(
-        file: File?,
-        data: ByteArray?,
-        append: Boolean = false
+    file: File?,
+    data: ByteArray?,
+    append: Boolean = false
 ) = try {
     writeBytesToFileOrThrow(file, data, append)
     true
@@ -717,9 +717,9 @@ fun writeBytesToFile(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun writeBytesToFileOrThrow(
-        file: File?,
-        data: ByteArray?,
-        append: Boolean = false
+    file: File?,
+    data: ByteArray?,
+    append: Boolean = false
 ) {
     if (file == null) {
         throw NullPointerException("file is null")
@@ -739,10 +739,10 @@ fun writeBytesToFileOrThrow(
 
 @JvmOverloads
 fun writeStringsToFile(
-        file: File?,
-        data: Collection<String>?,
-        append: Boolean = false,
-        charset: Charset = Charset.forName("UTF-8")
+    file: File?,
+    data: Collection<String>?,
+    append: Boolean = false,
+    charset: Charset = Charset.forName("UTF-8")
 ) = try {
     writeStringsToFileOrThrow(file, data, append, charset)
     true
@@ -754,10 +754,10 @@ fun writeStringsToFile(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun writeStringsToFileOrThrow(
-        file: File?,
-        data: Collection<String>?,
-        append: Boolean = false,
-        charset: Charset = Charset.forName("UTF-8")
+    file: File?,
+    data: Collection<String>?,
+    append: Boolean = false,
+    charset: Charset = Charset.forName("UTF-8")
 ) {
     if (file == null) {
         throw NullPointerException("file is null")
@@ -779,29 +779,29 @@ fun writeStringsToFileOrThrow(
 
 @JvmOverloads
 fun writeFromStreamToFile(
-        inputStream: InputStream?,
-        targetFile: File?,
-        append: Boolean = false,
-        notifier: IStreamNotifier? = null
+    inputStream: InputStream?,
+    targetFile: File?,
+    append: Boolean = false,
+    notifier: IStreamNotifier? = null
 ): File? = writeFromStreamToFile(inputStream, targetFile?.name, targetFile?.parent, append, notifier)
 
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun writeFromStreamToFileOrThrow(
-        inputStream: InputStream?,
-        targetFile: File?,
-        append: Boolean = false,
-        notifier: IStreamNotifier? = null
+    inputStream: InputStream?,
+    targetFile: File?,
+    append: Boolean = false,
+    notifier: IStreamNotifier? = null
 ): File = writeFromStreamToFileOrThrow(inputStream, targetFile?.name, targetFile?.parent, append, notifier)
 
 @JvmOverloads
 fun writeFromStreamToFile(
-        inputStream: InputStream?,
-        targetFileName: String?,
-        parentPath: String?,
-        append: Boolean = false,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_BUFFER_SIZE
+    inputStream: InputStream?,
+    targetFileName: String?,
+    parentPath: String?,
+    append: Boolean = false,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE
 ): File? = try {
     writeFromStreamToFileOrThrow(inputStream, targetFileName, parentPath, append, notifier, buffSize)
 } catch (e: RuntimeException) {
@@ -812,12 +812,12 @@ fun writeFromStreamToFile(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun writeFromStreamToFileOrThrow(
-        inputStream: InputStream?,
-        targetFileName: String?,
-        parentPath: String?,
-        append: Boolean = false,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_BUFFER_SIZE
+    inputStream: InputStream?,
+    targetFileName: String?,
+    parentPath: String?,
+    append: Boolean = false,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE
 ): File {
     if (inputStream == null) {
         throw NullPointerException("inputStream is null")
@@ -833,10 +833,10 @@ fun writeFromStreamToFileOrThrow(
 
 @JvmOverloads
 fun writeToStreamFromFile(
-        outputStream: OutputStream?,
-        file: File?,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_BUFFER_SIZE
+    outputStream: OutputStream?,
+    file: File?,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE
 ): Boolean = try {
     writeToStreamFromFileOrThrow(outputStream, file, notifier, buffSize)
     true
@@ -848,10 +848,10 @@ fun writeToStreamFromFile(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun writeToStreamFromFileOrThrow(
-        outputStream: OutputStream?,
-        file: File?,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_BUFFER_SIZE
+    outputStream: OutputStream?,
+    file: File?,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
     if (outputStream == null) {
         throw NullPointerException("outputStreamv is null")
@@ -865,13 +865,13 @@ fun writeToStreamFromFileOrThrow(
 
 @JvmOverloads
 fun moveFile(
-        sourceFile: File?,
-        targetFile: File?,
-        deleteIfExists: Boolean,
-        deleteEmptyDirs: Boolean,
-        preserveFileDate: Boolean = true,
-        copyWithBuffering: Boolean = true,
-        notifier: ISingleCopyNotifier? = null
+    sourceFile: File?,
+    targetFile: File?,
+    deleteIfExists: Boolean,
+    deleteEmptyDirs: Boolean,
+    preserveFileDate: Boolean = true,
+    copyWithBuffering: Boolean = true,
+    notifier: ISingleCopyNotifier? = null
 ): File? {
     if (sourceFile == null) {
         throw NullPointerException("sourceFile is null")
@@ -902,11 +902,11 @@ fun moveFile(
 }
 
 fun renameFile(
-        sourceFile: File?,
-        targetDir: String?,
-        newFileName: String?,
-        deleteIfExists: Boolean,
-        deleteEmptyDirs: Boolean
+    sourceFile: File?,
+    targetDir: String?,
+    newFileName: String?,
+    deleteIfExists: Boolean,
+    deleteEmptyDirs: Boolean
 ): File? = try {
     renameFileOrThrow(sourceFile, targetDir, newFileName, deleteIfExists, deleteEmptyDirs)
 } catch (e: RuntimeException) {
@@ -916,11 +916,11 @@ fun renameFile(
 
 @Throws(RuntimeException::class)
 fun renameFileOrThrow(
-        sourceFile: File?,
-        targetDir: String?,
-        newFileName: String?,
-        deleteIfExists: Boolean,
-        deleteEmptyDirs: Boolean
+    sourceFile: File?,
+    targetDir: String?,
+    newFileName: String?,
+    deleteIfExists: Boolean,
+    deleteEmptyDirs: Boolean
 ): File {
     if (sourceFile == null) {
         throw NullPointerException("sourceFile is null")
@@ -968,11 +968,11 @@ fun renameFileOrThrow(
 
 @JvmOverloads
 fun copyFileWithBuffering(
-        sourceFile: File?,
-        targetFile: File?,
-        rewrite: Boolean = true,
-        preserveFileDate: Boolean = true,
-        notifier: ISingleCopyNotifier? = null
+    sourceFile: File?,
+    targetFile: File?,
+    rewrite: Boolean = true,
+    preserveFileDate: Boolean = true,
+    notifier: ISingleCopyNotifier? = null
 ): File? = copyFileWithBuffering(sourceFile, targetFile?.name, targetFile?.parent, rewrite, preserveFileDate, notifier)
 
 /**
@@ -980,20 +980,20 @@ fun copyFileWithBuffering(
  */
 @JvmOverloads
 fun copyFileWithBuffering(
-        sourceFile: File?,
-        targetName: String?,
-        targetDir: String?,
-        rewrite: Boolean = true,
-        preserveFileDate: Boolean = true,
-        notifier: ISingleCopyNotifier? = null
+    sourceFile: File?,
+    targetName: String?,
+    targetDir: String?,
+    rewrite: Boolean = true,
+    preserveFileDate: Boolean = true,
+    notifier: ISingleCopyNotifier? = null
 ): File? {
     if (sourceFile == null ||
-            try {
-                !isFileExistsOrThrow(sourceFile)
-            } catch (e: RuntimeException) {
-                notifier?.onExceptionOccurred(e)
-                return null
-            }
+        try {
+            !isFileExistsOrThrow(sourceFile)
+        } catch (e: RuntimeException) {
+            notifier?.onExceptionOccurred(e)
+            return null
+        }
     ) {
         notifier?.onExceptionOccurred(RuntimeException("Source file not exists: '$sourceFile'"))
         return null
@@ -1025,8 +1025,8 @@ fun copyFileWithBuffering(
             override val notifyInterval: Long
                 get() = notifier.notifyInterval
 
-            override fun onProcessing(inputStream: InputStream, outputStream: OutputStream, bytesWrite: Long, bytesLeft: Long): Boolean =
-                    notifier.shouldProceed(sourceFile, targetFile, bytesWrite, totalBytesCount)
+            override fun onProcessing(inputStream: InputStream, outputStream: OutputStream, bytesWrite: Long, bytesTotal: Long): Boolean =
+                notifier.shouldProceed(sourceFile, targetFile, bytesWrite, totalBytesCount)
 
         } else null)
 
@@ -1043,11 +1043,11 @@ fun copyFileWithBuffering(
 
 @JvmOverloads
 fun copyFile(
-        sourceFile: File?,
-        targetName: String?,
-        targetDir: String?,
-        rewrite: Boolean = true,
-        preserveFileDate: Boolean = true
+    sourceFile: File?,
+    targetName: String?,
+    targetDir: String?,
+    rewrite: Boolean = true,
+    preserveFileDate: Boolean = true
 ): File? = try {
     copyFileOrThrow(sourceFile, targetName, targetDir, rewrite, preserveFileDate)
 } catch (e: RuntimeException) {
@@ -1062,11 +1062,11 @@ fun copyFile(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun copyFileOrThrow(
-        sourceFile: File?,
-        targetName: String?,
-        targetDir: String?,
-        rewrite: Boolean = true,
-        preserveFileDate: Boolean = true
+    sourceFile: File?,
+    targetName: String?,
+    targetDir: String?,
+    rewrite: Boolean = true,
+    preserveFileDate: Boolean = true
 ): File {
     if (sourceFile == null || !isFileValidOrThrow(sourceFile)) {
         throw RuntimeException("Source file is not valid: '$sourceFile'")
@@ -1123,9 +1123,9 @@ fun setLastModifiedOrThrow(file: File?, timestamp: Long) {
 
 @JvmOverloads
 fun getSize(
-        fromFiles: List<File>?,
-        depth: Int = DEPTH_UNLIMITED,
-        notifier: IGetNotifier? = null,
+    fromFiles: List<File>?,
+    depth: Int = DEPTH_UNLIMITED,
+    notifier: IGetNotifier? = null,
 ): Long {
     var result: Long = 0
     if (fromFiles != null) {
@@ -1138,10 +1138,10 @@ fun getSize(
 
 @JvmOverloads
 fun getSize(
-        fromFile: File?,
-        depth: Int = DEPTH_UNLIMITED,
-        currentLevel: Int = 0,
-        notifier: IGetNotifier? = null,
+    fromFile: File?,
+    depth: Int = DEPTH_UNLIMITED,
+    currentLevel: Int = 0,
+    notifier: IGetNotifier? = null,
 ): Long {
     var size: Long = 0
     for (f in getFiles(fromFile, GetMode.FILES, depth = depth, currentLevel = currentLevel, notifier = notifier)) {
@@ -1157,11 +1157,11 @@ fun getSize(
 
 @JvmOverloads
 fun getFiles(
-        fromFiles: Collection<File>?,
-        mode: GetMode = GetMode.ALL,
-        comparator: Comparator<in File>? = null,
-        depth: Int = DEPTH_UNLIMITED,
-        notifier: IGetNotifier?,
+    fromFiles: Collection<File>?,
+    mode: GetMode = GetMode.ALL,
+    comparator: Comparator<in File>? = null,
+    depth: Int = DEPTH_UNLIMITED,
+    notifier: IGetNotifier?,
 ): Set<File> {
     val result = mutableSetOf<File>()
     if (fromFiles != null) {
@@ -1178,16 +1178,21 @@ fun getFiles(
  */
 @JvmOverloads
 fun getFiles(
-        fromFile: File?,
-        mode: GetMode = GetMode.ALL,
-        comparator: Comparator<in File>? = null,
-        depth: Int = DEPTH_UNLIMITED,
-        currentLevel: Int = 0,
-        notifier: IGetNotifier? = null
+    fromFile: File?,
+    mode: GetMode = GetMode.ALL,
+    comparator: Comparator<in File>? = null,
+    depth: Int = DEPTH_UNLIMITED,
+    currentLevel: Int = 0,
+    notifier: IGetNotifier? = null
 ): Set<File> {
     val result = mutableSetOf<File>()
     if (depth != DEPTH_UNLIMITED && currentLevel > depth - 1) {
-        notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.DEPTH_REACHED, "Collect depth was reached: $depth"))
+        notifier?.onExceptionOccurred(
+            FileIterationException(
+                FileIterationException.Type.DEPTH_REACHED,
+                "Collect depth was reached: $depth"
+            )
+        )
         return result
     }
     if (fromFile == null) {
@@ -1206,19 +1211,25 @@ fun getFiles(
 
     if (mode === GetMode.ALL || if (fromFile.isFile) mode === GetMode.FILES else mode === GetMode.FOLDERS) {
         if (notifier == null || (if (fromFile.isFile) {
-                    notifier.onGetFile(fromFile, Collections.unmodifiableSet(result), currentLevel)
-                } else {
-                    notifier.onGetFolder(fromFile, Collections.unmodifiableSet(result), currentLevel)
+                notifier.onGetFile(fromFile, Collections.unmodifiableSet(result), currentLevel)
+            } else {
+                notifier.onGetFolder(fromFile, Collections.unmodifiableSet(result), currentLevel)
 //                            val getFolderResult =
 //                            if (!getFolderResult.second) {
 //                                shouldProceed = false
 //                            }
 //                            getFolderResult.first
-                })) {
+            })
+        ) {
             result.add(fromFile)
             wasAdded = true
         } else {
-            notifier.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_CONFIRMED, "File '$fromFile' collecting is not confirmed"))
+            notifier.onExceptionOccurred(
+                FileIterationException(
+                    FileIterationException.Type.NOT_CONFIRMED,
+                    "File '$fromFile' collecting is not confirmed"
+                )
+            )
         }
     }
     if (notifier == null || notifier.shouldProceed(fromFile, Collections.unmodifiableSet(result), currentLevel, wasAdded)) {
@@ -1238,7 +1249,12 @@ fun getFiles(
             }
         }
     } else {
-        notifier.onExceptionOccurred(FileIterationException(FileIterationException.Type.INTERRUPTED_BY_USER, "Collecting files from $fromFile was interrupted"))
+        notifier.onExceptionOccurred(
+            FileIterationException(
+                FileIterationException.Type.INTERRUPTED_BY_USER,
+                "Collecting files from $fromFile was interrupted"
+            )
+        )
     }
     comparator?.let {
         return result.sortedWith(it).toSet()
@@ -1248,15 +1264,16 @@ fun getFiles(
 
 @JvmOverloads
 fun searchByName(
-        name: String,
-        searchFile: File?,
-        searchFlags: Int = MatchStringOption.AUTO.flag,
-        searchFirst: Boolean = false,
-        mode: GetMode = GetMode.ALL,
-        comparator: Comparator<in File>? = null,
-        depth: Int = DEPTH_UNLIMITED,
-        notifier: IGetNotifier? = null,
-): Set<File> = searchByName(name, if (searchFile != null) listOf(searchFile) else null, searchFlags, searchFirst, mode, comparator, depth, notifier)
+    name: String,
+    searchFile: File?,
+    searchFlags: Int = MatchStringOption.AUTO.flag,
+    searchFirst: Boolean = false,
+    mode: GetMode = GetMode.ALL,
+    comparator: Comparator<in File>? = null,
+    depth: Int = DEPTH_UNLIMITED,
+    notifier: IGetNotifier? = null,
+): Set<File> =
+    searchByName(name, if (searchFile != null) listOf(searchFile) else null, searchFlags, searchFirst, mode, comparator, depth, notifier)
 
 /**
  * @param comparator to sort each folders list and result set
@@ -1264,18 +1281,18 @@ fun searchByName(
  */
 @JvmOverloads
 fun searchByName(
-        name: String,
-        searchFiles: List<File>?,
-        searchFlags: Int = MatchStringOption.AUTO.flag,
-        searchFirst: Boolean = false,
-        mode: GetMode = GetMode.ALL,
-        comparator: Comparator<in File>? = null,
-        depth: Int = DEPTH_UNLIMITED,
-        notifier: IGetNotifier? = null,
+    name: String,
+    searchFiles: List<File>?,
+    searchFlags: Int = MatchStringOption.AUTO.flag,
+    searchFirst: Boolean = false,
+    mode: GetMode = GetMode.ALL,
+    comparator: Comparator<in File>? = null,
+    depth: Int = DEPTH_UNLIMITED,
+    notifier: IGetNotifier? = null,
 ): Set<File> = getFiles(searchFiles, mode, comparator, depth, notifier = object : IGetNotifier {
 
     override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean =
-            (notifier == null || notifier.onGetFile(file, collected, currentLevel)) && check(file)
+        (notifier == null || notifier.onGetFile(file, collected, currentLevel)) && check(file)
 
     override fun onGetFolder(folder: File, collected: Set<File>, currentLevel: Int): Boolean {
         val isMatch = check(folder)
@@ -1292,15 +1309,15 @@ fun searchByName(
 
 @JvmOverloads
 fun sortFilesByName(filesList: Collection<File>?, ascending: Boolean = true): Collection<File?>? =
-        sortFiles(filesList, FileComparator(Collections.singletonMap(FileComparator.SortOption.NAME, ascending)))
+    sortFiles(filesList, FileComparator(Collections.singletonMap(FileComparator.SortOption.NAME, ascending)))
 
 @JvmOverloads
 fun sortFilesBySize(filesList: Collection<File>?, ascending: Boolean = true): Collection<File?>? =
-        sortFiles(filesList, FileComparator(Collections.singletonMap(FileComparator.SortOption.SIZE, ascending)))
+    sortFiles(filesList, FileComparator(Collections.singletonMap(FileComparator.SortOption.SIZE, ascending)))
 
 @JvmOverloads
 fun sortFilesByLastModified(filesList: Collection<File>?, ascending: Boolean = true): Collection<File?>? =
-        sortFiles(filesList, FileComparator(Collections.singletonMap(FileComparator.SortOption.LAST_MODIFIED, ascending)))
+    sortFiles(filesList, FileComparator(Collections.singletonMap(FileComparator.SortOption.LAST_MODIFIED, ascending)))
 
 /**
  * @return same sorted list or created sorted array list
@@ -1317,55 +1334,59 @@ fun sortFiles(files: Collection<File>?, comparator: Comparator<in File>): List<F
 
 @JvmOverloads
 fun moveFiles(
-        sourceFile: File,
-        targetDir: File?,
-        comparator: Comparator<in File>? = null,
-        preserveFileDate: Boolean = true,
-        copyWithBuffering: Boolean = true,
-        depth: Int = DEPTH_UNLIMITED,
-        singleCopyNotifier: ISingleCopyNotifier? = null,
-        multipleCopyNotifier: IMultipleCopyNotifier? = null
-) = moveOrCopyFiles(true,
-        sourceFile,
-        targetDir,
-        comparator,
-        preserveFileDate,
-        copyWithBuffering,
-        depth,
-        singleCopyNotifier,
-        multipleCopyNotifier)
+    sourceFile: File,
+    targetDir: File?,
+    comparator: Comparator<in File>? = null,
+    preserveFileDate: Boolean = true,
+    copyWithBuffering: Boolean = true,
+    depth: Int = DEPTH_UNLIMITED,
+    singleCopyNotifier: ISingleCopyNotifier? = null,
+    multipleCopyNotifier: IMultipleCopyNotifier? = null
+) = moveOrCopyFiles(
+    true,
+    sourceFile,
+    targetDir,
+    comparator,
+    preserveFileDate,
+    copyWithBuffering,
+    depth,
+    singleCopyNotifier,
+    multipleCopyNotifier
+)
 
 
 @JvmOverloads
 fun copyFiles(
-        sourceFile: File,
-        targetDir: File?,
-        comparator: Comparator<in File>? = null,
-        preserveFileDate: Boolean = true,
-        copyWithBuffering: Boolean = true,
-        depth: Int = DEPTH_UNLIMITED,
-        singleCopyNotifier: ISingleCopyNotifier? = null,
-        multipleCopyNotifier: IMultipleCopyNotifier? = null
-) = moveOrCopyFiles(false,
-        sourceFile,
-        targetDir,
-        comparator,
-        preserveFileDate,
-        copyWithBuffering,
-        depth,
-        singleCopyNotifier,
-        multipleCopyNotifier)
+    sourceFile: File,
+    targetDir: File?,
+    comparator: Comparator<in File>? = null,
+    preserveFileDate: Boolean = true,
+    copyWithBuffering: Boolean = true,
+    depth: Int = DEPTH_UNLIMITED,
+    singleCopyNotifier: ISingleCopyNotifier? = null,
+    multipleCopyNotifier: IMultipleCopyNotifier? = null
+) = moveOrCopyFiles(
+    false,
+    sourceFile,
+    targetDir,
+    comparator,
+    preserveFileDate,
+    copyWithBuffering,
+    depth,
+    singleCopyNotifier,
+    multipleCopyNotifier
+)
 
 private fun moveOrCopyFiles(
-        moveOrCopy: Boolean,
-        sourceFile: File,
-        targetDir: File?,
-        comparator: Comparator<in File>? = null,
-        preserveFileDate: Boolean = true,
-        copyWithBuffering: Boolean = true,
-        depth: Int = DEPTH_UNLIMITED,
-        singleCopyNotifier: ISingleCopyNotifier? = null,
-        multipleCopyNotifier: IMultipleCopyNotifier? = null
+    moveOrCopy: Boolean,
+    sourceFile: File,
+    targetDir: File?,
+    comparator: Comparator<in File>? = null,
+    preserveFileDate: Boolean = true,
+    copyWithBuffering: Boolean = true,
+    depth: Int = DEPTH_UNLIMITED,
+    singleCopyNotifier: ISingleCopyNotifier? = null,
+    multipleCopyNotifier: IMultipleCopyNotifier? = null
 ): Set<File> {
     val result = mutableSetOf<File>()
     if (targetDir == null) {
@@ -1382,32 +1403,43 @@ private fun moveOrCopyFiles(
         multipleCopyNotifier?.onExceptionOccurred(RuntimeException("Destination directory '$targetDir' is same as source directory/file '$sourceFile'"))
         return result
     }
-    val files: Set<File> = getFiles(sourceFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetNotifier {
+    val files: Set<File> =
+        getFiles(sourceFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetNotifier {
 
-        override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean {
-            return multipleCopyNotifier.onCollecting(file, collected, currentLevel)
-        }
+            override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean {
+                return multipleCopyNotifier.onCollecting(file, collected, currentLevel)
+            }
 
-        override fun onGetFolder(folder: File, collected: Set<File>, currentLevel: Int): Boolean {
-            return multipleCopyNotifier.onCollecting(folder, collected, currentLevel)
-        }
+            override fun onGetFolder(folder: File, collected: Set<File>, currentLevel: Int): Boolean {
+                return multipleCopyNotifier.onCollecting(folder, collected, currentLevel)
+            }
 
-        override fun onExceptionOccurred(e: RuntimeException) {
-            multipleCopyNotifier.onExceptionOccurred(e)
-        }
+            override fun onExceptionOccurred(e: RuntimeException) {
+                multipleCopyNotifier.onExceptionOccurred(e)
+            }
 
-    } else null)
+        } else null)
 
     val totalFilesCount = files.size.toLong()
     var filesProcessed = 0
     for (f in files) {
 
         if (!f.isFile) {
-            multipleCopyNotifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_VALID, "File '$f' not file, skipping..."))
+            multipleCopyNotifier?.onExceptionOccurred(
+                FileIterationException(
+                    FileIterationException.Type.NOT_VALID,
+                    "File '$f' not file, skipping..."
+                )
+            )
             continue
         }
         if (!f.exists()) {
-            multipleCopyNotifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_EXISTS, "File '$f' not exists, skipping..."))
+            multipleCopyNotifier?.onExceptionOccurred(
+                FileIterationException(
+                    FileIterationException.Type.NOT_EXISTS,
+                    "File '$f' not exists, skipping..."
+                )
+            )
             continue
         }
         var currentDestDir: File? = null
@@ -1424,8 +1456,20 @@ private fun moveOrCopyFiles(
             currentDestDir = targetDir
         }
         if (multipleCopyNotifier != null) {
-            if (!multipleCopyNotifier.shouldProceed(f, currentDestDir, Collections.unmodifiableSet(result), filesProcessed.toLong(), totalFilesCount)) {
-                multipleCopyNotifier.onExceptionOccurred(FileIterationException(FileIterationException.Type.INTERRUPTED_BY_USER, "Copying from '$sourceFile' to '$targetDir' was interrupted"))
+            if (!multipleCopyNotifier.shouldProceed(
+                    f,
+                    currentDestDir,
+                    Collections.unmodifiableSet(result),
+                    filesProcessed.toLong(),
+                    totalFilesCount
+                )
+            ) {
+                multipleCopyNotifier.onExceptionOccurred(
+                    FileIterationException(
+                        FileIterationException.Type.INTERRUPTED_BY_USER,
+                        "Copying from '$sourceFile' to '$targetDir' was interrupted"
+                    )
+                )
                 break
             }
         }
@@ -1441,8 +1485,12 @@ private fun moveOrCopyFiles(
             val isSameFile = targetFile == f
             if (targetFile == null || isSameFile) {
                 if (isSameFile) {
-                    multipleCopyNotifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NAME_INVALID,
-                            "Target file cannot be equals to source file ('$targetFile')!"))
+                    multipleCopyNotifier?.onExceptionOccurred(
+                        FileIterationException(
+                            FileIterationException.Type.NAME_INVALID,
+                            "Target file cannot be equals to source file ('$targetFile')!"
+                        )
+                    )
                 }
                 targetFile = File(currentDestDir, f.name)
             }
@@ -1453,25 +1501,32 @@ private fun moveOrCopyFiles(
             val shouldReplace = replaceOptions.enableReplace
                     || !replaceOptions.enableReplace && replaceOptions.enableAppend
             if (!shouldReplace) {
-                multipleCopyNotifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.REPLACE_DISABLED, "Replace disabled for file '$targetFile', skipping..."))
+                multipleCopyNotifier?.onExceptionOccurred(
+                    FileIterationException(
+                        FileIterationException.Type.REPLACE_DISABLED,
+                        "Replace disabled for file '$targetFile', skipping..."
+                    )
+                )
                 continue
             }
             val resultFile =
-                    if (moveOrCopy) {
-                        moveFile(f, targetFile, !replaceOptions.enableAppend, false, preserveFileDate, copyWithBuffering, singleCopyNotifier)
+                if (moveOrCopy) {
+                    moveFile(f, targetFile, !replaceOptions.enableAppend, false, preserveFileDate, copyWithBuffering, singleCopyNotifier)
+                } else {
+                    if (copyWithBuffering) {
+                        copyFileWithBuffering(
+                            f, targetFile.name, targetFile.parent, !replaceOptions.enableAppend,
+                            preserveFileDate, singleCopyNotifier
+                        )
                     } else {
-                        if (copyWithBuffering) {
-                            copyFileWithBuffering(f, targetFile.name, targetFile.parent, !replaceOptions.enableAppend,
-                                    preserveFileDate, singleCopyNotifier)
-                        } else {
-                            try {
-                                copyFileOrThrow(f, targetFile.name, targetFile.parent, !replaceOptions.enableAppend, preserveFileDate)
-                            } catch (e: RuntimeException) {
-                                singleCopyNotifier?.onExceptionOccurred(e)
-                                null
-                            }
+                        try {
+                            copyFileOrThrow(f, targetFile.name, targetFile.parent, !replaceOptions.enableAppend, preserveFileDate)
+                        } catch (e: RuntimeException) {
+                            singleCopyNotifier?.onExceptionOccurred(e)
+                            null
                         }
                     }
+                }
             if (resultFile != null) {
                 multipleCopyNotifier?.onSucceeded(f, resultFile)
                 result.add(resultFile)
@@ -1479,7 +1534,12 @@ private fun moveOrCopyFiles(
                 multipleCopyNotifier?.onFailed(f, currentDestDir)
             }
         } else {
-            multipleCopyNotifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_CONFIRMED, "File '$f' move/copy is not confirmed"))
+            multipleCopyNotifier?.onExceptionOccurred(
+                FileIterationException(
+                    FileIterationException.Type.NOT_CONFIRMED,
+                    "File '$f' move/copy is not confirmed"
+                )
+            )
         }
         filesProcessed++
     }
@@ -1495,17 +1555,17 @@ private fun moveOrCopyFiles(
 @Deprecated("use copyFiles")
 @JvmOverloads
 fun copyFilesWithBufferingLegacy(
-        fromFile: File?,
-        targetDir: File?,
-        comparator: Comparator<in File>? = null,
-        preserveFileDate: Boolean = true,
-        depth: Int = DEPTH_UNLIMITED,
-        currentLevel: Int = 0,
-        totalFilesCount: Int = 0,
-        copied: MutableSet<File> = mutableSetOf(),
-        exclusionList: MutableList<String> = mutableListOf(),
-        singleNotifier: ISingleCopyNotifier? = null,
-        multipleCopyNotifier: IMultipleCopyNotifierLegacy? = null
+    fromFile: File?,
+    targetDir: File?,
+    comparator: Comparator<in File>? = null,
+    preserveFileDate: Boolean = true,
+    depth: Int = DEPTH_UNLIMITED,
+    currentLevel: Int = 0,
+    totalFilesCount: Int = 0,
+    copied: MutableSet<File> = mutableSetOf(),
+    exclusionList: MutableList<String> = mutableListOf(),
+    singleNotifier: ISingleCopyNotifier? = null,
+    multipleCopyNotifier: IMultipleCopyNotifierLegacy? = null
 ): Set<File> {
     var totalFilesCount = totalFilesCount
     val result = mutableSetOf<File>()
@@ -1518,18 +1578,19 @@ fun copyFilesWithBufferingLegacy(
     if (fromFile != null && fromFile.exists()) {
         isValid = true
         if (currentLevel == 0) {
-            totalFilesCount = getFiles(fromFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetNotifier {
+            totalFilesCount =
+                getFiles(fromFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetNotifier {
 
-                override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean {
-                    multipleCopyNotifier.onCalculatingSize(file, collected, currentLevel)
-                    return true
-                }
+                    override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean {
+                        multipleCopyNotifier.onCalculatingSize(file, collected, currentLevel)
+                        return true
+                    }
 
-                override fun onGetFolder(folder: File, collected: Set<File>, currentLevel: Int): Boolean {
-                    multipleCopyNotifier.onCalculatingSize(folder, collected, currentLevel)
-                    return false
-                }
-            } else null).size
+                    override fun onGetFolder(folder: File, collected: Set<File>, currentLevel: Int): Boolean {
+                        multipleCopyNotifier.onCalculatingSize(folder, collected, currentLevel)
+                        return false
+                    }
+                } else null).size
             if (fromFile.isDirectory && targetDir.absolutePath.startsWith(fromFile.absolutePath)) {
                 val srcFiles = fromFile.listFiles()
                 if (srcFiles != null && srcFiles.isNotEmpty()) {
@@ -1540,7 +1601,14 @@ fun copyFilesWithBufferingLegacy(
             }
         }
         if (multipleCopyNotifier != null) {
-            if (!multipleCopyNotifier.onProcessing(fromFile, targetDir, Collections.unmodifiableSet(copied), totalFilesCount.toLong(), currentLevel)) {
+            if (!multipleCopyNotifier.onProcessing(
+                    fromFile,
+                    targetDir,
+                    Collections.unmodifiableSet(copied),
+                    totalFilesCount.toLong(),
+                    currentLevel
+                )
+            ) {
                 return result
             }
         }
@@ -1564,12 +1632,38 @@ fun copyFilesWithBufferingLegacy(
 //                            }
                     if (f.isDirectory) {
                         if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
-                            result.addAll(copyFilesWithBufferingLegacy(f,  /*new File(targetDir + File.separator + fromFile.getName(), f.getName())*/targetDir, comparator,
-                                    preserveFileDate, depth, currentLevel + 1, totalFilesCount, copied, exclusionList, singleNotifier, multipleCopyNotifier))
+                            result.addAll(
+                                copyFilesWithBufferingLegacy(
+                                    f,  /*new File(targetDir + File.separator + fromFile.getName(), f.getName())*/
+                                    targetDir,
+                                    comparator,
+                                    preserveFileDate,
+                                    depth,
+                                    currentLevel + 1,
+                                    totalFilesCount,
+                                    copied,
+                                    exclusionList,
+                                    singleNotifier,
+                                    multipleCopyNotifier
+                                )
+                            )
                         }
                     } else {
-                        result.addAll(copyFilesWithBufferingLegacy(f,  /*new File(targetDir, fromFile.getName()) */targetDir, comparator,
-                                preserveFileDate, depth, currentLevel, totalFilesCount, copied, exclusionList, singleNotifier, multipleCopyNotifier))
+                        result.addAll(
+                            copyFilesWithBufferingLegacy(
+                                f,  /*new File(targetDir, fromFile.getName()) */
+                                targetDir,
+                                comparator,
+                                preserveFileDate,
+                                depth,
+                                currentLevel,
+                                totalFilesCount,
+                                copied,
+                                exclusionList,
+                                singleNotifier,
+                                multipleCopyNotifier
+                            )
+                        )
                     }
                 }
             }
@@ -1598,8 +1692,10 @@ fun copyFilesWithBufferingLegacy(
                 }
                 var resultFile: File? = null
                 if (!exclusionList.contains(fromFile.absolutePath)) {
-                    resultFile = copyFileWithBuffering(fromFile, targetFile.name, targetFile.parent, rewrite,
-                            preserveFileDate, singleNotifier)
+                    resultFile = copyFileWithBuffering(
+                        fromFile, targetFile.name, targetFile.parent, rewrite,
+                        preserveFileDate, singleNotifier
+                    )
                 }
                 if (resultFile != null) {
                     result.add(resultFile)
@@ -1625,11 +1721,11 @@ fun copyFilesWithBufferingLegacy(
 
 @JvmOverloads
 fun deleteFiles(
-        fromFiles: Collection<File>?,
-        deleteEmptyDirs: Boolean = true,
-        comparator: Comparator<in File>? = null,
-        depth: Int = DEPTH_UNLIMITED,
-        notifier: IDeleteNotifier? = null
+    fromFiles: Collection<File>?,
+    deleteEmptyDirs: Boolean = true,
+    comparator: Comparator<in File>? = null,
+    depth: Int = DEPTH_UNLIMITED,
+    notifier: IDeleteNotifier? = null
 ): Set<File> {
     val result: MutableSet<File> = LinkedHashSet()
     if (fromFiles != null) {
@@ -1645,12 +1741,12 @@ fun deleteFiles(
  */
 @JvmOverloads
 fun deleteFiles(
-        fromFile: File?,
-        deleteEmptyDirs: Boolean = true,
-        comparator: Comparator<in File>? = null,
-        depth: Int = DEPTH_UNLIMITED,
-        currentLevel: Int = 0,
-        notifier: IDeleteNotifier? = null
+    fromFile: File?,
+    deleteEmptyDirs: Boolean = true,
+    comparator: Comparator<in File>? = null,
+    depth: Int = DEPTH_UNLIMITED,
+    currentLevel: Int = 0,
+    notifier: IDeleteNotifier? = null
 ): Set<File> {
 
     val result = mutableSetOf<File>()
@@ -1683,7 +1779,12 @@ fun deleteFiles(
     }
 
     if (notifier != null && !notifier.shouldProceed(fromFile, Collections.unmodifiableSet(result), currentLevel)) {
-        notifier.onExceptionOccurred(FileIterationException(FileIterationException.Type.INTERRUPTED_BY_USER, "Deleting from '$fromFile' was interrupted"))
+        notifier.onExceptionOccurred(
+            FileIterationException(
+                FileIterationException.Type.INTERRUPTED_BY_USER,
+                "Deleting from '$fromFile' was interrupted"
+            )
+        )
         return result
     }
 
@@ -1716,7 +1817,16 @@ fun deleteFiles(
 //                    }
 //                }
 //            }
-            result.addAll(deleteFiles(f, deleteEmptyDirs, comparator, depth, if (f.isDirectory) currentLevel + 1 else currentLevel, notifier))
+            result.addAll(
+                deleteFiles(
+                    f,
+                    deleteEmptyDirs,
+                    comparator,
+                    depth,
+                    if (f.isDirectory) currentLevel + 1 else currentLevel,
+                    notifier
+                )
+            )
         }
         deleteEmptyDirChecked(fromFile)
     } else if (fromFile.isFile) {
@@ -1727,7 +1837,12 @@ fun deleteFiles(
                 notifier?.onDeleteFileFailed(fromFile)
             }
         } else {
-            notifier.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_CONFIRMED, "File '$fromFile' deletion is not confirmed"))
+            notifier.onExceptionOccurred(
+                FileIterationException(
+                    FileIterationException.Type.NOT_CONFIRMED,
+                    "File '$fromFile' deletion is not confirmed"
+                )
+            )
         }
     } else {
         notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_VALID, "Invalid file or folder: '$fromFile'"))
@@ -1737,12 +1852,12 @@ fun deleteFiles(
 
 @JvmOverloads
 fun compressFilesToZip(
-        srcFiles: Collection<File>?,
-        destZipName: String?,
-        destZipParent: String?,
-        recreate: Boolean = true,
-        buffSize: Int = DEFAULT_BUFFER_SIZE,
-        notifier: IStreamNotifier? = null
+    srcFiles: Collection<File>?,
+    destZipName: String?,
+    destZipParent: String?,
+    recreate: Boolean = true,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+    notifier: IStreamNotifier? = null
 ): File? = try {
     compressFilesToZipOrThrow(srcFiles, destZipName, destZipParent, recreate, buffSize, notifier)
 } catch (e: RuntimeException) {
@@ -1753,12 +1868,12 @@ fun compressFilesToZip(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun compressFilesToZipOrThrow(
-        sourceFiles: Collection<File>?,
-        destZipName: String?,
-        destZipParent: String?,
-        recreate: Boolean = true,
-        buffSize: Int = DEFAULT_BUFFER_SIZE,
-        notifier: IStreamNotifier? = null
+    sourceFiles: Collection<File>?,
+    destZipName: String?,
+    destZipParent: String?,
+    recreate: Boolean = true,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+    notifier: IStreamNotifier? = null
 ): File {
     val zipFile = createFileOrThrow(destZipName, destZipParent, recreate)
 
@@ -1780,12 +1895,12 @@ fun compressFilesToZipOrThrow(
 
 @JvmOverloads
 fun unzipFile(
-        zipFile: File?,
-        destPath: String?,
-        saveDirHierarchy: Boolean = true,
-        recreate: Boolean = true,
-        buffSize: Int = DEFAULT_BUFFER_SIZE,
-        notifier: IStreamNotifier? = null
+    zipFile: File?,
+    destPath: String?,
+    saveDirHierarchy: Boolean = true,
+    recreate: Boolean = true,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+    notifier: IStreamNotifier? = null
 ) = try {
     unzipFileOrThrow(zipFile, destPath, saveDirHierarchy, recreate, buffSize, notifier)
     true
@@ -1797,12 +1912,12 @@ fun unzipFile(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun unzipFileOrThrow(
-        zipFile: File?,
-        destPath: String?,
-        saveDirHierarchy: Boolean = true,
-        recreate: Boolean = true,
-        buffSize: Int = DEFAULT_BUFFER_SIZE,
-        notifier: IStreamNotifier? = null
+    zipFile: File?,
+    destPath: String?,
+    saveDirHierarchy: Boolean = true,
+    recreate: Boolean = true,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+    notifier: IStreamNotifier? = null
 ) {
     if (!isFileValidOrThrow(zipFile)) {
         throw IllegalArgumentException("Invalid zip file: '$zipFile'")
@@ -1812,11 +1927,11 @@ fun unzipFileOrThrow(
     }
     try {
         zipFile.openInputStreamOrThrow().unzipStreamOrThrow(
-                saveDirHierarchy,
-                buffSize,
-                notifier,
-                createDirFunc = { createDirOrThrow(it, destPath) },
-                createOutputStream = { createFileOrThrow(it, destPath, recreate).openOutputStreamOrThrow(!recreate) }
+            saveDirHierarchy,
+            buffSize,
+            notifier,
+            createDirFunc = { createDirOrThrow(it, destPath) },
+            createOutputStream = { createFileOrThrow(it, destPath, recreate).openOutputStreamOrThrow(!recreate) }
         )
     } catch (e: IOException) {
         throwRuntimeException(e, "unzipStream")
@@ -1829,12 +1944,12 @@ fun unzipFileOrThrow(
  */
 @JvmOverloads
 fun checkFilesWithStat(
-        name: String,
-        paths: Collection<File>? = getEnvPathFiles(),
-        useSU: Boolean = true,
-        execTimeout: Long = 0,
-        comparator: Comparator<in File>? = null,
-        notifier: IShellGetNotifier? = null
+    name: String,
+    paths: Collection<File>? = getEnvPathFiles(),
+    useSU: Boolean = true,
+    execTimeout: Long = 0,
+    comparator: Comparator<in File>? = null,
+    notifier: IShellGetNotifier? = null
 ): Set<File> {
     val result = mutableSetOf<File>()
     for (file in paths?.toList() ?: emptyList()) {
@@ -1843,27 +1958,33 @@ fun checkFilesWithStat(
             path += File.separator
         }
         val targetPath = path + name
-        ShellWrapper(false).executeCommand(listOf("stat", targetPath), useSU, DEFAULT_TARGET_CODE, execTimeout, TimeUnit.MILLISECONDS, object : ShellCallback {
+        ShellWrapper(false).executeCommand(
+            listOf("stat", targetPath),
+            useSU,
+            DEFAULT_TARGET_CODE,
+            execTimeout,
+            TimeUnit.MILLISECONDS,
+            object : ShellCallback {
 
-            override val needToLogCommands: Boolean = true
+                override val needToLogCommands: Boolean = true
 
-            override fun shellOut(from: ShellCallback.StreamType, shellLine: String) {
-                if (shellLine.contains("File: ") && shellLine.contains(name)) {
-                    val currentFile = File(targetPath)
-                    if (notifier == null || notifier.onGetFile(currentFile, result, 0)) {
-                        result.add(currentFile)
+                override fun shellOut(from: ShellCallback.StreamType, shellLine: String) {
+                    if (shellLine.contains("File: ") && shellLine.contains(name)) {
+                        val currentFile = File(targetPath)
+                        if (notifier == null || notifier.onGetFile(currentFile, result, 0)) {
+                            result.add(currentFile)
+                        }
                     }
                 }
-            }
 
-            override fun processStartFailed(t: Throwable?) {
-                notifier?.onStartFailed(t, File(targetPath))
-            }
+                override fun processStartFailed(t: Throwable?) {
+                    notifier?.onStartFailed(t, File(targetPath))
+                }
 
-            override fun processComplete(exitValue: Int) {
-                notifier?.onExitCode(exitValue, File(targetPath))
-            }
-        })
+                override fun processComplete(exitValue: Int) {
+                    notifier?.onExitCode(exitValue, File(targetPath))
+                }
+            })
     }
     comparator?.let {
         return result.sortedWith(it).toSet()
@@ -1873,41 +1994,41 @@ fun checkFilesWithStat(
 
 @JvmOverloads
 fun getFilesWithLs(
-        fromDirs: Collection<File>?,
-        useSU: Boolean = true,
-        execTimeout: Long = 0,
-        comparator: Comparator<in File>? = null,
-        notifier: IShellGetNotifier? = null
+    fromDirs: Collection<File>?,
+    useSU: Boolean = true,
+    execTimeout: Long = 0,
+    comparator: Comparator<in File>? = null,
+    notifier: IShellGetNotifier? = null
 ): Map<File, Long> {
     val collectedMap = mutableMapOf<File, Long>()
     val collected = mutableSetOf<File>()
     for (dir in fromDirs ?: emptyList()) {
         ShellWrapper(false).executeCommand(listOf("ls", dir.absolutePath),
-                useSU,
-                DEFAULT_TARGET_CODE,
-                execTimeout,
-                TimeUnit.MILLISECONDS,
-                object : ShellCallback {
+            useSU,
+            DEFAULT_TARGET_CODE,
+            execTimeout,
+            TimeUnit.MILLISECONDS,
+            object : ShellCallback {
 
-                    override val needToLogCommands: Boolean = true
+                override val needToLogCommands: Boolean = true
 
-                    override fun shellOut(from: ShellCallback.StreamType, shellLine: String) {
-                        if (from === ShellCallback.StreamType.OUT && !isEmpty(shellLine)) {
-                            val currentFile = File(dir, shellLine)
-                            if (notifier == null || notifier.onGetFile(currentFile, collected, 0)) {
-                                collected.add(currentFile)
-                            }
+                override fun shellOut(from: ShellCallback.StreamType, shellLine: String) {
+                    if (from === ShellCallback.StreamType.OUT && !isEmpty(shellLine)) {
+                        val currentFile = File(dir, shellLine)
+                        if (notifier == null || notifier.onGetFile(currentFile, collected, 0)) {
+                            collected.add(currentFile)
                         }
                     }
+                }
 
-                    override fun processStartFailed(t: Throwable?) {
-                        notifier?.onStartFailed(t, dir)
-                    }
+                override fun processStartFailed(t: Throwable?) {
+                    notifier?.onStartFailed(t, dir)
+                }
 
-                    override fun processComplete(exitValue: Int) {
-                        notifier?.onExitCode(exitValue, dir)
-                    }
-                })
+                override fun processComplete(exitValue: Int) {
+                    notifier?.onExitCode(exitValue, dir)
+                }
+            })
     }
     comparator?.let {
         val sorted = collected.sortedWith(it)
@@ -1917,35 +2038,35 @@ fun getFilesWithLs(
     for (current in collected) {
         // option "-b" is not supported on android version
         ShellWrapper().executeCommand(listOf("du", "-s", current.absolutePath),
-                useSU,
-                DEFAULT_TARGET_CODE,
-                execTimeout,
-                TimeUnit.MILLISECONDS,
-                object : ShellCallback {
+            useSU,
+            DEFAULT_TARGET_CODE,
+            execTimeout,
+            TimeUnit.MILLISECONDS,
+            object : ShellCallback {
 
-                    override val needToLogCommands: Boolean = true
+                override val needToLogCommands: Boolean = true
 
-                    override fun shellOut(from: ShellCallback.StreamType, shellLine: String) {
-                        if (from === ShellCallback.StreamType.OUT && !isEmpty(shellLine)) {
-                            var size: Long = 0
-                            val parts = shellLine.split("\\t").toTypedArray()
-                            if (parts.size > 1) {
-                                size = parts[0].toLongNotNull(10) { e: NumberFormatException ->
-                                    notifier?.onExceptionOccurred(RuntimeException(formatException(e, "parseLong")))
-                                }
+                override fun shellOut(from: ShellCallback.StreamType, shellLine: String) {
+                    if (from === ShellCallback.StreamType.OUT && !isEmpty(shellLine)) {
+                        var size: Long = 0
+                        val parts = shellLine.split("\\t").toTypedArray()
+                        if (parts.size > 1) {
+                            size = parts[0].toLongNotNull(10) { e: NumberFormatException ->
+                                notifier?.onExceptionOccurred(RuntimeException(formatException(e, "parseLong")))
                             }
-                            collectedMap[current] = SizeUnit.KBYTES.toBytes(size.toDouble())
                         }
+                        collectedMap[current] = SizeUnit.KBYTES.toBytes(size.toDouble())
                     }
+                }
 
-                    override fun processStartFailed(t: Throwable?) {
-                        notifier?.onStartFailed(t, current)
-                    }
+                override fun processStartFailed(t: Throwable?) {
+                    notifier?.onStartFailed(t, current)
+                }
 
-                    override fun processComplete(exitValue: Int) {
-                        notifier?.onExitCode(exitValue, current)
-                    }
-                })
+                override fun processComplete(exitValue: Int) {
+                    notifier?.onExitCode(exitValue, current)
+                }
+            })
     }
     return Collections.unmodifiableMap(collectedMap)
 }
@@ -1955,7 +2076,7 @@ enum class GetMode {
 }
 
 interface IFsNotifier {
-    
+
     fun onExceptionOccurred(e: RuntimeException) {
         logException(logger, e)
     }
@@ -1965,26 +2086,26 @@ interface IGetNotifier : IFsNotifier {
     /**
      * @return false if client code doesn't want to append this file to result
      */
-    
+
     fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean = true
 
     /**
      * @return 1st false - if client code doesn't want to append this folder to result, 2nd false - if not intended to go deeper
      */
-    
+
     fun onGetFolder(folder: File, collected: Set<File>, currentLevel: Int): Boolean = true
 
     /**
      * @return false to interrupt collecting
      */
-    
+
     fun shouldProceed(current: File, collected: Set<File>, currentLevel: Int, wasAdded: Boolean): Boolean = true
 }
 
 interface ISingleCopyNotifier : IFsNotifier {
     val notifyInterval: Long get() = 0L
 
-    
+
     fun shouldProceed(sourceFile: File, targetFile: File, bytesCopied: Long, bytesTotal: Long): Boolean = true
 }
 
@@ -1992,44 +2113,44 @@ interface IMultipleCopyNotifier : IFsNotifier {
     /**
      * @return false if process should be interrupted
      */
-    
+
     fun onCollecting(current: File, collected: Set<File>, currentLevel: Int): Boolean = true
 
     /**
      * @return false if process should be interrupted
      */
-    
+
     fun shouldProceed(currentFile: File, targetDir: File, copied: Set<File>, filesProcessed: Long, filesTotal: Long): Boolean = true
 
     /**
      * true if copying confirmed by client code, false to cancel
      */
-    
+
     fun confirmMoveOrCopy(currentFile: File, targetDir: File): Boolean = true
 
     /**
      * @return target file to copy in or null for default
      */
-    
+
     fun onBeforeMoveOrCopy(currentFile: File, targetDir: File): File? = null
 
     /**
      * @return true if specified destination file is should be replaced (it currently exists)
      */
-    
+
     fun confirmReplace(targetFile: File): ReplaceOptions = ReplaceOptions()
 
-    
+
     fun onSucceeded(currentFile: File, resultFile: File) {
     }
 
-    
+
     fun onFailed(currentFile: File, targetDir: File) {
     }
 
     data class ReplaceOptions(
-            val enableReplace: Boolean = true,
-            val enableAppend: Boolean = false
+        val enableReplace: Boolean = true,
+        val enableAppend: Boolean = false
     )
 }
 
@@ -2047,36 +2168,36 @@ interface IDeleteNotifier : IFsNotifier {
     /**
      * @return false to interrupt collecting
      */
-    
+
     fun shouldProceed(current: File, deleted: Set<File>, currentLevel: Int): Boolean = true
 
     /**
      * @return false if client code doesn't want to delete this file
      */
-    
+
     fun confirmDeleteFile(file: File): Boolean = true
 
     /**
      * @return false if client code doesn't want to delete this folder
      */
-    
+
     fun confirmDeleteFolder(folder: File): Boolean = true
 
-    
+
     fun onDeleteFileFailed(file: File) {
     }
 
-    
+
     fun onDeleteFolderFailed(folder: File) {
     }
 }
 
 interface IShellGetNotifier : IGetNotifier {
-    
+
     fun onStartFailed(t: Throwable?, forFile: File) {
     }
 
-    
+
     fun onExitCode(exitCode: Int, forFile: File) {
     }
 }
@@ -2139,10 +2260,11 @@ fun File?.openOutputStreamOrThrow(append: Boolean = false): FileOutputStream = t
     throw RuntimeException(formatException(e, "create FileOutputStream"), e)
 }
 
-private fun toFile(
-        fileName: String?,
-        parentPath: String? = null,
-        checkSeparators: Boolean = false
+@JvmOverloads
+fun toFile(
+    fileName: String?,
+    parentPath: String? = null,
+    checkSeparators: Boolean = false
 ): File? {
     if (fileName.isNullOrEmpty() || (checkSeparators && fileName.contains(File.separatorChar))) {
         return null
@@ -2151,9 +2273,9 @@ private fun toFile(
 }
 
 class FileIterationException(
-        val type: Type,
-        message: String,
-        cause: Throwable? = null
+    val type: Type,
+    message: String,
+    cause: Throwable? = null
 ) : RuntimeException(message, cause) {
 
     enum class Type {

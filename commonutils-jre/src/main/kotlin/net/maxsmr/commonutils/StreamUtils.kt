@@ -9,7 +9,6 @@ import java.io.*
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
-import kotlin.Pair
 
 // Вспомогательные методы для чтения из {@link InputStream]
 // и записи в {@link OutputStream}
@@ -23,12 +22,12 @@ const val CHARSET_DEFAULT = "UTF-8"
  */
 @JvmOverloads
 fun InputStream.copyStream(
-        out: OutputStream,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_BUFFER_SIZE,
-        closeInput: Boolean = true,
-        closeOutput: Boolean = true
-): Int? = try {
+    out: OutputStream,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+    closeInput: Boolean = true,
+    closeOutput: Boolean = true
+): Long? = try {
     copyStreamOrThrow(out, notifier, buffSize, closeInput, closeOutput)
 } catch (e: IOException) {
     logException(logger, e, "copyStream")
@@ -41,30 +40,35 @@ fun InputStream.copyStream(
 @Throws(IOException::class)
 @JvmOverloads
 fun InputStream.copyStreamOrThrow(
-        out: OutputStream,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_BUFFER_SIZE,
-        closeInput: Boolean = true,
-        closeOutput: Boolean = true
-): Int {
+    out: OutputStream,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+    closeInput: Boolean = true,
+    closeOutput: Boolean = true
+): Long {
     require(buffSize > 0) { "buffSize" }
 
-    var bytesWriteCount = 0
+    var bytesWriteCount = 0L
 
     try {
         val buff = ByteArray(buffSize)
-        val totalBytesCount = this.available()
+        val totalBytesCount = this.available().toLong()
 
         var len: Int
         var lastNotifyTime: Long = 0
         while (this.read(buff).also { len = it } > 0) {
             if (notifier != null) {
                 val interval = notifier.notifyInterval
-                if (interval >= 0 && (interval == 0L || lastNotifyTime == 0L || System.currentTimeMillis() - lastNotifyTime >= interval)) {
+                val current = System.currentTimeMillis()
+                if (interval >= 0 && (interval == 0L || lastNotifyTime == 0L || current - lastNotifyTime >= interval)) {
                     if (!notifier.onProcessing(
-                                    this, out, bytesWriteCount.toLong(),
-                                    if (totalBytesCount > 0 && bytesWriteCount <= totalBytesCount) (totalBytesCount - bytesWriteCount).toLong() else 0.toLong()
-                            )
+                            this, out, bytesWriteCount,
+                            if (totalBytesCount > 0 && totalBytesCount > bytesWriteCount) {
+                                totalBytesCount
+                            } else {
+                                0L
+                            }
+                        )
                     ) {
                         throw InterruptedIOException("Copying streams interrupted")
                     }
@@ -87,22 +91,22 @@ fun InputStream.copyStreamOrThrow(
 
 @JvmOverloads
 fun InputStream.readBytes(
-        offset: Int = 0,
-        length: Int = 0,
-        closeInput: Boolean = true
+    offset: Int = 0,
+    length: Int = 0,
+    closeInput: Boolean = true
 ): ByteArray? = try {
-            readBytesOrThrow(offset, length, closeInput)
-        } catch (e: IOException) {
-            logException(logger, e, "readBytes")
-            null
-        }
+    readBytesOrThrow(offset, length, closeInput)
+} catch (e: IOException) {
+    logException(logger, e, "readBytes")
+    null
+}
 
 @Throws(IOException::class)
 @JvmOverloads
 fun InputStream.readBytesOrThrow(
-        offset: Int = 0,
-        length: Int = 0,
-        closeInput: Boolean = true
+    offset: Int = 0,
+    length: Int = 0,
+    closeInput: Boolean = true
 ): ByteArray {
     try {
         val available = available()
@@ -110,9 +114,9 @@ fun InputStream.readBytesOrThrow(
         var readByteCount: Int
         do {
             readByteCount = read(
-                    data,
-                    if (offset >= 0) offset else 0,
-                    data.size
+                data,
+                if (offset >= 0) offset else 0,
+                data.size
             )
         } while (readByteCount > 0 && length <= 0)
         return data
@@ -125,9 +129,9 @@ fun InputStream.readBytesOrThrow(
 
 @JvmOverloads
 fun InputStream.readStrings(
-        count: Int = 0,
-        closeInput: Boolean = true,
-        charsetName: String = CHARSET_DEFAULT
+    count: Int = 0,
+    closeInput: Boolean = true,
+    charsetName: String = CHARSET_DEFAULT
 ): List<String> = try {
     readStringsOrThrow(count, closeInput, charsetName)
 } catch (e: IOException) {
@@ -144,9 +148,9 @@ fun InputStream.readStrings(
 @Throws(IOException::class)
 @JvmOverloads
 fun InputStream.readStringsOrThrow(
-        count: Int = 0,
-        closeInput: Boolean = true,
-        charsetName: String = CHARSET_DEFAULT
+    count: Int = 0,
+    closeInput: Boolean = true,
+    charsetName: String = CHARSET_DEFAULT
 ): List<String> {
     val out = mutableListOf<String>()
     var `in`: BufferedReader? = null
@@ -183,8 +187,8 @@ fun InputStream.readStringOrThrow(charsetName: String = CHARSET_DEFAULT): String
 
 @JvmOverloads
 fun OutputStream.writeBytes(
-        data: ByteArray,
-        closeOutput: Boolean = true
+    data: ByteArray,
+    closeOutput: Boolean = true
 ) = try {
     writeBytesOrThrow(data, closeOutput)
     true
@@ -234,12 +238,12 @@ fun Writer.writeStringOrThrow(data: Collection<String>?, closeOutput: Boolean = 
 
 @JvmOverloads
 fun compressStreamsToZip(
-        inputStreams: Map<String, InputStream>,
-        outputStream: OutputStream,
-        buffSize: Int = DEFAULT_BUFFER_SIZE,
-        notifier: IStreamNotifier? = null,
-        closeInput: Boolean = true,
-        closeOutput: Boolean = true
+    inputStreams: Map<String, InputStream>,
+    outputStream: OutputStream,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+    notifier: IStreamNotifier? = null,
+    closeInput: Boolean = true,
+    closeOutput: Boolean = true
 ): Int = try {
     compressStreamsToZipOrThrow(inputStreams, outputStream, buffSize, notifier, closeInput, closeOutput)
 } catch (e: IOException) {
@@ -250,12 +254,12 @@ fun compressStreamsToZip(
 @Throws(IOException::class)
 @JvmOverloads
 fun compressStreamsToZipOrThrow(
-        inputStreams: Map<String, InputStream>,
-        outputStream: OutputStream,
-        buffSize: Int = DEFAULT_BUFFER_SIZE,
-        notifier: IStreamNotifier? = null,
-        closeInput: Boolean = true,
-        closeOutput: Boolean = true
+    inputStreams: Map<String, InputStream>,
+    outputStream: OutputStream,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+    notifier: IStreamNotifier? = null,
+    closeInput: Boolean = true,
+    closeOutput: Boolean = true
 ): Int {
     val zos = ZipOutputStream(BufferedOutputStream(outputStream))
 
@@ -289,21 +293,22 @@ fun compressStreamsToZipOrThrow(
 
 @JvmOverloads
 fun InputStream.unzipStream(
-        saveDirHierarchy: Boolean = true,
-        buffSize: Int = DEFAULT_BUFFER_SIZE,
-        notifier: IStreamNotifier? = null,
-        closeInput: Boolean = true,
-        closeOutput: Boolean = true,
-        createDirFunc: (String) -> Unit,
-        createOutputStream: (String) -> OutputStream
+    saveDirHierarchy: Boolean = true,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+    notifier: IStreamNotifier? = null,
+    closeInput: Boolean = true,
+    closeOutput: Boolean = true,
+    createDirFunc: (String) -> Unit,
+    createOutputStream: (String) -> OutputStream
 ) = try {
-    unzipStreamOrThrow(saveDirHierarchy,
-            buffSize,
-            notifier,
-            closeInput,
-            closeOutput,
-            createDirFunc,
-            createOutputStream
+    unzipStreamOrThrow(
+        saveDirHierarchy,
+        buffSize,
+        notifier,
+        closeInput,
+        closeOutput,
+        createDirFunc,
+        createOutputStream
     )
 } catch (e: IOException) {
     logException(logger, e, "unzipStreamOrThrow")
@@ -313,13 +318,13 @@ fun InputStream.unzipStream(
 @Throws(IOException::class)
 @JvmOverloads
 fun InputStream.unzipStreamOrThrow(
-        saveDirHierarchy: Boolean = true,
-        buffSize: Int = DEFAULT_BUFFER_SIZE,
-        notifier: IStreamNotifier? = null,
-        closeInput: Boolean = true,
-        closeOutput: Boolean = true,
-        createDirFunc: (String) -> Unit,
-        createOutputStream: (String) -> OutputStream
+    saveDirHierarchy: Boolean = true,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+    notifier: IStreamNotifier? = null,
+    closeInput: Boolean = true,
+    closeOutput: Boolean = true,
+    createDirFunc: (String) -> Unit,
+    createOutputStream: (String) -> OutputStream
 ) {
     val zis = ZipInputStream(this)
     val zipEntry = zis.nextEntry
@@ -354,9 +359,9 @@ interface IStreamNotifier {
      * @return true if should proceed
      */
     fun onProcessing(
-            inputStream: InputStream,
-            outputStream: OutputStream,
-            bytesWrite: Long,
-            bytesLeft: Long
+        inputStream: InputStream,
+        outputStream: OutputStream,
+        bytesWrite: Long,
+        bytesTotal: Long
     ): Boolean = true
 }

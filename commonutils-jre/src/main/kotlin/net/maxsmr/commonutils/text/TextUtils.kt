@@ -22,7 +22,7 @@ fun getExtension(name: String?) = name?.substringAfterLast('.').orEmpty()
  */
 fun removeExtension(name: String?): String {
     var result: String = name ?: EMPTY_STRING
-    if (name != null && name.isNotEmpty()) {
+    if (!name.isNullOrEmpty()) {
         val startIndex = name.lastIndexOf('.')
         if (startIndex >= 0) {
             result = replaceRange(name, startIndex, name.length, EMPTY_STRING).toString()

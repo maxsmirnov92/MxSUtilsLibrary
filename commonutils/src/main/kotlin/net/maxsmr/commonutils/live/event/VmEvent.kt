@@ -16,14 +16,15 @@ import androidx.annotation.MainThread
  *
  * @see SharedVmEvent
  */
-@MainThread
 class VmEvent<T>(value: T) {
 
     private var value: T? = value
 
-    fun get(): T? {
+    @JvmOverloads
+    @MainThread
+    fun get(consume: Boolean = true): T? {
         val res = value ?: return null
-        value = null
+        if (consume) value = null
         return res
     }
 
