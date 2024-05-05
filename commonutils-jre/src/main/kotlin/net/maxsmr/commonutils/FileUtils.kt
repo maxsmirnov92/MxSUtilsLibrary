@@ -361,7 +361,7 @@ fun isDirEmptyOrThrow(dir: File?): Boolean {
             } catch (e: SecurityException) {
                 throw RuntimeException(formatException(e, "listFiles on dir '$dir'"), e)
             }
-        return files == null || files.isEmpty()
+        return files.isNullOrEmpty()
     }
     return false
 }
@@ -1140,11 +1140,10 @@ fun getSize(
 fun getSize(
     fromFile: File?,
     depth: Int = DEPTH_UNLIMITED,
-    currentLevel: Int = 0,
     notifier: IGetNotifier? = null,
 ): Long {
     var size: Long = 0
-    for (f in getFiles(fromFile, GetMode.FILES, depth = depth, currentLevel = currentLevel, notifier = notifier)) {
+    for (f in getFilesRecursive(fromFile, GetMode.FILES, depth = depth, notifier = notifier)) {
         size = try {
             getFileLengthOrThrow(fromFile)
         } catch (e: RuntimeException) {
@@ -1166,18 +1165,26 @@ fun getFiles(
     val result = mutableSetOf<File>()
     if (fromFiles != null) {
         for (fromFile in fromFiles) {
-            result.addAll(getFiles(fromFile, mode, comparator, depth, notifier = notifier))
+            result.addAll(getFiles(fromFile, mode, comparator, depth, notifier))
         }
     }
     return result
 }
 
+@JvmOverloads
+fun getFiles(
+    fromFile: File?,
+    mode: GetMode = GetMode.ALL,
+    comparator: Comparator<in File>? = null,
+    depth: Int = DEPTH_UNLIMITED,
+    notifier: IGetNotifier? = null
+): Set<File> = getFilesRecursive(fromFile, mode, comparator, depth, 0, notifier)
+
 /**
  * @param fromFile file or directory
  * @return collected set of files or directories from specified directories without source files
  */
-@JvmOverloads
-fun getFiles(
+private fun getFilesRecursive(
     fromFile: File?,
     mode: GetMode = GetMode.ALL,
     comparator: Comparator<in File>? = null,
@@ -1186,6 +1193,7 @@ fun getFiles(
     notifier: IGetNotifier? = null
 ): Set<File> {
     val result = mutableSetOf<File>()
+    var depth = if (depth == 0) DEPTH_UNLIMITED else depth
     if (depth != DEPTH_UNLIMITED && currentLevel > depth - 1) {
         notifier?.onExceptionOccurred(
             FileIterationException(
@@ -1199,12 +1207,12 @@ fun getFiles(
         notifier?.onExceptionOccurred(NullPointerException("fromFile is null"))
         return result
     }
-    if (!fromFile.isFile && !fromFile.isDirectory) {
-        notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_VALID, "Invalid file or folder: '$fromFile'"))
-        return result
-    }
     if (!fromFile.exists()) {
         notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_EXISTS, "File '$fromFile' not exists"))
+        return result
+    }
+    if (!fromFile.isFile && !fromFile.isDirectory) {
+        notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.NOT_VALID, "Invalid file or folder: '$fromFile'"))
         return result
     }
     var wasAdded = false
@@ -1238,14 +1246,14 @@ fun getFiles(
             for (f in files) {
 //                    if (f.isDirectory) {
 //                        if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
-//                            result.addAll(getFiles(f, mode, comparator, depth, currentLevel + 1, notifier))
+//                            result.addAll(getFilesRecursive(f, mode, comparator, depth, currentLevel + 1, notifier))
 //                        }
 //                    } else if (f.isFile) {
-//                        result.addAll(getFiles(f, mode, comparator, depth, currentLevel, notifier))
+//                        result.addAll(getFilesRecursive(f, mode, comparator, depth, currentLevel, notifier))
 //                    } else {
 //                        logger.w("Invalid file or folder: $f")
 //                    }
-                result.addAll(getFiles(f, mode, comparator, depth, if (f.isDirectory) currentLevel + 1 else currentLevel, notifier))
+                result.addAll(getFilesRecursive(f, mode, comparator, depth, if (f.isDirectory) currentLevel + 1 else currentLevel, notifier))
             }
         }
     } else {
@@ -1404,7 +1412,7 @@ private fun moveOrCopyFiles(
         return result
     }
     val files: Set<File> =
-        getFiles(sourceFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetNotifier {
+        getFiles(sourceFile, GetMode.FILES, comparator, depth, if (multipleCopyNotifier != null) object : IGetNotifier {
 
             override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean {
                 return multipleCopyNotifier.onCollecting(file, collected, currentLevel)
@@ -1499,7 +1507,6 @@ private fun moveOrCopyFiles(
                 replaceOptions = multipleCopyNotifier.confirmReplace(targetFile)
             }
             val shouldReplace = replaceOptions.enableReplace
-                    || !replaceOptions.enableReplace && replaceOptions.enableAppend
             if (!shouldReplace) {
                 multipleCopyNotifier?.onExceptionOccurred(
                     FileIterationException(
@@ -1549,12 +1556,39 @@ private fun moveOrCopyFiles(
     return result
 }
 
+@Deprecated("use copyFiles")
+fun copyFilesWithBufferingLegacy(
+    fromFile: File?,
+    targetDir: File?,
+    comparator: Comparator<in File>? = null,
+    preserveFileDate: Boolean = true,
+    depth: Int = DEPTH_UNLIMITED,
+    totalFilesCount: Int = 0,
+    copied: MutableSet<File> = mutableSetOf(),
+    exclusionList: MutableList<String> = mutableListOf(),
+    singleNotifier: ISingleCopyNotifier? = null,
+    multipleCopyNotifier: IMultipleCopyNotifierLegacy? = null
+): Set<File> {
+    return copyFilesWithBufferingLegacyRecursive(
+        fromFile,
+        targetDir,
+        comparator,
+        preserveFileDate,
+        depth,
+        0,
+        totalFilesCount,
+        copied,
+        exclusionList,
+        singleNotifier,
+        multipleCopyNotifier
+    )
+}
+
 /**
  * @param fromFile file or directory
  */
 @Deprecated("use copyFiles")
-@JvmOverloads
-fun copyFilesWithBufferingLegacy(
+private fun copyFilesWithBufferingLegacyRecursive(
     fromFile: File?,
     targetDir: File?,
     comparator: Comparator<in File>? = null,
@@ -1579,7 +1613,7 @@ fun copyFilesWithBufferingLegacy(
         isValid = true
         if (currentLevel == 0) {
             totalFilesCount =
-                getFiles(fromFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetNotifier {
+                getFilesRecursive(fromFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetNotifier {
 
                     override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean {
                         multipleCopyNotifier.onCalculatingSize(file, collected, currentLevel)
@@ -1633,7 +1667,7 @@ fun copyFilesWithBufferingLegacy(
                     if (f.isDirectory) {
                         if (depth == DEPTH_UNLIMITED || depth > currentLevel) {
                             result.addAll(
-                                copyFilesWithBufferingLegacy(
+                                copyFilesWithBufferingLegacyRecursive(
                                     f,  /*new File(targetDir + File.separator + fromFile.getName(), f.getName())*/
                                     targetDir,
                                     comparator,
@@ -1650,7 +1684,7 @@ fun copyFilesWithBufferingLegacy(
                         }
                     } else {
                         result.addAll(
-                            copyFilesWithBufferingLegacy(
+                            copyFilesWithBufferingLegacyRecursive(
                                 f,  /*new File(targetDir, fromFile.getName()) */
                                 targetDir,
                                 comparator,
@@ -1670,7 +1704,7 @@ fun copyFilesWithBufferingLegacy(
             if (files == null || files.isEmpty()) {
                 val emptyDir = if (currentLevel == 0) targetDir.toString() + File.separator + fromFile.name else targetDir.absolutePath
                 if (!isDirExistsOrThrow(emptyDir)) {
-                    createDir(emptyDir)
+                    createDirOrThrow(emptyDir)
                 }
             }
         } else if (isFileExistsOrThrow(fromFile)) {
@@ -1736,11 +1770,21 @@ fun deleteFiles(
     return result
 }
 
+@JvmOverloads
+fun deleteFiles(
+    fromFile: File?,
+    deleteEmptyDirs: Boolean = true,
+    comparator: Comparator<in File>? = null,
+    depth: Int = DEPTH_UNLIMITED,
+    notifier: IDeleteNotifier? = null
+): Set<File> {
+    return deleteFilesRecursive(fromFile, deleteEmptyDirs, comparator, depth, notifier = notifier)
+}
+
 /**
  * @param depth кол-во уровней вложенености (номер последней итерации == depth - 1)
  */
-@JvmOverloads
-fun deleteFiles(
+private fun deleteFilesRecursive(
     fromFile: File?,
     deleteEmptyDirs: Boolean = true,
     comparator: Comparator<in File>? = null,
@@ -1818,7 +1862,7 @@ fun deleteFiles(
 //                }
 //            }
             result.addAll(
-                deleteFiles(
+                deleteFilesRecursive(
                     f,
                     deleteEmptyDirs,
                     comparator,
@@ -2078,7 +2122,7 @@ enum class GetMode {
 interface IFsNotifier {
 
     fun onExceptionOccurred(e: RuntimeException) {
-        logException(logger, e)
+        logException(logger, e, isError = false)
     }
 }
 

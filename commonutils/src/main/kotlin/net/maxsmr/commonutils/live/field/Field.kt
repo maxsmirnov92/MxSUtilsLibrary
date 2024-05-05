@@ -3,7 +3,6 @@ package net.maxsmr.commonutils.live.field
 import android.content.Context
 import android.os.Parcelable
 import androidx.annotation.StringRes
-import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
@@ -12,6 +11,7 @@ import net.maxsmr.commonutils.gui.message.TextMessage
 import net.maxsmr.commonutils.live.*
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.io.Serializable
+import java.util.Locale
 
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
@@ -29,13 +29,15 @@ class Field<T> private constructor(
      */
     val required: Boolean get() = emptyMessage != null
 
-    val valueLive: LiveData<T> get() = _value
+    val valueLive: LiveData<T> = _value
+
+    private val _isEmptyLive: LiveData<Boolean> by lazy { valueLive.map { validateEmpty() } }
 
     /**
      * [LiveData] с изменением на предмет пустоты в динамике;
      * Если поле необязательное - обозревать нет необходимости.
      */
-    val isEmptyLive: LiveData<Boolean> get() = valueLive.map { validateEmpty() }.distinct()
+    val isEmptyLive: LiveData<Boolean> by lazy { _isEmptyLive.distinct() }
 
     /**
      * Возвращает признак отсутствия данных в поле сейчас
@@ -57,23 +59,25 @@ class Field<T> private constructor(
     val hasError: Boolean get() = error != null
 
     /**
-     * Возвращает текущую подсказку поля, либо null, если подсказка не была задана при создании поля
-     */
-    val hint: Hint?
-        get() = hintMessage?.let { Hint(it, required && isEmpty && withAsterisk, requiredStringResId) }
-
-    /**
      * Observable вариант [hint]. Текст подсказки может меняться, если поле обязательное
      */
-    val hintLive: LiveData<Hint?>
-        get() {
-            val message = hintMessage ?: return MutableLiveData(null)
-            return if (!required || !withAsterisk) {
-                Hint(message, false, requiredStringResId).just()
+    val hintLive: LiveData<Hint?> by lazy {
+        _isEmptyLive.map {
+            val message = hintMessage ?: return@map null
+            return@map if (!required || !withAsterisk) {
+                Hint(message, false, withCaps, requiredStringResId)
             } else {
-                isEmptyLive.map { Hint(message, it, requiredStringResId) }
+                Hint(message, it, withCaps, requiredStringResId)
             }
         }
+    }
+
+    /**
+     * Возвращает текущую подсказку поля, либо null, если подсказка не была задана при создании поля
+     */
+    val hint: Hint? get() = hintLive.value
+
+    val hasHint: Boolean get() = hint != null
 
     var wasChangedValue: Boolean = false
         private set
@@ -90,7 +94,6 @@ class Field<T> private constructor(
             }
         }
 
-
     var validators: Array<out Validator<T>> = emptyArray()
         set(value) {
             field = value
@@ -102,6 +105,7 @@ class Field<T> private constructor(
     @StringRes
     private var requiredStringResId: Int = 0
     private var withAsterisk: Boolean = true
+    private var withCaps: Boolean = false
 
     /**
      * @return true, если проверка по всем валидаторам прошла
@@ -134,6 +138,20 @@ class Field<T> private constructor(
 
     fun recharge() {
         _value.recharge()
+    }
+
+    fun setNonRequired() {
+        setRequired(null as TextMessage?, false)
+    }
+
+    fun setRequired(@StringRes emptyMessageResId: Int?, withAsterisk: Boolean = emptyMessageResId != null) {
+        setRequired(emptyMessageResId?.let { TextMessage(it) })
+    }
+
+    fun setRequired(emptyMessage: TextMessage?, withAsterisk: Boolean = emptyMessage != null) {
+        this.emptyMessage = emptyMessage
+        this.withAsterisk = withAsterisk
+        recharge()
     }
 
     private fun validateEmpty(): Boolean {
@@ -201,6 +219,7 @@ class Field<T> private constructor(
     data class Hint(
         private val hint: TextMessage,
         private val withAsterisk: Boolean,
+        private val withCaps: Boolean,
         @StringRes
         private val requiredStringResId: Int
     ) {
@@ -208,23 +227,28 @@ class Field<T> private constructor(
         /**
          * Возвращает текстовку текущей подсказки поля
          */
-        fun get(context: Context): CharSequence = if (withAsterisk) {
-            "${hint.get(context)} *"
-        } else {
-            hint.get(context)
+        fun get(context: Context, formatHint: ((CharSequence) -> CharSequence)? = null): CharSequence {
+            var hint = if (!withCaps) hint.get(context) else hint.get(context).toString().uppercase(Locale.getDefault())
+            hint = formatHint?.invoke(hint) ?: hint
+            return if (withAsterisk) {
+                "$hint *"
+            } else {
+                hint
+            }
         }
 
         /**
          * Возвращает описание поля. При наличии "*" заменяет ее на стандартную текстовку про обязательность ввода
          */
         fun contentDescription(context: Context): CharSequence? = if (withAsterisk) {
-            get(context).getReplacedAsteriskText(context)
+            get(context).getReplacedAsteriskContentDescription(context)
         } else {
             get(context)
         }
 
-        fun CharSequence?.getReplacedAsteriskText(context: Context): CharSequence? {
+        fun CharSequence?.getReplacedAsteriskContentDescription(context: Context): CharSequence? {
             this ?: return null
+            requiredStringResId.takeIf { it != 0 } ?: return null
             if (!this.contains("*")) return this
             return this.toString()
                 .replace("*", " ${context.getString(requiredStringResId)}")
@@ -252,11 +276,12 @@ class Field<T> private constructor(
             private set
         protected var hint: TextMessage? = null
             private set
-
+        protected var withAsterisk: Boolean = true
+            private set
+        protected var withCaps: Boolean = true
+            private set
         @StringRes
         protected var requiredStringResId: Int? = null
-            private set
-        protected var withAsterisk: Boolean = true
             private set
         protected var distinctUntilChanged: Boolean = true
             private set
@@ -311,7 +336,7 @@ class Field<T> private constructor(
         fun hint(
             @StringRes hintRes: Int,
             @StringRes
-            requiredStringResId: Int,
+            requiredStringResId: Int? = null,
             withAsterisk: Boolean = true
         ) = hint(TextMessage(hintRes), requiredStringResId, withAsterisk)
 
@@ -325,12 +350,13 @@ class Field<T> private constructor(
         fun hint(
             hint: TextMessage,
             @StringRes
-            requiredStringResId: Int,
+            requiredStringResId: Int? = null,
             withAsterisk: Boolean = true
         ) = apply {
             this.hint = hint
             this.requiredStringResId = requiredStringResId
             this.withAsterisk = withAsterisk
+            this.withCaps = withCaps
         }
 
         /**
@@ -366,6 +392,7 @@ class Field<T> private constructor(
             field.hintMessage = hint
             field.requiredStringResId = requiredStringResId ?: 0
             field.withAsterisk = withAsterisk
+            field.withCaps = withCaps
             return field
         }
 
@@ -377,7 +404,10 @@ class Field<T> private constructor(
         protected open fun fieldValue(): MutableLiveData<T> =
             handle?.getLiveData(key, initialValue) ?: MutableLiveData<T>(initialValue)
 
-        protected open fun valueSetter(fieldValue: MutableLiveData<T>, distinctUntilChanged: Boolean): (T?) -> Boolean = {
+        protected open fun valueSetter(
+            fieldValue: MutableLiveData<T>,
+            distinctUntilChanged: Boolean,
+        ): (T?) -> Boolean = {
             it.checkPersistable()
             if (distinctUntilChanged) {
                 fieldValue.setValueIfNew(it)
@@ -392,7 +422,7 @@ class Field<T> private constructor(
             //Проверка для того, чтобы краш был сразу при первой попытке установки nonSerializable или nonParcelable
             //значения поля при использовании persist, а не при попытке сохранения в Bundle (которая отлавливается не всегда)
             check(this is Serializable || this is Parcelable) {
-                "Attempt to persist non serializable or parcelable value."
+                "Attempt to persist non serializable or parcelable object: \"${this.let { it::class.java.simpleName }}\"."
             }
         }
 
@@ -405,7 +435,10 @@ class Field<T> private constructor(
         initialValue: String = EMPTY_STRING,
     ) : Builder<String>(initialValue) {
 
-        override fun valueSetter(fieldValue: MutableLiveData<String>, distinctUntilChanged: Boolean): (String?) -> Boolean = {
+        override fun valueSetter(
+            fieldValue: MutableLiveData<String>,
+            distinctUntilChanged: Boolean,
+        ): (String?) -> Boolean = {
             if (distinctUntilChanged) {
                 fieldValue.setValueIfNew(it.orEmpty())
             } else {

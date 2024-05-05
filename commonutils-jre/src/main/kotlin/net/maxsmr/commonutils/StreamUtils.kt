@@ -179,7 +179,7 @@ fun InputStream.readString(charsetName: String = CHARSET_DEFAULT): String? = try
 
 @Throws(IOException::class)
 @JvmOverloads
-fun InputStream.readStringOrThrow(charsetName: String = CHARSET_DEFAULT): String? {
+fun InputStream.readStringOrThrow(charsetName: String = CHARSET_DEFAULT): String {
     val result = ByteArrayOutputStream()
     copyStreamOrThrow(result)
     return result.toString(charsetName)

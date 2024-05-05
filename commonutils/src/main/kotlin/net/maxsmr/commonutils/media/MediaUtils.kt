@@ -56,15 +56,15 @@ fun getExtensionFromMimeType(mimeType: String?): String =
     mimeType?.let { MimeTypeMap.getSingleton().getExtensionFromMimeType(mimeType) }.orEmpty()
 
 fun getContentName(
-    name: String = EMPTY_STRING,
+    name: String?,
     url: String?,
     contentDisposition: String? = null,
-): String = name.ifEmpty {
+): String = name.orEmpty().ifEmpty {
     URLUtil.guessFileName(
         url,
         contentDisposition,
         MimeTypeMap.getFileExtensionFromUrl(url)
-    ) ?: EMPTY_STRING
+    ).orEmpty()
 }
 
 fun File.isPrivate(context: Context): Boolean {
@@ -126,8 +126,8 @@ fun getFilteredExternalFilesDirs(
 ): Set<File> {
     val result: MutableSet<File> = ArraySet()
 
-    val rawSecondaryStoragePath: String = System.getenv(ENV_SECONDARY_STORAGE) ?: EMPTY_STRING
-    val rawExternalStoragePath: String = System.getenv(ENV_EXTERNAL_STORAGE) ?: EMPTY_STRING
+    val rawSecondaryStoragePath: String = System.getenv(ENV_SECONDARY_STORAGE).orEmpty()
+    val rawExternalStoragePath: String = System.getenv(ENV_EXTERNAL_STORAGE).orEmpty()
     val primaryExternalStorage: File = Environment.getExternalStorageDirectory()
 
     fun includeRemovable(path: File) = includeRemovable
@@ -239,7 +239,7 @@ fun scanFiles(
         filesMap.values.toTypedArray()
     ) { path, uri ->
         uri?.let {
-            onScanCompletedListener?.invoke(path ?: EMPTY_STRING, it)
+            onScanCompletedListener?.invoke(path.orEmpty(), it)
         }
     }
 }
@@ -290,7 +290,7 @@ fun Uri?.getPath(context: Context): String {
                 fun Uri.replaceRawInPath(): String {
                     return path?.replaceFirst("^/document/raw:".toRegex(), EMPTY_STRING)
                         ?.replaceFirst("^raw:".toRegex(), EMPTY_STRING)
-                        ?: EMPTY_STRING
+                       .orEmpty()
                 }
 
                 if (isAtLeastMarshmallow()) {
@@ -370,14 +370,14 @@ fun Uri?.getPath(context: Context): String {
                     contentUri = MediaStore.Audio.Media.EXTERNAL_CONTENT_URI
                 }
                 return contentUri?.getDataColumn(context.contentResolver, "_id=?", listOf(split[1]))
-                    ?: EMPTY_STRING
+                   .orEmpty()
             }
         }
     } else if (this.isContentScheme()) {
         // Return the remote address
         return if (isGooglePhotosUri(this)) {
             val data = this.lastPathSegment
-            data ?: EMPTY_STRING
+            data.orEmpty()
         } else {
             if (isAtLeastQ()) {
                 logger.e("Can't retrieve path because of version >= Q!")
@@ -388,7 +388,7 @@ fun Uri?.getPath(context: Context): String {
         }
     } else if (this.isFileScheme()) {
         val data = this.path
-        return data ?: EMPTY_STRING
+        return data.orEmpty()
     }
     return EMPTY_STRING
 }
@@ -451,7 +451,7 @@ fun Uri.getDataColumn(
     selection,
     selectionArgs
 )
-    ?: EMPTY_STRING
+   .orEmpty()
 
 /**
  * @param uri The Uri to check.
@@ -825,7 +825,7 @@ fun String?.toBase64(
  */
 @JvmOverloads
 fun ByteArray?.toBase64(flags: Int = Base64.DEFAULT): String =
-    this?.let { Base64.encodeToString(this, flags) } ?: EMPTY_STRING
+    this?.let { Base64.encodeToString(this, flags) }.orEmpty()
 
 @Throws(RuntimeException::class)
 private fun createExifOrThrow(file: File?) =
