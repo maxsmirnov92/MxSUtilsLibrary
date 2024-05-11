@@ -1,13 +1,17 @@
 package net.maxsmr.commonutils.conversion
 
 import net.maxsmr.commonutils.collection.toSortedSetExclude
+import net.maxsmr.commonutils.conversion.SizeUnit.Companion.SIZE_UNIT_BYTES_LARGEST
+import net.maxsmr.commonutils.conversion.SizeUnit.Companion.SIZE_UNIT_BYTES_SMALLEST
 import net.maxsmr.commonutils.number.*
+import java.lang.Double.isInfinite
+import java.lang.Double.isNaN
 import java.math.BigDecimal
 
 enum class SizeUnit {
     BYTES {
-        override fun toBytes(s: Double): Long {
-            return s.toLong()
+        override fun toBytes(s: Double): Double {
+            return s
         }
 
         override fun toKBytes(s: Double): Double {
@@ -22,25 +26,17 @@ enum class SizeUnit {
             return s / C3
         }
 
-        override fun toBits(s: Double): Long {
-            return toBitsFromBytes(s.toLong())
+        override fun toTBytes(s: Double): Double {
+            return s / C4
         }
 
-        override fun toKBits(s: Double): Long {
-            return toBitsFromBytes(toKBytes(s).toLong())
-        }
-
-        override fun toMBits(s: Double): Long {
-            return toBitsFromBytes(toMBytes(s).toLong())
-        }
-
-        override fun toGBits(s: Double): Long {
-            return toBitsFromBytes(toGBytes(s).toLong())
+        override fun toPBytes(s: Double): Double {
+            return s / C5
         }
     },
     KBYTES {
-        override fun toBytes(s: Double): Long {
-            return (s * C1).toLong()
+        override fun toBytes(s: Double): Double {
+            return s * C1
         }
 
         override fun toKBytes(s: Double): Double {
@@ -55,25 +51,18 @@ enum class SizeUnit {
             return s / C2
         }
 
-        override fun toBits(s: Double): Long {
-            return toBitsFromBytes(s.toLong())
+        override fun toTBytes(s: Double): Double {
+            return s / C3
         }
 
-        override fun toKBits(s: Double): Long {
-            return toBitsFromBytes(toKBytes(s).toLong())
+        override fun toPBytes(s: Double): Double {
+            return s / C4
         }
 
-        override fun toMBits(s: Double): Long {
-            return toBitsFromBytes(toMBytes(s).toLong())
-        }
-
-        override fun toGBits(s: Double): Long {
-            return toBitsFromBytes(toGBytes(s).toLong())
-        }
     },
     MBYTES {
-        override fun toBytes(s: Double): Long {
-            return (s * C2).toLong()
+        override fun toBytes(s: Double): Double {
+            return s * C2
         }
 
         override fun toKBytes(s: Double): Double {
@@ -88,25 +77,17 @@ enum class SizeUnit {
             return s / C1
         }
 
-        override fun toBits(s: Double): Long {
-            return toBitsFromBytes(s.toLong())
+        override fun toTBytes(s: Double): Double {
+            return s / C2
         }
 
-        override fun toKBits(s: Double): Long {
-            return toBitsFromBytes(toKBytes(s).toLong())
-        }
-
-        override fun toMBits(s: Double): Long {
-            return toBitsFromBytes(toMBytes(s).toLong())
-        }
-
-        override fun toGBits(s: Double): Long {
-            return toBitsFromBytes(toGBytes(s).toLong())
+        override fun toPBytes(s: Double): Double {
+            return s / C3
         }
     },
     GBYTES {
-        override fun toBytes(s: Double): Long {
-            return (s * C3).toLong()
+        override fun toBytes(s: Double): Double {
+            return s * C3
         }
 
         override fun toKBytes(s: Double): Double {
@@ -121,281 +102,599 @@ enum class SizeUnit {
             return s
         }
 
-        override fun toBits(s: Double): Long {
-            return toBitsFromBytes(s.toLong())
+        override fun toTBytes(s: Double): Double {
+            return s / C1
         }
 
-        override fun toKBits(s: Double): Long {
-            return toBitsFromBytes(toKBytes(s).toLong())
-        }
-
-        override fun toMBits(s: Double): Long {
-            return toBitsFromBytes(toMBytes(s).toLong())
-        }
-
-        override fun toGBits(s: Double): Long {
-            return toBitsFromBytes(toGBytes(s).toLong())
+        override fun toPBytes(s: Double): Double {
+            return s / C2
         }
     },
-    BITS {
-        override fun toBytes(s: Double): Long {
-            return toBytesFromBits(s.toLong())
+
+    TBYTES {
+        override fun toBytes(s: Double): Double {
+            return s * C4
         }
 
         override fun toKBytes(s: Double): Double {
-            return toBytesFromBits(toKBits(s)).toDouble()
+            return s * C3
         }
 
         override fun toMBytes(s: Double): Double {
-            return toBytesFromBits(toMBits(s)).toDouble()
+            return s * C2
         }
 
         override fun toGBytes(s: Double): Double {
-            return toBytesFromBits(toGBits(s)).toDouble()
+            return s * C1
         }
 
-        override fun toBits(s: Double): Long {
-            return s.toLong()
+        override fun toTBytes(s: Double): Double {
+            return s
         }
 
-        override fun toKBits(s: Double): Long {
-            return (s / C1).toLong()
-        }
-
-        override fun toMBits(s: Double): Long {
-            return (s / C2).toLong()
-        }
-
-        override fun toGBits(s: Double): Long {
-            return (s / C3).toLong()
+        override fun toPBytes(s: Double): Double {
+            return s / C1
         }
     },
-    KBITS {
-        override fun toBytes(s: Double): Long {
-            return toBytesFromBits(s.toLong())
+
+    PBYTES {
+
+        override fun toBytes(s: Double): Double {
+            return s * C5
         }
 
         override fun toKBytes(s: Double): Double {
-            return toBytesFromBits(toKBits(s)).toDouble()
+            return s * C4
         }
 
         override fun toMBytes(s: Double): Double {
-            return toBytesFromBits(toMBits(s)).toDouble()
+            return s * C3
         }
 
         override fun toGBytes(s: Double): Double {
-            return toBytesFromBits(toGBits(s)).toDouble()
+            return s * C2
         }
 
-        override fun toBits(s: Double): Long {
-            return (s * C1).toLong()
+        override fun toTBytes(s: Double): Double {
+            return s * C2
         }
 
-        override fun toKBits(s: Double): Long {
-            return s.toLong()
-        }
-
-        override fun toMBits(s: Double): Long {
-            return (s / C2).toLong()
-        }
-
-        override fun toGBits(s: Double): Long {
-            return (s / C3).toLong()
-        }
-    },
-    MBITS {
-        override fun toBytes(s: Double): Long {
-            return toBytesFromBits(s.toLong())
-        }
-
-        override fun toKBytes(s: Double): Double {
-            return toBytesFromBits(toKBits(s)).toDouble()
-        }
-
-        override fun toMBytes(s: Double): Double {
-            return toBytesFromBits(toMBits(s)).toDouble()
-        }
-
-        override fun toGBytes(s: Double): Double {
-            return toBytesFromBits(toGBits(s)).toDouble()
-        }
-
-        override fun toBits(s: Double): Long {
-            return (s * C2).toLong()
-        }
-
-        override fun toKBits(s: Double): Long {
-            return (s * C1).toLong()
-        }
-
-        override fun toMBits(s: Double): Long {
-            return s.toLong()
-        }
-
-        override fun toGBits(s: Double): Long {
-            return (s / C1).toLong()
-        }
-    },
-    GBITS {
-        override fun toBytes(s: Double): Long {
-            return toBytesFromBits(s.toLong())
-        }
-
-        override fun toKBytes(s: Double): Double {
-            return toBytesFromBits(toKBits(s)).toDouble()
-        }
-
-        override fun toMBytes(s: Double): Double {
-            return toBytesFromBits(toMBits(s)).toDouble()
-        }
-
-        override fun toGBytes(s: Double): Double {
-            return toBytesFromBits(toGBits(s)).toDouble()
-        }
-
-        override fun toBits(s: Double): Long {
-            return (s * C3).toLong()
-        }
-
-        override fun toKBits(s: Double): Long {
-            return (s * C2).toLong()
-        }
-
-        override fun toMBits(s: Double): Long {
-            return (s * C1).toLong()
-        }
-
-        override fun toGBits(s: Double): Long {
-            return s.toLong()
+        override fun toPBytes(s: Double): Double {
+            return s
         }
     };
 
-    abstract fun toBytes(s: Double): Long
+    abstract fun toBytes(s: Double): Double
     abstract fun toKBytes(s: Double): Double
     abstract fun toMBytes(s: Double): Double
     abstract fun toGBytes(s: Double): Double
-    abstract fun toBits(s: Double): Long
-    abstract fun toKBits(s: Double): Long
-    abstract fun toMBits(s: Double): Long
-    abstract fun toGBits(s: Double): Long
+    abstract fun toTBytes(s: Double): Double
+    abstract fun toPBytes(s: Double): Double
 
-    val isBits: Boolean
-        get() = this === BITS || this === KBITS || this === MBITS || this === GBITS
+    fun toBits(s: Double): Long {
+        return toBitsFromBytes(s)
+    }
 
-    val isBytes: Boolean
-        get() = this === BYTES || this === KBYTES || this === MBYTES || this === GBYTES
+    fun toKBits(s: Double): Long {
+        return toBitsFromBytes(toKBytes(s))
+    }
+
+    fun toMBits(s: Double): Long {
+        return toBitsFromBytes(toMBytes(s))
+    }
+
+    fun toGBits(s: Double): Long {
+        return toBitsFromBytes(toGBytes(s))
+    }
+
+    fun toTBits(s: Double): Long {
+        return toBitsFromBytes(toTBytes(s))
+    }
+
+    fun toPBits(s: Double): Long {
+        return toBitsFromBytes(toPBytes(s))
+    }
 
     companion object {
 
-        const val C0: Long = 8
+        const val C0 = 8L
         const val C1 = 1024L
         const val C2 = C1 * 1024L
         const val C3 = C2 * 1024L
+        const val C4 = C3 * 1024L
+        const val C5 = C4 * 1024L
 
-        fun toBitsFromBytes(s: Long): Long {
-            return s * C0
+        val SIZE_UNIT_BYTES_LARGEST = PBYTES
+        val SIZE_UNIT_BYTES_SMALLEST = BYTES
+
+        fun toBitsFromBytes(s: Double): Long {
+            return (s * C0).toLong()
         }
 
-        fun toBytesFromBits(s: Long): Long {
-            return (s.toDouble() / C0).toLong()
-        }
-
-        fun convert(what: Long, from: SizeUnit, to: SizeUnit): Number {
+        fun convert(value: Number, from: SizeUnit, to: SizeUnit): Number {
             return when (to) {
-                BITS -> from.toBits(what.toDouble())
-                BYTES -> from.toBytes(what.toDouble())
-                KBITS -> from.toKBits(what.toDouble())
-                KBYTES -> from.toKBytes(what.toDouble())
-                MBITS -> from.toMBits(what.toDouble())
-                MBYTES -> from.toMBytes(what.toDouble())
-                GBITS -> from.toGBits(what.toDouble())
-                GBYTES -> from.toGBytes(what.toDouble())
+                BYTES -> from.toBytes(value.toDouble())
+                KBYTES -> from.toKBytes(value.toDouble())
+                MBYTES -> from.toMBytes(value.toDouble())
+                GBYTES -> from.toGBytes(value.toDouble())
+                TBYTES -> from.toTBytes(value.toDouble())
+                PBYTES -> from.toPBytes(value.toDouble())
+            }
+        }
+
+        fun Collection<SizeUnit>.toExcluded(): Set<SizeUnit> {
+            return if (isEmpty()) {
+                SizeUnit.entries.toSet()
+            } else {
+                SizeUnit.entries.toSet() - this.toSet()
             }
         }
     }
 }
 
-// TODO timeUnitsToInclude
+enum class SizeUnitBits {
+
+    BITS {
+        override fun toBits(s: Long): Long {
+            return s
+        }
+
+        override fun toKBits(s: Long): Long {
+            return (s / SizeUnit.C1)
+        }
+
+        override fun toMBits(s: Long): Long {
+            return (s / SizeUnit.C2)
+        }
+
+        override fun toGBits(s: Long): Long {
+            return (s / SizeUnit.C3)
+        }
+
+        override fun toTBits(s: Long): Long {
+            return (s / SizeUnit.C4)
+        }
+
+        override fun toPBits(s: Long): Long {
+            return (s / SizeUnit.C5)
+        }
+    },
+    KBITS {
+
+
+        override fun toBits(s: Long): Long {
+            return (s * SizeUnit.C1)
+        }
+
+        override fun toKBits(s: Long): Long {
+            return s
+        }
+
+        override fun toMBits(s: Long): Long {
+            return (s / SizeUnit.C1)
+        }
+
+        override fun toGBits(s: Long): Long {
+            return (s / SizeUnit.C2)
+        }
+
+        override fun toTBits(s: Long): Long {
+            return (s / SizeUnit.C3)
+        }
+
+        override fun toPBits(s: Long): Long {
+            return (s / SizeUnit.C4)
+        }
+    },
+    MBITS {
+
+
+        override fun toBits(s: Long): Long {
+            return (s * SizeUnit.C2)
+        }
+
+        override fun toKBits(s: Long): Long {
+            return (s * SizeUnit.C1)
+        }
+
+        override fun toMBits(s: Long): Long {
+            return s
+        }
+
+        override fun toGBits(s: Long): Long {
+            return (s / SizeUnit.C1)
+        }
+
+        override fun toTBits(s: Long): Long {
+            return (s / SizeUnit.C2)
+        }
+
+        override fun toPBits(s: Long): Long {
+            return (s / SizeUnit.C3)
+        }
+    },
+    GBITS {
+        override fun toBits(s: Long): Long {
+            return (s * SizeUnit.C3)
+        }
+
+        override fun toKBits(s: Long): Long {
+            return (s * SizeUnit.C2)
+        }
+
+        override fun toMBits(s: Long): Long {
+            return (s * SizeUnit.C1)
+        }
+
+        override fun toGBits(s: Long): Long {
+            return s
+        }
+
+        override fun toTBits(s: Long): Long {
+            return (s / SizeUnit.C1)
+        }
+
+        override fun toPBits(s: Long): Long {
+            return (s / SizeUnit.C2)
+        }
+    },
+
+    TBITS {
+        override fun toBits(s: Long): Long {
+            return (s * SizeUnit.C4)
+        }
+
+        override fun toKBits(s: Long): Long {
+            return (s * SizeUnit.C3)
+        }
+
+        override fun toMBits(s: Long): Long {
+            return (s * SizeUnit.C2)
+        }
+
+        override fun toGBits(s: Long): Long {
+            return (s * SizeUnit.C1)
+        }
+
+        override fun toTBits(s: Long): Long {
+            return s
+        }
+
+        override fun toPBits(s: Long): Long {
+            return (s / SizeUnit.C1)
+        }
+    },
+
+    PBITS {
+        override fun toBits(s: Long): Long {
+            return (s * SizeUnit.C5)
+        }
+
+        override fun toKBits(s: Long): Long {
+            return (s * SizeUnit.C4)
+        }
+
+        override fun toMBits(s: Long): Long {
+            return (s * SizeUnit.C3)
+        }
+
+        override fun toGBits(s: Long): Long {
+            return (s * SizeUnit.C2)
+        }
+
+        override fun toTBits(s: Long): Long {
+            return (s * SizeUnit.C1)
+        }
+
+        override fun toPBits(s: Long): Long {
+            return s
+        }
+    };
+
+    abstract fun toBits(s: Long): Long
+    abstract fun toKBits(s: Long): Long
+    abstract fun toMBits(s: Long): Long
+    abstract fun toGBits(s: Long): Long
+    abstract fun toTBits(s: Long): Long
+    abstract fun toPBits(s: Long): Long
+
+    fun toBytes(s: Long): Double {
+        return toBytesFromBits(s)
+    }
+
+    fun toKBytes(s: Long): Double {
+        return toBytesFromBits(toKBits(s))
+    }
+
+    fun toMBytes(s: Long): Double {
+        return toBytesFromBits(toMBits(s))
+    }
+
+    fun toGBytes(s: Long): Double {
+        return toBytesFromBits(toGBits(s))
+    }
+
+    fun toTBytes(s: Long): Double {
+        return toBytesFromBits(toTBits(s))
+    }
+
+    fun toPBytes(s: Long): Double {
+        return toBytesFromBits(toPBits(s))
+    }
+
+    companion object {
+
+        val SIZE_UNIT_BITS_LARGEST = PBITS
+        val SIZE_UNIT_BITS_SMALLEST = BITS
+
+        fun toBytesFromBits(s: Long): Double {
+            return s.toDouble() / SizeUnit.C0
+        }
+
+        fun convert(value: Number, from: SizeUnitBits, to: SizeUnitBits): Number {
+            return when (to) {
+                BITS -> from.toBits(value.toLong())
+                KBITS -> from.toKBits(value.toLong())
+                MBITS -> from.toMBits(value.toLong())
+                GBITS -> from.toGBits(value.toLong())
+                TBITS -> from.toTBits(value.toLong())
+                PBITS -> from.toPBits(value.toLong())
+            }
+        }
+
+        fun Collection<SizeUnitBits>.toExcluded(): Set<SizeUnitBits> {
+            return if (isEmpty()) {
+                SizeUnitBits.entries.toSet()
+            } else {
+                SizeUnitBits.entries.toSet() - this.toSet()
+            }
+        }
+    }
+}
+
 /**
- * @param unit for [size]
- * @param sizeUnitsToExclude list of units to avoid in result string
- * @param precision null - not allow fraction, 0 - unlimited
+ * @param size неотрицательный размер в [sizeUnit]
+ * @param sizeUnitsToExclude единицы, нежелательные в итоговом результате
+ * @param ignoreExclusionIfOnly если true и проверяемая единица единственная и находится в исключениях - будет включено в результат
+ * (если в исключениях также более мелкая за ней - попадёт эта, более крупная)
+ * @param precision кол-во знаков после запятой: null - оставить получившийся Double, 0 - без дробной части
+ * @param singleResult true, если в результате должен быть единственный [SizeUnit], округлённый в соот-ии с precision
+ * @param emptyMapIfZero если false, при пустом результате будет дописан 0 с минимальной единицей
+ * @return мапа: единица измерения + количество
  */
 @JvmOverloads
-fun sizeToMap(
-        size: Double,
-        sizeUnit: SizeUnit,
-        sizeUnitsToExclude: Set<SizeUnit> = setOf(),
-        precision: Int? = null
+fun decomposeSize(
+    size: Number,
+    sizeUnit: SizeUnit,
+    sizeUnitsToExclude: Set<SizeUnit> = setOf(),
+    ignoreExclusionIfOnly: Boolean = true,
+    precision: Int? = 0,
+    singleResult: Boolean = false,
+    emptyMapIfZero: Boolean = true,
 ): Map<SizeUnit, Number> {
-    require(size >= 0) { "Incorrect size: $size" }
-    require(sizeUnit.isBytes) { "sizeUnit must be bytes only" }
+
+    /**
+     * @return ненулевой Double/Long или null
+     */
+    fun Number.roundOrNull(hasSmaller: Boolean, precision: Int?): Number? {
+        return if (this is Long) {
+            this.takeIf { it != 0L }
+        } else {
+            val fraction = this.toBigDecimal().fraction()
+            // у этой отбрасываем дробную часть, если:
+           if (precision == 0 // целевое число знаков после запятой 0
+                || fraction.isZero() // или дробная часть 0
+                || fraction.isGreater(BigDecimal.ZERO) && hasSmaller // или есть следующая по мелкости
+            ) {
+                this.toLong().takeIf { it != 0L }
+            } else {
+                val value = this.toDouble()
+                (if (precision == null) {
+                    // без изменений
+                    value
+                } else {
+                    // округление через String.format с точностью precision
+                    value.roundFormatted(precision)
+                }).takeIf { it.isNotZero() }
+            }
+        }
+    }
+
+    val result = decomposeSize(size, sizeUnit, ignoreExclusionIfOnly, sizeUnitsToExclude, setOf()).toMutableMap()
+    if (singleResult && result.size > 1) {
+        val largestUnit = result.keys.first()
+        val value = SizeUnit.convert(size, sizeUnit, largestUnit)
+        result.clear()
+        result[largestUnit] = value
+    }
+
+    // после финального шага округление по всем в соот-ии с precision
+    val iterator = result.toMap().iterator()
+    result.clear()
+    while (iterator.hasNext()) {
+        val current = iterator.next()
+        current.value.roundOrNull(iterator.hasNext(), precision)?.let {
+            result[current.key] = it
+        }
+    }
+
+    if (!emptyMapIfZero && result.isEmpty() && !sizeUnitsToExclude.contains(SIZE_UNIT_BYTES_SMALLEST)) {
+        // по желанию при пустой мапе докидываем 0
+        result[SIZE_UNIT_BYTES_SMALLEST] = 0
+    }
+    return result
+}
+
+/**
+ * @param alreadyDecomposedUnits единицы, уже включённые в результат
+ */
+private fun decomposeSize(
+    size: Number,
+    sizeUnit: SizeUnit,
+    ignoreExclusionIfOnly: Boolean,
+    sizeUnitsToExclude: Set<SizeUnit>,
+    alreadyDecomposedUnits: Set<SizeUnit>,
+): Map<SizeUnit, Number> {
+    val size = size.toDouble()
+    if (size < 0 || isInfinite(size) || isNaN(size)) return mapOf()
 
     val s = sizeUnit.toBytes(size)
 
+    fun SizeUnit.isInRange() = when (this) {
+        SizeUnit.PBYTES -> s >= SizeUnit.C5
+        SizeUnit.TBYTES -> s >= SizeUnit.C4 && s < SizeUnit.C5
+        SizeUnit.GBYTES -> s >= SizeUnit.C3 && s < SizeUnit.C4
+        SizeUnit.MBYTES -> s >= SizeUnit.C2 && s < SizeUnit.C3
+        SizeUnit.KBYTES -> s >= SizeUnit.C1 && s < SizeUnit.C2
+        SizeUnit.BYTES -> s < SizeUnit.C1
+    }
+
+    fun SizeUnit.isInRangeOrBiggerExcluded(): Boolean {
+        if (isInRange()) {
+            // эта находится в диапазоне - необходимое и достаточное условие
+            return true
+        }
+        if (this != SIZE_UNIT_BYTES_LARGEST) {
+            // следующая по крупности от этой единица проверяется на вхождение в исключения
+            val biggerUnit = SizeUnit.entries.getOrNull(this.ordinal + 1)
+            return biggerUnit != null && sizeUnitsToExclude.contains(biggerUnit)
+        }
+        return false
+    }
+
+    fun SizeUnit.checkAcceptable(): Boolean {
+        if (!this.isInRangeOrBiggerExcluded()) {
+            return false
+        }
+        val smallerUnits = SizeUnit.entries.filter {
+            // более мелкая единица по отношению к этой, не в исключениях
+            if (!(it.ordinal < this.ordinal
+                        && !sizeUnitsToExclude.contains(it))
+            ) {
+                return@filter false
+            }
+            // текущее значение попадает в диапазон предыдущей единицы
+            val smallerUnit = SizeUnit.entries.getOrNull(this.ordinal - 1)
+            smallerUnit?.isInRangeOrBiggerExcluded() ?: false
+        }
+        // данная единица не в исключениях - необходимое и достаточное условие
+        return !sizeUnitsToExclude.contains(this)
+                // ИЛИ она в исключениях, НО:
+                || ignoreExclusionIfOnly &&
+                ( // отсутствуют: ранее заполненные
+                        alreadyDecomposedUnits.isEmpty()
+                                // И более мелкие единицы НЕ в исключениях
+                                // для попадания в мапу на следующих decomposeTime
+                                && smallerUnits.isEmpty()
+                        )
+    }
+
     val result = sortedMapOf<SizeUnit, Number>()
 
-    if (s >= SizeUnit.C3 && !sizeUnitsToExclude.contains(SizeUnit.GBYTES)) {
-        val gBytes = SizeUnit.BYTES.toGBytes(s.toDouble())
+    if (SizeUnit.PBYTES.checkAcceptable()) {
+        val pBytes = SizeUnit.BYTES.toPBytes(s)
+        val pBytesLong = pBytes.toLong().toDouble()
+        if (pBytes.isNotZero()) {
+            result[SizeUnit.PBYTES] = pBytes
+        }
+        result.putAll(
+            decomposeSizeStep(
+                SizeUnit.PBYTES.toBytes(pBytesLong),
+                s,
+                sizeUnitsToExclude,
+                ignoreExclusionIfOnly,
+                result.keys,
+            )
+        )
+    } else if (SizeUnit.TBYTES.checkAcceptable()) {
+        val tBytes = SizeUnit.BYTES.toTBytes(s)
+        val tBytesLong = tBytes.toLong().toDouble()
+        if (tBytes.isNotZero()) {
+            result[SizeUnit.TBYTES] = tBytes
+        }
+        result.putAll(
+            decomposeSizeStep(
+                SizeUnit.TBYTES.toBytes(tBytesLong),
+                s,
+                sizeUnitsToExclude,
+                ignoreExclusionIfOnly,
+                result.keys,
+            )
+        )
+    } else if (SizeUnit.GBYTES.checkAcceptable()) {
+        val gBytes = SizeUnit.BYTES.toGBytes(s)
         val gBytesLong = gBytes.toLong().toDouble()
         if (gBytes.isNotZero()) {
             result[SizeUnit.GBYTES] = gBytes
         }
-        result.putAll(sizeToMapStep(SizeUnit.GBYTES.toBytes(gBytesLong), s, sizeUnitsToExclude, precision))
-    } else if ((sizeUnitsToExclude.contains(SizeUnit.GBYTES) || s >= SizeUnit.C2 && s < SizeUnit.C3)
-            && !sizeUnitsToExclude.contains(SizeUnit.MBYTES)) {
-        val mBytes = SizeUnit.BYTES.toMBytes(s.toDouble())
+        result.putAll(
+            decomposeSizeStep(
+                SizeUnit.GBYTES.toBytes(gBytesLong),
+                s,
+                sizeUnitsToExclude,
+                ignoreExclusionIfOnly,
+                result.keys,
+            )
+        )
+    } else if (SizeUnit.MBYTES.checkAcceptable()) {
+        val mBytes = SizeUnit.BYTES.toMBytes(s)
         val mBytesLong = mBytes.toLong().toDouble()
         if (mBytes.isNotZero()) {
             result[SizeUnit.MBYTES] = mBytes
         }
-        result.putAll(sizeToMapStep(SizeUnit.MBYTES.toBytes(mBytesLong), s, sizeUnitsToExclude.toSortedSetExclude(setOf(SizeUnit.GBYTES)), precision))
-    } else if ((sizeUnitsToExclude.contains(SizeUnit.MBYTES) || s >= SizeUnit.C1 && s < SizeUnit.C2)
-            && !sizeUnitsToExclude.contains(SizeUnit.KBYTES)) {
-        val kBytes = SizeUnit.BYTES.toKBytes(s.toDouble())
+        result.putAll(
+            decomposeSizeStep(
+                SizeUnit.MBYTES.toBytes(mBytesLong),
+                s,
+                sizeUnitsToExclude.toSortedSetExclude(setOf(SizeUnit.GBYTES)),
+                ignoreExclusionIfOnly,
+                result.keys,
+            )
+        )
+    } else if (SizeUnit.KBYTES.checkAcceptable()) {
+        val kBytes = SizeUnit.BYTES.toKBytes(s)
         val kBytesLong = kBytes.toLong().toDouble()
         if (kBytes.isNotZero()) {
             result[SizeUnit.KBYTES] = kBytes
         }
-        result.putAll(sizeToMapStep(SizeUnit.KBYTES.toBytes(kBytesLong), s, sizeUnitsToExclude.toSortedSetExclude(setOf(SizeUnit.MBYTES)), precision))
-    } else if (s < SizeUnit.C1 && !sizeUnitsToExclude.contains(SizeUnit.BYTES)) {
-        if (s != 0L) {
+        result.putAll(
+            decomposeSizeStep(
+                SizeUnit.KBYTES.toBytes(kBytesLong),
+                s,
+                sizeUnitsToExclude.toSortedSetExclude(setOf(SizeUnit.MBYTES)),
+                ignoreExclusionIfOnly,
+                result.keys,
+            )
+        )
+    } else if (SizeUnit.BYTES.checkAcceptable()) {
+        if (s.isNotZero()) {
             result[SizeUnit.BYTES] = s
         }
     }
 
-    val iterator = result.toSortedMap(reverseOrder()).iterator()
-    result.clear()
-    while (iterator.hasNext()) {
-        val current = iterator.next()
-        val fraction = current.value.toBigDecimal().fraction()
-        result[current.key] = if (precision == null ||
-                fraction.isZero() ||
-                fraction.isGreater(BigDecimal.ZERO) && iterator.hasNext()) {
-            current.value.toLong()
-        } else {
-            if (precision == 0) {
-                current.value
-            } else {
-                current.value.toDouble().round(precision)
-            }
-        }
-    }
-
+    // порядок сейчас от мелких к крупным - возвращаем результат в обратном порядке по ordinal
     return result.toSortedMap(reverseOrder())
 }
 
-private fun sizeToMapStep(
-        currentBytes: Long,
-        sourceBytes: Long,
-        sizeUnitsToExclude: Set<SizeUnit>,
-        precision: Int?
+private fun decomposeSizeStep(
+    currentBytes: Double,
+    sourceBytes: Double,
+    sizeUnitsToExclude: Set<SizeUnit>,
+    ignoreExclusionIfOnly: Boolean,
+    alreadyDecomposedUnits: Set<SizeUnit>,
 ): Map<SizeUnit, Number> {
     if (currentBytes > 0) {
         val restBytes = sourceBytes - currentBytes
         if (restBytes > 0) {
-            return sizeToMap(restBytes.toDouble(), SizeUnit.BYTES, sizeUnitsToExclude, precision)
+            return decomposeSize(
+                restBytes,
+                SizeUnit.BYTES,
+                ignoreExclusionIfOnly,
+                sizeUnitsToExclude,
+                alreadyDecomposedUnits,
+            )
         }
     }
     return emptyMap()
 }
+

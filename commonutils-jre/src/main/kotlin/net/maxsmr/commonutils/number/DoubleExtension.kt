@@ -77,7 +77,8 @@ fun Double.multiply(another: Double) =
 /**
  * Округление по правилам математики с заданной точностью
  */
-fun Double.round(precision: Int): Double {
+// FIXME not working
+private fun Double.round(precision: Int): Double {
     if (precision < 0) return this
     if (precision == 0) return toInt().toDouble()
     val decimalPart = this.toString().split(".")[1]

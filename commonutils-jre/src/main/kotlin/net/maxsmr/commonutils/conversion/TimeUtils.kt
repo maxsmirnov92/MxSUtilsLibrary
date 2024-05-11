@@ -12,18 +12,14 @@ private const val TIME_UNIT_C4 = 60000000000L
 private const val TIME_UNIT_C5 = 3600000000000L
 private const val TIME_UNIT_C6 = 86400000000000L
 
-@JvmOverloads
-fun roundTimeIncluded(
-    time: Long,
-    timeUnit: TimeUnit,
-    rule: TimeRoundRule = TimeRoundRule.MORE,
-    timeUnitsToInclude: Set<TimeUnit> = TimeUnit.values().toSet(),
-): Long {
-    return roundTime(time,
-        timeUnit,
-        rule,
-        if (timeUnitsToInclude.isEmpty()) setOf() else values().toSet() - timeUnitsToInclude)
-}
+val TIME_UNIT_LARGEST = DAYS
+val TIME_UNIT_SMALLEST = NANOSECONDS
+
+/**
+ * Округлять только:
+ */
+@JvmField
+val TIME_UNITS_TO_INCLUDE_ROUND_DEFAULT = setOf(MINUTES)
 
 /**
  * @return округленное время в [TimeUnit.NANOSECONDS]
@@ -121,18 +117,6 @@ enum class TimeRoundRule {
     }
 }
 
-fun decomposeTimeSingleIncluded(
-    time: Long,
-    timeUnit: TimeUnit,
-    ignoreExclusionIfOnly: Boolean = true,
-    timeUnitsToInclude: Set<TimeUnit> = TimeUnit.values().toSet(),
-): Pair<Long, TimeUnit>? {
-    return decomposeTimeSingle(time,
-        timeUnit,
-        ignoreExclusionIfOnly,
-        if (timeUnitsToInclude.isEmpty()) setOf() else values().toSet() - timeUnitsToInclude)
-}
-
 fun decomposeTimeSingle(
     time: Long,
     timeUnit: TimeUnit,
@@ -183,28 +167,13 @@ fun decomposeTimeSingle(
  * Если число единиц любого из запрошенных [timeUnitsToInclude] равно 0, то TimeUnit не будет включен в результат
  * (требуется проверять на null в месте вызова функции).
  *
- * @param time количество единиц исходного времени
- * @param timeUnit единицы измерения исходного времени [time]
- * @param emptyMapIfZero вернуть пустую мапу при true, если нет единиц; 0 и наиболее крупная допустимая единица - в противном случае
- * @param ignoreExclusionIfOnly true, если проверяемая единица единственная и находится в исключениях - игнорировать
- * @param timeUnitsToInclude требуемые единицы для разложения. Если отсутствует, разложение производится во всем возможным единицам
- * @return мапа <единица измерения, количество единиц>
+ * @param time неотрицательное исходное время в [timeUnit]
+ * @param timeUnitsToExclude единицы, нежелательные в итоговом результате
+ * @param ignoreExclusionIfOnly если true и проверяемая единица единственная и находится в исключениях - будет включено в результат
+ * (если в исключениях также более мелкая за ней - попадёт эта, более крупная)
+ * @param emptyMapIfZero если false, при пустом результате будет дописан 0 с минимальной единицей
+ * @return мапа: единица измерения + количество
  */
-@JvmOverloads
-fun decomposeTimeIncluded(
-    time: Long,
-    timeUnit: TimeUnit,
-    emptyMapIfZero: Boolean = true,
-    ignoreExclusionIfOnly: Boolean = true,
-    timeUnitsToInclude: Set<TimeUnit> = TimeUnit.values().toSet(),
-): Map<TimeUnit, Long> {
-    return decomposeTime(time,
-        timeUnit,
-        emptyMapIfZero,
-        ignoreExclusionIfOnly,
-        if (timeUnitsToInclude.isEmpty()) setOf() else values().toSet() - timeUnitsToInclude)
-}
-
 @JvmOverloads
 fun decomposeTime(
     time: Long,
@@ -214,13 +183,9 @@ fun decomposeTime(
     timeUnitsToExclude: Set<TimeUnit> = setOf(),
 ): Map<TimeUnit, Long> {
     val result = decomposeTime(time, timeUnit, ignoreExclusionIfOnly, timeUnitsToExclude, setOf()).toMutableMap()
-    if (!emptyMapIfZero && result.isEmpty() && timeUnitsToExclude.isNotEmpty()) {
-        val units = TimeUnit.values().toSortedSet(reverseOrder()).filter {
-            !timeUnitsToExclude.contains(it)
-        }
-        units.getOrNull(0)?.let {
-            result.put(it, 0)
-        }
+    if (!emptyMapIfZero && result.isEmpty() && !timeUnitsToExclude.contains(TIME_UNIT_SMALLEST)) {
+        // по желанию при пустой мапе докидываем 0
+        result[TIME_UNIT_SMALLEST] = 0
     }
     return result
 }
@@ -249,19 +214,24 @@ private fun decomposeTime(
         NANOSECONDS -> t < TIME_UNIT_C1
     }
 
-    fun TimeUnit.isInRangeOrExcluded(): Boolean {
-        // следующая по крупности от этой единица проверяется на вхождение в исключения
-        val biggerUnit = TimeUnit.values().getOrNull(this.ordinal + 1)
-        return this != DAYS && this != NANOSECONDS && biggerUnit != null && timeUnitsToExclude.contains(biggerUnit)
-                // ИЛИ эта находится в диапазоне - необходимое и достаточное условие
-                || isInRange()
+    fun TimeUnit.isInRangeOrBiggerExcluded(): Boolean {
+        if (isInRange()) {
+            // эта находится в диапазоне - необходимое и достаточное условие
+            return true
+        }
+        if (this != TIME_UNIT_LARGEST) {
+            // следующая по крупности от этой единица проверяется на вхождение в исключения
+            val biggerUnit = entries.getOrNull(this.ordinal + 1)
+            return biggerUnit != null && timeUnitsToExclude.contains(biggerUnit)
+        }
+        return false
     }
 
     fun TimeUnit.checkAcceptable(): Boolean {
-        if (!this.isInRangeOrExcluded()) {
+        if (!this.isInRangeOrBiggerExcluded()) {
             return false
         }
-        val smallerUnits = TimeUnit.values().filter {
+        val smallerUnits = entries.filter {
             // более мелкая единица по отношению к этой, не в исключениях
             if (!(it.ordinal < this.ordinal
                         && !timeUnitsToExclude.contains(it))
@@ -269,8 +239,8 @@ private fun decomposeTime(
                 return@filter false
             }
             // текущее значение попадает в диапазон предыдущей единицы
-            val smallerUnit = TimeUnit.values().getOrNull(this.ordinal - 1)
-            smallerUnit?.isInRangeOrExcluded() ?: false
+            val smallerUnit = entries.getOrNull(this.ordinal - 1)
+            smallerUnit?.isInRangeOrBiggerExcluded() ?: false
         }
         // данная единица не в исключениях - необходимое и достаточное условие
         return !timeUnitsToExclude.contains(this)
@@ -291,63 +261,86 @@ private fun decomposeTime(
         if (days != 0L) {
             result[DAYS] = days
         }
-        result.putAll(timeToMapStep(
-            DAYS.toNanos(days),
-            t,
-            timeUnitsToExclude,
-            ignoreExclusionIfOnly,
-            result.keys))
+        result.putAll(
+            decomposeTimeStep(
+                DAYS.toNanos(days),
+                t,
+                timeUnitsToExclude,
+                ignoreExclusionIfOnly,
+                result.keys
+            )
+        )
     } else if (HOURS.checkAcceptable()) {
         val hours = NANOSECONDS.toHours(t)
         if (hours != 0L) {
             result[HOURS] = hours
         }
         // убираем из исключений следующую по крупности единицу, чтобы ещё раз не попасть сюда же
-        result.putAll(timeToMapStep(HOURS.toNanos(hours),
-            t,
-            timeUnitsToExclude.toSortedSetExclude(setOf(DAYS)),
-            ignoreExclusionIfOnly,
-            result.keys))
+        result.putAll(
+            decomposeTimeStep(
+                HOURS.toNanos(hours),
+                t,
+                timeUnitsToExclude.toSortedSetExclude(setOf(DAYS)),
+                ignoreExclusionIfOnly,
+                result.keys
+            )
+        )
     } else if (MINUTES.checkAcceptable()) {
         val minutes = NANOSECONDS.toMinutes(t)
         if (minutes != 0L) {
             result[MINUTES] = minutes
         }
-        result.putAll(timeToMapStep(MINUTES.toNanos(minutes),
-            t,
-            timeUnitsToExclude.toSortedSetExclude(setOf(HOURS)),
-            ignoreExclusionIfOnly,
-            result.keys))
+        result.putAll(
+            decomposeTimeStep(
+                MINUTES.toNanos(minutes),
+                t,
+                timeUnitsToExclude.toSortedSetExclude(setOf(HOURS)),
+                ignoreExclusionIfOnly,
+                result.keys
+            )
+        )
     } else if (SECONDS.checkAcceptable()) {
         val seconds = NANOSECONDS.toSeconds(t)
         if (seconds != 0L) {
             result[SECONDS] = seconds
         }
-        result.putAll(timeToMapStep(SECONDS.toNanos(seconds),
-            t,
-            timeUnitsToExclude.toSortedSetExclude(setOf(MINUTES)),
-            ignoreExclusionIfOnly,
-            result.keys))
+        result.putAll(
+            decomposeTimeStep(
+                SECONDS.toNanos(seconds),
+                t,
+                timeUnitsToExclude.toSortedSetExclude(setOf(MINUTES)),
+                ignoreExclusionIfOnly,
+                result.keys
+            )
+        )
     } else if (MILLISECONDS.checkAcceptable()) {
         val millis = NANOSECONDS.toMillis(t)
         if (millis != 0L) {
             result[MILLISECONDS] = millis
         }
-        result.putAll(timeToMapStep(MILLISECONDS.toNanos(millis),
-            t,
-            timeUnitsToExclude.toSortedSetExclude(setOf(SECONDS)),
-            ignoreExclusionIfOnly,
-            result.keys))
+        result.putAll(
+            decomposeTimeStep(
+                MILLISECONDS.toNanos(millis),
+                t,
+                timeUnitsToExclude.toSortedSetExclude(setOf(SECONDS)),
+                ignoreExclusionIfOnly,
+                result.keys
+            )
+        )
     } else if (MICROSECONDS.checkAcceptable()) {
         val micros = NANOSECONDS.toMicros(t)
         if (micros != 0L) {
             result[MICROSECONDS] = micros
         }
-        result.putAll(timeToMapStep(MICROSECONDS.toNanos(micros),
-            t,
-            timeUnitsToExclude.toSortedSetExclude(setOf(MILLISECONDS)),
-            ignoreExclusionIfOnly,
-            result.keys))
+        result.putAll(
+            decomposeTimeStep(
+                MICROSECONDS.toNanos(micros),
+                t,
+                timeUnitsToExclude.toSortedSetExclude(setOf(MILLISECONDS)),
+                ignoreExclusionIfOnly,
+                result.keys
+            )
+        )
     } else if (NANOSECONDS.checkAcceptable()) {
         if (t != 0L) {
             result[NANOSECONDS] = t
@@ -356,7 +349,7 @@ private fun decomposeTime(
     return result.toSortedMap(reverseOrder())
 }
 
-private fun timeToMapStep(
+private fun decomposeTimeStep(
     currentNanos: Long,
     sourceNanos: Long,
     timeUnitsToExclude: Set<TimeUnit>,
@@ -365,11 +358,21 @@ private fun timeToMapStep(
 ): Map<TimeUnit, Long> {
     val restNanos = sourceNanos - currentNanos
     if (restNanos > 0) {
-        return decomposeTime(restNanos,
+        return decomposeTime(
+            restNanos,
             NANOSECONDS,
             ignoreExclusionIfOnly,
             timeUnitsToExclude,
-            alreadyDecomposedUnits)
+            alreadyDecomposedUnits
+        )
     }
     return emptyMap()
+}
+
+fun Collection<TimeUnit>.toExcluded(): Set<TimeUnit> {
+    return if (isEmpty()) {
+        TimeUnit.entries.toSet()
+    } else {
+        TimeUnit.entries.toSet() - this.toSet()
+    }
 }

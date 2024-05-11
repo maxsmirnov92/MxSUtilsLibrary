@@ -164,7 +164,7 @@
     </plurals>
     <plurals name="time_unit_days_declension">
         <item quantity="zero">дней</item>
-        <item quantity="one">ден</item>
+        <item quantity="one">день</item>
         <item quantity="two">дня</item>
         <item quantity="few">дня</item>
         <item quantity="many">дней</item>

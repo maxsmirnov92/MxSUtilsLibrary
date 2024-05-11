@@ -9,11 +9,11 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatExc
 import net.maxsmr.commonutils.number.isZeroOrNull
 import java.io.UnsupportedEncodingException
 import java.nio.charset.Charset
-import java.util.*
+import java.util.Locale
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("TextUtils")
 
-fun getExtension(name: String?) = name?.substringAfterLast('.').orEmpty()
+fun getExtension(name: String?) = name?.substringAfterLast('.', missingDelimiterValue = EMPTY_STRING).orEmpty()
 
 /**
  * убрать расширение файла
@@ -131,15 +131,13 @@ fun getStubValueWithAppend(
 
 @JvmOverloads
 fun CharSequence?.capFirstChar(
-    tailToLowerCase: Boolean = true,
+    charCaseForTail: CharCase = CharCase.NO_CHANGE,
     locale: Locale = Locale.getDefault()
-) {
-    changeCaseFirstChar(
+): String = changeCaseFirstChar(
         isUpperForFirst = true,
-        charCaseForTail = if (tailToLowerCase) CharCase.LOWER else CharCase.NO_CHANGE,
+        charCaseForTail = charCaseForTail,
         locale = locale
     )
-}
 
 /**
  * Приводит первый символ к верхнему или нижнему регистру, а оставшиеся - меняет
@@ -153,10 +151,10 @@ fun CharSequence?.changeCaseFirstChar(
 ): String {
 
     fun String.changeCase(isUpper: Boolean) =
-        if (isUpper) toUpperCase(locale) else toLowerCase(locale)
+        if (isUpper) uppercase(locale) else lowercase(locale)
 
     var result = EMPTY_STRING
-    if (this != null && this.isNotEmpty()) {
+    if (!this.isNullOrEmpty()) {
         result = this.toString()
         result = if (this.length == 1) {
             result.changeCase(isUpperForFirst)

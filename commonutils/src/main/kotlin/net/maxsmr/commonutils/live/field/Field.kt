@@ -156,8 +156,7 @@ class Field<T> private constructor(
 
     private fun validateEmpty(): Boolean {
         val field = value
-        if (field == null || emptyPredicate(field)) return true
-        return false
+        return field == null || emptyPredicate(field)
     }
 
     /**
@@ -222,7 +221,7 @@ class Field<T> private constructor(
         private val withCaps: Boolean,
         @StringRes
         private val requiredStringResId: Int
-    ) {
+    ): Serializable {
 
         /**
          * Возвращает текстовку текущей подсказки поля

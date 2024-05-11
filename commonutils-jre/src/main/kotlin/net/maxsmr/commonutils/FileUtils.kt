@@ -22,6 +22,8 @@ import java.nio.charset.Charset
 import java.util.*
 import java.util.concurrent.TimeUnit
 
+const val REG_EX_FILE_NAME = "^[^<>:?\"/*|\\\\]+\$"
+
 const val DEPTH_UNLIMITED = -1
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("FileUtils")
@@ -325,12 +327,9 @@ fun isDirExistsOrThrow(dirName: String?, parentPath: String? = null): Boolean =
 fun isDirExistsOrThrow(dir: File?): Boolean = isFileOrDirExistsOrThrow(dir, false)
 
 @Throws(RuntimeException::class)
-private fun isFileOrDirExistsOrThrow(file: File?, isFile: Boolean?): Boolean =
-    try {
-        file != null && file.exists() && (isFile == null || (if (isFile) file.isFile else file.isDirectory))
-    } catch (e: SecurityException) {
-        throw RuntimeException(formatException(e), e)
-    }
+private fun isFileOrDirExistsOrThrow(file: File?, isFile: Boolean?): Boolean {
+    return file != null && file.exists() && (isFile == null || (if (isFile) file.isFile else file.isDirectory))
+}
 
 @JvmOverloads
 fun isDirEmpty(dirName: String?, parentPath: String? = null): Boolean = try {
@@ -1194,13 +1193,7 @@ private fun getFilesRecursive(
 ): Set<File> {
     val result = mutableSetOf<File>()
     var depth = if (depth == 0) DEPTH_UNLIMITED else depth
-    if (depth != DEPTH_UNLIMITED && currentLevel > depth - 1) {
-        notifier?.onExceptionOccurred(
-            FileIterationException(
-                FileIterationException.Type.DEPTH_REACHED,
-                "Collect depth was reached: $depth"
-            )
-        )
+    if (depth != DEPTH_UNLIMITED && currentLevel >= depth) {
         return result
     }
     if (fromFile == null) {
@@ -1800,8 +1793,7 @@ private fun deleteFilesRecursive(
         return result
     }
 
-    if (depth != DEPTH_UNLIMITED && currentLevel > depth - 1) {
-        notifier?.onExceptionOccurred(FileIterationException(FileIterationException.Type.DEPTH_REACHED, "Delete depth was reached: $depth"))
+    if (depth != DEPTH_UNLIMITED && currentLevel >= depth) {
         return result
     }
 
@@ -2043,8 +2035,8 @@ fun getFilesWithLs(
     execTimeout: Long = 0,
     comparator: Comparator<in File>? = null,
     notifier: IShellGetNotifier? = null
-): Map<File, Long> {
-    val collectedMap = mutableMapOf<File, Long>()
+): Map<File, Double> {
+    val collectedMap = mutableMapOf<File, Double>()
     val collected = mutableSetOf<File>()
     for (dir in fromDirs ?: emptyList()) {
         ShellWrapper(false).executeCommand(listOf("ls", dir.absolutePath),
@@ -2327,7 +2319,6 @@ class FileIterationException(
         NOT_EXISTS,
         NOT_VALID,
         NOT_CONFIRMED,
-        DEPTH_REACHED,
         REPLACE_DISABLED,
         NAME_INVALID
     }

@@ -651,7 +651,7 @@ fun compressBitmapToFile(
         return null
     }
     if (quality <= 0) {
-        logger.e("Incorrect quality: \$quality")
+        logger.e("Incorrect quality: $quality")
         return null
     }
     var ext = getFileExtByCompressFormat(format)

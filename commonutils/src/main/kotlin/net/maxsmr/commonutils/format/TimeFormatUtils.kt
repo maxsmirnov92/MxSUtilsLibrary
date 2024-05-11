@@ -1,8 +1,6 @@
 package net.maxsmr.commonutils.format
 
-import android.icu.text.PluralFormat
 import androidx.annotation.PluralsRes
-import androidx.annotation.StringRes
 import net.maxsmr.commonutils.R
 import net.maxsmr.commonutils.conversion.decomposeTime
 import net.maxsmr.commonutils.conversion.decomposeTimeSingle
@@ -15,12 +13,6 @@ import java.util.concurrent.TimeUnit.*
  */
 @JvmField
 val TIME_UNITS_TO_EXCLUDE_DEFAULT = setOf(SECONDS, MILLISECONDS, MICROSECONDS, NANOSECONDS)
-
-/**
- * Округлять только:
- */
-@JvmField
-val TIME_UNITS_TO_INCLUDE_ROUND_DEFAULT = setOf(MINUTES)
 
 @JvmOverloads
 fun decomposeTimeSingleFormatted(
@@ -37,7 +29,7 @@ fun decomposeTimeSingleFormatted(
         ignoreExclusionIfOnly,
         timeUnitsToExclude
     ) { resId, value ->
-        toPluralTextMessage(resId, value, pluralFormat.isFormatted)
+        toPluralTextMessage(resId, value, pluralFormat.isWithValue)
     }
 }
 
@@ -62,7 +54,7 @@ fun decomposeTimeSingleFormatted(
         time,
         pluralFormat
     ) { resId, value ->
-        toPluralTextMessage(resId, value, pluralFormat.isFormatted)
+        toPluralTextMessage(resId, value, pluralFormat.isWithValue)
     }
 }
 
@@ -84,18 +76,18 @@ fun decomposeTimeFormatted(
     time: Long,
     timeUnit: TimeUnit,
     pluralFormat: TimePluralFormat,
-    emptyMapIfZero: Boolean = true,
+    emptyIfZero: Boolean = true,
     ignoreExclusionIfOnly: Boolean = true,
     timeUnitsToExclude: Set<TimeUnit> = setOf(),
 ): List<PluralTextMessage> {
     return decomposeTimeFormatted(time,
         timeUnit,
         pluralFormat,
-        emptyMapIfZero,
+        emptyIfZero,
         ignoreExclusionIfOnly,
         timeUnitsToExclude,
         formatFunc = { resId, value ->
-            toPluralTextMessage(resId, value, pluralFormat.isFormatted)
+            toPluralTextMessage(resId, value, pluralFormat.isWithValue)
         })
 }
 
@@ -104,7 +96,7 @@ fun decomposeTimeFormatted(
     pluralFormat: TimePluralFormat,
 ): List<PluralTextMessage> {
     return decomposeTimeFormatted(decomposedMap, pluralFormat, formatFunc = { resId, value ->
-        toPluralTextMessage(resId, value, pluralFormat.isFormatted)
+        toPluralTextMessage(resId, value, pluralFormat.isWithValue)
     })
 }
 
@@ -113,12 +105,12 @@ fun <F> decomposeTimeFormatted(
     time: Long,
     timeUnit: TimeUnit,
     pluralFormat: TimePluralFormat,
-    emptyMapIfZero: Boolean = true,
+    emptyIfZero: Boolean = true,
     ignoreExclusionIfOnly: Boolean = true,
     timeUnitsToExclude: Set<TimeUnit> = setOf(),
     formatFunc: (Int, Long) -> F,
 ): List<F> {
-    val map = decomposeTime(time, timeUnit, emptyMapIfZero, ignoreExclusionIfOnly, timeUnitsToExclude)
+    val map = decomposeTime(time, timeUnit, emptyIfZero, ignoreExclusionIfOnly, timeUnitsToExclude)
     return decomposeTimeFormatted(map, pluralFormat, formatFunc)
 }
 
@@ -135,75 +127,13 @@ fun <F> decomposeTimeFormatted(
     return result
 }
 
-@StringRes
-private fun TimePluralFormat.getPluralTextResId(timeUnit: TimeUnit): Int {
-    return when (timeUnit) {
-        NANOSECONDS -> {
-            when (this) {
-                TimePluralFormat.NORMAL -> R.plurals.time_unit_nanos
-                TimePluralFormat.NORMAL_FORMAT -> R.plurals.time_unit_nanos_format
-                TimePluralFormat.DECLENSION -> R.plurals.time_unit_nanos_declension
-                TimePluralFormat.DECLENSION_FORMAT -> R.plurals.time_unit_nanos_declension_format
-            }
-        }
-        MICROSECONDS -> {
-            when (this) {
-                TimePluralFormat.NORMAL -> R.plurals.time_unit_micros
-                TimePluralFormat.NORMAL_FORMAT -> R.plurals.time_unit_micros_format
-                TimePluralFormat.DECLENSION -> R.plurals.time_unit_micros_declension
-                TimePluralFormat.DECLENSION_FORMAT -> R.plurals.time_unit_micros_declension_format
-            }
-        }
-        MILLISECONDS -> {
-            when (this) {
-                TimePluralFormat.NORMAL -> R.plurals.time_unit_millis
-                TimePluralFormat.NORMAL_FORMAT -> R.plurals.time_unit_millis_format
-                TimePluralFormat.DECLENSION -> R.plurals.time_unit_millis_declension
-                TimePluralFormat.DECLENSION_FORMAT -> R.plurals.time_unit_millis_declension_format
-            }
-        }
-        SECONDS -> {
-            when (this) {
-                TimePluralFormat.NORMAL -> R.plurals.time_unit_seconds
-                TimePluralFormat.NORMAL_FORMAT -> R.plurals.time_unit_seconds_format
-                TimePluralFormat.DECLENSION -> R.plurals.time_unit_seconds_declension
-                TimePluralFormat.DECLENSION_FORMAT -> R.plurals.time_unit_seconds_declension_format
-            }
-        }
-        MINUTES -> {
-            when (this) {
-                TimePluralFormat.NORMAL -> R.plurals.time_unit_minutes
-                TimePluralFormat.NORMAL_FORMAT -> R.plurals.time_unit_minutes_format
-                TimePluralFormat.DECLENSION -> R.plurals.time_unit_minutes_declension
-                TimePluralFormat.DECLENSION_FORMAT -> R.plurals.time_unit_minutes_declension_format
-            }
-        }
-        HOURS -> {
-            when (this) {
-                TimePluralFormat.NORMAL -> R.plurals.time_unit_hours
-                TimePluralFormat.NORMAL_FORMAT -> R.plurals.time_unit_hours_format
-                TimePluralFormat.DECLENSION -> R.plurals.time_unit_hours_declension
-                TimePluralFormat.DECLENSION_FORMAT -> R.plurals.time_unit_hours_declension_format
-            }
-        }
-        DAYS -> {
-            when (this) {
-                TimePluralFormat.NORMAL -> R.plurals.time_unit_days
-                TimePluralFormat.NORMAL_FORMAT -> R.plurals.time_unit_days_format
-                TimePluralFormat.DECLENSION -> R.plurals.time_unit_days_declension
-                TimePluralFormat.DECLENSION_FORMAT -> R.plurals.time_unit_days_declension_format
-            }
-        }
-    }
-}
-
-private fun toPluralTextMessage(
+fun toPluralTextMessage(
     @PluralsRes pluralResId: Int,
     value: Long,
-    isFormattedString: Boolean,
+    formatWithValue: Boolean,
 ): PluralTextMessage {
     val intValue = value.toInt()
-    return if (isFormattedString) {
+    return if (formatWithValue) {
         PluralTextMessage(pluralResId, intValue, intValue)
     } else {
         PluralTextMessage(pluralResId, intValue)
@@ -213,9 +143,71 @@ private fun toPluralTextMessage(
 enum class TimePluralFormat {
 
     NORMAL,
-    NORMAL_FORMAT,
+    NORMAL_WITH_VALUE,
     DECLENSION,
-    DECLENSION_FORMAT;
+    DECLENSION_WITH_VALUE;
 
-    val isFormatted: Boolean get() = this == NORMAL_FORMAT || this == DECLENSION_FORMAT
+    val isWithValue: Boolean get() = this == NORMAL_WITH_VALUE || this == DECLENSION_WITH_VALUE
+
+    @PluralsRes
+    internal fun getPluralTextResId(timeUnit: TimeUnit): Int {
+        return when (timeUnit) {
+            NANOSECONDS -> {
+                when (this) {
+                    NORMAL -> R.plurals.time_unit_nanos
+                    NORMAL_WITH_VALUE -> R.plurals.time_unit_nanos_format
+                    DECLENSION -> R.plurals.time_unit_nanos_declension
+                    DECLENSION_WITH_VALUE -> R.plurals.time_unit_nanos_declension_format
+                }
+            }
+            MICROSECONDS -> {
+                when (this) {
+                    NORMAL -> R.plurals.time_unit_micros
+                    NORMAL_WITH_VALUE -> R.plurals.time_unit_micros_format
+                    DECLENSION -> R.plurals.time_unit_micros_declension
+                    DECLENSION_WITH_VALUE -> R.plurals.time_unit_micros_declension_format
+                }
+            }
+            MILLISECONDS -> {
+                when (this) {
+                    NORMAL -> R.plurals.time_unit_millis
+                    NORMAL_WITH_VALUE -> R.plurals.time_unit_millis_format
+                    DECLENSION -> R.plurals.time_unit_millis_declension
+                    DECLENSION_WITH_VALUE -> R.plurals.time_unit_millis_declension_format
+                }
+            }
+            SECONDS -> {
+                when (this) {
+                    NORMAL -> R.plurals.time_unit_seconds
+                    NORMAL_WITH_VALUE -> R.plurals.time_unit_seconds_format
+                    DECLENSION -> R.plurals.time_unit_seconds_declension
+                    DECLENSION_WITH_VALUE -> R.plurals.time_unit_seconds_declension_format
+                }
+            }
+            MINUTES -> {
+                when (this) {
+                    NORMAL -> R.plurals.time_unit_minutes
+                    NORMAL_WITH_VALUE -> R.plurals.time_unit_minutes_format
+                    DECLENSION -> R.plurals.time_unit_minutes_declension
+                    DECLENSION_WITH_VALUE -> R.plurals.time_unit_minutes_declension_format
+                }
+            }
+            HOURS -> {
+                when (this) {
+                    NORMAL -> R.plurals.time_unit_hours
+                    NORMAL_WITH_VALUE -> R.plurals.time_unit_hours_format
+                    DECLENSION -> R.plurals.time_unit_hours_declension
+                    DECLENSION_WITH_VALUE -> R.plurals.time_unit_hours_declension_format
+                }
+            }
+            DAYS -> {
+                when (this) {
+                    NORMAL -> R.plurals.time_unit_days
+                    NORMAL_WITH_VALUE -> R.plurals.time_unit_days_format
+                    DECLENSION -> R.plurals.time_unit_days_declension
+                    DECLENSION_WITH_VALUE -> R.plurals.time_unit_days_declension_format
+                }
+            }
+        }
+    }
 }

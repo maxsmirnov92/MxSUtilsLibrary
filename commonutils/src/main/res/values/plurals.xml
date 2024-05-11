@@ -132,6 +132,14 @@
         <item quantity="one">gByte</item>
         <item quantity="other">gBytes</item>
     </plurals>
+    <plurals name="size_unit_tbytes">
+        <item quantity="one">tByte</item>
+        <item quantity="other">tBytes</item>
+    </plurals>
+    <plurals name="size_unit_pbytes">
+        <item quantity="one">pByte</item>
+        <item quantity="other">pBytes</item>
+    </plurals>
     <plurals name="size_unit_bytes_format">
         <item quantity="one">%d byte</item>
         <item quantity="other">%d bytes</item>
@@ -147,6 +155,63 @@
     <plurals name="size_unit_gbytes_format">
         <item quantity="one">%d gByte</item>
         <item quantity="other">%d gBytes</item>
+    </plurals>
+    <plurals name="size_unit_tbytes_format">
+        <item quantity="one">%d tByte</item>
+        <item quantity="other">%d tBytes</item>
+    </plurals>
+    <plurals name="size_unit_pbytes_format">
+        <item quantity="one">%d pByte</item>
+        <item quantity="other">%d pBytes</item>
+    </plurals>
+
+    <plurals name="size_unit_bits">
+        <item quantity="one">bit</item>
+        <item quantity="other">bits</item>
+    </plurals>
+    <plurals name="size_unit_kbits">
+        <item quantity="one">kBit</item>
+        <item quantity="other">kBits</item>
+    </plurals>
+    <plurals name="size_unit_mbits">
+        <item quantity="one">mBit</item>
+        <item quantity="other">mBits</item>
+    </plurals>
+    <plurals name="size_unit_gbits">
+        <item quantity="one">gBit</item>
+        <item quantity="other">gBits</item>
+    </plurals>
+    <plurals name="size_unit_tbits">
+        <item quantity="one">tBit</item>
+        <item quantity="other">tBits</item>
+    </plurals>
+    <plurals name="size_unit_pbits">
+        <item quantity="one">pBit</item>
+        <item quantity="other">pBits</item>
+    </plurals>
+    <plurals name="size_unit_bits_format">
+        <item quantity="one">%d bit</item>
+        <item quantity="other">%d bits</item>
+    </plurals>
+    <plurals name="size_unit_kbits_format">
+        <item quantity="one">%d kBit</item>
+        <item quantity="other">%d kBits</item>
+    </plurals>
+    <plurals name="size_unit_mbits_format">
+        <item quantity="one">%d mBit</item>
+        <item quantity="other">%d mBits</item>
+    </plurals>
+    <plurals name="size_unit_gbits_format">
+        <item quantity="one">%d gBit</item>
+        <item quantity="other">%d gBits</item>
+    </plurals>
+    <plurals name="size_unit_tbits_format">
+        <item quantity="one">%d tBit</item>
+        <item quantity="other">%d tBits</item>
+    </plurals>
+    <plurals name="size_unit_pbits_format">
+        <item quantity="one">%d pBit</item>
+        <item quantity="other">%d pBits</item>
     </plurals>
 
     <plurals name="rubles_quantity">

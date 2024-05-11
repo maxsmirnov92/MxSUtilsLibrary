@@ -63,7 +63,7 @@ fun InputStream.copyStreamOrThrow(
                 if (interval >= 0 && (interval == 0L || lastNotifyTime == 0L || current - lastNotifyTime >= interval)) {
                     if (!notifier.onProcessing(
                             this, out, bytesWriteCount,
-                            if (totalBytesCount > 0 && totalBytesCount > bytesWriteCount) {
+                            if (totalBytesCount >= bytesWriteCount) {
                                 totalBytesCount
                             } else {
                                 0L
@@ -78,6 +78,7 @@ fun InputStream.copyStreamOrThrow(
             out.write(buff, 0, len)
             bytesWriteCount += len
         }
+        notifier?.onStreamEnd(this, out, bytesWriteCount)
     } finally {
         if (closeInput) {
             this.close()
@@ -352,8 +353,7 @@ fun InputStream.unzipStreamOrThrow(
 
 interface IStreamNotifier {
 
-    val notifyInterval: Long
-        get() = 0
+    val notifyInterval: Long get() = 0L
 
     /**
      * @return true if should proceed
@@ -364,4 +364,12 @@ interface IStreamNotifier {
         bytesWrite: Long,
         bytesTotal: Long
     ): Boolean = true
+
+    fun onStreamEnd(
+        inputStream: InputStream,
+        outputStream: OutputStream,
+        bytesWrite: Long
+    ) {
+        // do nothing
+    }
 }

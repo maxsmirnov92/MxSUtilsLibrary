@@ -66,9 +66,7 @@ open class TextMessage internal constructor(
 
         if (message != other.message) return false
         if (messageResId != other.messageResId) return false
-        if (!args.contentEquals(other.args)) return false
-
-        return true
+        return args.contentEquals(other.args)
     }
 
     override fun hashCode(): Int {
@@ -124,7 +122,7 @@ open class TextMessage internal constructor(
 
     data class ResArg(@StringRes val value: Int, val args: List<Any>? = null) : Arg<String> {
 
-        override fun get(context: Context): String = if (args == null || args.isEmpty()) {
+        override fun get(context: Context): String = if (args.isNullOrEmpty()) {
             context.getString(value)
         } else {
             context.getString(value, *args.toTypedArray())

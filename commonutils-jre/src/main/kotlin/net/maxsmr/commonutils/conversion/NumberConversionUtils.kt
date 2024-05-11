@@ -4,69 +4,65 @@ import java.math.BigDecimal
 
 @JvmOverloads
 fun CharSequence?.toByteNotNull(
-        radix: Int = 10,
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
+    radix: Int = 10,
+    exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Byte = this.toByteOrNull(radix, exceptionAction) ?: 0
 
 @JvmOverloads
 fun CharSequence?.toByteOrNull(
-        radix: Int = 10,
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
+    radix: Int = 10,
+    exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Byte? = toNumberOrThrow(Byte::class.java, radix, exceptionAction)
 
 @JvmOverloads
 fun CharSequence?.toIntNotNull(
-        radix: Int = 10,
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
+    radix: Int = 10,
+    exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Int = this.toIntOrNull(radix, exceptionAction) ?: 0
 
 @JvmOverloads
 fun CharSequence?.toIntOrNull(
-        radix: Int = 10,
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
+    radix: Int = 10,
+    exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Int? = toNumberOrThrow(Int::class.java, radix, exceptionAction)
 
 @JvmOverloads
 fun CharSequence?.toLongNotNull(
-        radix: Int = 10,
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
+    radix: Int = 10,
+    exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Long = toLongOrNull(radix, exceptionAction) ?: 0L
 
 @JvmOverloads
 fun CharSequence?.toLongOrNull(
-        radix: Int = 10,
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
+    radix: Int = 10,
+    exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Long? = toNumberOrThrow(Long::class.java, radix, exceptionAction)
 
 @JvmOverloads
 fun CharSequence?.toFloatNotNull(
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
+    exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Float = toFloatOrNull(exceptionAction) ?: 0f
 
 @JvmOverloads
 fun CharSequence?.toFloatOrNull(
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
+    exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Float? = toNumberOrThrow(Float::class.java, 10, exceptionAction)
 
 @JvmOverloads
 fun CharSequence?.toDoubleNotNull(
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
+    exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Double = toDoubleOrNull(exceptionAction) ?: 0.0
 
 @JvmOverloads
 fun CharSequence?.toDoubleOrNull(
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
+    exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): Double? = toNumberOrThrow(Double::class.java, 10, exceptionAction)
 
-fun Number?.toBigDecimal(): BigDecimal? {
-    return if (this != null) {
-        if (this is BigDecimal) {
-            this
-        } else {
-            BigDecimal(this.toDouble())
-        }
+fun Number.toBigDecimal(): BigDecimal {
+    return if (this is BigDecimal) {
+        this
     } else {
-        null
+        BigDecimal(this.toDouble())
     }
 }
 
@@ -76,9 +72,9 @@ fun Number?.toBigDecimal(): BigDecimal? {
 @Suppress("UNCHECKED_CAST")
 @Throws(IllegalArgumentException::class)
 fun <N : Number?> CharSequence?.toNumberOrThrow(
-        numberType: Class<N>,
-        radix: Int = 10,
-        exceptionAction: ((NumberFormatException) -> Unit)? = null
+    numberType: Class<N>,
+    radix: Int = 10,
+    exceptionAction: ((NumberFormatException) -> Unit)? = null
 ): N? {
     if (this == null) {
         return null
@@ -93,6 +89,7 @@ fun <N : Number?> CharSequence?.toNumberOrThrow(
                 null
             }
         }
+
         numberType.isAssignableFrom(Int::class.java) -> {
             return try {
                 numberString.toInt(radix) as N
@@ -101,6 +98,7 @@ fun <N : Number?> CharSequence?.toNumberOrThrow(
                 null
             }
         }
+
         numberType.isAssignableFrom(Long::class.java) -> {
             return try {
                 numberString.toLong(radix) as N
@@ -109,6 +107,7 @@ fun <N : Number?> CharSequence?.toNumberOrThrow(
                 null
             }
         }
+
         numberType.isAssignableFrom(Float::class.java) -> {
             return try {
                 numberString.toFloat() as N
@@ -117,6 +116,7 @@ fun <N : Number?> CharSequence?.toNumberOrThrow(
                 null
             }
         }
+
         numberType.isAssignableFrom(Double::class.java) -> {
             return try {
                 numberString.toDouble() as N
@@ -125,6 +125,7 @@ fun <N : Number?> CharSequence?.toNumberOrThrow(
                 null
             }
         }
+
         else -> throw IllegalArgumentException("Incorrect number class: $numberType")
     }
 }

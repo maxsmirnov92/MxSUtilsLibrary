@@ -362,19 +362,4 @@ public final class NetworkHelper {
             return false;
         }
     }
-
-    @Nullable
-    public static URL parseURL(String url) {
-        return parseURL(url, true);
-    }
-
-    @Nullable
-    public static URL parseURL(String url, boolean encoded) {
-        try {
-            return new URL(!encoded ? URLEncoder.encode(url, "UTF-8") : url);
-        } catch (Exception e) {
-            logger.e(formatException(e));
-            return null;
-        }
-    }
 }

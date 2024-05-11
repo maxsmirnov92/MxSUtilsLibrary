@@ -2,4 +2,12 @@
     <string name="app_name">Common Utils</string>
     <string name="empty_data">No data</string>
     <string name="divider_comma">,\u00A0</string>
+
+    <string name="speed_nanos_format">%1$s %2$s/ns</string>
+    <string name="speed_micros_format">%1$s %2$s/mcs</string>
+    <string name="speed_millis_format">%1$s %2$s/ms</string>
+    <string name="speed_seconds_format">%1$s %2$s/s</string>
+    <string name="speed_minutes_format">%1$s %2$s/m</string>
+    <string name="speed_hours_format">%1$s %2$s/h</string>
+    <string name="speed_days_format">%1$s %2$s/d</string>
 </resources>
