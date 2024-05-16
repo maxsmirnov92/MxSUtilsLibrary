@@ -41,11 +41,11 @@ import com.google.android.material.bottomsheet.BottomSheetBehavior
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.textfield.TextInputLayout
 import net.maxsmr.commonutils.*
+import net.maxsmr.commonutils.ReflectionUtils.getFieldValue
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.format.getUnformattedText
 import net.maxsmr.commonutils.graphic.scaleDownBitmap
-import net.maxsmr.commonutils.gui.listeners.AfterTextWatcher
-import net.maxsmr.commonutils.gui.listeners.DefaultTextWatcher
+import net.maxsmr.commonutils.gui.listeners.AfterTextChangeListener
 import net.maxsmr.commonutils.live.field.Field
 import net.maxsmr.commonutils.live.setValueIfNew
 import net.maxsmr.commonutils.logger.BaseLogger
@@ -228,7 +228,7 @@ fun <D> TextView.bindTo(
     ifNew: Boolean = true,
     toDataValue: (CharSequence?) -> D
 ) {
-    addTextChangedListener(AfterTextWatcher { s: Editable ->
+    addTextChangedListener(AfterTextChangeListener { s: Editable ->
         val newValue = toDataValue.invoke(s)
         if (ifNew) {
             data.setValueIfNew(newValue)
@@ -243,7 +243,7 @@ fun <D> TextView.bindTo(
  * будет выставляться значение в [field]
  */
 fun <D> TextView.bindTo(field: Field<D>, toFieldValue: ((CharSequence?) -> D)) {
-    addTextChangedListener(AfterTextWatcher { s: Editable ->
+    addTextChangedListener(AfterTextChangeListener { s: Editable ->
         field.value = toFieldValue.invoke(s)
     })
 }
@@ -548,7 +548,7 @@ fun EditText.setTextWithSelectionToEnd(
 
 fun TextInputLayout.setInputErrorTextColor(color: Int) {
     try {
-        val view = ReflectionUtils.getFieldValue<TextView, TextInputLayout>(TextInputLayout::class.java, this, "mErrorView")
+        val view = getFieldValue<TextView, TextInputLayout>(TextInputLayout::class.java, this, "mErrorView")
         view?.let {
             it.setTextColor(color)
             it.requestLayout()
@@ -713,28 +713,18 @@ fun ImageView.getRescaledImageViewSize(): Pair<Int?, Int?> {
 }
 
 fun View.getViewInset(): Int {
-    with(this.context.resources) {
-        val statusBarHeight = getStatusBarHeight()
-        if (statusBarHeight < 0) {
-            return 0
-        }
-        val dm = displayMetrics
-        if (isPreLollipop() || this@getViewInset.height == dm.heightPixels || this@getViewInset.height == dm.heightPixels - statusBarHeight) {
-            return 0
-        }
-        try {
-            val infoField = View::class.java.getDeclaredField("mAttachInfo")
-            infoField.isAccessible = true
-            val info = infoField[this@getViewInset]
-            if (info != null) {
-                val insetsField = info.javaClass.getDeclaredField("mStableInsets")
-                insetsField.isAccessible = true
-                val insets = insetsField[info] as Rect
-                return insets.bottom
-            }
-        } catch (e: Exception) {
-            logger.e("An exception occurred: ${e.message}", e)
-        }
+    val statusBarHeight = getStatusBarHeight(this.context)
+    if (statusBarHeight < 0) {
+        return 0
+    }
+    val dm = this.context.resources.displayMetrics
+    if (isPreLollipop() || this.height == dm.heightPixels || this.height == dm.heightPixels - statusBarHeight) {
+        return 0
+    }
+    val info: Any? = getFieldValue<Any?, View>(View::class.java, this, "mAttachInfo")
+    if (info != null) {
+        val insets: Rect? = getFieldValue(info.javaClass, info, "mStableInsets")
+        return insets?.bottom ?: 0
     }
     return 0
 }
@@ -1302,20 +1292,18 @@ fun TextView.observePlaceholderOrLabelHint(
     setHintFunc: ((CharSequence) -> Unit)? = null,
     isForPlaceholderFunc: ((CharSequence?) -> Boolean)? = null
 ): TextWatcher {
-    val listener = object : DefaultTextWatcher() {
-        override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-            val text = text
-            val hint = if (isForPlaceholderFunc?.invoke(text)
-                    ?: TextUtils.isEmpty(text)
-            ) placeholderText else labelText
-            if (setHintFunc != null) {
-                setHintFunc.invoke(hint)
+    val listener = AfterTextChangeListener { e ->
+        val text = e.toString()
+        val hint = if (isForPlaceholderFunc?.invoke(text)
+                ?: TextUtils.isEmpty(text)
+        ) placeholderText else labelText
+        if (setHintFunc != null) {
+            setHintFunc.invoke(hint)
+        } else {
+            if (inputLayout != null) {
+                inputLayout.hint = hint
             } else {
-                if (inputLayout != null) {
-                    inputLayout.hint = hint
-                } else {
-                    setHint(hint)
-                }
+                setHint(hint)
             }
         }
     }

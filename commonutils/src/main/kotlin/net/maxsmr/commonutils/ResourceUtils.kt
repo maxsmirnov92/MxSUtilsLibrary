@@ -1,5 +1,6 @@
 package net.maxsmr.commonutils
 
+import android.content.ContentResolver
 import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.Resources
@@ -7,6 +8,7 @@ import android.content.res.TypedArray
 import android.graphics.PorterDuff
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.StateListDrawable
+import android.net.Uri
 import android.util.TypedValue
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
@@ -322,6 +324,16 @@ fun openRawResourceOrThrow(context: Context, @RawRes resId: Int): InputStream = 
     context.resources.openRawResource(resId)
 } catch (e: IOException) {
     throw RuntimeException(formatException(e, "openRawResource"), e)
+}
+
+fun getUriFromRawResource(context: Context, @RawRes rawResId: Int): Uri {
+    return Uri.parse(
+        ContentResolver.SCHEME_ANDROID_RESOURCE
+                + File.pathSeparator + File.separator + File.separator
+                + context.packageName
+                + File.separator
+                + rawResId
+    )
 }
 
 fun createColorStateListFromRes(context: Context, @XmlRes res: Int): ColorStateList? {

@@ -6,7 +6,7 @@ import android.text.TextWatcher
 /**
  * [TextWatcher] с возможностью пропуска [onTextChanged] [skipCount] раз
  */
-abstract class TextChangeWithSkipListener(private val skipCount: Int): DefaultTextWatcher() {
+abstract class TextChangeWithSkipListener(private val skipCount: Int): TextChangeListener {
 
     init {
         require(skipCount >= 0) { "Incorrect skipCount: $skipCount" }
@@ -34,61 +34,20 @@ abstract class TextChangeWithSkipListener(private val skipCount: Int): DefaultTe
     }
 }
 
-open class DefaultTextWatcher : TextWatcher {
+fun interface BeforeTextChangeListener : TextWatcher {
 
-    override fun afterTextChanged(editable: Editable?) {
-        //do nothing
-    }
-
-    override fun beforeTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        //do nothing
-    }
-
-    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        //do nothing
-    }
+    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
+    override fun afterTextChanged(s: Editable) {}
 }
 
-class AfterTextWatcher(val listener: (Editable) -> (Unit)) : TextWatcher {
+fun interface TextChangeListener : TextWatcher {
 
-    override fun afterTextChanged(s: Editable) {
-        listener(s)
-    }
-
-    override fun beforeTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        //do nothing
-    }
-
-    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        //do nothing
-    }
+    override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+    override fun afterTextChanged(s: Editable) {}
 }
 
-class BeforeTextWatcher(val listener: (s: CharSequence?, start: Int, before: Int, count: Int) -> Unit) : TextWatcher {
+fun interface AfterTextChangeListener : TextWatcher {
 
-    override fun afterTextChanged(s: Editable) {
-        //do nothing
-    }
-
-    override fun beforeTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        listener(s, start, before, count)
-    }
-
-    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        //do nothing
-    }
-}
-
-class OnTextWatcher(val listener: (s: CharSequence?, start: Int, before: Int, count: Int) -> (Unit)) : TextWatcher {
-
-    override fun afterTextChanged(s: Editable) {
-
-    }
-
-    override fun beforeTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-    }
-
-    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-        listener(s, start, before, count)
-    }
+    override fun beforeTextChanged(s: CharSequence, start: Int, count: Int, after: Int) {}
+    override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {}
 }

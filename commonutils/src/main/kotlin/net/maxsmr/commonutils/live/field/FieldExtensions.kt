@@ -74,3 +74,30 @@ fun <D> Field<D>.observeFrom(
         }
     }
 }
+
+fun <D> Field<D>.clearErrorOnChange(lifecycleOwner: LifecycleOwner, onChanged: ((D) -> Unit)? = null) {
+    valueLive.observe(lifecycleOwner) {
+        onChanged?.invoke(it)
+        clearError()
+    }
+}
+
+/**
+ * @return true если все обязательные
+ * (или необязательные при непустом значении в зав-ти от [ifEmpty])
+ * филды прошли валидацию
+ */
+@JvmOverloads
+fun Collection<Field<*>>.validateAndSetByRequired(ifEmpty: Boolean = true): Boolean {
+    return validateAndSetBy { it.validateAndSetByRequired(ifEmpty) }
+}
+
+fun Collection<Field<*>>.validateAndSetBy(predicate: (Field<*>) -> Boolean): Boolean {
+    var hasError = false
+    forEach {
+        if (!predicate(it)) {
+            hasError = true
+        }
+    }
+    return !hasError
+}

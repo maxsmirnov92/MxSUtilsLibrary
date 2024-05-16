@@ -18,7 +18,7 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
         private val collapsedTextFunc: (() -> CharSequence)? = null
 ) {
 
-    private val textChangeListener: DefaultTextWatcher
+    private val textChangeListener: TextChangeListener
 
     var expandListener: ((Boolean) -> Unit)? = null
 
@@ -53,10 +53,8 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
     init {
         observeLayoutChanges()
 
-        textChangeListener = object : DefaultTextWatcher() {
-            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
-                observeLayoutChanges()
-            }
+        textChangeListener = TextChangeListener { _, _, _, _ ->
+            observeLayoutChanges()
         }
 
         // при изначальном тексте не сработает

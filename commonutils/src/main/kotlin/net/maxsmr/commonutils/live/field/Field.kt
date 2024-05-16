@@ -118,9 +118,11 @@ class Field<T> private constructor(
 
     /**
      * Валидация в зав-ти от обязательности данного поля
+     * @param ifEmpty при true необязательное поле будет валидироваться если непустое
      */
-    fun validateAndSetByRequired(): Boolean {
-        return if (!required && isEmpty) {
+    @JvmOverloads
+    fun validateAndSetByRequired(ifEmpty: Boolean = true): Boolean {
+        return if (!required && (!ifEmpty || isEmpty)) {
             // при необязательном пустом поле
             // считаем что валидация прошла
             clearError()
