@@ -94,6 +94,7 @@ fun decomposeSizeFormatted(
         emptyIfZero,
         formatWithValue
     ) { resId, value ->
+        // FIXME toInt отбрасывает результаты с precision
         toPluralTextMessage(resId, value.toLong(), formatWithValue)
     }
 }
@@ -136,6 +137,38 @@ fun <F> decomposeSizeFormatted(
 }
 
 @JvmOverloads
+fun formatSizeSingle(
+    size: Number,
+    sizeUnit: SizeUnit,
+    sizeUnitsToExclude: Set<SizeUnit> = setOf(),
+    precision: Int? = 0,
+    emptyIfZero: Boolean = true,
+): TextMessage? {
+    return formatSizeSingle(
+        decomposeSize(
+            size,
+            sizeUnit,
+            sizeUnitsToExclude,
+            true,
+            precision,
+            true,
+            emptyIfZero
+        )
+    )
+}
+
+fun formatSizeSingle(
+    decomposedMap: Map<SizeUnit, Number>,
+): TextMessage? {
+    decomposedMap.toList().firstOrNull()?.let {
+        decomposeSizeFormatted(mapOf(it), false).firstOrNull()?.let { message ->
+            return TextMessage(R.string.size_single_format, it.second, message)
+        }
+    }
+    return null
+}
+
+@JvmOverloads
 fun formatSpeedSize(
     size: Number,
     sizeUnit: SizeUnit,
@@ -145,14 +178,16 @@ fun formatSpeedSize(
     timeUnit: TimeUnit,
 ): TextMessage? {
     return formatSpeedSize(
-        decomposeSize(size,
+        decomposeSize(
+            size,
             sizeUnit,
             sizeUnitsToExclude,
             true,
             precision,
             true,
             emptyIfZero
-        ), timeUnit)
+        ), timeUnit
+    )
 }
 
 fun formatSpeedSize(

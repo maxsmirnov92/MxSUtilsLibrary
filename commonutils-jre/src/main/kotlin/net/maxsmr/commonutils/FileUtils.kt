@@ -47,7 +47,7 @@ val File?.extension: String get() = getExtension(this?.name)
 fun File?.removeExtension(): String = removeExtension(this?.name)
 
 fun File?.appendOrReplaceExtension(extension: String?): File? = this?.let {
-    File(this.parent, appendOrReplaceExtension(this.name, extension))
+    File(this.parent, appendExtension(this.name, extension))
 }
 
 fun File?.appendPostfix(postfix: String?): File? = this?.let {

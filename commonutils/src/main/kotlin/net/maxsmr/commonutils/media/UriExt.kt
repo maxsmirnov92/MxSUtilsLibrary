@@ -1,6 +1,7 @@
 package net.maxsmr.commonutils.media
 
 import android.content.ContentResolver
+import android.content.ContentResolver.SCHEME_CONTENT
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
@@ -24,9 +25,9 @@ import java.nio.charset.Charset
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("UriExt")
 
 fun Uri.readBytes(
-        contentResolver: ContentResolver,
-        offset: Int = 0,
-        length: Int = 0
+    contentResolver: ContentResolver,
+    offset: Int = 0,
+    length: Int = 0
 ): ByteArray? = try {
     readBytesOrThrow(contentResolver, offset, length)
 } catch (e: RuntimeException) {
@@ -36,22 +37,22 @@ fun Uri.readBytes(
 
 @Throws(RuntimeException::class)
 fun Uri.readBytesOrThrow(
-        contentResolver: ContentResolver,
-        offset: Int = 0,
-        length: Int = 0
+    contentResolver: ContentResolver,
+    offset: Int = 0,
+    length: Int = 0
 ): ByteArray = try {
     openInputStreamOrThrow(contentResolver).readBytesOrThrow(
-            offset,
-            length
+        offset,
+        length
     )
 } catch (e: IOException) {
     throw RuntimeException(formatException(e, "readBytesOrThrow"), e)
 }
 
 fun Uri.readStrings(
-        contentResolver: ContentResolver,
-        count: Int = 0,
-        charsetName: String = CHARSET_DEFAULT
+    contentResolver: ContentResolver,
+    count: Int = 0,
+    charsetName: String = CHARSET_DEFAULT
 ): List<String> = try {
     readStringsOrThrow(contentResolver, count, charsetName)
 } catch (e: RuntimeException) {
@@ -62,9 +63,9 @@ fun Uri.readStrings(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun Uri.readStringsOrThrow(
-        contentResolver: ContentResolver,
-        count: Int = 0,
-        charsetName: String = CHARSET_DEFAULT
+    contentResolver: ContentResolver,
+    count: Int = 0,
+    charsetName: String = CHARSET_DEFAULT
 ): List<String> {
     return try {
         openInputStreamOrThrow(contentResolver).readStringsOrThrow(count, charsetName = charsetName)
@@ -75,8 +76,8 @@ fun Uri.readStringsOrThrow(
 
 @JvmOverloads
 fun Uri.readString(
-        contentResolver: ContentResolver,
-        charsetName: String = CHARSET_DEFAULT,
+    contentResolver: ContentResolver,
+    charsetName: String = CHARSET_DEFAULT,
 ): String? = try {
     readStringOrThrow(contentResolver, charsetName)
 } catch (e: RuntimeException) {
@@ -86,8 +87,8 @@ fun Uri.readString(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun Uri.readStringOrThrow(
-        contentResolver: ContentResolver,
-        charsetName: String = CHARSET_DEFAULT,
+    contentResolver: ContentResolver,
+    charsetName: String = CHARSET_DEFAULT,
 ): String? {
     return try {
         openInputStreamOrThrow(contentResolver).readStringOrThrow(charsetName)
@@ -98,11 +99,11 @@ fun Uri.readStringOrThrow(
 
 @JvmOverloads
 fun Uri.readBase64(
-        contentResolver: ContentResolver,
-        charset: Charset = Charset.defaultCharset(),
-        flags: Int = Base64.DEFAULT,
+    contentResolver: ContentResolver,
+    charset: Charset = Charset.defaultCharset(),
+    flags: Int = Base64.DEFAULT,
 ): String = readString(contentResolver, charsetName = charset.name())
-        .toBase64(charset, flags)
+    .toBase64(charset, flags)
 
 fun Uri.writeBytes(contentResolver: ContentResolver, data: ByteArray?) = try {
     writeBytesOrThrow(contentResolver, data)
@@ -135,11 +136,11 @@ fun Uri.writeStrings(contentResolver: ContentResolver, data: Collection<String>?
 @Throws(RuntimeException::class)
 fun Uri.writeStringsOrThrow(contentResolver: ContentResolver, data: Collection<String>?) {
     val outStreamWriter =
-            try {
-                OutputStreamWriter(openOutputStreamOrThrow(contentResolver))
-            } catch (e: Throwable) {
-                throw RuntimeException(formatException(e, "create OutputStreamWriter"))
-            }
+        try {
+            OutputStreamWriter(openOutputStreamOrThrow(contentResolver))
+        } catch (e: Throwable) {
+            throw RuntimeException(formatException(e, "create OutputStreamWriter"))
+        }
     try {
         outStreamWriter.writeStringOrThrow(data)
     } catch (e: IOException) {
@@ -148,11 +149,38 @@ fun Uri.writeStringsOrThrow(contentResolver: ContentResolver, data: Collection<S
 }
 
 @JvmOverloads
+fun Uri.writeFromStream(
+    contentResolver: ContentResolver,
+    inputStream: InputStream,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+) = try {
+    writeFromStreamOrThrow(contentResolver, inputStream, notifier, buffSize)
+    true
+} catch (e: RuntimeException) {
+    logger.e(e)
+    false
+}
+
+@JvmOverloads
+@Throws(RuntimeException::class)
+fun Uri.writeFromStreamOrThrow(
+    contentResolver: ContentResolver,
+    inputStream: InputStream,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+) {
+    inputStream.copyStreamOrThrow(
+        openOutputStreamOrThrow(contentResolver), notifier, buffSize
+    )
+}
+
+@JvmOverloads
 fun Uri.copyTo(
-        contentResolver: ContentResolver,
-        fileTo: File,
-        append: Boolean = false,
-        deleteOnFinish: Boolean = false,
+    contentResolver: ContentResolver,
+    fileTo: File,
+    append: Boolean = false,
+    deleteOnFinish: Boolean = false,
 ): Uri? = try {
     copyToOrThrow(contentResolver, fileTo, append, deleteOnFinish)
 } catch (e: RuntimeException) {
@@ -163,10 +191,10 @@ fun Uri.copyTo(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun Uri.copyToOrThrow(
-        contentResolver: ContentResolver,
-        fileTo: File,
-        append: Boolean = false,
-        deleteOnFinish: Boolean = false,
+    contentResolver: ContentResolver,
+    fileTo: File,
+    append: Boolean = false,
+    deleteOnFinish: Boolean = false,
 ): Uri {
     if (!isEmptyOrThrow(contentResolver)) {
         val input = openInputStreamOrThrow(contentResolver)
@@ -186,6 +214,7 @@ fun Uri.copyToOrThrow(
 
 @RequiresApi(Build.VERSION_CODES.KITKAT)
 fun Uri.takePersistableReadPermission(contentResolver: ContentResolver) {
+    if (this.scheme != SCHEME_CONTENT) return
     try {
         contentResolver.takePersistableUriPermission(this, Intent.FLAG_GRANT_READ_URI_PERMISSION)
     } catch (e: Exception) {
@@ -195,11 +224,11 @@ fun Uri.takePersistableReadPermission(contentResolver: ContentResolver) {
 
 @JvmOverloads
 fun <T> Uri.queryFirst(
-        contentResolver: ContentResolver,
-        propertyType: Class<T>,
-        projection: String,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
+    contentResolver: ContentResolver,
+    propertyType: Class<T>,
+    projection: String,
+    selection: String? = null,
+    selectionArgs: List<String>? = null,
 ): T? = try {
     queryFirstOrThrow(contentResolver, propertyType, projection, selection, selectionArgs)
 } catch (e: RuntimeException) {
@@ -210,11 +239,11 @@ fun <T> Uri.queryFirst(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun <T> Uri.queryFirstOrThrow(
-        contentResolver: ContentResolver,
-        columnType: Class<T>,
-        projection: String,
-        selection: String? = null,
-        selectionArgs: List<String>? = null
+    contentResolver: ContentResolver,
+    columnType: Class<T>,
+    projection: String,
+    selection: String? = null,
+    selectionArgs: List<String>? = null
 ): T {
     queryOrThrow(contentResolver, listOf(projection), selection, selectionArgs).use { cursor ->
         if (cursor.position == -1) {
@@ -226,11 +255,11 @@ fun <T> Uri.queryFirstOrThrow(
 
 @JvmOverloads
 fun <T> Uri.queryFirst(
-        contentResolver: ContentResolver,
-        projection: List<String>,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        mapFunc: (Cursor) -> T?
+    contentResolver: ContentResolver,
+    projection: List<String>,
+    selection: String? = null,
+    selectionArgs: List<String>? = null,
+    mapFunc: (Cursor) -> T?
 ): T? = try {
     queryFirstOrThrow(contentResolver, projection, selection, selectionArgs, mapFunc)
 } catch (e: RuntimeException) {
@@ -241,11 +270,11 @@ fun <T> Uri.queryFirst(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun <T> Uri.queryFirstOrThrow(
-        contentResolver: ContentResolver,
-        projection: List<String>,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        mapFunc: (Cursor) -> T?
+    contentResolver: ContentResolver,
+    projection: List<String>,
+    selection: String? = null,
+    selectionArgs: List<String>? = null,
+    mapFunc: (Cursor) -> T?
 ): T {
     queryOrThrow(contentResolver, projection, selection, selectionArgs).use { cursor ->
         if (cursor.position == -1) {
@@ -257,13 +286,13 @@ fun <T> Uri.queryFirstOrThrow(
 
 @JvmOverloads
 fun <T : Any> Uri.query(
-        contentResolver: ContentResolver,
-        columnType: Class<T>,
-        projection: String,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        sortOrder: String? = null,
-        checkCursorEmpty: Boolean = false
+    contentResolver: ContentResolver,
+    columnType: Class<T>,
+    projection: String,
+    selection: String? = null,
+    selectionArgs: List<String>? = null,
+    sortOrder: String? = null,
+    checkCursorEmpty: Boolean = false
 ): List<T> = try {
     queryOrThrow(contentResolver, columnType, projection, selection, selectionArgs, sortOrder, checkCursorEmpty)
 } catch (e: RuntimeException) {
@@ -274,26 +303,26 @@ fun <T : Any> Uri.query(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun <T : Any> Uri.queryOrThrow(
-        contentResolver: ContentResolver,
-        columnType: Class<T>,
-        projection: String,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        sortOrder: String? = null,
-        checkCursorEmpty: Boolean = false
+    contentResolver: ContentResolver,
+    columnType: Class<T>,
+    projection: String,
+    selection: String? = null,
+    selectionArgs: List<String>? = null,
+    sortOrder: String? = null,
+    checkCursorEmpty: Boolean = false
 ): List<T> = queryOrThrow(contentResolver, listOf(projection), selection, selectionArgs, sortOrder, checkCursorEmpty) {
     it.getColumnValueOrThrow(columnType, 0)
 }
 
 @JvmOverloads
 fun <T : Any> Uri.query(
-        contentResolver: ContentResolver,
-        projection: List<String>? = null,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        sortOrder: String? = null,
-        checkCursorEmpty: Boolean = false,
-        mapFunc: (Cursor) -> T?
+    contentResolver: ContentResolver,
+    projection: List<String>? = null,
+    selection: String? = null,
+    selectionArgs: List<String>? = null,
+    sortOrder: String? = null,
+    checkCursorEmpty: Boolean = false,
+    mapFunc: (Cursor) -> T?
 ): List<T> = try {
     queryOrThrow(contentResolver, projection, selection, selectionArgs, sortOrder, checkCursorEmpty, mapFunc)
 } catch (e: RuntimeException) {
@@ -304,13 +333,13 @@ fun <T : Any> Uri.query(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun <T : Any> Uri.queryOrThrow(
-        contentResolver: ContentResolver,
-        projection: List<String>? = null,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        sortOrder: String? = null,
-        checkCursorEmpty: Boolean = false,
-        mapFunc: (Cursor) -> T?
+    contentResolver: ContentResolver,
+    projection: List<String>? = null,
+    selection: String? = null,
+    selectionArgs: List<String>? = null,
+    sortOrder: String? = null,
+    checkCursorEmpty: Boolean = false,
+    mapFunc: (Cursor) -> T?
 ): List<T> {
     queryOrThrow(contentResolver, projection, selection, selectionArgs, sortOrder, checkCursorEmpty).use { cursor ->
         return cursor.mapToList(mapFunc)
@@ -319,12 +348,12 @@ fun <T : Any> Uri.queryOrThrow(
 
 @JvmOverloads
 fun Uri.query(
-        contentResolver: ContentResolver,
-        projection: List<String>? = null,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        sortOrder: String? = null,
-        checkCursorEmpty: Boolean = true
+    contentResolver: ContentResolver,
+    projection: List<String>? = null,
+    selection: String? = null,
+    selectionArgs: List<String>? = null,
+    sortOrder: String? = null,
+    checkCursorEmpty: Boolean = true
 ): Cursor? = try {
     queryOrThrow(contentResolver, projection, selection, selectionArgs, sortOrder, checkCursorEmpty)
 } catch (e: RuntimeException) {
@@ -335,23 +364,24 @@ fun Uri.query(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun Uri.queryOrThrow(
-        contentResolver: ContentResolver,
-        projection: List<String>? = null,
-        selection: String? = null,
-        selectionArgs: List<String>? = null,
-        sortOrder: String? = null,
-        checkCursorEmpty: Boolean = true
+    contentResolver: ContentResolver,
+    projection: List<String>? = null,
+    selection: String? = null,
+    selectionArgs: List<String>? = null,
+    sortOrder: String? = null,
+    checkCursorEmpty: Boolean = true
 ): Cursor {
     if (!isContentScheme()) throw IllegalArgumentException("uri is not content://")
     val cursor = contentResolver.query(
-            this,
-            projection?.toTypedArray() ?: arrayOf(),
-            selection,
-            selectionArgs?.toTypedArray() ?: arrayOf(),
-            sortOrder
+        this,
+        projection?.toTypedArray() ?: arrayOf(),
+        selection,
+        selectionArgs?.toTypedArray() ?: arrayOf(),
+        sortOrder
     )
     if (cursor == null
-            || (if (checkCursorEmpty) !cursor.isNonEmpty() else !cursor.isValid())) {
+        || (if (checkCursorEmpty) !cursor.isNonEmpty() else !cursor.isValid())
+    ) {
         throw RuntimeException("cursor is null or empty or closed")
     }
     return cursor
@@ -392,9 +422,11 @@ fun Uri.existsOrThrow(contentResolver: ContentResolver): Boolean {
         isFileScheme() -> {
             return isFileExistsOrThrow(path)
         }
+
         isContentScheme() -> {
             queryOrThrow(contentResolver, checkCursorEmpty = false).count > 0
         }
+
         else -> {
             throw RuntimeException("Incorrect uri scheme: $scheme")
         }
@@ -410,7 +442,7 @@ fun Uri.isEmpty(contentResolver: ContentResolver): Boolean = try {
 
 @Throws(RuntimeException::class)
 fun Uri.isEmptyOrThrow(contentResolver: ContentResolver): Boolean =
-        lengthOrThrow(contentResolver) == 0L
+    lengthOrThrow(contentResolver) == 0L
 
 fun Uri.length(contentResolver: ContentResolver): Long = try {
     lengthOrThrow(contentResolver)
@@ -426,11 +458,13 @@ fun Uri.lengthOrThrow(contentResolver: ContentResolver): Long {
         isFileScheme() -> {
             getFileLengthOrThrow(path)
         }
+
         isContentScheme() -> {
             openFileDescriptorOrThrow(contentResolver).use {
                 it.statSize
             }
         }
+
         else -> {
             throw RuntimeException("Incorrect uri scheme: $scheme")
         }
@@ -468,13 +502,15 @@ fun Uri.nameOrThrow(contentResolver: ContentResolver): String {
         isFileScheme() -> {
             File(path).name
         }
+
         isContentScheme() -> {
             queryFirstOrThrow(
-                    contentResolver,
-                    String::class.java,
-                    OpenableColumns.DISPLAY_NAME
+                contentResolver,
+                String::class.java,
+                OpenableColumns.DISPLAY_NAME
             )
         }
+
         else -> {
             throw RuntimeException("Incorrect uri scheme: $scheme")
         }
@@ -497,6 +533,7 @@ fun Uri.mimeTypeOrThrow(contentResolver: ContentResolver): String = when {
             throw RuntimeException(formatException(e))
         } ?: EMPTY_STRING
     }
+
     else -> throw RuntimeException("Incorrect uri scheme: $scheme")
 }
 
@@ -522,9 +559,11 @@ fun Uri.deleteOrThrow(contentResolver: ContentResolver, throwIfNotExists: Boolea
         isFileScheme() -> {
             deleteFileOrThrow(File(path as String))
         }
+
         isContentScheme() -> {
             contentResolver.delete(this, null, null)
         }
+
         else -> {
             throw RuntimeException("Incorrect uri scheme: $scheme")
         }
@@ -562,9 +601,11 @@ fun Uri.openOutputStreamOrThrow(contentResolver: ContentResolver): OutputStream 
         this.isFileScheme() -> {
             File(path).openOutputStreamOrThrow()
         }
+
         this.isContentScheme() -> {
             openResolverOutputStreamOrThrow(contentResolver)
         }
+
         else -> throw RuntimeException("Incorrect uri scheme: $scheme")
     }
 }
@@ -613,7 +654,7 @@ fun Uri.openFileDescriptor(resolver: ContentResolver, mode: String = "r"): Parce
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun Uri.openFileDescriptorOrThrow(resolver: ContentResolver, mode: String = "r"): ParcelFileDescriptor = try {
-        resolver.openFileDescriptor(this, mode) ?: throw NullPointerException("Cannot open OutputStream on $this")
-    } catch (e: FileNotFoundException) {
-        throw RuntimeException(formatException(e, "openFileDescriptor"))
-    }
+    resolver.openFileDescriptor(this, mode) ?: throw NullPointerException("Cannot open OutputStream on $this")
+} catch (e: FileNotFoundException) {
+    throw RuntimeException(formatException(e, "openFileDescriptor"))
+}

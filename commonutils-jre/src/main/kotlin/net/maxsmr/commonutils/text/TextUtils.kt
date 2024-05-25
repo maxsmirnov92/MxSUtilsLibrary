@@ -32,11 +32,17 @@ fun removeExtension(name: String?): String {
 }
 
 /**
- * Дописать расширение; убирает существующее, если есть
+ * Дописать расширение
+ * @param shouldReplace true для убирания существующего
  */
-fun appendOrReplaceExtension(name: String?, extension: String?): String {
+@JvmOverloads
+fun appendExtension(
+    name: String?,
+    extension: String?,
+    shouldReplace: Boolean = true
+): String {
     name?.let {
-        val newName = removeExtension(name)
+        val newName = if (shouldReplace) removeExtension(name) else name
         if (newName.isNotEmpty()) {
             return if (!isEmpty(extension)) {
                 "$newName.$extension"

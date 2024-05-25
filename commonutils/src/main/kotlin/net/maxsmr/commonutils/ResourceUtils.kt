@@ -41,46 +41,46 @@ fun isResourceExists(resources: Resources, resId: Int) = getResourceName(resourc
  * @return имя ресурса с указанным [resId], если таковой существует
  */
 fun getResourceName(resources: Resources, resId: Int): String? =
-        try {
-            resources.getResourceName(resId)
-        } catch (ignore: Resources.NotFoundException) {
-            null
-        }
+    try {
+        resources.getResourceName(resId)
+    } catch (ignore: Resources.NotFoundException) {
+        null
+    }
 
 /**
  * проверить факт существования ресурса с указанными именем и типом
  */
 fun isResourceIdentifierExists(
-        context: Context,
-        resName: String,
-        type: String
+    context: Context,
+    resName: String,
+    type: String
 ) = getResourceIdentifier(context, resName, type) != 0
 
 /**
  * @return идентификатор ресурса с указанными именем и типом, если таковой существует
  */
 fun getResourceIdentifier(
-        context: Context,
-        resName: String,
-        type: String
+    context: Context,
+    resName: String,
+    type: String
 ) = context.resources.getIdentifier(resName, type, context.packageName)
 
 /**
  * Получить Id ресурса из [TypedArray] или null
  */
 fun getResourceIdOrNull(typedArray: TypedArray, attributeValue: Int): Int? =
-        typedArray.getResourceId(attributeValue, INVALID_ATTRIBUTE).also {
-            if (it != INVALID_ATTRIBUTE) {
-                return it
-            }
-            return null
+    typedArray.getResourceId(attributeValue, INVALID_ATTRIBUTE).also {
+        if (it != INVALID_ATTRIBUTE) {
+            return it
         }
+        return null
+    }
 
 fun getColoredDrawable(
-        resources: Resources,
-        @DrawableRes icon: Int,
-        @ColorInt color: Int,
-        mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
+    resources: Resources,
+    @DrawableRes icon: Int,
+    @ColorInt color: Int,
+    mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ): Drawable? {
     ResourcesCompat.getDrawable(resources, icon, null)?.let {
         setDrawableColor(it, ColorStateList.valueOf(color), mode)
@@ -93,9 +93,9 @@ fun getColoredDrawable(
  * Выставить цветовой фильтр [ColorStateList] для [Drawable]
  */
 fun setDrawableColor(
-        drawable: Drawable,
-        color: ColorStateList,
-        mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
+    drawable: Drawable,
+    color: ColorStateList,
+    mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ) {
     if (isAtLeastLollipop()) {
         DrawableCompat.setTintList(drawable, color)
@@ -118,7 +118,7 @@ fun getColorFromAttrs(context: Context, attrs: IntArray): Int {
 
 fun getDimensionFromAttrs(context: Context, attrs: IntArray): Int {
     val array = context.theme
-            .obtainStyledAttributes(attrs)
+        .obtainStyledAttributes(attrs)
     try {
         return array.getDimension(0, 0f).toInt()
     } finally {
@@ -159,10 +159,10 @@ fun getNavigationBarHeight(context: Context): Int {
 
 @JvmOverloads
 fun readStringsFromAsset(
-        context: Context,
-        assetName: String,
-        count: Int = 0,
-        charsetName: String = CHARSET_DEFAULT
+    context: Context,
+    assetName: String,
+    count: Int = 0,
+    charsetName: String = CHARSET_DEFAULT
 ): List<String> = try {
     readStringsFromAssetOrThrow(context, assetName, count, charsetName)
 } catch (e: RuntimeException) {
@@ -176,10 +176,10 @@ fun readStringsFromAsset(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun readStringsFromAssetOrThrow(
-        context: Context,
-        assetName: String,
-        count: Int = 0,
-        charsetName: String = CHARSET_DEFAULT
+    context: Context,
+    assetName: String,
+    count: Int = 0,
+    charsetName: String = CHARSET_DEFAULT
 ): List<String> {
     return try {
         openAssetStreamOrThrow(context, assetName).readStringsOrThrow(count, charsetName = charsetName)
@@ -190,10 +190,10 @@ fun readStringsFromAssetOrThrow(
 
 @JvmOverloads
 fun readStringsFromRes(
-        context: Context,
-        @RawRes resId: Int,
-        count: Int = 0,
-        charsetName: String = CHARSET_DEFAULT
+    context: Context,
+    @RawRes resId: Int,
+    count: Int = 0,
+    charsetName: String = CHARSET_DEFAULT
 ): List<String> = try {
     readStringsFromResOrThrow(context, resId, count, charsetName)
 } catch (e: RuntimeException) {
@@ -207,10 +207,10 @@ fun readStringsFromRes(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun readStringsFromResOrThrow(
-        context: Context,
-        @RawRes resId: Int,
-        count: Int = 0,
-        charsetName: String = CHARSET_DEFAULT
+    context: Context,
+    @RawRes resId: Int,
+    count: Int = 0,
+    charsetName: String = CHARSET_DEFAULT
 ): List<String> {
     return try {
         openRawResourceOrThrow(context, resId).readStringsOrThrow(count, charsetName = charsetName)
@@ -221,12 +221,12 @@ fun readStringsFromResOrThrow(
 
 @JvmOverloads
 fun copyFromAssets(
-        context: Context,
-        assetName: String,
-        targetFile: File?,
-        rewrite: Boolean = true,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_BUFFER_SIZE
+    context: Context,
+    assetName: String,
+    targetFile: File?,
+    rewrite: Boolean = true,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE
 ) = try {
     copyFromAssetsOrThrow(context, assetName, targetFile, rewrite, notifier, buffSize)
     true
@@ -238,12 +238,12 @@ fun copyFromAssets(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun copyFromAssetsOrThrow(
-        context: Context,
-        assetName: String,
-        targetFile: File?,
-        rewrite: Boolean = true,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_BUFFER_SIZE
+    context: Context,
+    assetName: String,
+    targetFile: File?,
+    rewrite: Boolean = true,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
     if (targetFile == null) {
         throw NullPointerException("targetFile is null")
@@ -258,12 +258,12 @@ fun copyFromAssetsOrThrow(
 
 @JvmOverloads
 fun copyFromRawRes(
-        context: Context,
-        @RawRes resId: Int,
-        targetFile: File?,
-        rewrite: Boolean = true,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_BUFFER_SIZE
+    context: Context,
+    @RawRes resId: Int,
+    targetFile: File?,
+    rewrite: Boolean = true,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE
 ) = try {
     copyFromRawResOrThrow(context, resId, targetFile, rewrite, notifier, buffSize)
 } catch (e: RuntimeException) {
@@ -280,12 +280,12 @@ fun copyFromRawRes(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun copyFromRawResOrThrow(
-        context: Context,
-        @RawRes resId: Int,
-        targetFile: File?,
-        rewrite: Boolean = true,
-        notifier: IStreamNotifier? = null,
-        buffSize: Int = DEFAULT_BUFFER_SIZE
+    context: Context,
+    @RawRes resId: Int,
+    targetFile: File?,
+    rewrite: Boolean = true,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
     if (targetFile == null) {
         throw NullPointerException("targetFile is null")
@@ -358,32 +358,36 @@ fun createColorStateListFromRes(context: Context, @XmlRes res: Int): ColorStateL
 
 @ColorInt
 fun getDefaultColor(c: ColorStateList?): Int =
-        c?.defaultColor ?: 0
+    c?.defaultColor ?: 0
 
 
 fun getDefaultDrawable(d: StateListDrawable?): Drawable? =
-        if (d != null) getDrawableForState(d, 0) else null
+    if (d != null) getDrawableForState(d, 0) else null
 
 fun getDrawableForState(stateListDrawable: StateListDrawable, vararg state: Int): Drawable? {
     val clazz = StateListDrawable::class.java
     val parameterTypes = arrayOf(IntArray::class.java)
-    val index = invokeMethod<Int>(clazz,
-            "getStateDrawableIndex",
-            parameterTypes,
-            stateListDrawable,
-            state)
-    return invokeMethod<Drawable>(clazz,
-            "getStateDrawable",
-            parameterTypes,
-            stateListDrawable,
-            index)
+    val index = invokeMethod<Int>(
+        clazz,
+        "getStateDrawableIndex",
+        parameterTypes,
+        stateListDrawable,
+        state
+    )
+    return invokeMethod<Drawable>(
+        clazz,
+        "getStateDrawable",
+        parameterTypes,
+        stateListDrawable,
+        index
+    )
 }
 
 fun cloneDrawable(drawable: Drawable?): Drawable? {
     drawable?.let {
         val cloned = drawable.constantState?.newDrawable()
         return cloned?.mutate() // mutate() -> not affecting other instances, for e.g. after setting color filter
-                ?: drawable.mutate()
+            ?: drawable.mutate()
     }
     return null
 }

@@ -371,11 +371,11 @@ fun TextView.setLinkFromHtml(
 }
 
 /**
- * Выставить сформированные [RangeSpanInfo] по заданной подстроке
+ * Выставить сформированные [ISpanInfo] по заданной подстроке
  */
 fun TextView.setSpanText(
     text: CharSequence,
-    vararg spanInfo: RangeSpanInfo
+    vararg spanInfo: ISpanInfo
 ): CharSequence = setTextWithMovementMethod(text.createSpanText(*spanInfo))
 
 /**

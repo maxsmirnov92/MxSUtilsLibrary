@@ -8,6 +8,7 @@ import android.view.ViewTreeObserver
 import android.view.inputmethod.InputMethodManager
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
+import net.maxsmr.commonutils.isAtLeastR
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
@@ -75,6 +76,9 @@ fun showKeyboard(
     if (requestFocus) {
         hostView.requestFocus()
     }
+    if (isAtLeastR()) {
+        hostView.windowInsetsController?.show(WindowInsetsCompat.Type.ime())
+    }
     val imm = hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?
         ?: return false
     return imm.showSoftInput(hostView, flags)
@@ -96,6 +100,9 @@ fun hideKeyboard(
     hostView?.let {
         if (clearFocus) {
             hostView.clearFocus()
+        }
+        if (isAtLeastR()) {
+            hostView.windowInsetsController?.hide(WindowInsetsCompat.Type.ime())
         }
         hostView.windowToken?.let {
             val imm = hostView.context.getSystemService(Context.INPUT_METHOD_SERVICE) as InputMethodManager?

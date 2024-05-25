@@ -3,6 +3,8 @@
     <string name="empty_data">No data</string>
     <string name="divider_comma">,\u00A0</string>
 
+    <string name="size_single_format">%1$s %2$s</string>
+
     <string name="speed_nanos_format">%1$s %2$s/ns</string>
     <string name="speed_micros_format">%1$s %2$s/mcs</string>
     <string name="speed_millis_format">%1$s %2$s/ms</string>
