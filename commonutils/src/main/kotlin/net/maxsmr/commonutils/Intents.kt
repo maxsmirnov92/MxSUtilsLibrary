@@ -195,14 +195,17 @@ fun getShareFileIntent(
     }
 }
 
-@JvmOverloads
-fun getSendEmailIntent(email: String?, sendAction: SendAction = SENDTO): Intent? {
-    val uri = if (!email.isNullOrEmpty()) {
+fun getSendEmailUri(email: String?): Uri {
+    return if (!email.isNullOrEmpty()) {
         Uri.fromParts(URL_SCHEME_MAIL, email, null)
     } else {
         Uri.parse("$URL_SCHEME_MAIL:")
     }
-    return getSendEmailIntent(uri, sendAction)
+}
+
+@JvmOverloads
+fun getSendEmailIntent(email: String?, sendAction: SendAction = SENDTO): Intent? {
+    return getSendEmailIntent(getSendEmailUri(email), sendAction)
 }
 
 @JvmOverloads
@@ -255,7 +258,7 @@ fun Intent.flatten(context: Context): List<Intent> {
     }
 }
 
-fun <T: Serializable> Intent.getSerializableExtraCompat(name: String, clazz: Class<T>): T? {
+fun <T : Serializable> Intent.getSerializableExtraCompat(name: String, clazz: Class<T>): T? {
     return if (isAtLeastTiramisu()) {
         getSerializableExtra(name, clazz)
     } else {
@@ -263,7 +266,7 @@ fun <T: Serializable> Intent.getSerializableExtraCompat(name: String, clazz: Cla
     }
 }
 
-fun <T: Serializable> Bundle.getSerializableCompat(name: String, clazz: Class<T>): T? {
+fun <T : Serializable> Bundle.getSerializableCompat(name: String, clazz: Class<T>): T? {
     return if (isAtLeastTiramisu()) {
         getSerializable(name, clazz)
     } else {

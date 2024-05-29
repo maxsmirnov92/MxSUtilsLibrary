@@ -43,10 +43,12 @@ interface ILoadState<D> : Serializable {
      */
     fun isSuccess() = !isLoading && wasLoaded && error == null
 
+    fun isError() = getStatus() == Status.ERROR
+
     fun isSuccessWithData(dataValidator: ((D?) -> Boolean)? = null) =
         isSuccess() && hasData(dataValidator)
 
-    fun getStatus(dataValidator: ((D?) -> Boolean)? = { it != null }): Status = when {
+    fun getStatus(): Status = when {
         isLoading -> Status.LOADING
         isSuccess() -> Status.SUCCESS
         else -> Status.ERROR
@@ -186,10 +188,12 @@ data class LoadState<D>(
             stateOf(null, createEmptyStateFunc = { LoadState<D>() }).first
 
         @JvmStatic
-        fun <D> loading(): LoadState<D> =
+        @JvmOverloads
+        fun <D> loading(data: D? = null): LoadState<D> =
             stateOf(null,
                 wasLoaded = false,
                 isLoading = true,
+                data = data,
                 createEmptyStateFunc = { LoadState<D>() }).first
 
         @JvmStatic
@@ -201,10 +205,11 @@ data class LoadState<D>(
                 createEmptyStateFunc = { LoadState<D>() }).first
 
         @JvmStatic
-        fun <D> error(error: Throwable): LoadState<D> =
+        fun <D> error(error: Throwable, data: D? = null): LoadState<D> =
             stateOf(null,
                 wasLoaded = true,
                 isLoading = false,
+                data = data,
                 error = error,
                 createEmptyStateFunc = { LoadState<D>() }).first
     }
