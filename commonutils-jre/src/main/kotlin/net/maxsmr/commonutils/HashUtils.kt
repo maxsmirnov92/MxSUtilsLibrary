@@ -6,12 +6,10 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatExc
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
 import net.maxsmr.commonutils.text.EMPTY_STRING
-import net.maxsmr.commonutils.text.appendSubstringWhileLess
 import java.io.BufferedInputStream
 import java.io.File
 import java.io.IOException
 import java.io.InputStream
-import java.math.BigInteger
 import java.nio.charset.Charset
 import java.security.DigestInputStream
 import java.security.MessageDigest
@@ -19,9 +17,15 @@ import java.security.NoSuchAlgorithmException
 import java.util.*
 import java.util.zip.CRC32
 
-const val MD5_HASH_CHARS_COUNT_DEFAULT = 32
-
 private const val HEX_CHARS = "0123456789ABCDEF"
+
+const val ALGORITHM_SHA1 = "SHA-1"
+const val ALGORITHM_MD5 = "MD5"
+const val ALGORITHM_CRC32 = "CRC32"
+
+const val REG_EX_ALGORITHM_SHA1 = "^[a-fA-F0-9]{40}$"
+const val REG_EX_ALGORITHM_MD5 = "^[a-fA-F0-9]{32}$"
+const val REG_EX_ALGORITHM_CRC32 = "^[a-fA-F0-9]{8}$"
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("HashUtils")
 
@@ -62,25 +66,25 @@ fun InputStream.digest(algorithm: MessageDigest, closeStream: Boolean = true): B
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun InputStream.digestOrThrow(algorithm: MessageDigest, closeStream: Boolean = true): ByteArray {
-    algorithm.reset()
+fun InputStream.digestOrThrow(md: MessageDigest, closeStream: Boolean = true): ByteArray {
+    md.reset()
     val bis = BufferedInputStream(this)
-    val dis = DigestInputStream(bis, algorithm)
+//    val dis = DigestInputStream(bis, md)
     try {
-        while (dis.read() != -1) {
+        bis.use {
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            var bytesRead: Int
+            do {
+                bytesRead = bis.read(buffer)
+                if (bytesRead > 0) {
+                    md.update(buffer, 0, bytesRead)
+                }
+            } while (bytesRead > 0)
         }
     } catch (e: IOException) {
-        throwRuntimeException(e, "read")
-    } finally {
-        if (closeStream) {
-            try {
-                close()
-            } catch (e: IOException) {
-                logException(logger, e, "close")
-            }
-        }
+        throwRuntimeException(e, "digest read/update")
     }
-    return algorithm.digest()
+    return md.digest()
 }
 
 @Throws(RuntimeException::class)
@@ -147,16 +151,6 @@ fun ByteArray?.getCrc32Hash(): Long = this?.let {
         this.value
     }
 } ?: 0L
-
-@JvmOverloads
-fun ByteArray?.toMd5String(minCharsCount: Int = MD5_HASH_CHARS_COUNT_DEFAULT): String = this?.let {
-    appendSubstringWhileLess(
-            BigInteger(1, this).toString(16),
-            minCharsCount,
-            true,
-            "0"
-    ).toString()
-} ?: EMPTY_STRING
 
 fun ByteArray?.toHexString(): String {
     this ?: return EMPTY_STRING

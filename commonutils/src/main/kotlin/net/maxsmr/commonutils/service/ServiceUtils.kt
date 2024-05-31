@@ -271,16 +271,16 @@ fun <S : Service> startNoCheck(
     startForeground: Boolean = false
 ): Boolean {
     val i = createServiceIntent(context.packageName, serviceClass, args, action)
-    return if (startForeground && isAtLeastOreo()) {
-        context.startForegroundService(i) != null
-    } else {
-        try {
+    return try {
+        if (startForeground && isAtLeastOreo()) {
+            context.startForegroundService(i) != null
+        } else {
             context.startService(i) != null
-        } catch (e: Exception) {
-            // на >=O выбросится если вызов был с опозданием после определённого интервала при уходе аппа в bg
-            logException(logger, e, "Cannot start service with intent $i")
-            false
         }
+    } catch (e: Exception) {
+        // на >=O выбросится если вызов был с опозданием после определённого интервала при уходе аппа в bg
+        logException(logger, e, "Cannot start service with intent $i")
+        false
     }
 }
 
