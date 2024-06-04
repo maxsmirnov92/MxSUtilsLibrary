@@ -5,6 +5,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -253,7 +254,14 @@ fun Intent.wrapChooser(
  * интентов под каждое приложение
  */
 fun Intent.flatten(context: Context): List<Intent> {
-    return context.packageManager.queryIntentActivities(this, 0).map {
+    return (if (isAtLeastTiramisu()) {
+        context.packageManager.queryIntentActivities(
+            this,
+            PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong())
+        )
+    } else {
+        context.packageManager.queryIntentActivities(this, 0)
+    }).map {
         Intent(this).apply { setPackage(it.activityInfo.packageName) }
     }
 }

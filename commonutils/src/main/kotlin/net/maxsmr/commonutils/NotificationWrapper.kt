@@ -40,7 +40,7 @@ class NotificationWrapper(
         params: ChannelParams,
         notificationConfig: NotificationCompat.Builder.() -> Unit,
     ): Notification {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+        if (isAtLeastOreo()) {
             val channel = params.channel()
             notificationManager.createNotificationChannel(channel)
         }

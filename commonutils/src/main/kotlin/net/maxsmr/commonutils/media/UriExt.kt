@@ -169,9 +169,10 @@ fun Uri.writeFromStreamOrThrow(
     inputStream: InputStream,
     notifier: IStreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
+    closeInput: Boolean = true
 ) {
     inputStream.copyStreamOrThrow(
-        openOutputStreamOrThrow(contentResolver), notifier, buffSize
+        openOutputStreamOrThrow(contentResolver), notifier, buffSize, closeInput = closeInput
     )
 }
 
