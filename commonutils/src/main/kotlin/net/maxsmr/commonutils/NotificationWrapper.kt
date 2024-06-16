@@ -3,6 +3,7 @@ package net.maxsmr.commonutils
 import android.annotation.SuppressLint
 import android.app.Notification
 import android.app.NotificationChannel
+import android.app.NotificationChannelGroup
 import android.content.Context
 import android.os.Build
 import androidx.annotation.MainThread
@@ -18,16 +19,54 @@ class NotificationWrapper(
 
     private val notificationManager = NotificationManagerCompat.from(context)
 
-    /**
-     * @param channelConfig дополнительный конфигуратор для [NotificationChannel] для версий выше O,
-     * плюсом к тому, что был в констуркторе [ChannelParams]
-     */
+    private val channelGroupsMap = mutableMapOf<String, NotificationChannelGroup>()
+
+    private val channelsMap = mutableMapOf<String, NotificationChannel>()
+
+    private val notificationsMap = mutableMapOf<Int, NotificationCompat.Builder>()
+
+    fun createNotificationChannelGroup(
+        params: ChannelParams.ChannelGroupParams
+    ): NotificationChannelGroup? {
+        return if (isAtLeastOreo()) {
+            NotificationChannelGroup(params.groupId, params.name).apply {
+                if (isAtLeastPie()) {
+                    params.description?.takeIf { it.isNotEmpty() }?.let {
+                        description = it
+                    }
+                }
+                channelGroupsMap[params.groupId] = this
+                notificationManager.createNotificationChannelGroup(this)
+            }
+        } else {
+            null
+        }
+    }
+
+    fun createNotificationChannel(params: ChannelParams): Boolean {
+        return if (isAtLeastOreo()) {
+            val channel = params.channel()
+            params.groupParams?.groupId?.takeIf { it.isNotEmpty() }?.let {
+                if (channelGroupsMap.containsKey(it)) {
+                    channel.group = it
+                }
+            }
+            notificationManager.createNotificationChannel(channel)
+            channelsMap[params.id] = channel
+            true
+        } else {
+            false
+        }
+    }
+
+    fun getNotificationChannel(channelId: String) = notificationManager.getNotificationChannel(channelId)
+
     fun show(
         notificationId: Int,
         params: ChannelParams,
         notificationConfig: NotificationCompat.Builder.() -> Unit,
     ) {
-        show(notificationId, create(params, notificationConfig))
+        show(notificationId, create(notificationId, params, notificationConfig))
     }
 
     fun show(notificationId: Int, notification: Notification) {
@@ -37,14 +76,21 @@ class NotificationWrapper(
     }
 
     fun create(
+        notificationId: Int,
         params: ChannelParams,
         notificationConfig: NotificationCompat.Builder.() -> Unit,
     ): Notification {
-        if (isAtLeastOreo()) {
-            val channel = params.channel()
-            notificationManager.createNotificationChannel(channel)
+        if (!channelsMap.containsKey(params.id)) {
+            params.groupParams?.let {
+                createNotificationChannelGroup(it)
+            }
+            createNotificationChannel(params)
         }
-        return NotificationCompat.Builder(context, params.id).apply(notificationConfig).build()
+        // реюз Builder
+        val b = notificationsMap.getOrPut(notificationId) {NotificationCompat.Builder(context, params.id)}
+        b.clearActions()
+        b.clearPeople()
+        return b.apply(notificationConfig).build()
     }
 
     fun cancel(notificationId: Int) {
@@ -54,6 +100,7 @@ class NotificationWrapper(
     class ChannelParams(
         val id: String,
         val name: CharSequence,
+        val groupParams: ChannelGroupParams? = null,
         val importance: Int = NotificationManagerCompat.IMPORTANCE_DEFAULT,
         val config: (NotificationChannel.() -> Unit)? = null,
     ) {
@@ -63,6 +110,12 @@ class NotificationWrapper(
         fun channel() = NotificationChannel(id, name, importance).apply {
             config?.invoke(this)
         }
+
+        data class ChannelGroupParams(
+            val groupId: String,
+            val name: CharSequence,
+            val description: String? = null
+        )
     }
 
     companion object {

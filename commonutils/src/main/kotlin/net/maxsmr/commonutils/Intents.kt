@@ -240,9 +240,9 @@ fun Intent.wrapChooser(
 ): Intent {
     return if (!title.isNullOrEmpty()) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && intentSender != null) {
-            Intent.createChooser(this, type, intentSender)
+            Intent.createChooser(this, title, intentSender)
         } else {
-            Intent.createChooser(this, type)
+            Intent.createChooser(this, title)
         }
     } else {
         this

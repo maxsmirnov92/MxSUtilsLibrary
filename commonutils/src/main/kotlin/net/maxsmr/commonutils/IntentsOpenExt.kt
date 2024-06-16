@@ -99,7 +99,7 @@ private fun Context.openSendDataIntent(
     return startActivitySafe(
         intent.apply {
             sendIntentFunc?.invoke(this)
-            setFlags(flags)
+            addFlags(flags)
         }.wrapChooser(chooserTitle).apply {
             chooserIntentFunc?.invoke(this)
         },
@@ -117,7 +117,7 @@ fun Context.openDocument(
     errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
 ): Boolean =
     startActivitySafe(
-        getOpenDocumentIntent(type, mimeTypes).setFlags(flags),
+        getOpenDocumentIntent(type, mimeTypes).addFlags(flags),
         options = options,
         errorHandler = errorHandler
     )
