@@ -98,7 +98,7 @@ fun split(text: String, expression: String): Array<String> {
 
 @JvmOverloads
 fun isEmpty(s: CharSequence?, shouldCheckNullString: Boolean = false): Boolean =
-    s == null || s.isEmpty() || shouldCheckNullString && "null".equals(
+    s.isNullOrEmpty() || shouldCheckNullString && "null".equals(
         s.toString(),
         ignoreCase = true
     )

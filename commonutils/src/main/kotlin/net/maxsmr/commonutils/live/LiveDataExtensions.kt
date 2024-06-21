@@ -207,7 +207,7 @@ fun <X> LiveData<X>.filter(condition: (X) -> Boolean): LiveData<X> {
 /**
  * Реализует фильтрацию данных LiveData в стиле цепочек RxJava
  */
-fun <X> LiveData<X?>.filterNotNull(): LiveData<X> {
+fun <X> LiveData<X>.filterNotNull(): LiveData<X> {
     val result = MediatorLiveData<X>()
     result.addSource(this) { x -> if (x != null) result.value = x }
     return result
@@ -285,7 +285,7 @@ fun <X, Y> LiveData<X>.updateEveryWithTransform(
 /**
  * Присваивает [LiveData] новое значение, только если оно изменилось
  */
-fun <T> MutableLiveData<T>.setValueIfNew(newValue: T?): Boolean {
+fun <T> MutableLiveData<T>.setValueIfNew(newValue: T): Boolean {
     if (this.value != newValue) {
         value = newValue
         return true

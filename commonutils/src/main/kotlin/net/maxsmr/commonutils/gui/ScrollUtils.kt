@@ -114,7 +114,7 @@ fun ViewGroup.scrollToView(
     fromStart: Boolean = true,
     smoothScroll: Boolean = true,
     changeFocus: Boolean = false,
-    activity: Activity?,
+    activity: Activity? = null,
 ) {
     val coords = calculateCoordsForScroll(target, isVertically, fromStart)
     scrollTo(coords.first, coords.second, smoothScroll, changeFocus, activity)
@@ -129,7 +129,7 @@ fun ViewGroup.scrollTo(
     y: Int,
     smoothScroll: Boolean = true,
     changeFocus: Boolean = false,
-    activity: Activity?,
+    activity: Activity? = null,
 ) {
     if (changeFocus) {
         // если не очистить текущий фокус,

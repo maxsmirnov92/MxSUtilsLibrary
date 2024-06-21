@@ -2,12 +2,14 @@ package net.maxsmr.commonutils
 
 import android.annotation.SuppressLint
 import android.app.Activity
-import android.content.ActivityNotFoundException
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
+import android.os.PowerManager
+import android.provider.Settings
+import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
@@ -24,7 +26,7 @@ fun Context.openEmailIntent(
     chooserIntentFunc: ((Intent) -> Unit)? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
-    errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     return openEmailIntent(
         getSendEmailUri(email),
@@ -52,7 +54,7 @@ fun Context.openEmailIntent(
     chooserIntentFunc: ((Intent) -> Unit)? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
-    errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     val intent = getSendEmailIntent(uri, sendAction) ?: return false
     return openSendDataIntent(
@@ -74,7 +76,7 @@ fun Context.openSendDataIntent(
     chooserIntentFunc: ((Intent) -> Unit)? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
-    errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     return openSendDataIntent(
         getSendIntent(sendAction),
@@ -94,7 +96,7 @@ private fun Context.openSendDataIntent(
     chooserIntentFunc: ((Intent) -> Unit)?,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
-    errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     return startActivitySafe(
         intent.apply {
@@ -114,7 +116,7 @@ fun Context.openDocument(
     mimeTypes: List<String>,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
-    errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean =
     startActivitySafe(
         getOpenDocumentIntent(type, mimeTypes).addFlags(flags),
@@ -128,7 +130,7 @@ fun Context.openSystemBrowser(
     mimeType: String? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
-    errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     return if (url.isEmpty()) {
         false
@@ -143,13 +145,48 @@ fun Context.openSystemBrowser(
     mimeType: String? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
-    errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     return startActivitySafe(
         getViewUrlIntent(uri, mimeType, context = this).addFlags(flags),
         options = options,
         errorHandler = errorHandler
     )
+}
+
+@RequiresApi(Build.VERSION_CODES.M)
+fun Context.openBatteryOptimizationSettings() {
+    startActivitySafe(
+        Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            .setData(Uri.parse("package:$packageName"))
+    ) {
+        startActivitySafe(Intent().apply {
+            setClassName(
+                "com.miui.powerkeeper",
+                "com.miui.powerkeeper.ui.HiddenAppsConfigActivity"
+                // HiddenAppsContainerManagementActivity
+                // PowerHideModeActivity
+            )
+            putExtra("package_name", packageName);
+        }) {
+            startActivitySafe(getAppSettingsIntent(this))
+        }
+    }
+}
+
+@SuppressLint("BatteryLife")
+@RequiresApi(Build.VERSION_CODES.M)
+fun Context.openRequestIgnoreBatteryOptimizations() {
+    val powerService = getSystemService(Context.POWER_SERVICE) as PowerManager? ?: return
+    val packageName: String = packageName
+    if (!powerService.isIgnoringBatteryOptimizations(packageName)) {
+        startActivitySafe(
+            Intent().apply {
+                action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
+                data = Uri.parse("package:$packageName")
+            }
+        )
+    }
 }
 
 @SuppressLint("QueryPermissionsNeeded")
@@ -167,7 +204,7 @@ fun Context.startActivitySafe(
     intent: Intent,
     requestCode: Int? = null,
     options: Bundle? = null,
-    errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean = startActivitySafeForAny(intent, requestCode, options = options, errorHandler = errorHandler)
 
 @JvmOverloads
@@ -175,7 +212,7 @@ fun Activity.startActivitySafe(
     intent: Intent,
     requestCode: Int? = null,
     options: Bundle? = null,
-    errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     return startActivitySafeForAny(intent, requestCode, options, errorHandler)
 }
@@ -185,7 +222,7 @@ fun Fragment.startActivitySafe(
     intent: Intent,
     requestCode: Int? = null,
     options: Bundle? = null,
-    errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     return startActivitySafeForAny(intent, requestCode, options, errorHandler)
 }
@@ -194,7 +231,7 @@ private fun Any.startActivitySafeForAny(
     intent: Intent,
     requestCode: Int? = null,
     options: Bundle? = null,
-    errorHandler: ((ActivityNotFoundException) -> Unit)? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     val context: Context = when (this) {
         is Context -> this
@@ -213,8 +250,8 @@ private fun Any.startActivitySafeForAny(
             context.startActivity(intent, options)
         }
         true
-    } catch (e: ActivityNotFoundException) {
-        // при оборачивании в chooser, не будет брошено
+    } catch (e: RuntimeException) {
+        // при оборачивании в chooser ActivityNotFoundException не будет брошено
         logger.e(formatException(e, "startActivity/startActivityForResult"))
         errorHandler?.invoke(e)
         false

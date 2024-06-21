@@ -2,6 +2,7 @@ package net.maxsmr.commonutils.live.field
 
 import android.content.Context
 import android.os.Parcelable
+import androidx.annotation.MainThread
 import androidx.annotation.StringRes
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -15,10 +16,11 @@ import java.util.Locale
 
 
 @Suppress("unused", "MemberVisibilityCanBePrivate")
+@MainThread
 class Field<T> private constructor(
     private val _value: MutableLiveData<T>,
-    private val setValueFunction: (T?) -> Boolean,
-    private val getValueFunction: () -> T?,
+    private val setValueFunction: (T) -> Boolean,
+    private val getValueFunction: () -> T,
 ) {
 
     private lateinit var emptyPredicate: (T) -> Boolean
@@ -86,7 +88,7 @@ class Field<T> private constructor(
      * Текущее значение поля;
      * Для сеттера нулабельный тип является потенциально ошибочным
      */
-    var value: T?
+    var value: T
         get() = getValueFunction()
         set(value) {
             if (setValueFunction(value)) {
@@ -408,7 +410,7 @@ class Field<T> private constructor(
         protected open fun valueSetter(
             fieldValue: MutableLiveData<T>,
             distinctUntilChanged: Boolean,
-        ): (T?) -> Boolean = {
+        ): (T) -> Boolean = {
             it.checkPersistable()
             if (distinctUntilChanged) {
                 fieldValue.setValueIfNew(it)
@@ -418,7 +420,7 @@ class Field<T> private constructor(
             }
         }
 
-        protected fun T?.checkPersistable() {
+        protected fun T.checkPersistable() {
             if (this == null || handle == null) return
             //Проверка для того, чтобы краш был сразу при первой попытке установки nonSerializable или nonParcelable
             //значения поля при использовании persist, а не при попытке сохранения в Bundle (которая отлавливается не всегда)
@@ -427,29 +429,9 @@ class Field<T> private constructor(
             }
         }
 
-        protected open fun valueGetter(fieldValue: MutableLiveData<T>): () -> T? = {
-            fieldValue.value
-        }
-    }
-
-    class NonNullStringBuilder @JvmOverloads constructor(
-        initialValue: String = EMPTY_STRING,
-    ) : Builder<String>(initialValue) {
-
-        override fun valueSetter(
-            fieldValue: MutableLiveData<String>,
-            distinctUntilChanged: Boolean,
-        ): (String?) -> Boolean = {
-            if (distinctUntilChanged) {
-                fieldValue.setValueIfNew(it.orEmpty())
-            } else {
-                fieldValue.value = it.orEmpty()
-                true
-            }
-        }
-
-        override fun valueGetter(fieldValue: MutableLiveData<String>): () -> String? = {
-            fieldValue.value.orEmpty()
+        protected open fun valueGetter(fieldValue: MutableLiveData<T>): () -> T = {
+            @Suppress("UNCHECKED_CAST")
+            fieldValue.value as T
         }
     }
 }

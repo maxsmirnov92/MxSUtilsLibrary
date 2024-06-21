@@ -83,21 +83,48 @@ fun <D> Field<D>.clearErrorOnChange(lifecycleOwner: LifecycleOwner, onChanged: (
 }
 
 /**
- * @return true если все обязательные
+ * @return null, если все обязательные
  * (или необязательные при непустом значении в зав-ти от [ifEmpty])
- * филды прошли валидацию
+ * филды прошли валидацию,
+ * или еррорный филд
  */
 @JvmOverloads
-fun Collection<Field<*>>.validateAndSetByRequired(ifEmpty: Boolean = true): Boolean {
-    return validateAndSetBy { it.validateAndSetByRequired(ifEmpty) }
+fun Collection<Field<*>>.validateAndSetByRequiredFirstField(ifEmpty: Boolean = true): Field<*>? {
+    return validateAndSetByFirst { it.validateAndSetByRequired(ifEmpty) }
 }
 
-fun Collection<Field<*>>.validateAndSetBy(predicate: (Field<*>) -> Boolean): Boolean {
-    var hasError = false
+@JvmOverloads
+fun Collection<Field<*>>.validateAndSetByRequiredFields(ifEmpty: Boolean = true): List<Field<*>> {
+    return validateAndSet { it.validateAndSetByRequired(ifEmpty) }
+}
+
+@JvmOverloads
+fun Collection<Field<*>>.validateAndSetByRequiredFirst(ifEmpty: Boolean = true): Boolean {
+    return validateAndSetByRequiredFirstField(ifEmpty) == null
+}
+
+@JvmOverloads
+fun Collection<Field<*>>.validateAndSetByRequired(ifEmpty: Boolean = true): Boolean {
+    return validateAndSetByRequiredFields(ifEmpty).isEmpty()
+}
+
+fun Collection<Field<*>>.validateAndSetByFirst(predicate: (Field<*>) -> Boolean): Field<*>? {
+    var errorField: Field<*>? = null
     forEach {
         if (!predicate(it)) {
-            hasError = true
+            errorField = it
+            return@forEach
         }
     }
-    return !hasError
+    return errorField
+}
+
+fun Collection<Field<*>>.validateAndSet(predicate: (Field<*>) -> Boolean): List<Field<*>> {
+    val errorFields = mutableListOf<Field<*>>()
+    forEach {
+        if (!predicate(it)) {
+            errorFields.add(it)
+        }
+    }
+    return errorFields
 }

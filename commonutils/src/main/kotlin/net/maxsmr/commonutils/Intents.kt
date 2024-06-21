@@ -31,6 +31,9 @@ const val URL_SCHEME_MAIL = "mailto"
 fun getAppSettingsIntent(context: Context, packageName: String = context.packageName): Intent =
     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
         .setData(Uri.parse("package:$packageName"))
+// для MIUI:
+// setClassName("com.miui.securitycenter", "com.miui.appmanager.ApplicationsDetailsActivity")
+// putExtra("package_name", fragment.requireContext().packageName)
 
 @TargetApi(Build.VERSION_CODES.M)
 @JvmOverloads
