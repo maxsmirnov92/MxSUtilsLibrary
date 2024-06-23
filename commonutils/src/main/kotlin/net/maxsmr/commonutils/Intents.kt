@@ -1,6 +1,7 @@
 package net.maxsmr.commonutils
 
 import android.annotation.TargetApi
+import android.content.ComponentName
 import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
@@ -237,15 +238,32 @@ fun getSendIntent(sendAction: SendAction) = Intent(
     }
 )
 
+@JvmOverloads
+fun Intent.wrapChooserWithInitial(
+    context: Context,
+    title: String?,
+    intentSender: IntentSender? = null,
+): Intent = wrapChooser(
+    title,
+    intentSender,
+    flatten(context)
+)
+
+@JvmOverloads
 fun Intent.wrapChooser(
     title: String?,
-    intentSender: IntentSender? = null
+    intentSender: IntentSender? = null,
+    initialIntents: List<Intent>? = null
 ): Intent {
     return if (!title.isNullOrEmpty()) {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && intentSender != null) {
+        (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && intentSender != null) {
             Intent.createChooser(this, title, intentSender)
         } else {
             Intent.createChooser(this, title)
+        }).apply {
+            initialIntents?.takeIf { it.isNotEmpty() }?.let {
+                putExtra(Intent.EXTRA_INITIAL_INTENTS, ArrayList(it))
+            }
         }
     } else {
         this
@@ -254,18 +272,26 @@ fun Intent.wrapChooser(
 
 /**
  * Разделяет интент this, под который могут подходить несколько приложений, на список отдельных
- * интентов под каждое приложение
+ * интентов под каждое приложение;
+ * Может быть использован в [Intent.EXTRA_INITIAL_INTENTS];
+ * Требует <queries> в манифесте при targetSdkVersion = 30
  */
-fun Intent.flatten(context: Context): List<Intent> {
+fun Intent.flatten(context: Context, shouldFilterCaller: Boolean = true): List<Intent> {
+    val packageManager = context.packageManager
     return (if (isAtLeastTiramisu()) {
-        context.packageManager.queryIntentActivities(
+        packageManager.queryIntentActivities(
             this,
             PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong())
         )
     } else {
-        context.packageManager.queryIntentActivities(this, 0)
-    }).map {
-        Intent(this).apply { setPackage(it.activityInfo.packageName) }
+        packageManager.queryIntentActivities(this, 0)
+    }).filter {
+        !shouldFilterCaller || it.activityInfo.packageName != context.packageName
+    }.map {
+        Intent(this).apply {
+            `package` = it.activityInfo.packageName
+            component = ComponentName(it.activityInfo.packageName, it.activityInfo.name)
+        }
     }
 }
 

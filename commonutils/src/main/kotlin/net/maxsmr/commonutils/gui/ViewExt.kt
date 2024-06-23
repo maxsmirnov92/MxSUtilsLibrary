@@ -1158,28 +1158,39 @@ fun View.setClickTextWithAccessibilityDelegate(label: String) {
 /**
  * Может использоваться для отключения озвучивания процентов в SeekBar
  */
-fun View.disableTalkback() {
+fun View.disableTalkback(focusAction: ((Boolean) -> Unit)? = null) {
     ViewCompat.setAccessibilityDelegate(this, object : AccessibilityDelegateCompat() {
 
         override fun sendAccessibilityEvent(host: View, eventType: Int) {
-            if (eventType != AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_DESCRIPTION) {
-                super.sendAccessibilityEvent(host, eventType)
+            var eventType: Int = eventType
+            if (eventType == AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUSED) {
+//                focusAction?.invoke(true)
+                eventType = AccessibilityEvent.TYPE_VIEW_ACCESSIBILITY_FOCUS_CLEARED;
+            }
+            super.sendAccessibilityEvent(host, eventType)
+        }
+
+        override fun sendAccessibilityEventUnchecked(host: View, event: AccessibilityEvent) {
+            if (event.eventType !in arrayOf(
+                    AccessibilityEvent.TYPE_WINDOW_CONTENT_CHANGED,
+                    AccessibilityEvent.TYPE_VIEW_SELECTED
+                )
+            ) {
+                super.sendAccessibilityEventUnchecked(host, event)
             }
         }
 
-        override fun performAccessibilityAction(host: View, action: Int, args: Bundle?): Boolean {
-            if (action in arrayOf(
-                    AccessibilityNodeInfo.ACTION_SCROLL_FORWARD,
-                    AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD
-                )
-            ) {
-                super.sendAccessibilityEvent(host, AccessibilityEvent.CONTENT_CHANGE_TYPE_CONTENT_DESCRIPTION)
+        override fun onInitializeAccessibilityEvent(host: View, event: AccessibilityEvent) {
+            super.onInitializeAccessibilityEvent(host, event)
+            val eventType = event.eventType
+            if (eventType == AccessibilityEvent.TYPE_VIEW_HOVER_ENTER) {
+                focusAction?.invoke(true)
+            } else if (eventType == AccessibilityEvent.TYPE_VIEW_HOVER_EXIT) {
+                focusAction?.invoke(false)
             }
-            return super.performAccessibilityAction(host, action, args)
         }
     })
 }
-
 private fun View.setAccessibilityAction(action: (AccessibilityNodeInfoCompat) -> Unit) {
     ViewCompat.setAccessibilityDelegate(this, object : AccessibilityDelegateCompat() {
         var didPerformAccessibilityAction = false
