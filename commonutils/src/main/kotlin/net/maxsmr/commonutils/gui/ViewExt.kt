@@ -1124,7 +1124,7 @@ fun View.hideByReferenceViews(vararg otherViews: View) {
     visibility = if (isGone) View.GONE else View.INVISIBLE
 }
 
-private fun TextView.setTextWithMovementMethod(text: CharSequence?): CharSequence {
+fun TextView.setTextWithMovementMethod(text: CharSequence?): CharSequence {
     this.text = text
     movementMethod = LinkMovementMethod.getInstance()
     return orEmpty(text)

@@ -19,7 +19,7 @@ private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("OpenIntent
 
 @JvmOverloads
 fun Context.openEmailIntent(
-    email: String?,
+    address: String?,
     sendAction: SendAction = SendAction.SENDTO,
     chooserTitle: String? = null,
     sendIntentFunc: ((Intent) -> Unit)? = null,
@@ -29,7 +29,8 @@ fun Context.openEmailIntent(
     errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     return openEmailIntent(
-        getSendEmailUri(email),
+        getSendEmailUri(address),
+        address?.let { listOf(address) },
         sendAction,
         chooserTitle,
         sendIntentFunc,
@@ -48,6 +49,7 @@ fun Context.openEmailIntent(
 @JvmOverloads
 fun Context.openEmailIntent(
     uri: Uri,
+    addresses: List<String>? = null,
     sendAction: SendAction = SendAction.SENDTO,
     chooserTitle: String? = null,
     sendIntentFunc: ((Intent) -> Unit)? = null,
@@ -56,7 +58,7 @@ fun Context.openEmailIntent(
     options: Bundle? = null,
     errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
-    val intent = getSendEmailIntent(uri, sendAction) ?: return false
+    val intent = getSendEmailIntent(uri, sendAction, addresses) ?: return false
     return openSendDataIntent(
         intent,
         chooserTitle,

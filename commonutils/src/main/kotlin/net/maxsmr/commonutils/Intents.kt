@@ -21,6 +21,7 @@ import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.io.File
 import java.io.Serializable
 
+const val URL_ANY_MARKET_FORMAT = "market://details?id=%s"
 const val URL_PLAY_MARKET_FORMAT = "https://play.google.com/store/apps/details?id=%s"
 const val ACTION_HUAWEI_MARKET = "com.huawei.appmarket.intent.action.AppDetail"
 
@@ -64,6 +65,9 @@ fun getBrowseLocationIntent(latitude: Double, longitude: Double) = getViewIntent
 ).apply {
     setPackage("com.google.android.apps.maps")
 }
+
+fun getAnyMarketIntent(appId: String): Intent =
+    getViewUrlIntent(URL_ANY_MARKET_FORMAT.format(appId), null)
 
 fun getPlayMarketIntent(appId: String): Intent =
     getViewUrlIntent(URL_PLAY_MARKET_FORMAT.format(appId), null)
@@ -214,12 +218,19 @@ fun getSendEmailIntent(email: String?, sendAction: SendAction = SENDTO): Intent?
 }
 
 @JvmOverloads
-fun getSendEmailIntent(uri: Uri, sendAction: SendAction = SENDTO): Intent? {
+fun getSendEmailIntent(
+    uri: Uri,
+    sendAction: SendAction = SENDTO,
+    addresses: List<String>? = null
+): Intent? {
     if (URL_SCHEME_MAIL != uri.scheme) {
         return null
     }
     return getSendIntent(sendAction).apply {
         data = uri
+        addresses?.let {
+            putExtra(Intent.EXTRA_EMAIL, it.toTypedArray())
+        }
     }
 }
 
