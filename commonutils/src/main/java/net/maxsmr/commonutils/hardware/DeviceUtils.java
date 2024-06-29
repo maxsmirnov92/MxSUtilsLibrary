@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.hardware;
 
+import android.Manifest;
 import android.annotation.SuppressLint;
-import android.annotation.TargetApi;
 import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
@@ -15,6 +15,7 @@ import android.os.Build;
 import android.os.PowerManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
+import android.text.TextUtils;
 import android.view.WindowManager;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -25,16 +26,21 @@ import net.maxsmr.commonutils.shell.ShellWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
 import static net.maxsmr.commonutils.SdkVersionsKt.isAtLeastLollipop;
-import static net.maxsmr.commonutils.SdkVersionsKt.isAtLeastOreo;
 import static net.maxsmr.commonutils.format.DateFormatUtilsKt.formatDate;
+import static net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException;
 import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
+import static net.maxsmr.commonutils.text.SymbolConstsKt.EMPTY_STRING;
+
+import androidx.annotation.RequiresPermission;
 
 public final class DeviceUtils {
 
@@ -44,7 +50,7 @@ public final class DeviceUtils {
         throw new AssertionError("no instances.");
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
+
     public static HashMap<String, UsbDevice> getDevicesList(@NotNull Context context) {
         UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         if (usbManager == null) {
@@ -53,13 +59,12 @@ public final class DeviceUtils {
         return usbManager.getDeviceList();
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB_MR1)
-    public static UsbAccessory[] getAccessoryList(@NotNull Context context) {
+    public static List<UsbAccessory> getAccessoryList(@NotNull Context context) {
         UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
         if (usbManager == null) {
             throw new RuntimeException(UsbManager.class.getSimpleName() + " is null");
         }
-        return usbManager.getAccessoryList();
+        return Arrays.asList(usbManager.getAccessoryList());
     }
 
     public static int getBatteryPercentage(@NotNull Context context) {
@@ -106,7 +111,7 @@ public final class DeviceUtils {
             } catch (Exception e) {
                 // saw an NPE on rooted Galaxy Nexus Android 4.1.1
                 // android.os.IPowerManager$Stub$Proxy.acquireWakeLock(IPowerManager.java:288)
-                logger.e("an Exception occurred during acquire(): " + e.getMessage(), e);
+                logger.e(formatException(e, "acquire"));
             }
         }
         return false;
@@ -119,7 +124,7 @@ public final class DeviceUtils {
             }
         } catch (Exception e) {
             // just to make sure if the PowerManager crashes while acquiring a wake lock
-            logger.e("an Exception occurred during release(): " + e.getMessage(), e);
+            logger.e(formatException(e, "release"));
         }
     }
 
@@ -137,20 +142,27 @@ public final class DeviceUtils {
         // kl.disableKeyguard();
     }
 
-    /**
-     * Get the IMEI
-     *
-     * @param context Context to use
-     * @return IMEI or null if not accessible
-     */
     @SuppressLint({"HardwareIds", "MissingPermission"})
     @Nullable
-    public static String getIMEI(@NotNull Context context) {
-        TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
-        if (telephonyManager == null) {
-            throw new RuntimeException(TelephonyManager.class.getSimpleName() + " is null, cannot get IMEI");
+    public static String getDeviceId(@NotNull Context context) {
+        String deviceId = EMPTY_STRING;
+
+        if (android.os.Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+            TelephonyManager telephonyManager = (TelephonyManager) context.getSystemService(Context.TELEPHONY_SERVICE);
+            try {
+                deviceId = telephonyManager.getDeviceId();
+            } catch (RuntimeException e) {
+                logger.e(e);
+            }
         }
-        return isAtLeastOreo() ? telephonyManager.getImei() : telephonyManager.getDeviceId();
+        if (TextUtils.isEmpty(deviceId)) {
+            deviceId = Settings.Secure.getString(
+                    context.getContentResolver(),
+                    Settings.Secure.ANDROID_ID);
+        }
+        // FirebaseInstanceId.getInstance().getId();
+
+        return deviceId;
     }
 
     /**
@@ -185,6 +197,7 @@ public final class DeviceUtils {
     /**
      * requires reboot permission that granted only to system apps
      */
+    @RequiresPermission(Manifest.permission.REBOOT)
     public static boolean reboot(Context context) {
         logger.d("reboot()");
         PowerManager powerManager = ((PowerManager) context.getSystemService(Context.POWER_SERVICE));
@@ -195,7 +208,7 @@ public final class DeviceUtils {
             powerManager.reboot(null);
             return true;
         } catch (Exception e) {
-            logger.e("an Exception occurred during reboot(): " + e.getMessage());
+            logger.e(formatException(e, "reboot"));
             return false;
         }
     }
@@ -209,7 +222,7 @@ public final class DeviceUtils {
 
         // send an intent to reload
         Intent intent = new Intent(Intent.ACTION_AIRPLANE_MODE_CHANGED);
-        intent.putExtra("state", enable); // !isEnabled
+        intent.putExtra("state", enable);
         context.sendBroadcast(intent);
     }
 
@@ -314,7 +327,7 @@ public final class DeviceUtils {
 //        SystemClock.setCurrentTimeMillis(timestamp);
 //        ShellUtils.execProcess(Arrays.asList(ShellUtils.SU_PROCESS_NAME, "-c", "chmod", "664", "/dev/alarm"), null, sc, null, false);
 
-        String formatTime = formatDate(new Date(timestamp), "yyyyMMdd.HHmmss", null);
+        String formatTime = formatDate(new Date(timestamp), "yyyyMMdd.HHmmss", Locale.getDefault());
         new ShellWrapper(false).executeCommand(Arrays.asList("date", "-s", formatTime), true, DEFAULT_TARGET_CODE, 0, TimeUnit.MILLISECONDS, sc);
     }
 
@@ -335,25 +348,13 @@ public final class DeviceUtils {
     public static Arch getArch() {
         String abi = getAbi();
 
-        switch (abi) {
-            case "armeabi":
-            case "armeabi-v7a":
-            case "armeabi-v7a-hard":
-                return Arch.ARM;
-
-            case "arm64":
-            case "arm64-v8a":
-                return Arch.ARM64;
-
-            case "x86":
-                return Arch.X86;
-
-            case "x86_64":
-                return Arch.X86_64;
-
-            default:
-                return Arch.UNKNOWN;
-        }
+        return switch (abi) {
+            case "armeabi", "armeabi-v7a", "armeabi-v7a-hard" -> Arch.ARM;
+            case "arm64", "arm64-v8a" -> Arch.ARM64;
+            case "x86" -> Arch.X86;
+            case "x86_64" -> Arch.X86_64;
+            default -> Arch.UNKNOWN;
+        };
     }
 
     public enum Arch {
@@ -378,7 +379,8 @@ public final class DeviceUtils {
             this.code = code;
         }
 
-        public LanguageCode fromValue(String value) {
+        @Nullable
+        public LanguageCode resolve(String value) {
             for (LanguageCode e : LanguageCode.values()) {
                 if (e.getCode().equalsIgnoreCase(value))
                     return e;
@@ -386,12 +388,5 @@ public final class DeviceUtils {
             return null;
         }
 
-        public LanguageCode fromValueOrThrow(String value) {
-            LanguageCode code = fromValue(value);
-            if (code == null) {
-                throw new IllegalArgumentException("Incorrect value " + value + " for enum type " + LanguageCode.class.getName());
-            }
-            return code;
-        }
     }
 }

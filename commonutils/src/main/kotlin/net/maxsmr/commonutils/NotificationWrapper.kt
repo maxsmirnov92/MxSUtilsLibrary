@@ -10,12 +10,17 @@ import androidx.annotation.MainThread
 import androidx.annotation.RequiresApi
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import net.maxsmr.commonutils.logger.BaseLogger
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import java.lang.RuntimeException
 
 @MainThread
 class NotificationWrapper(
     private val context: Context,
     private val notificationPermissionChecker: () -> Boolean
 ) {
+
+    private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("NotificationWrapper")
 
     private val notificationManager = NotificationManagerCompat.from(context)
 
@@ -69,9 +74,14 @@ class NotificationWrapper(
         show(notificationId, create(notificationId, params, notificationConfig))
     }
 
+    @SuppressLint("MissingPermission")
     fun show(notificationId: Int, notification: Notification) {
         if (notificationPermissionChecker()) {
-            notificationManager.notify(notificationId, notification)
+            try {
+                notificationManager.notify(notificationId, notification)
+            } catch (e: RuntimeException) {
+                logger.e(e)
+            }
         }
     }
 
