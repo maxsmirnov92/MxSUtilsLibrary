@@ -7,7 +7,9 @@
 *.iws
 
 .gradle
+.kotlin
 .idea/
+!.idea/codeStyles/*
 
 #################
 # generated files
@@ -18,5 +20,4 @@
 /temp
 _mirror
 
-keystore.properties
 local.properties

@@ -2,7 +2,7 @@
   {
     "id": "commonutils-jre",
     "type": "lib",
-    "versionName": "1.0",
+    "versionName": "1.1",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,
@@ -11,7 +11,7 @@
   {
     "id": "commonutils",
     "type": "lib",
-    "versionName": "1.1.1.0",
+    "versionName": "1.1.1.1",
     "versionCode": 1,
     "stable": true,
     "unstableVersion": 0,

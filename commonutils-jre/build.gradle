@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 apply from: "$rootDir/buildSrc/javaPreBuildLib.gradle"
 
 jar {
@@ -14,8 +16,8 @@ jar {
 //    from { configurations.compileClasspath.collect { it.isDirectory() ? it : zipTree(it) } }
 }
 
-tasks.withType(org.jetbrains.kotlin.gradle.tasks.KotlinCompile).all {
-    kotlinOptions {
+tasks.withType(KotlinCompile).configureEach {
+    kotlinOptions  {
         jvmTarget = "$jvmVersion"
     }
 }

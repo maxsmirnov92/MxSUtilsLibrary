@@ -68,10 +68,6 @@ android {
         }
     }
 
-    dexOptions {
-        javaMaxHeapSize "4G"
-    }
-
     kotlinOptions {
         jvmTarget = jvmVersion
     }

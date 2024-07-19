@@ -3,6 +3,7 @@
 //}
 apply from: "$rootDir/buildSrc/config.gradle"
 apply from: "$rootDir/buildSrc/buildUtils.gradle"
+apply from: "$rootDir/buildSrc/androidBuildTasks.gradle"
 
 apply plugin: 'com.android.library'
 apply plugin: 'kotlin-android'
@@ -32,7 +33,7 @@ android {
         def module = project.getModuleInfoByPath(project.path)
         versionCode project.getModuleVersionCode(module)
         versionName project.getModuleVersionName(module)
-        setProperty("archivesBaseName", "${project.name}-${versionName}")
+//        setProperty("archivesBaseName", "${project.name}-${versionName}")
 
         vectorDrawables.useSupportLibrary = true
 
@@ -72,28 +73,39 @@ android {
 //        }
     }
 
-    dexOptions {
-        javaMaxHeapSize "4G"
-    }
     kotlinOptions {
         jvmTarget = jvmVersion
     }
 
     libraryVariants.all { variant ->
         variant.outputs.all { output ->
-            def module = project.getModuleInfoByPath(project.path)
-            def baseName = "${project.name}-${variant.name}-${project.getModuleVersionName(module)}"
+            def baseName = "${project.name}-${variant.name}-${project.getModuleVersionNameByPath(project.path)}"
             def outputFileName = "${baseName}.aar"
             println "Setting aar name to $outputFileName for variant ${variant.name}"
             output.outputFileName = outputFileName
         }
     }
+
+    publishing {
+        singleVariant("release") {
+            withSourcesJar()
+        }
+    }
 }
 
-dependencies {
+artifacts {
+    archives sourcesJar
+//    archives javadocJar
+}
 
+//afterEvaluate {
+//    assembleRelease.finalizedBy aarWithSources
+//}
+
+dependencies {
     // libs/*.jar
-    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
+//    Direct local .aar file dependencies are not supported when building an AAR.
+//    implementation fileTree(dir: 'libs', include: ['*.jar', '*.aar'])
 
     // Jetbrains annotations
     api "org.jetbrains:annotations:$jetbrainsAnnotationsVersion"
