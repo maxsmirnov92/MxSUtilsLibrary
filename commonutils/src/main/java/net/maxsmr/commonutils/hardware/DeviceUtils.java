@@ -16,6 +16,7 @@ import android.os.PowerManager;
 import android.provider.Settings;
 import android.telephony.TelephonyManager;
 import android.text.TextUtils;
+import android.util.DisplayMetrics;
 import android.view.WindowManager;
 
 import net.maxsmr.commonutils.logger.BaseLogger;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
 
+import static net.maxsmr.commonutils.AppUtilsKt.getDisplayMetrics;
 import static net.maxsmr.commonutils.SdkVersionsKt.isAtLeastLollipop;
 import static net.maxsmr.commonutils.format.DateFormatUtilsKt.formatDate;
 import static net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException;
@@ -49,7 +51,6 @@ public final class DeviceUtils {
     public DeviceUtils() {
         throw new AssertionError("no instances.");
     }
-
 
     public static HashMap<String, UsbDevice> getDevicesList(@NotNull Context context) {
         UsbManager usbManager = (UsbManager) context.getSystemService(Context.USB_SERVICE);
@@ -331,6 +332,19 @@ public final class DeviceUtils {
         new ShellWrapper(false).executeCommand(Arrays.asList("date", "-s", formatTime), true, DEFAULT_TARGET_CODE, 0, TimeUnit.MILLISECONDS, sc);
     }
 
+    public DeviceType getScreenType(Context context) {
+        final DisplayMetrics outMetrics = getDisplayMetrics(context);
+        final int shortSize = Math.min(outMetrics.heightPixels, outMetrics.widthPixels);
+        final int shortSizeDp = shortSize * DisplayMetrics.DENSITY_DEFAULT / outMetrics.densityDpi;
+        if (shortSizeDp < 600) { // 0-599dp: "phone" UI with a separate status & navigation bar
+            return DeviceType.PHONE;
+        } else if (shortSizeDp < 720) { // 600-719dp: "phone" UI with modifications for larger screens
+            return DeviceType.HYBRID;
+        } else { // 720dp: "tablet" UI with a single combined status & navigation bar
+            return DeviceType.TABLET;
+        }
+    }
+
     /**
      * Get CPU ABI
      */
@@ -388,5 +402,9 @@ public final class DeviceUtils {
             return null;
         }
 
+    }
+
+    public enum DeviceType {
+        PHONE, HYBRID, TABLET
     }
 }

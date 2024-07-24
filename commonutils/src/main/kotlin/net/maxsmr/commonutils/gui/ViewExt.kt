@@ -637,7 +637,7 @@ fun View.setBackgroundTint(
     @ColorInt colorResId: Int,
     mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ): Drawable? {
-    with(getColoredDrawable(context.resources, iconResId, colorResId, mode)) {
+    with(context.resources.getColoredDrawable(iconResId, colorResId, mode)) {
         background = this
         return this
     }
@@ -652,7 +652,7 @@ fun ImageView.setTint(
     @ColorInt color: Int,
     mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ): Drawable? {
-    with(getColoredDrawable(context.resources, icon, color, mode)) {
+    with(context.resources.getColoredDrawable(icon, color, mode)) {
         setImageDrawable(this)
         return this
     }
@@ -713,11 +713,11 @@ fun ImageView.getRescaledImageViewSize(): Pair<Int?, Int?> {
 }
 
 fun View.getViewInset(): Int {
-    val statusBarHeight = getStatusBarHeight(this.context)
+    val statusBarHeight = context.resources.getStatusBarHeight()
     if (statusBarHeight < 0) {
         return 0
     }
-    val dm = this.context.resources.displayMetrics
+    val dm = context.resources.displayMetrics
     if (isPreLollipop() || this.height == dm.heightPixels || this.height == dm.heightPixels - statusBarHeight) {
         return 0
     }
@@ -1191,6 +1191,7 @@ fun View.disableTalkback(focusAction: ((Boolean) -> Unit)? = null) {
         }
     })
 }
+
 private fun View.setAccessibilityAction(action: (AccessibilityNodeInfoCompat) -> Unit) {
     ViewCompat.setAccessibilityDelegate(this, object : AccessibilityDelegateCompat() {
         var didPerformAccessibilityAction = false

@@ -11,10 +11,10 @@ import java.util.Collections;
 import java.util.List;
 
 import static net.maxsmr.commonutils.FileUtilsKt.createFile;
-import static net.maxsmr.commonutils.FileUtilsKt.readBytesFromFile;
-import static net.maxsmr.commonutils.FileUtilsKt.readStringsFromFile;
-import static net.maxsmr.commonutils.FileUtilsKt.writeBytesToFile;
-import static net.maxsmr.commonutils.FileUtilsKt.writeStringsToFile;
+import static net.maxsmr.commonutils.FileUtilsKt.readBytes;
+import static net.maxsmr.commonutils.FileUtilsKt.readStrings;
+import static net.maxsmr.commonutils.FileUtilsKt.writeBytes;
+import static net.maxsmr.commonutils.FileUtilsKt.writeStrings;
 
 public abstract class InstanceManager<T> {
 
@@ -39,16 +39,19 @@ public abstract class InstanceManager<T> {
     protected abstract T deserializeFromString(String data);
 
     public void saveAsByteArray(@NotNull T instance) {
-        writeBytesToFile(file, serializeAsByteArray(instance), false);
+        final byte[] array = serializeAsByteArray(instance);
+        if (array != null) {
+            writeBytes(file, array, false);
+        }
     }
 
     public void saveAsString(@NotNull T instance) {
-        writeStringsToFile(file, Collections.singleton(serializeAsString(instance)), false);
+        writeStrings(file, Collections.singleton(serializeAsString(instance)), false);
     }
 
     @Nullable
     public T loadFromByteArray() {
-        byte[] data = readBytesFromFile(file);
+        byte[] data = readBytes(file);
         if (data != null && data.length > 0) {
             return deserializeFromByteArray(data);
         }
@@ -57,8 +60,8 @@ public abstract class InstanceManager<T> {
 
     @Nullable
     public T loadFromString() {
-        List<String> data = readStringsFromFile(file);
-        if (data.size() > 0) {
+        List<String> data = readStrings(file);
+        if (!data.isEmpty()) {
             return deserializeFromString(data.get(0));
         }
         return null;

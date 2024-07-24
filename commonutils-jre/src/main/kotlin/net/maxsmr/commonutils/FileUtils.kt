@@ -28,11 +28,9 @@ const val DEPTH_UNLIMITED = -1
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("FileUtils")
 
-// TODO convert to extensions?
-
 fun getEnvPathFiles(): Set<File> {
     val result = mutableSetOf<File>()
-    val paths = (System.getenv("PATH") ?: EMPTY_STRING).split(":").toTypedArray()
+    val paths = (System.getenv("PATH").orEmpty()).split(":").toTypedArray()
     if (paths.isEmpty()) {
         return emptySet()
     }
@@ -42,21 +40,20 @@ fun getEnvPathFiles(): Set<File> {
     return result
 }
 
-val File?.extension: String get() = getExtension(this?.name)
+val File.extension: String get() = this.name.getExtension()
 
-fun File?.removeExtension(): String = removeExtension(this?.name)
+fun File.removeExtension(): String = this.name.removeExtension()
 
-fun File?.appendOrReplaceExtension(extension: String?): File? = this?.let {
-    File(this.parent, appendExtension(this.name, extension))
-}
+@JvmOverloads
+fun File.appendExtension(extension: String?, shouldReplace: Boolean = true): File =
+    File(this.parent, this.name.appendExtension(extension, shouldReplace))
 
-fun File?.appendPostfix(postfix: String?): File? = this?.let {
-    File(this.parent, appendPostfix(this.name, postfix))
-}
+fun File.appendPostfix(postfix: String?): File =
+    File(this.parent, this.name.appendPostfix(postfix))
 
 @JvmOverloads
 fun getPartitionSpace(
-    fileName: String?,
+    fileName: String,
     parentPath: String? = null,
     unit: SizeUnit = SizeUnit.BYTES,
     totalOrFree: Boolean,
@@ -67,7 +64,7 @@ fun getPartitionSpace(
 }
 
 fun getPartitionSpace(
-    file: File?,
+    file: File,
     unit: SizeUnit = SizeUnit.BYTES,
     totalOrFree: Boolean,
 ): Double = try {
@@ -79,21 +76,20 @@ fun getPartitionSpace(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun getPartitionSpaceOrThrow(
-    fileName: String?,
+    fileName: String,
     parentPath: String? = null,
     unit: SizeUnit = SizeUnit.BYTES,
     totalOrFree: Boolean
-): Double = getPartitionSpaceOrThrow(toFile(fileName, parentPath), unit, totalOrFree)
+): Double = toFile(fileName, parentPath)?.let { getPartitionSpaceOrThrow(it, unit, totalOrFree) } ?: run {
+    throw RuntimeException("File is null")
+}
 
 @Throws(RuntimeException::class)
 fun getPartitionSpaceOrThrow(
-    file: File?,
+    file: File,
     unit: SizeUnit = SizeUnit.BYTES,
     totalOrFree: Boolean,
 ): Double {
-    if (file == null) {
-        throw NullPointerException("file is null")
-    }
     if (!isDirExistsOrThrow(file) && !isFileExistsOrThrow(file)) {
         throw RuntimeException("file or dir '$file' not exists")
     }
@@ -104,18 +100,16 @@ fun getPartitionSpaceOrThrow(
     }
 }
 
-fun getCanonicalPath(file: File?): String {
-    return if (file != null) {
-        try {
-            file.canonicalPath ?: EMPTY_STRING
-        } catch (e: IOException) {
-            logException(logger, e, "getCanonicalPath on file '$file'")
-            file.absolutePath ?: EMPTY_STRING
-        }
-    } else EMPTY_STRING
+fun File.getCanonicalOrAbsolutePath(): String {
+    return try {
+        this.canonicalPath.orEmpty()
+    } catch (e: IOException) {
+        logException(logger, e, "getCanonicalPath on file '$this'")
+        this.absolutePath.orEmpty()
+    }
 }
 
-fun File?.isLocked(): Boolean {
+fun File.isLocked(): Boolean {
     lock().let {
         return try {
             it == null
@@ -125,8 +119,8 @@ fun File?.isLocked(): Boolean {
     }
 }
 
-fun File?.lock(isStrict: Boolean = false): FileLockInfo? {
-    if (this == null || !exists()) {
+fun File.lock(isStrict: Boolean = false): FileLockInfo? {
+    if (!exists()) {
         return null
     }
     var randomAccFile: RandomAccessFile? = null
@@ -227,25 +221,24 @@ fun getFileLengthOrThrow(file: File?): Long {
 }
 
 @JvmOverloads
-fun isFileReadOnlyAccessible(file: File?, isFile: Boolean = true) =
-    isFileReadAccessible(file, isFile) && !isFileWriteAccessible(file, isFile)
+fun File.isFileReadOnlyAccessible(isFile: Boolean = true) =
+    isReadAccessible(isFile) && !isWriteAccessible(isFile)
 
 @JvmOverloads
-fun isFileReadAccessible(file: File?, isFile: Boolean = true) =
-    isFileAccessible(file, isFile, forRead = true, forWrite = false)
+fun File.isReadAccessible(isFile: Boolean = true) =
+    isAccessible(isFile, forRead = true, forWrite = false)
 
 @JvmOverloads
-fun isFileWriteAccessible(file: File?, isFile: Boolean = true) =
-    isFileAccessible(file, isFile, forRead = false, forWrite = true)
+fun File.isWriteAccessible(isFile: Boolean = true) =
+    isAccessible(isFile, forRead = false, forWrite = true)
 
 @JvmOverloads
-fun isFileAccessible(
-    file: File?,
+fun File.isAccessible(
     isFile: Boolean = true,
     forRead: Boolean = true,
     forWrite: Boolean = true
 ): Boolean = try {
-    isFileAccessibleOrThrow(file, isFile, forRead, forWrite)
+    isAccessibleOrThrow(isFile, forRead, forWrite)
 } catch (e: RuntimeException) {
     logger.e(e)
     false
@@ -253,29 +246,30 @@ fun isFileAccessible(
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun isFileAccessibleOrThrow(
-    file: File?,
+fun File.isAccessibleOrThrow(
     isFile: Boolean = true,
     forRead: Boolean = true,
     forWrite: Boolean = true
 ): Boolean {
-    if (file == null) {
-        throw NullPointerException("file is null")
-    }
-    if (!(if (isFile) isFileExistsOrThrow(file) else isDirExistsOrThrow(file))) {
-        throw RuntimeException("file or dir '$file' not exists")
+    if (!(if (isFile) {
+            isFileExistsOrThrow(this)
+        } else {
+            isDirExistsOrThrow(this)
+        })
+    ) {
+        throw RuntimeException("file or dir '$this' not exists")
     }
     return try {
         var isAccessible = true
         if (forRead) {
-            isAccessible = isAccessible and file.canRead()
+            isAccessible = isAccessible and this.canRead()
         }
         if (forWrite) {
-            isAccessible = isAccessible and file.canWrite()
+            isAccessible = isAccessible and this.canWrite()
         }
         isAccessible
     } catch (e: SecurityException) {
-        throw RuntimeException(formatException(e, "canRead / canWrite on file '$file'"), e)
+        throw RuntimeException(formatException(e, "canRead / canWrite on file '$this'"), e)
     }
 }
 
@@ -430,7 +424,7 @@ fun checkPath(fileName: String?, parentPath: String?, createIfNotExists: Boolean
 
 @JvmOverloads
 fun createFile(
-    fileName: String?,
+    fileName: String,
     parentPath: String? = null,
     recreate: Boolean = true
 ): File? = try {
@@ -451,7 +445,7 @@ fun createFile(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun createFileOrThrow(
-    fileName: String?,
+    fileName: String,
     parentPath: String? = null,
     recreate: Boolean = true
 ): File {
@@ -482,7 +476,7 @@ fun createFileOrThrow(
 
 @JvmOverloads
 fun createDir(
-    dirName: String?,
+    dirName: String,
     parentPath: String? = null,
     throwIfExists: Boolean = false
 ): File? = try {
@@ -498,7 +492,7 @@ fun createDir(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun createDirOrThrow(
-    dirName: String?,
+    dirName: String,
     parentPath: String? = null,
     throwIfExists: Boolean = false
 ): File {
@@ -522,7 +516,7 @@ fun createDirOrThrow(
 }
 
 @JvmOverloads
-fun deleteEmptyDir(dir: File?, throwIfNotExists: Boolean = false) = try {
+fun deleteEmptyDir(dir: File, throwIfNotExists: Boolean = false) = try {
     deleteEmptyDirOrThrow(dir, throwIfNotExists)
     true
 } catch (e: RuntimeException) {
@@ -532,10 +526,7 @@ fun deleteEmptyDir(dir: File?, throwIfNotExists: Boolean = false) = try {
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun deleteEmptyDirOrThrow(dir: File?, throwIfNotExists: Boolean = false) {
-    if (dir == null) {
-        throw NullPointerException("dir is null")
-    }
+fun deleteEmptyDirOrThrow(dir: File, throwIfNotExists: Boolean = false) {
     if (!isDirExists(dir)) {
         if (throwIfNotExists) {
             throw RuntimeException("Cannot delete dir '$dir': already not exists")
@@ -555,7 +546,7 @@ fun deleteEmptyDirOrThrow(dir: File?, throwIfNotExists: Boolean = false) {
 }
 
 @JvmOverloads
-fun deleteFile(file: File?, throwIfNotExists: Boolean = false) = try {
+fun deleteFile(file: File, throwIfNotExists: Boolean = false) = try {
     deleteFileOrThrow(file, throwIfNotExists)
     true
 } catch (e: RuntimeException) {
@@ -565,10 +556,7 @@ fun deleteFile(file: File?, throwIfNotExists: Boolean = false) = try {
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun deleteFileOrThrow(file: File?, throwIfNotExists: Boolean = false) {
-    if (file == null) {
-        throw NullPointerException("file is null")
-    }
+fun deleteFileOrThrow(file: File, throwIfNotExists: Boolean = false) {
     if (!isFileExistsOrThrow(file)) {
         if (throwIfNotExists) {
             throw RuntimeException("Cannot delete file '$file': already not exists")
@@ -584,8 +572,8 @@ fun deleteFileOrThrow(file: File?, throwIfNotExists: Boolean = false) {
     }
 }
 
-fun resetFile(file: File?) = try {
-    resetFileOrThrow(file)
+fun File.resetFile() = try {
+    resetOrThrow()
     true
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -593,19 +581,16 @@ fun resetFile(file: File?) = try {
 }
 
 @Throws(RuntimeException::class)
-fun resetFileOrThrow(file: File?) {
-    if (file == null) {
-        throw NullPointerException("file is null")
+fun File.resetOrThrow() {
+    if (!isFileExistsOrThrow(this)) {
+        throw RuntimeException("file '$this' not exists")
     }
-    if (!isFileExistsOrThrow(file)) {
-        throw RuntimeException("file '$file' not exists")
-    }
-    if (getFileLengthOrThrow(file) == 0L) {
+    if (getFileLengthOrThrow(this) == 0L) {
         return
     }
     var ra: RandomAccessFile? = null
     try {
-        ra = RandomAccessFile(file, "rw")
+        ra = RandomAccessFile(this, "rw")
         ra.setLength(0)
     } catch (e: Exception) {
         throwRuntimeException(e)
@@ -620,32 +605,37 @@ fun resetFileOrThrow(file: File?) {
     }
 }
 
-fun isBinaryFile(f: File?): Boolean = try {
-    isBinaryFileOrThrow(f)
+fun File.isBinaryFile(): Boolean = try {
+    isBinaryOrThrow()
 } catch (e: RuntimeException) {
     logger.e(e)
     false
 }
 
 @Throws(RuntimeException::class)
-fun isBinaryFileOrThrow(f: File?): Boolean {
-    val data = readBytesFromFileOrThrow(f)
+fun File.isBinaryOrThrow(): Boolean {
+    val data = readBytesOrThrow()
     var ascii = 0
     var other = 0
     for (b in data) {
         if (b < 0x09) return true
-        if (b.toInt() == 0x09 || b.toInt() == 0x0A || b.toInt() == 0x0C || b.toInt() == 0x0D) ascii++ else if (b in 0x20..0x7E) ascii++ else other++
+        if (b.toInt() == 0x09 || b.toInt() == 0x0A || b.toInt() == 0x0C || b.toInt() == 0x0D) {
+            ascii++
+        } else if (b in 0x20..0x7E) {
+            ascii++
+        } else {
+            other++
+        }
     }
     return other != 0 && 100 * other / (ascii + other) > 95
 }
 
 @JvmOverloads
-fun readBytesFromFile(
-    file: File?,
+fun File.readBytes(
     offset: Int = 0,
     length: Int = 0
 ): ByteArray? = try {
-    readBytesFromFileOrThrow(file, offset, length)
+    readBytesOrThrow(offset, length)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
@@ -653,31 +643,26 @@ fun readBytesFromFile(
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun readBytesFromFileOrThrow(
-    file: File?,
+fun File.readBytesOrThrow(
     offset: Int = 0,
     length: Int = 0
 ): ByteArray {
-    if (file == null) {
-        throw NullPointerException("file is null")
-    }
-    if (!isFileValidOrThrow(file)) {
-        throw RuntimeException("Invalid file: '$file'")
+    if (!isFileValidOrThrow(this)) {
+        throw RuntimeException("Invalid file: '$this'")
     }
     return try {
-        file.openInputStreamOrThrow().readBytesOrThrow(offset, length)
+        this.openInputStreamOrThrow().readBytesOrThrow(offset, length)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "readBytesFromInputStreamOrThrow"), e)
     }
 }
 
 @JvmOverloads
-fun readStringsFromFile(
-    file: File?,
+fun File.readStrings(
     count: Int = 0,
     charsetName: String = CHARSET_DEFAULT
 ): List<String> = try {
-    readStringsFromFileOrThrow(file, count, charsetName)
+    readStringsOrThrow(count, charsetName)
 } catch (e: RuntimeException) {
     logger.e(e)
     emptyList()
@@ -685,28 +670,26 @@ fun readStringsFromFile(
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun readStringsFromFileOrThrow(
-    file: File?,
+fun File.readStringsOrThrow(
     count: Int = 0,
     charsetName: String = CHARSET_DEFAULT
 ): List<String> {
-    if (file == null || !isFileValidOrThrow(file)) {
-        throw RuntimeException("Incorrect file: '$file'")
+    if (!isFileValidOrThrow(this)) {
+        throw RuntimeException("Incorrect file: '$this'")
     }
     return try {
-        file.openInputStreamOrThrow().readStringsOrThrow(count, charsetName = charsetName)
+        openInputStreamOrThrow().readStringsOrThrow(count, charsetName = charsetName)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "readStringsFromInputStream"), e)
     }
 }
 
 @JvmOverloads
-fun writeBytesToFile(
-    file: File?,
-    data: ByteArray?,
+fun File.writeBytes(
+    data: ByteArray,
     append: Boolean = false
 ) = try {
-    writeBytesToFileOrThrow(file, data, append)
+    writeBytesOrThrow(data, append)
     true
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -715,35 +698,27 @@ fun writeBytesToFile(
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun writeBytesToFileOrThrow(
-    file: File?,
-    data: ByteArray?,
+fun File.writeBytesOrThrow(
+    data: ByteArray,
     append: Boolean = false
 ) {
-    if (file == null) {
-        throw NullPointerException("file is null")
-    }
-    if (data == null) {
-        throw NullPointerException("data is null")
-    }
-    if (!isFileExistsOrThrow(file)) {
-        createFileOrThrow(file.name, file.parent, !append)
+    if (!isFileExistsOrThrow(this)) {
+        createFileOrThrow(this.name, this.parent, !append)
     }
     return try {
-        file.openOutputStreamOrThrow(append).writeBytesOrThrow(data)
+        openOutputStreamOrThrow(append).writeBytesOrThrow(data)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "writeBytesToOutputStream"), e)
     }
 }
 
 @JvmOverloads
-fun writeStringsToFile(
-    file: File?,
+fun File.writeStrings(
     data: Collection<String>?,
     append: Boolean = false,
     charset: Charset = Charset.forName("UTF-8")
 ) = try {
-    writeStringsToFileOrThrow(file, data, append, charset)
+    writeStringsOrThrow(data, append, charset)
     true
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -752,20 +727,16 @@ fun writeStringsToFile(
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun writeStringsToFileOrThrow(
-    file: File?,
+fun File.writeStringsOrThrow(
     data: Collection<String>?,
     append: Boolean = false,
     charset: Charset = Charset.forName("UTF-8")
 ) {
-    if (file == null) {
-        throw NullPointerException("file is null")
-    }
-    if (!isFileExistsOrThrow(file)) {
-        createFileOrThrow(file.name, file.parent, !append)
+    if (!isFileExistsOrThrow(this)) {
+        createFileOrThrow(this.name, this.parent, !append)
     }
     val writer: Writer = try {
-        OutputStreamWriter(FileOutputStream(file, append), charset)
+        OutputStreamWriter(FileOutputStream(this, append), charset)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "create Writer"), e)
     }
@@ -777,67 +748,13 @@ fun writeStringsToFileOrThrow(
 }
 
 @JvmOverloads
-fun writeFromStreamToFile(
-    inputStream: InputStream?,
-    targetFile: File?,
-    append: Boolean = false,
-    notifier: IStreamNotifier? = null
-): File? = writeFromStreamToFile(inputStream, targetFile?.name, targetFile?.parent, append, notifier)
-
-@Throws(RuntimeException::class)
-@JvmOverloads
-fun writeFromStreamToFileOrThrow(
-    inputStream: InputStream?,
-    targetFile: File?,
-    append: Boolean = false,
-    notifier: IStreamNotifier? = null
-): File = writeFromStreamToFileOrThrow(inputStream, targetFile?.name, targetFile?.parent, append, notifier)
-
-@JvmOverloads
-fun writeFromStreamToFile(
-    inputStream: InputStream?,
-    targetFileName: String?,
-    parentPath: String?,
+fun File.writeFromStream(
+    inputStream: InputStream,
     append: Boolean = false,
     notifier: IStreamNotifier? = null,
-    buffSize: Int = DEFAULT_BUFFER_SIZE
-): File? = try {
-    writeFromStreamToFileOrThrow(inputStream, targetFileName, parentPath, append, notifier, buffSize)
-} catch (e: RuntimeException) {
-    logger.e(e)
-    null
-}
-
-@Throws(RuntimeException::class)
-@JvmOverloads
-fun writeFromStreamToFileOrThrow(
-    inputStream: InputStream?,
-    targetFileName: String?,
-    parentPath: String?,
-    append: Boolean = false,
-    notifier: IStreamNotifier? = null,
-    buffSize: Int = DEFAULT_BUFFER_SIZE
-): File {
-    if (inputStream == null) {
-        throw NullPointerException("inputStream is null")
-    }
-    val file: File = createFileOrThrow(targetFileName, parentPath, !append)
-    try {
-        inputStream.copyStreamOrThrow(file.openOutputStreamOrThrow(append), notifier, buffSize)
-    } catch (e: IOException) {
-        throwRuntimeException(e, "copyStream")
-    }
-    return file
-}
-
-@JvmOverloads
-fun writeToStreamFromFile(
-    outputStream: OutputStream?,
-    file: File?,
-    notifier: IStreamNotifier? = null,
-    buffSize: Int = DEFAULT_BUFFER_SIZE
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
 ): Boolean = try {
-    writeToStreamFromFileOrThrow(outputStream, file, notifier, buffSize)
+    writeFromStreamOrThrow(inputStream, append, notifier, buffSize)
     true
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -846,17 +763,44 @@ fun writeToStreamFromFile(
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun writeToStreamFromFileOrThrow(
-    outputStream: OutputStream?,
-    file: File?,
+fun File.writeFromStreamOrThrow(
+    inputStream: InputStream,
+    append: Boolean = false,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE,
+) {
+    if (!isFileExistsOrThrow(this)) {
+        throw RuntimeException("File not exists")
+    }
+    try {
+        inputStream.copyStreamOrThrow(this.openOutputStreamOrThrow(append), notifier, buffSize)
+    } catch (e: IOException) {
+        throwRuntimeException(e, "copyStream")
+    }
+}
+
+@JvmOverloads
+fun File.writeToStream(
+    outputStream: OutputStream,
+    notifier: IStreamNotifier? = null,
+    buffSize: Int = DEFAULT_BUFFER_SIZE
+): Boolean = try {
+    writeToStreamOrThrow(outputStream, notifier, buffSize)
+    true
+} catch (e: RuntimeException) {
+    logger.e(e)
+    false
+}
+
+@Throws(RuntimeException::class)
+@JvmOverloads
+fun File.writeToStreamOrThrow(
+    outputStream: OutputStream,
     notifier: IStreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
-    if (outputStream == null) {
-        throw NullPointerException("outputStreamv is null")
-    }
     try {
-        file.openInputStreamOrThrow().copyStreamOrThrow(outputStream, notifier, buffSize)
+        openInputStreamOrThrow().copyStreamOrThrow(outputStream, notifier, buffSize)
     } catch (e: IOException) {
         throwRuntimeException(e, "copyStream")
     }
@@ -864,28 +808,25 @@ fun writeToStreamFromFileOrThrow(
 
 @JvmOverloads
 fun moveFile(
-    sourceFile: File?,
-    targetFile: File?,
+    sourceFile: File,
+    targetFile: File,
     deleteIfExists: Boolean,
     deleteEmptyDirs: Boolean,
     preserveFileDate: Boolean = true,
     copyWithBuffering: Boolean = true,
     notifier: ISingleCopyNotifier? = null
 ): File? {
-    if (sourceFile == null) {
-        throw NullPointerException("sourceFile is null")
-    }
     if (sourceFile == targetFile) {
         logger.w("Cannot rename: files match ('$sourceFile')")
         return targetFile
     }
-    var targetFile = renameFile(sourceFile, targetFile?.parent, targetFile?.name, deleteIfExists, deleteEmptyDirs)
-    if (targetFile == null) {
+    var targetFile = renameFile(sourceFile, targetFile.parent, targetFile.name, deleteIfExists, deleteEmptyDirs)
+    if (targetFile != null) {
         targetFile = if (copyWithBuffering) {
-            copyFileWithBuffering(sourceFile, targetFile?.name, targetFile?.parent, deleteIfExists, preserveFileDate, notifier)
+            copyFileWithBuffering(sourceFile, targetFile.name, targetFile.parent, deleteIfExists, preserveFileDate, notifier)
         } else {
             try {
-                copyFileOrThrow(sourceFile, targetFile?.name, targetFile?.parent, deleteIfExists, preserveFileDate)
+                copyFileOrThrow(sourceFile, targetFile.name, targetFile.parent, deleteIfExists, preserveFileDate)
             } catch (e: RuntimeException) {
                 notifier?.onExceptionOccurred(e)
                 null
@@ -901,8 +842,8 @@ fun moveFile(
 }
 
 fun renameFile(
-    sourceFile: File?,
-    targetDir: String?,
+    sourceFile: File,
+    targetDir: String,
     newFileName: String?,
     deleteIfExists: Boolean,
     deleteEmptyDirs: Boolean
@@ -915,15 +856,12 @@ fun renameFile(
 
 @Throws(RuntimeException::class)
 fun renameFileOrThrow(
-    sourceFile: File?,
-    targetDir: String?,
+    sourceFile: File,
+    targetDir: String,
     newFileName: String?,
     deleteIfExists: Boolean,
     deleteEmptyDirs: Boolean
 ): File {
-    if (sourceFile == null) {
-        throw NullPointerException("sourceFile is null")
-    }
     if (!isFileExistsOrThrow(sourceFile)) {
         throw RuntimeException("Source file not exists: '$sourceFile'")
     }
@@ -967,27 +905,26 @@ fun renameFileOrThrow(
 
 @JvmOverloads
 fun copyFileWithBuffering(
-    sourceFile: File?,
-    targetFile: File?,
+    sourceFile: File,
+    targetFile: File,
     rewrite: Boolean = true,
     preserveFileDate: Boolean = true,
     notifier: ISingleCopyNotifier? = null
-): File? = copyFileWithBuffering(sourceFile, targetFile?.name, targetFile?.parent, rewrite, preserveFileDate, notifier)
+): File? = copyFileWithBuffering(sourceFile, targetFile.name, targetFile.parent, rewrite, preserveFileDate, notifier)
 
 /**
  * @return target file
  */
 @JvmOverloads
 fun copyFileWithBuffering(
-    sourceFile: File?,
-    targetName: String?,
+    sourceFile: File,
+    targetName: String,
     targetDir: String?,
     rewrite: Boolean = true,
     preserveFileDate: Boolean = true,
     notifier: ISingleCopyNotifier? = null
 ): File? {
-    if (sourceFile == null ||
-        try {
+    if (try {
             !isFileExistsOrThrow(sourceFile)
         } catch (e: RuntimeException) {
             notifier?.onExceptionOccurred(e)
@@ -997,8 +934,8 @@ fun copyFileWithBuffering(
         notifier?.onExceptionOccurred(RuntimeException("Source file not exists: '$sourceFile'"))
         return null
     }
-    val targetName = if (targetName.isNullOrEmpty()) sourceFile.name else targetName
-    val targetFile = if (targetDir != null && !isEmpty(targetName)) File(targetDir, targetName) else null
+    val targetName = targetName.ifEmpty { sourceFile.name }
+    val targetFile = toFile(targetName, targetDir)
     if (targetFile == null || targetFile == sourceFile) {
         notifier?.onExceptionOccurred(RuntimeException("Incorrect destination file: '$targetDir' (source file: '$sourceFile')"))
         return null
@@ -1017,9 +954,8 @@ fun copyFileWithBuffering(
         return null
     }
 
-    val resultFile = try {
-
-        writeFromStreamToFileOrThrow(fis, targetFile.name, targetFile.parent, !rewrite, if (notifier != null) object : IStreamNotifier {
+    try {
+        targetFile.writeFromStreamOrThrow(fis, !rewrite, if (notifier != null) object : IStreamNotifier {
 
             override val notifyInterval: Long
                 get() = notifier.notifyInterval
@@ -1031,19 +967,19 @@ fun copyFileWithBuffering(
 
     } catch (e: RuntimeException) {
         notifier?.onExceptionOccurred(e)
-        null
+        return null
     }
 
     if (preserveFileDate) {
-        setLastModified(resultFile, getLastModified(sourceFile))
+        setLastModified(targetFile, getLastModified(sourceFile))
     }
-    return null
+    return targetFile
 }
 
 @JvmOverloads
 fun copyFile(
-    sourceFile: File?,
-    targetName: String?,
+    sourceFile: File,
+    targetName: String,
     targetDir: String?,
     rewrite: Boolean = true,
     preserveFileDate: Boolean = true
@@ -1061,25 +997,29 @@ fun copyFile(
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun copyFileOrThrow(
-    sourceFile: File?,
-    targetName: String?,
+    sourceFile: File,
+    targetName: String,
     targetDir: String?,
     rewrite: Boolean = true,
     preserveFileDate: Boolean = true
 ): File {
-    if (sourceFile == null || !isFileValidOrThrow(sourceFile)) {
+    if (!isFileValidOrThrow(sourceFile)) {
         throw RuntimeException("Source file is not valid: '$sourceFile'")
     }
-    val targetName = if (targetName.isNullOrEmpty()) sourceFile.name else targetName
-    val targetFile = createFileOrThrow(targetName, targetDir, rewrite)
-    writeBytesToFileOrThrow(targetFile, readBytesFromFile(sourceFile), !rewrite)
+    val targetName = targetName.ifEmpty { sourceFile.name }
+    var targetFile = toFile(targetName, targetDir)
+    if (sourceFile == targetFile) {
+        throw RuntimeException("Source file is same as target: '$targetFile'")
+    }
+    targetFile = createFileOrThrow(targetName, targetDir, rewrite)
+    targetFile.writeBytesOrThrow(sourceFile.readBytesOrThrow(), !rewrite)
     if (preserveFileDate) {
         setLastModified(targetFile, getLastModified(sourceFile))
     }
     return targetFile
 }
 
-fun getLastModified(file: File?): Long = try {
+fun getLastModified(file: File): Long = try {
     getLastModifiedOrThrow(file)
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -1087,10 +1027,7 @@ fun getLastModified(file: File?): Long = try {
 }
 
 @Throws(RuntimeException::class)
-fun getLastModifiedOrThrow(file: File?): Long {
-    if (file == null) {
-        throw NullPointerException("file is null")
-    }
+fun getLastModifiedOrThrow(file: File): Long {
     return try {
         file.lastModified()
     } catch (e: SecurityException) {
@@ -1098,7 +1035,7 @@ fun getLastModifiedOrThrow(file: File?): Long {
     }
 }
 
-fun setLastModified(file: File?, timestamp: Long) = try {
+fun setLastModified(file: File, timestamp: Long) = try {
     setLastModifiedOrThrow(file, timestamp)
     true
 } catch (e: RuntimeException) {
@@ -1107,10 +1044,7 @@ fun setLastModified(file: File?, timestamp: Long) = try {
 }
 
 @Throws(RuntimeException::class)
-fun setLastModifiedOrThrow(file: File?, timestamp: Long) {
-    if (file == null) {
-        throw RuntimeException("file is null")
-    }
+fun setLastModifiedOrThrow(file: File, timestamp: Long) {
     try {
         if (!file.setLastModified(timestamp)) {
             throw RuntimeException("setLastModified failed (false) on file '$file'")
@@ -1137,7 +1071,7 @@ fun getSize(
 
 @JvmOverloads
 fun getSize(
-    fromFile: File?,
+    fromFile: File,
     depth: Int = DEPTH_UNLIMITED,
     notifier: IGetNotifier? = null,
 ): Long {
@@ -1172,7 +1106,7 @@ fun getFiles(
 
 @JvmOverloads
 fun getFiles(
-    fromFile: File?,
+    fromFile: File,
     mode: GetMode = GetMode.ALL,
     comparator: Comparator<in File>? = null,
     depth: Int = DEPTH_UNLIMITED,
@@ -1184,7 +1118,7 @@ fun getFiles(
  * @return collected set of files or directories from specified directories without source files
  */
 private fun getFilesRecursive(
-    fromFile: File?,
+    fromFile: File,
     mode: GetMode = GetMode.ALL,
     comparator: Comparator<in File>? = null,
     depth: Int = DEPTH_UNLIMITED,
@@ -1194,10 +1128,6 @@ private fun getFilesRecursive(
     val result = mutableSetOf<File>()
     var depth = if (depth == 0) DEPTH_UNLIMITED else depth
     if (depth != DEPTH_UNLIMITED && currentLevel >= depth) {
-        return result
-    }
-    if (fromFile == null) {
-        notifier?.onExceptionOccurred(NullPointerException("fromFile is null"))
         return result
     }
     if (!fromFile.exists()) {
@@ -1246,7 +1176,16 @@ private fun getFilesRecursive(
 //                    } else {
 //                        logger.w("Invalid file or folder: $f")
 //                    }
-                result.addAll(getFilesRecursive(f, mode, comparator, depth, if (f.isDirectory) currentLevel + 1 else currentLevel, notifier))
+                result.addAll(
+                    getFilesRecursive(
+                        f,
+                        mode,
+                        comparator,
+                        depth,
+                        if (f.isDirectory) currentLevel + 1 else currentLevel,
+                        notifier
+                    )
+                )
             }
         }
     } else {
@@ -1266,7 +1205,7 @@ private fun getFilesRecursive(
 @JvmOverloads
 fun searchByName(
     name: String,
-    searchFile: File?,
+    searchFile: File,
     searchFlags: Int = MatchStringOption.AUTO.flag,
     searchFirst: Boolean = false,
     mode: GetMode = GetMode.ALL,
@@ -1274,7 +1213,7 @@ fun searchByName(
     depth: Int = DEPTH_UNLIMITED,
     notifier: IGetNotifier? = null,
 ): Set<File> =
-    searchByName(name, if (searchFile != null) listOf(searchFile) else null, searchFlags, searchFirst, mode, comparator, depth, notifier)
+    searchByName(name, listOf(searchFile), searchFlags, searchFirst, mode, comparator, depth, notifier)
 
 /**
  * @param comparator to sort each folders list and result set
@@ -1336,7 +1275,7 @@ fun sortFiles(files: Collection<File>?, comparator: Comparator<in File>): List<F
 @JvmOverloads
 fun moveFiles(
     sourceFile: File,
-    targetDir: File?,
+    targetDir: File,
     comparator: Comparator<in File>? = null,
     preserveFileDate: Boolean = true,
     copyWithBuffering: Boolean = true,
@@ -1359,7 +1298,7 @@ fun moveFiles(
 @JvmOverloads
 fun copyFiles(
     sourceFile: File,
-    targetDir: File?,
+    targetDir: File,
     comparator: Comparator<in File>? = null,
     preserveFileDate: Boolean = true,
     copyWithBuffering: Boolean = true,
@@ -1381,7 +1320,7 @@ fun copyFiles(
 private fun moveOrCopyFiles(
     moveOrCopy: Boolean,
     sourceFile: File,
-    targetDir: File?,
+    targetDir: File,
     comparator: Comparator<in File>? = null,
     preserveFileDate: Boolean = true,
     copyWithBuffering: Boolean = true,
@@ -1390,10 +1329,6 @@ private fun moveOrCopyFiles(
     multipleCopyNotifier: IMultipleCopyNotifier? = null
 ): Set<File> {
     val result = mutableSetOf<File>()
-    if (targetDir == null) {
-        multipleCopyNotifier?.onExceptionOccurred(NullPointerException("targetDir is null"))
-        return result
-    }
     try {
         createDirOrThrow(targetDir.absolutePath)
     } catch (e: RuntimeException) {
@@ -1551,8 +1486,8 @@ private fun moveOrCopyFiles(
 
 @Deprecated("use copyFiles")
 fun copyFilesWithBufferingLegacy(
-    fromFile: File?,
-    targetDir: File?,
+    fromFile: File,
+    targetDir: File,
     comparator: Comparator<in File>? = null,
     preserveFileDate: Boolean = true,
     depth: Int = DEPTH_UNLIMITED,
@@ -1582,8 +1517,8 @@ fun copyFilesWithBufferingLegacy(
  */
 @Deprecated("use copyFiles")
 private fun copyFilesWithBufferingLegacyRecursive(
-    fromFile: File?,
-    targetDir: File?,
+    fromFile: File,
+    targetDir: File,
     comparator: Comparator<in File>? = null,
     preserveFileDate: Boolean = true,
     depth: Int = DEPTH_UNLIMITED,
@@ -1598,26 +1533,27 @@ private fun copyFilesWithBufferingLegacyRecursive(
     val result = mutableSetOf<File>()
     var isValid = false
 
-    if (targetDir == null) {
-        multipleCopyNotifier?.onExceptionOccurred(NullPointerException("targetDir is null"))
-        return result
-    }
-    if (fromFile != null && fromFile.exists()) {
+    if (fromFile.exists()) {
         isValid = true
         if (currentLevel == 0) {
             totalFilesCount =
-                getFilesRecursive(fromFile, GetMode.FILES, comparator, depth, notifier = if (multipleCopyNotifier != null) object : IGetNotifier {
+                getFilesRecursive(
+                    fromFile,
+                    GetMode.FILES,
+                    comparator,
+                    depth,
+                    notifier = if (multipleCopyNotifier != null) object : IGetNotifier {
 
-                    override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean {
-                        multipleCopyNotifier.onCalculatingSize(file, collected, currentLevel)
-                        return true
-                    }
+                        override fun onGetFile(file: File, collected: Set<File>, currentLevel: Int): Boolean {
+                            multipleCopyNotifier.onCalculatingSize(file, collected, currentLevel)
+                            return true
+                        }
 
-                    override fun onGetFolder(folder: File, collected: Set<File>, currentLevel: Int): Boolean {
-                        multipleCopyNotifier.onCalculatingSize(folder, collected, currentLevel)
-                        return false
-                    }
-                } else null).size
+                        override fun onGetFolder(folder: File, collected: Set<File>, currentLevel: Int): Boolean {
+                            multipleCopyNotifier.onCalculatingSize(folder, collected, currentLevel)
+                            return false
+                        }
+                    } else null).size
             if (fromFile.isDirectory && targetDir.absolutePath.startsWith(fromFile.absolutePath)) {
                 val srcFiles = fromFile.listFiles()
                 if (srcFiles != null && srcFiles.isNotEmpty()) {
@@ -1765,7 +1701,7 @@ fun deleteFiles(
 
 @JvmOverloads
 fun deleteFiles(
-    fromFile: File?,
+    fromFile: File,
     deleteEmptyDirs: Boolean = true,
     comparator: Comparator<in File>? = null,
     depth: Int = DEPTH_UNLIMITED,
@@ -1778,7 +1714,7 @@ fun deleteFiles(
  * @param depth кол-во уровней вложенености (номер последней итерации == depth - 1)
  */
 private fun deleteFilesRecursive(
-    fromFile: File?,
+    fromFile: File,
     deleteEmptyDirs: Boolean = true,
     comparator: Comparator<in File>? = null,
     depth: Int = DEPTH_UNLIMITED,
@@ -1807,11 +1743,6 @@ private fun deleteFilesRecursive(
                 }
             }
         }
-    }
-
-    if (fromFile == null) {
-        notifier?.onExceptionOccurred(NullPointerException("fromFile is null"))
-        return result
     }
 
     if (notifier != null && !notifier.shouldProceed(fromFile, Collections.unmodifiableSet(result), currentLevel)) {
@@ -1889,7 +1820,7 @@ private fun deleteFilesRecursive(
 @JvmOverloads
 fun compressFilesToZip(
     srcFiles: Collection<File>?,
-    destZipName: String?,
+    destZipName: String,
     destZipParent: String?,
     recreate: Boolean = true,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
@@ -1905,7 +1836,7 @@ fun compressFilesToZip(
 @JvmOverloads
 fun compressFilesToZipOrThrow(
     sourceFiles: Collection<File>?,
-    destZipName: String?,
+    destZipName: String,
     destZipParent: String?,
     recreate: Boolean = true,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
@@ -1930,15 +1861,14 @@ fun compressFilesToZipOrThrow(
 }
 
 @JvmOverloads
-fun unzipFile(
-    zipFile: File?,
+fun File.unzip(
     destPath: String?,
     saveDirHierarchy: Boolean = true,
     recreate: Boolean = true,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
     notifier: IStreamNotifier? = null
 ) = try {
-    unzipFileOrThrow(zipFile, destPath, saveDirHierarchy, recreate, buffSize, notifier)
+    unzipOrThrow(destPath, saveDirHierarchy, recreate, buffSize, notifier)
     true
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -1947,22 +1877,21 @@ fun unzipFile(
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun unzipFileOrThrow(
-    zipFile: File?,
+fun File.unzipOrThrow(
     destPath: String?,
     saveDirHierarchy: Boolean = true,
     recreate: Boolean = true,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
     notifier: IStreamNotifier? = null
 ) {
-    if (!isFileValidOrThrow(zipFile)) {
-        throw IllegalArgumentException("Invalid zip file: '$zipFile'")
+    if (!isFileValidOrThrow(this)) {
+        throw IllegalArgumentException("Invalid zip file: '$this'")
     }
     if (destPath.isNullOrEmpty()) {
         throw IllegalArgumentException("destPath is null or empty")
     }
     try {
-        zipFile.openInputStreamOrThrow().unzipStreamOrThrow(
+        this.openInputStreamOrThrow().unzipStreamOrThrow(
             saveDirHierarchy,
             buffSize,
             notifier,
@@ -2256,7 +2185,7 @@ class FileComparator(sortOptions: Map<SortOption, Boolean?>) : BaseOptionalCompa
     }
 }
 
-fun File?.openInputStream(): FileInputStream? = try {
+fun File.openInputStream(): FileInputStream? = try {
     openInputStreamOrThrow()
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -2264,10 +2193,7 @@ fun File?.openInputStream(): FileInputStream? = try {
 }
 
 @Throws(RuntimeException::class)
-fun File?.openInputStreamOrThrow(): FileInputStream = try {
-    if (this == null) {
-        throw NullPointerException("file is null")
-    }
+fun File.openInputStreamOrThrow(): FileInputStream = try {
     FileInputStream(this)
 } catch (e: FileNotFoundException) {
     throw RuntimeException("File '$this' not found", e)
@@ -2276,7 +2202,7 @@ fun File?.openInputStreamOrThrow(): FileInputStream = try {
 }
 
 @JvmOverloads
-fun File?.openOutputStream(append: Boolean = false): FileOutputStream? = try {
+fun File.openOutputStream(append: Boolean = false): FileOutputStream? = try {
     openOutputStreamOrThrow(append)
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -2285,10 +2211,7 @@ fun File?.openOutputStream(append: Boolean = false): FileOutputStream? = try {
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun File?.openOutputStreamOrThrow(append: Boolean = false): FileOutputStream = try {
-    if (this == null) {
-        throw NullPointerException("file is null")
-    }
+fun File.openOutputStreamOrThrow(append: Boolean = false): FileOutputStream = try {
     FileOutputStream(this, append)
 } catch (e: FileNotFoundException) {
     throw RuntimeException("File '$this' not found", e)

@@ -47,7 +47,7 @@ fun getMimeTypeFromUrl(url: String?): String =
     getMimeTypeFromExtension(MimeTypeMap.getFileExtensionFromUrl(url))
 
 fun getMimeTypeFromName(name: String?): String =
-    getMimeTypeFromExtension(getExtension(name))
+    getMimeTypeFromExtension(name.getExtension())
 
 fun getMimeTypeFromExtension(extension: String?): String =
     extension?.let { MimeTypeMap.getSingleton().getMimeTypeFromExtension(extension) }.orEmpty()

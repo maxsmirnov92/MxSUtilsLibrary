@@ -657,9 +657,9 @@ fun compressBitmapToFile(
     var ext = getFileExtByCompressFormat(format)
     if (isEmpty(ext)) {
         logger.e("Unknown format: $format")
-        ext = getExtension(file.name)
+        ext = file.name.getExtension()
     }
-    file = createFile(removeExtension(file.name) + "." + ext, file.parent)
+    file = createFile(file.name.removeExtension() + "." + ext, file.parent)
     if (file == null) {
         logger.e("file was not created")
         return null
@@ -778,7 +778,7 @@ fun compressImage(
         var currentLength = imageFile!!.length()
         result = currentLength in 1..maxSize
         if (!result && currentLength > 0 && maxRetries > 0) {
-            if (checkFile(compressedImageFile, false)) {
+            if (compressedImageFile != null && checkFile(compressedImageFile, false)) {
                 val bm = createBitmapFromFile(imageFile, 1, config, false)
                 if (bm != null) {
                     deleteFile(compressedImageFile)

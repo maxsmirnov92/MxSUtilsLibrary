@@ -66,7 +66,7 @@ public class DefaultProcessManager extends AbstractProcessManager {
 
         return new ProcessInfo(
                 runningAppProcessInfo.processName,
-                getApplicationLabel(context, runningAppProcessInfo.processName),
+                getApplicationLabel(context.getPackageManager(), runningAppProcessInfo.processName),
                 runningAppProcessInfo.pid,
                 0,
                 String.valueOf(runningAppProcessInfo.uid),

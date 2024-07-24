@@ -7,10 +7,8 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
 import android.os.Build
-import android.os.Bundle
 import android.os.StrictMode
 import android.util.DisplayMetrics
-import android.util.TypedValue
 import android.view.WindowManager
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
@@ -18,8 +16,8 @@ import androidx.fragment.app.FragmentActivity
 import androidx.lifecycle.LifecycleOwner
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import net.maxsmr.commonutils.processmanager.AbstractProcessManager
-import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
 import java.io.File
 import java.lang.reflect.Method
@@ -27,58 +25,51 @@ import java.util.*
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AppUtils")
 
-fun isPackageInstalled(context: Context, packageName: String): Boolean =
-    getApplicationInfo(context, packageName) != null
+fun PackageManager.isPackageInstalled(packageName: String): Boolean =
+    getApplicationInfoOrNull(packageName) != null
 
-fun getSelfVersionName(context: Context): String =
-    getVersionName(getSelfPackageInfo(context, PackageManager.GET_META_DATA))
+fun Context.getSelfVersionName(): String =
+    getSelfPackageInfo(PackageManager.GET_META_DATA)?.versionName.orEmpty()
 
-fun getSelfVersionCode(context: Context): Long? =
-    getVersionCode(getSelfPackageInfo(context, PackageManager.GET_META_DATA))
+fun Context.getSelfVersionCode(): Long? =
+    getSelfPackageInfo(PackageManager.GET_META_DATA).getVersionCode()
 
-fun getVersionName(context: Context, packageName: String): String =
-    getVersionName(getPackageInfo(context, packageName, PackageManager.GET_META_DATA))
+fun PackageManager.getVersionName(packageName: String): String =
+    getPackageInfoOrNull(packageName, PackageManager.GET_META_DATA)?.versionName.orEmpty()
 
-fun getVersionCode(context: Context, packageName: String): Long? =
-    getVersionCode(getPackageInfo(context, packageName, PackageManager.GET_META_DATA))
+fun PackageManager.getVersionCode(packageName: String): Long? =
+    getPackageInfoOrNull(packageName, PackageManager.GET_META_DATA).getVersionCode()
 
-fun getArchiveVersionName(context: Context, apkFile: File?): String =
-    getVersionName(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
+fun PackageManager.getArchiveVersionName(apkFile: File?): String =
+    getArchivePackageInfo(apkFile, PackageManager.GET_META_DATA)?.versionName.orEmpty()
 
-fun getArchiveVersionCode(context: Context, apkFile: File?): Long? =
-    getVersionCode(getArchivePackageInfo(context, apkFile, PackageManager.GET_META_DATA))
+fun PackageManager.getArchiveVersionCode(apkFile: File?): Long? =
+    getArchivePackageInfo(apkFile, PackageManager.GET_META_DATA).getVersionCode()
 
 @JvmOverloads
-fun getSelfApplicationInfo(context: Context, flags: Int = 0): ApplicationInfo? =
-    getApplicationInfo(context, context.packageName, flags)
+fun Context.getSelfApplicationInfo(flags: Int = 0): ApplicationInfo? =
+    packageManager.getApplicationInfoOrNull(packageName, flags)
 
-fun getApplicationInfo(
-    context: Context,
+fun PackageManager.getApplicationInfoOrNull(
     packageName: String,
     flags: Int = 0
 ): ApplicationInfo? {
-    val packageManager = context.packageManager
     return try {
-        packageManager.getApplicationInfo(packageName, flags)
+        getApplicationInfo(packageName, flags)
     } catch (e: PackageManager.NameNotFoundException) {
         null
     }
 }
 
 @JvmOverloads
-fun getSelfPackageInfo(context: Context, flags: Int = 0): PackageInfo? =
-    getPackageInfo(context, context.packageName)
+fun Context.getSelfPackageInfo(flags: Int = 0): PackageInfo? =
+    packageManager.getPackageInfoOrNull(this.packageName, flags)
 
 @JvmOverloads
-fun getPackageInfo(
-    context: Context,
-    packageName: String,
-    flags: Int = 0
-): PackageInfo? {
-    val packageManager = context.packageManager
+fun PackageManager.getPackageInfoOrNull(packageName: String, flags: Int = 0): PackageInfo? {
     if (!isEmpty(packageName)) {
         try {
-            return packageManager.getPackageInfo(packageName, flags)
+            return getPackageInfo(packageName, flags)
         } catch (e: PackageManager.NameNotFoundException) {
             // ignored
         }
@@ -88,25 +79,22 @@ fun getPackageInfo(
 }
 
 @JvmOverloads
-fun getArchivePackageInfo(
-    context: Context,
+fun PackageManager.getArchivePackageInfo(
     apkFile: File?,
     flags: Int = 0
 ): PackageInfo? {
     if (apkFile != null && isFileValid(apkFile)) {
-        val packageManager = context.packageManager
-        return packageManager.getPackageArchiveInfo(apkFile.absolutePath, flags)
+        return getPackageArchiveInfo(apkFile.absolutePath, flags)
     }
     return null
 }
 
-fun getLaunchIntentForPackage(context: Context, packageName: String): Intent? {
-    val packageManager = context.packageManager
+fun PackageManager.getLaunchIntentForPackageOrNull(packageName: String): Intent? {
     if (!isEmpty(packageName)) {
         try {
-            return packageManager.getLaunchIntentForPackage(packageName)
+            return getLaunchIntentForPackage(packageName)
         } catch (e: Exception) {
-            logger.e("an Exception occurred during getLaunchIntentForPackage(): " + e.message, e)
+            logException(logger, e, "getLaunchIntentForPackage")
         }
     }
     return null
@@ -115,22 +103,26 @@ fun getLaunchIntentForPackage(context: Context, packageName: String): Intent? {
 /**
  * @return [Intent] only if given apk file is installed
  */
-fun getArchiveLaunchIntentForPackage(context: Context, apkFile: File): Intent? {
-    val packageInfo = getArchivePackageInfo(context, apkFile)
-    return if (packageInfo != null) getLaunchIntentForPackage(context, packageInfo.packageName) else null
+fun PackageManager.getArchiveLaunchIntentForPackage(apkFile: File): Intent? {
+    val packageInfo = getArchivePackageInfo(apkFile)
+    return if (packageInfo != null) {
+        getLaunchIntentForPackageOrNull(packageInfo.packageName)
+    } else {
+        null
+    }
 }
 
-fun getSelfLaunchIntentForPackage(context: Context): Intent? =
-    getLaunchIntentForPackage(context, context.packageName)
+fun Context.getSelfLaunchIntentForPackage(): Intent? =
+    packageManager.getLaunchIntentForPackageOrNull(packageName)
 
 @JvmOverloads
-fun launchSelf(context: Context, flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK) {
-    val activityIntent = getSelfLaunchIntentForPackage(context)
-        ?: throw RuntimeException("Cannot launch: self package ${context.packageName} intent not found")
+fun Context.launchSelf(flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK) {
+    val activityIntent = getSelfLaunchIntentForPackage()
+        ?: throw RuntimeException("Cannot launch: self package $packageName intent not found")
     if (flags != 0) {
         activityIntent.flags = flags
     }
-    context.startActivity(activityIntent)
+    startActivity(activityIntent)
 }
 
 /**
@@ -172,73 +164,69 @@ fun getPackageActivitiesCount(packageInfo: PackageInfo): Int {
 /**
  * Check if app requires update
  */
-fun isPackageRequireUpdate(
-    context: Context,
+fun PackageManager.packageRequiresUpdate(
     packageName: String,
     targetVersionCode: Long
 ): Boolean {
-    val currentVersionCode = getVersionCode(context, packageName)
+    val currentVersionCode = getVersionCode(packageName)
     if (currentVersionCode == null) {
         logger.e("Version code for $packageName not found")
         return true
     }
     logger.i("Package: $packageName, current: $currentVersionCode, new: $targetVersionCode")
-    return currentVersionCode > 0 && targetVersionCode > 0 && currentVersionCode != targetVersionCode
+    return currentVersionCode > 0 && targetVersionCode > 0 && currentVersionCode < targetVersionCode
             || currentVersionCode <= 0 || targetVersionCode <= 0
 }
 
-fun getSelfApplicationLabel(context: Context): String? =
-    getApplicationLabel(context, context.packageName)
+fun Context.getSelfApplicationLabel(): String? =
+    packageManager.getApplicationLabel(packageName)
 
 /**
  * Get application title by package name
  *
  * @return null if not found
  */
-fun getApplicationLabel(context: Context, packageName: String): String? {
-    val packageManager = context.packageManager
-    val info = getApplicationInfo(context, packageName)
-    return info?.loadLabel(packageManager)?.toString()
+fun PackageManager.getApplicationLabel(packageName: String): String? {
+    val info = getApplicationInfoOrNull(packageName)
+    return info?.loadLabel(this)?.toString()
 }
 
-fun getApplicationUid(context: Context): Int? =
-    getApplicationUid(context, context.packageName)
+fun Context.getSelfApplicationUid(): Int? =
+    packageManager.getApplicationUid(packageName)
 
 /**
  * @return uid for specified name or null if not found
  */
-fun getApplicationUid(context: Context, packageName: String): Int? {
-    val info = getApplicationInfo(context, packageName)
+fun PackageManager.getApplicationUid(packageName: String): Int? {
+    val info = getApplicationInfoOrNull(packageName)
     return info?.uid
 }
 
-fun isSelfAppInBackground(
-    context: Context,
+fun Context.isSelfAppInBackground(
     manager: AbstractProcessManager,
     includeSystemPackages: Boolean
-): Boolean = try {
-    isSelfAppInBackgroundOrThrow(context, manager, includeSystemPackages)
+): Boolean? = try {
+    isSelfAppInBackgroundOrThrow(manager, includeSystemPackages)
 } catch (e: RuntimeException) {
     logger.e(e)
-    false
+    null
 }
 
 @Throws(RuntimeException::class)
-fun isSelfAppInBackgroundOrThrow(
-    context: Context,
+fun Context.isSelfAppInBackgroundOrThrow(
     manager: AbstractProcessManager,
     includeSystemPackages: Boolean
-): Boolean = isAppInBackgroundOrThrow(context.packageName, manager, includeSystemPackages)
+): Boolean = isAppInBackgroundOrThrow(packageName, manager, includeSystemPackages)
 
 fun isAppInBackground(
     packageName: String,
     manager: AbstractProcessManager,
     includeSystemPackages: Boolean
-): Boolean = try {
+): Boolean? = try {
     isAppInBackgroundOrThrow(packageName, manager, includeSystemPackages)
 } catch (e: RuntimeException) {
     logger.e(e)
-    false
+    null
 }
 
 @Throws(RuntimeException::class)
@@ -257,21 +245,14 @@ fun isAppInBackgroundOrThrow(
     throw RuntimeException("Process with name '$packageName' not found")
 }
 
-fun isSelfAppInBackground(context: Context): Boolean? {
-    return try {
-        isSelfAppInBackgroundOrThrow(context)
-    } catch (e: RuntimeException) {
-        logger.e(e)
-        null
-    }
-}
+fun Context.isSelfAppInBackground(): Boolean? = isAppInBackground(packageName)
 
 @Throws(RuntimeException::class)
-fun isSelfAppInBackgroundOrThrow(context: Context): Boolean = isAppInBackgroundOrThrow(context, context.packageName)
+fun Context.isSelfAppInBackgroundOrThrow(): Boolean = isAppInBackgroundOrThrow(packageName)
 
-fun isAppInBackground(context: Context, packageName: String): Boolean? {
+fun Context.isAppInBackground(packageName: String): Boolean? {
     return try {
-        isAppInBackgroundOrThrow(context, packageName)
+        isAppInBackgroundOrThrow(packageName)
     } catch (e: RuntimeException) {
         logger.e(e)
         null
@@ -282,8 +263,8 @@ fun isAppInBackground(context: Context, packageName: String): Boolean? {
  * @return null if not found
  */
 @Throws(RuntimeException::class)
-fun isAppInBackgroundOrThrow(context: Context, packageName: String): Boolean {
-    val am = context.getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager?
+fun Context.isAppInBackgroundOrThrow(packageName: String): Boolean {
+    val am = getSystemService(Context.ACTIVITY_SERVICE) as ActivityManager?
         ?: throw RuntimeException(ActivityManager::class.java.simpleName + " is null")
     if (!isEmpty(packageName)) {
         val runningProcesses = am.runningAppProcesses
@@ -316,111 +297,41 @@ fun getPidsByName(
     return pids
 }
 
-fun getVersionName(info: PackageInfo?): String {
-    return if (info != null) {
-        info.versionName
-    } else {
-        EMPTY_STRING
-    }
-}
-
-fun getVersionCode(info: PackageInfo?): Long? {
-    return if (info != null) {
+fun PackageInfo?.getVersionCode(): Long? {
+    return if (this != null) {
         if (isAtLeastPie()) {
-            info.longVersionCode
+            longVersionCode
         } else {
             @Suppress("DEPRECATION")
-            info.versionCode.toLong()
+            versionCode.toLong()
         }
     } else {
         null
     }
 }
 
-fun isSystemApp(packageInfo: PackageInfo?): Boolean =
-    isSystemApp(packageInfo?.applicationInfo)
+fun PackageInfo.isSystemApp(): Boolean =
+    applicationInfo.isSystemApp()
 
 /**
  * @return null if not found
  */
-fun isSystemApp(applicationInfo: ApplicationInfo?): Boolean {
-    if (applicationInfo == null) {
-        return false;
-    }
-    return applicationInfo.flags and (ApplicationInfo.FLAG_UPDATED_SYSTEM_APP or ApplicationInfo.FLAG_SYSTEM) > 0
+fun ApplicationInfo.isSystemApp(): Boolean {
+    return this.flags and (ApplicationInfo.FLAG_UPDATED_SYSTEM_APP or ApplicationInfo.FLAG_SYSTEM) > 0
 }
 
-/**
- * Задает локаль по умолчанию в рамках приложения.
- *
- * @param locale объект локали
- */
-fun forceLocaleInApp(context: Context, locale: Locale) {
-    Locale.setDefault(locale)
-    context.resources?.let {
-        val configuration = it.configuration
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN_MR1) {
-            configuration.setLocale(locale)
-            context.createConfigurationContext(configuration)
-        } else {
-            configuration.locale = locale
-            it.updateConfiguration(configuration, it.displayMetrics)
-        }
-    }
-}
-
-fun copyToClipboard(context: Context, label: String, text: String) {
-    val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?
+fun Context.copyToClipboard(label: String, text: String) {
+    val clipboard = getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager?
         ?: throw NullPointerException(ClipboardManager::class.java.simpleName + " is null")
     val clip = ClipData.newPlainText(label, text)
     clipboard.setPrimaryClip(clip)
 }
 
-fun getDisplayMetrics(context: Context): DisplayMetrics {
-    val wm = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager
+fun Context.getDisplayMetrics(): DisplayMetrics {
+    val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
     val outMetrics = DisplayMetrics()
     wm.defaultDisplay.getMetrics(outMetrics)
     return outMetrics
-}
-
-/**
- * Converts pixel value to dp value
- */
-fun convertPxToDp(px: Float, context: Context): Float {
-    return px / context.resources.displayMetrics.density
-}
-
-@JvmOverloads
-fun convertAnyToPx(
-    value: Float,
-    unit: Int = TypedValue.COMPLEX_UNIT_DIP,
-    context: Context
-): Float {
-    // OR simply px = value * density (if DIP)
-    return if (value <= 0) {
-        0f
-    } else {
-        TypedValue.applyDimension(unit, value, context.resources.displayMetrics)
-    }
-}
-
-fun getScreenType(context: Context): DeviceType {
-    val outMetrics = getDisplayMetrics(context)
-    val deviceType: DeviceType
-    val shortSize = Math.min(outMetrics.heightPixels, outMetrics.widthPixels)
-    val shortSizeDp = shortSize * DisplayMetrics.DENSITY_DEFAULT / outMetrics.densityDpi
-    deviceType = if (shortSizeDp < 600) { // 0-599dp: "phone" UI with a separate status & navigation bar
-        DeviceType.PHONE
-    } else if (shortSizeDp < 720) { // 600-719dp: "phone" UI with modifications for larger screens
-        DeviceType.HYBRID
-    } else { // 720dp: "tablet" UI with a single combined status & navigation bar
-        DeviceType.TABLET
-    }
-    return deviceType
-}
-
-fun isTabletUI(con: Context): Boolean {
-    return getScreenType(con) == DeviceType.TABLET
 }
 
 @JvmOverloads
@@ -481,9 +392,11 @@ fun Any.asContextOrThrow(): Context {
         is Context -> {
             this
         }
+
         is Fragment -> {
             this.requireContext()
         }
+
         else -> {
             throw ClassCastException("Cannot cast to Context")
         }
@@ -502,16 +415,13 @@ fun Any.asActivityOrThrow(): Activity {
         is Activity -> {
             this
         }
+
         is Fragment -> {
             this.requireActivity()
         }
+
         else -> {
             throw ClassCastException("Cannot cast to Activity")
         }
     }
-}
-
-// TODO move to DeviceUtils
-enum class DeviceType {
-    PHONE, HYBRID, TABLET
 }

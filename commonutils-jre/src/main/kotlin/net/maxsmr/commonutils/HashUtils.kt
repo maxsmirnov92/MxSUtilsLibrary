@@ -11,7 +11,6 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.nio.charset.Charset
-import java.security.DigestInputStream
 import java.security.MessageDigest
 import java.security.NoSuchAlgorithmException
 import java.util.*
@@ -164,5 +163,4 @@ fun ByteArray?.toHexString(): String {
     return result.toString().toLowerCase(Locale.getDefault())
 }
 
-fun File?.getCrc32Hash(): Long =
-        readBytesFromFile(this).getCrc32Hash()
+fun File?.getCrc32Hash(): Long = this?.readBytes().getCrc32Hash()

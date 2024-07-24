@@ -1,20 +1,21 @@
 package net.maxsmr.commonutils.gui
 
+import android.annotation.TargetApi
 import android.app.Activity
 import android.content.Context
-import android.content.res.Configuration
-import android.content.res.Resources
 import android.graphics.PointF
 import android.os.Build
 import android.os.CountDownTimer
-import android.view.*
+import android.view.KeyEvent
+import android.view.Surface
+import android.view.View
+import android.view.Window
+import android.view.WindowManager
 import android.view.inputmethod.EditorInfo
 import android.widget.Toast
 import androidx.annotation.ColorInt
-import androidx.annotation.RequiresApi
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.ColorUtils
-import net.maxsmr.commonutils.R
 import net.maxsmr.commonutils.getColorFromAttrs
 import net.maxsmr.commonutils.isAtLeastLollipop
 import net.maxsmr.commonutils.isAtLeastMarshmallow
@@ -50,16 +51,16 @@ fun KeyEvent?.isEnterKeyPressed(actionId: Int): Boolean =
         this != null && this.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_NULL
 
 
-@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+@Deprecated("")
 fun Activity.setDefaultStatusBarColor() {
-    setStatusBarColor(getColorFromAttrs(window.context, intArrayOf(android.R.attr.colorPrimaryDark)))
+    setStatusBarColor(getColorFromAttrs(intArrayOf(android.R.attr.colorPrimaryDark)))
 }
 
 /**
  * Красит статус бар в указанный цвет.
  * Так же, красит иконки статус бара в серый цвет, если SDK >= 23 и устанавливаемый цвет слишком белый
  */
-@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
+@Deprecated("")
 fun Activity.setStatusBarColor(@ColorInt color: Int) {
     if (isAtLeastLollipop()) {
         window.statusBarColor = color
@@ -79,46 +80,40 @@ fun Activity.setStatusBarColor(@ColorInt color: Int) {
 
 
 
-@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 fun Activity.setDefaultNavigationColor() {
-    setNavigationBarColor(getColorFromAttrs(window.context, intArrayOf(android.R.attr.colorPrimaryDark)))
+    setNavigationBarColor(window.context.getColorFromAttrs(intArrayOf(android.R.attr.colorPrimaryDark)))
 }
 
 /**
  * Красит нав бар в указанный цвет
  */
-@RequiresApi(Build.VERSION_CODES.LOLLIPOP)
 fun Activity.setNavigationBarColor(@ColorInt color: Int) {
     if (isAtLeastLollipop()) {
         window.navigationBarColor = color
     }
 }
 
-fun Resources.getStatusBarHeight(): Int {
-    val resourceId = getIdentifier("status_bar_height", "dimen", "android")
-    return if (resourceId > 0) {
-        getDimensionPixelSize(resourceId)
-    } else 0
+@Deprecated("")
+fun Window.showAboveLockscreen(window: Window, wakeScreen: Boolean) {
+    toggleAboveLockscreen(wakeScreen, true)
 }
 
-fun showAboveLockscreen(window: Window, wakeScreen: Boolean) {
-    toggleAboveLockscreen(window, wakeScreen, true)
+@Deprecated("")
+fun Window.hideAboveLockscreen(window: Window, wakeScreen: Boolean) {
+    toggleAboveLockscreen(wakeScreen, false)
 }
 
-fun hideAboveLockscreen(window: Window, wakeScreen: Boolean) {
-    toggleAboveLockscreen(window, wakeScreen, false)
-}
-
-private fun toggleAboveLockscreen(window: Window, wakeScreen: Boolean, toggle: Boolean) {
+@Deprecated("")
+private fun Window.toggleAboveLockscreen(wakeScreen: Boolean, toggle: Boolean) {
     var flags = WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
             WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
     if (wakeScreen) {
         flags = flags or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
     }
     if (toggle) {
-        window.addFlags(flags)
+        addFlags(flags)
     } else {
-        window.clearFlags(flags)
+        clearFlags(flags)
     }
 }
 
@@ -160,8 +155,10 @@ fun showToastWithDuration(targetDuration: Long, toastFunc: (() -> Toast)): Count
     }.start()
 }
 
-fun getCurrentDisplayOrientation(context: Context): Int {
-    return when (context.display?.rotation) {
+@TargetApi(Build.VERSION_CODES.R)
+fun getCurrentDisplayOrientation(context: Context): Int? {
+    val display = context.display ?: return null
+    return when (display.rotation) {
         Surface.ROTATION_90 -> 90
         Surface.ROTATION_180 -> 180
         Surface.ROTATION_270 -> 270
@@ -172,37 +169,18 @@ fun getCurrentDisplayOrientation(context: Context): Int {
 fun getCorrectedDisplayRotation(rotation: Int): Int {
     val correctedRotation = rotation % 360
     var result = OrientationIntervalListener.ROTATION_NOT_SPECIFIED
-    if (correctedRotation in 315..359 || correctedRotation in 0..44) {
-        result = 0
-    } else if (correctedRotation in 45..134) {
-        result = 90
-    } else if (correctedRotation in 135..224) {
-        result = 180
-    } else if (correctedRotation in 225..314) {
-        result = 270
-    }
-    return result
-}
-
-fun getViewsRotationForDisplay(context: Context, displayRotation: Int): Int {
-    var result = 0
-    val correctedDisplayRotation = getCorrectedDisplayRotation(displayRotation)
-    if (correctedDisplayRotation != OrientationIntervalListener.ROTATION_NOT_SPECIFIED) {
-        val currentOrientation = context.resources.configuration.orientation
-        if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE) {
-            when (correctedDisplayRotation) {
-                0 -> result = 270
-                90 -> result = 180
-                180 -> result = 90
-                270 -> result = 0
-            }
-        } else {
-            when (correctedDisplayRotation) {
-                0 -> result = 0
-                90 -> result = 270
-                180 -> result = 180
-                270 -> result = 90
-            }
+    when (correctedRotation) {
+        in 315..359, in 0..44 -> {
+            result = 0
+        }
+        in 45..134 -> {
+            result = 90
+        }
+        in 135..224 -> {
+            result = 180
+        }
+        in 225..314 -> {
+            result = 270
         }
     }
     return result

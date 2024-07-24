@@ -1,8 +1,11 @@
 package net.maxsmr.commonutils
 
+import android.annotation.SuppressLint
 import android.content.ContentResolver
 import android.content.Context
+import android.content.res.AssetManager
 import android.content.res.ColorStateList
+import android.content.res.Configuration
 import android.content.res.Resources
 import android.content.res.TypedArray
 import android.graphics.PorterDuff
@@ -18,6 +21,8 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.ReflectionUtils.invokeMethod
+import net.maxsmr.commonutils.gui.OrientationIntervalListener
+import net.maxsmr.commonutils.gui.getCorrectedDisplayRotation
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
@@ -35,14 +40,14 @@ private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("ResourceUt
 /**
  * проверить факт существования ресурса с указанным [resId]
  */
-fun isResourceExists(resources: Resources, resId: Int) = getResourceName(resources, resId) != null
+fun Resources.isResourceExists(resId: Int) = getResourceNameOrNull(resId) != null
 
 /**
  * @return имя ресурса с указанным [resId], если таковой существует
  */
-fun getResourceName(resources: Resources, resId: Int): String? =
+fun Resources.getResourceNameOrNull(resId: Int): String? =
     try {
-        resources.getResourceName(resId)
+        getResourceName(resId)
     } catch (ignore: Resources.NotFoundException) {
         null
     }
@@ -50,40 +55,37 @@ fun getResourceName(resources: Resources, resId: Int): String? =
 /**
  * проверить факт существования ресурса с указанными именем и типом
  */
-fun isResourceIdentifierExists(
-    context: Context,
+fun Context.isResourceIdentifierExists(
     resName: String,
     type: String
-) = getResourceIdentifier(context, resName, type) != 0
+) = getResourceIdentifier(resName, type) != 0
 
 /**
  * @return идентификатор ресурса с указанными именем и типом, если таковой существует
  */
-fun getResourceIdentifier(
-    context: Context,
+fun Context.getResourceIdentifier(
     resName: String,
     type: String
-) = context.resources.getIdentifier(resName, type, context.packageName)
+) = resources.getIdentifier(resName, type, packageName)
 
 /**
  * Получить Id ресурса из [TypedArray] или null
  */
-fun getResourceIdOrNull(typedArray: TypedArray, attributeValue: Int): Int? =
-    typedArray.getResourceId(attributeValue, INVALID_ATTRIBUTE).also {
+fun TypedArray.getResourceIdOrNull(attributeValue: Int): Int? =
+    getResourceId(attributeValue, INVALID_ATTRIBUTE).also {
         if (it != INVALID_ATTRIBUTE) {
             return it
         }
         return null
     }
 
-fun getColoredDrawable(
-    resources: Resources,
+fun Resources.getColoredDrawable(
     @DrawableRes icon: Int,
     @ColorInt color: Int,
     mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ): Drawable? {
-    ResourcesCompat.getDrawable(resources, icon, null)?.let {
-        setDrawableColor(it, ColorStateList.valueOf(color), mode)
+    ResourcesCompat.getDrawable(this, icon, null)?.let {
+        it.setColor(ColorStateList.valueOf(color), mode)
         return it
     }
     return null
@@ -92,23 +94,22 @@ fun getColoredDrawable(
 /**
  * Выставить цветовой фильтр [ColorStateList] для [Drawable]
  */
-fun setDrawableColor(
-    drawable: Drawable,
+fun Drawable.setColor(
     color: ColorStateList,
     mode: PorterDuff.Mode = PorterDuff.Mode.SRC_IN
 ) {
     if (isAtLeastLollipop()) {
-        DrawableCompat.setTintList(drawable, color)
-        DrawableCompat.setTintMode(drawable, mode)
+        DrawableCompat.setTintList(this, color)
+        DrawableCompat.setTintMode(this, mode)
     } else {
-        drawable.setColorFilter(color.defaultColor, mode)
+        setColorFilter(color.defaultColor, mode)
     }
 }
 
 @ColorInt
-fun getColorFromAttrs(context: Context, attrs: IntArray): Int {
+fun Context.getColorFromAttrs(attrs: IntArray): Int {
     val typedValue = TypedValue()
-    val array = context.theme.obtainStyledAttributes(typedValue.data, attrs)
+    val array = theme.obtainStyledAttributes(typedValue.data, attrs)
     try {
         return array.getColor(0, 0)
     } finally {
@@ -116,9 +117,8 @@ fun getColorFromAttrs(context: Context, attrs: IntArray): Int {
     }
 }
 
-fun getDimensionFromAttrs(context: Context, attrs: IntArray): Int {
-    val array = context.theme
-        .obtainStyledAttributes(attrs)
+fun Context.getDimensionFromAttrs(attrs: IntArray): Int {
+    val array = theme.obtainStyledAttributes(attrs)
     try {
         return array.getDimension(0, 0f).toInt()
     } finally {
@@ -129,8 +129,8 @@ fun getDimensionFromAttrs(context: Context, attrs: IntArray): Int {
 /**
  * Получение высоты ActionBar из аттрибутов
  */
-fun getActionBarHeight(context: Context): Int {
-    val attrs = context.theme.obtainStyledAttributes(intArrayOf(android.R.attr.actionBarSize))
+fun Context.getActionBarHeight(): Int {
+    val attrs = theme.obtainStyledAttributes(intArrayOf(android.R.attr.actionBarSize))
     val actionBarHeight = attrs.getDimension(0, 0f)
     try {
         return actionBarHeight.toInt()
@@ -139,32 +139,33 @@ fun getActionBarHeight(context: Context): Int {
     }
 }
 
-fun getStatusBarHeight(context: Context): Int {
+@SuppressLint("InternalInsetResource")
+fun Resources.getStatusBarHeight(): Int {
     var result = 0
-    val resourceId = context.resources.getIdentifier("status_bar_height", "dimen", "android")
+    val resourceId = getIdentifier("status_bar_height", "dimen", "android")
     if (resourceId > 0) {
-        result = context.resources.getDimensionPixelSize(resourceId)
+        result = getDimensionPixelSize(resourceId)
     }
     return result
 }
 
-fun getNavigationBarHeight(context: Context): Int {
-    val resources = context.resources
-    val resourceId = resources.getIdentifier("navigation_bar_height", "dimen", "android")
+@SuppressLint("InternalInsetResource")
+fun Resources.getNavigationBarHeight(): Int {
+    val resourceId = getIdentifier("navigation_bar_height", "dimen", "android")
     return if (resourceId > 0) {
-        resources.getDimensionPixelSize(resourceId)
-    } else 0
+        getDimensionPixelSize(resourceId)
+    } else {
+        0
+    }
 }
 
-
 @JvmOverloads
-fun readStringsFromAsset(
-    context: Context,
+fun AssetManager.readStringsFromAsset(
     assetName: String,
     count: Int = 0,
     charsetName: String = CHARSET_DEFAULT
 ): List<String> = try {
-    readStringsFromAssetOrThrow(context, assetName, count, charsetName)
+    readStringsFromAssetOrThrow(assetName, count, charsetName)
 } catch (e: RuntimeException) {
     logger.e(e)
     emptyList()
@@ -175,27 +176,25 @@ fun readStringsFromAsset(
  */
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun readStringsFromAssetOrThrow(
-    context: Context,
+fun AssetManager.readStringsFromAssetOrThrow(
     assetName: String,
     count: Int = 0,
     charsetName: String = CHARSET_DEFAULT
 ): List<String> {
     return try {
-        openAssetStreamOrThrow(context, assetName).readStringsOrThrow(count, charsetName = charsetName)
-    } catch (e: IOException) {
+        open(assetName).readStringsOrThrow(count, charsetName = charsetName)
+    } catch (e: Exception) {
         throw RuntimeException(formatException(e, "readStringsFromInputStream"), e)
     }
 }
 
 @JvmOverloads
-fun readStringsFromRes(
-    context: Context,
+fun Resources.readStringsFromRes(
     @RawRes resId: Int,
     count: Int = 0,
     charsetName: String = CHARSET_DEFAULT
 ): List<String> = try {
-    readStringsFromResOrThrow(context, resId, count, charsetName)
+    readStringsFromResOrThrow(resId, count, charsetName)
 } catch (e: RuntimeException) {
     logger.e(e)
     emptyList()
@@ -206,29 +205,27 @@ fun readStringsFromRes(
  */
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun readStringsFromResOrThrow(
-    context: Context,
+fun Resources.readStringsFromResOrThrow(
     @RawRes resId: Int,
     count: Int = 0,
     charsetName: String = CHARSET_DEFAULT
 ): List<String> {
     return try {
-        openRawResourceOrThrow(context, resId).readStringsOrThrow(count, charsetName = charsetName)
-    } catch (e: IOException) {
+        openRawResource(resId).readStringsOrThrow(count, charsetName = charsetName)
+    } catch (e: Exception) {
         throw RuntimeException(formatException(e, "readStringsFromInputStream"), e)
     }
 }
 
 @JvmOverloads
-fun copyFromAssets(
-    context: Context,
+fun AssetManager.copyFromAssets(
     assetName: String,
-    targetFile: File?,
+    targetFile: File,
     rewrite: Boolean = true,
     notifier: IStreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ) = try {
-    copyFromAssetsOrThrow(context, assetName, targetFile, rewrite, notifier, buffSize)
+    copyFromAssetsOrThrow(assetName, targetFile, rewrite, notifier, buffSize)
     true
 } catch (e: RuntimeException) {
     logger.e(e)
@@ -237,35 +234,30 @@ fun copyFromAssets(
 
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun copyFromAssetsOrThrow(
-    context: Context,
+fun AssetManager.copyFromAssetsOrThrow(
     assetName: String,
-    targetFile: File?,
+    targetFile: File,
     rewrite: Boolean = true,
     notifier: IStreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
-    if (targetFile == null) {
-        throw NullPointerException("targetFile is null")
-    }
     createFileOrThrow(targetFile.name, targetFile.parent, rewrite)
     try {
-        openAssetStreamOrThrow(context, assetName).copyStreamOrThrow(targetFile.openOutputStreamOrThrow(!rewrite), notifier, buffSize)
-    } catch (e: IOException) {
+        open(assetName).copyStreamOrThrow(targetFile.openOutputStreamOrThrow(!rewrite), notifier, buffSize)
+    } catch (e: Exception) {
         throwRuntimeException(e, "copyStream")
     }
 }
 
 @JvmOverloads
-fun copyFromRawRes(
-    context: Context,
+fun Resources.copyFromRawRes(
     @RawRes resId: Int,
-    targetFile: File?,
+    targetFile: File,
     rewrite: Boolean = true,
     notifier: IStreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ) = try {
-    copyFromRawResOrThrow(context, resId, targetFile, rewrite, notifier, buffSize)
+    copyFromRawResOrThrow(resId, targetFile, rewrite, notifier, buffSize)
 } catch (e: RuntimeException) {
     logger.e(e)
     false
@@ -279,58 +271,83 @@ fun copyFromRawRes(
  */
 @Throws(RuntimeException::class)
 @JvmOverloads
-fun copyFromRawResOrThrow(
-    context: Context,
+fun Resources.copyFromRawResOrThrow(
     @RawRes resId: Int,
-    targetFile: File?,
+    targetFile: File,
     rewrite: Boolean = true,
     notifier: IStreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
-    if (targetFile == null) {
-        throw NullPointerException("targetFile is null")
-    }
     createFileOrThrow(targetFile.name, targetFile.parent, rewrite)
     try {
-        openRawResourceOrThrow(context, resId).copyStreamOrThrow(targetFile.openOutputStreamOrThrow(!rewrite), notifier, buffSize)
-    } catch (e: IOException) {
+        openRawResource(resId).copyStreamOrThrow(targetFile.openOutputStreamOrThrow(!rewrite), notifier, buffSize)
+    } catch (e: Exception) {
         throwRuntimeException(e, "copyStream")
     }
 }
 
-fun openAssetStream(context: Context, assetName: String): InputStream? = try {
-    openAssetStreamOrThrow(context, assetName)
+fun AssetManager.openAssetStreamOrNull(assetName: String): InputStream? = try {
+    open(assetName)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
 }
 
-@Throws(RuntimeException::class)
-fun openAssetStreamOrThrow(context: Context, assetName: String): InputStream = try {
-    context.assets.open(assetName)
-} catch (e: IOException) {
-    throw RuntimeException(formatException(e, "open"), e)
-}
-
-fun openRawResource(context: Context, @RawRes resId: Int): InputStream? = try {
-    openRawResourceOrThrow(context, resId)
-} catch (e: RuntimeException) {
+fun Resources.openRawResourceOrNull(@RawRes resId: Int): InputStream? = try {
+    openRawResource(resId)
+} catch (e: Exception) {
     logger.e(e)
     null
 }
 
-@Throws(RuntimeException::class)
-fun openRawResourceOrThrow(context: Context, @RawRes resId: Int): InputStream = try {
-    context.resources.openRawResource(resId)
-} catch (e: IOException) {
-    throw RuntimeException(formatException(e, "openRawResource"), e)
+/**
+ * Converts pixel value to dp value
+ */
+fun Resources.convertPxToDp(px: Float): Float =
+    px / displayMetrics.density
+
+@JvmOverloads
+fun Resources.convertAnyToPx(
+    value: Float,
+    unit: Int = TypedValue.COMPLEX_UNIT_DIP,
+): Float {
+    // OR simply px = value * density (if DIP)
+    return if (value <= 0) {
+        0f
+    } else {
+        TypedValue.applyDimension(unit, value, displayMetrics)
+    }
 }
 
-fun getUriFromRawResource(context: Context, @RawRes rawResId: Int): Uri {
+fun Resources.getViewsRotationForDisplay(displayRotation: Int): Int {
+    var result = 0
+    val correctedDisplayRotation = getCorrectedDisplayRotation(displayRotation)
+    if (correctedDisplayRotation != OrientationIntervalListener.ROTATION_NOT_SPECIFIED) {
+        val currentOrientation = configuration.orientation
+        if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE) {
+            when (correctedDisplayRotation) {
+                0 -> result = 270
+                90 -> result = 180
+                180 -> result = 90
+                270 -> result = 0
+            }
+        } else {
+            when (correctedDisplayRotation) {
+                0 -> result = 0
+                90 -> result = 270
+                180 -> result = 180
+                270 -> result = 90
+            }
+        }
+    }
+    return result
+}
+
+fun Context.getUriFromRawResource(@RawRes rawResId: Int): Uri {
     return Uri.parse(
         ContentResolver.SCHEME_ANDROID_RESOURCE
                 + File.pathSeparator + File.separator + File.separator
-                + context.packageName
+                + packageName
                 + File.separator
                 + rawResId
     )
@@ -355,11 +372,6 @@ fun createColorStateListFromRes(context: Context, @XmlRes res: Int): ColorStateL
         null
     }
 }
-
-@ColorInt
-fun getDefaultColor(c: ColorStateList?): Int =
-    c?.defaultColor ?: 0
-
 
 fun getDefaultDrawable(d: StateListDrawable?): Drawable? =
     if (d != null) getDrawableForState(d, 0) else null

@@ -6,14 +6,14 @@ import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.Typeface;
-import android.graphics.drawable.BitmapDrawable;;
+import android.graphics.drawable.BitmapDrawable;
 
 import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 
 import net.maxsmr.commonutils.gui.fonts.FontsHolder;
 
-import static net.maxsmr.commonutils.AppUtilsKt.convertAnyToPx;
+import static net.maxsmr.commonutils.ResourceUtilsKt.convertAnyToPx;
 import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
 import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.copyBitmap;
 import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.createBitmapFromResource;
@@ -136,7 +136,7 @@ public class NumberDrawable extends BitmapDrawable {
 //        DisplayMetrics displayMetrics = new DisplayMetrics();
 //        ((WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE)).getDefaultDisplay().getMetrics(displayMetrics);
 //        int dpi = (int) (displayMetrics.density * DisplayMetrics.DENSITY_MEDIUM);
-        return (int) convertAnyToPx(mTextSizeDP, mContext);
+        return (int) convertAnyToPx(mContext.getResources(), mTextSizeDP);
     }
 
     {

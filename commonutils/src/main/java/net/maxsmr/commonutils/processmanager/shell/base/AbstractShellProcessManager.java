@@ -20,12 +20,13 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
+import static net.maxsmr.commonutils.AppUtilsKt.getApplicationInfoOrNull;
 import static net.maxsmr.commonutils.CompareUtilsKt.stringsEqual;
 import static net.maxsmr.commonutils.FileUtilsKt.isFileExists;
-import static net.maxsmr.commonutils.AppUtilsKt.getApplicationInfo;
 import static net.maxsmr.commonutils.processmanager.model.ProcessInfo.ProcessState.S;
 import static net.maxsmr.commonutils.conversion.NumberConversionUtilsKt.toIntNotNull;
 import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
@@ -300,14 +301,14 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
         }
 
         final boolean isPackageValid = !isEmpty(processName)
-                && PACKAGE_PATTERN.matcher(processName.toLowerCase(Locale.getDefault())).matches()
+                && PACKAGE_PATTERN.matcher(Objects.requireNonNull(processName).toLowerCase(Locale.getDefault())).matches()
                 && isPackageInstalled(processName);
 
         if (!isPackageValid) {
             return null;
         }
 
-        final ApplicationInfo appInfo = getApplicationInfo(context, processName, 0);
+        final ApplicationInfo appInfo = getApplicationInfoOrNull(context.getPackageManager(), processName, 0);
 
         if (appInfo == null) {
             return null;

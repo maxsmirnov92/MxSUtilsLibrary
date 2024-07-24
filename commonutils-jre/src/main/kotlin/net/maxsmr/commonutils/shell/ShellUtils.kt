@@ -15,11 +15,11 @@ private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("ShellUtils
 
 @JvmOverloads
 fun execProcessAsync(
-        cmd: String,
-        workingDir: String = EMPTY_STRING,
-        configurator: IProcessBuilderConfigurator? = null,
-        sc: ShellCallback?,
-        tc: ThreadsCallback?
+    cmd: String,
+    workingDir: String = EMPTY_STRING,
+    configurator: IProcessBuilderConfigurator? = null,
+    sc: ShellCallback?,
+    tc: ThreadsCallback?
 ) = execProcessAsync(listOf(cmd), workingDir, configurator, sc, tc)
 
 /**
@@ -27,11 +27,11 @@ fun execProcessAsync(
  */
 @JvmOverloads
 fun execProcessAsync(
-        cmds: List<String>,
-        workingDir: String = EMPTY_STRING,
-        configurator: IProcessBuilderConfigurator? = null,
-        sc: ShellCallback?,
-        tc: ThreadsCallback?
+    cmds: List<String>,
+    workingDir: String = EMPTY_STRING,
+    configurator: IProcessBuilderConfigurator? = null,
+    sc: ShellCallback?,
+    tc: ThreadsCallback?
 ): Boolean {
     logger.d("execProcessAsync(), cmds=$cmds, workingDir=$workingDir, configurator=$configurator, sc=$sc, tc=$tc")
     val latch = CountDownLatch(2)
@@ -45,14 +45,14 @@ fun execProcessAsync(
 
 @JvmOverloads
 fun execProcess(
-        cmd: String,
-        workingDir: String = EMPTY_STRING,
-        configurator: IProcessBuilderConfigurator? = null,
-        targetExitCode: Int? = DEFAULT_TARGET_CODE,
-        sc: ShellCallback? = null,
-        tc: ThreadsCallback? = null,
-        execTimeout: Long = 0,
-        execTimeoutUnit: TimeUnit = TimeUnit.SECONDS
+    cmd: String,
+    workingDir: String = EMPTY_STRING,
+    configurator: IProcessBuilderConfigurator? = null,
+    targetExitCode: Int? = DEFAULT_TARGET_CODE,
+    sc: ShellCallback? = null,
+    tc: ThreadsCallback? = null,
+    execTimeout: Long = 0,
+    execTimeoutUnit: TimeUnit = TimeUnit.SECONDS
 ) = execProcess(listOf(cmd), workingDir, configurator, targetExitCode, sc, tc, execTimeout, execTimeoutUnit)
 
 /**
@@ -60,14 +60,14 @@ fun execProcess(
  */
 @JvmOverloads
 fun execProcess(
-        cmds: List<String>,
-        workingDir: String = EMPTY_STRING,
-        configurator: IProcessBuilderConfigurator? = null,
-        targetExitCode: Int? = DEFAULT_TARGET_CODE,
-        sc: ShellCallback? = null,
-        tc: ThreadsCallback? = null,
-        execTimeout: Long = 0,
-        execTimeoutUnit: TimeUnit = TimeUnit.SECONDS
+    cmds: List<String>,
+    workingDir: String = EMPTY_STRING,
+    configurator: IProcessBuilderConfigurator? = null,
+    targetExitCode: Int? = DEFAULT_TARGET_CODE,
+    sc: ShellCallback? = null,
+    tc: ThreadsCallback? = null,
+    execTimeout: Long = 0,
+    execTimeoutUnit: TimeUnit = TimeUnit.SECONDS
 ): CommandResult {
     logger.d("execProcess(), cmds=$cmds, workingDir=$workingDir, configurator=$configurator, targetExitCode=$targetExitCode, sc=$sc, tc=$tc")
 
@@ -106,12 +106,12 @@ fun execProcess(
 }
 
 private fun createAndStartProcess(
-        commands: List<String>,
-        workingDir: String,
-        configurator: IProcessBuilderConfigurator?,
-        sc: ShellCallback?,
-        tc: ThreadsCallback?,
-        latch: CountDownLatch?
+    commands: List<String>,
+    workingDir: String,
+    configurator: IProcessBuilderConfigurator?,
+    sc: ShellCallback?,
+    tc: ThreadsCallback?,
+    latch: CountDownLatch?
 ): Process? {
 
     val commands = commands.toMutableList()
@@ -172,11 +172,11 @@ private fun createAndStartProcess(
 }
 
 private class StreamConsumeThread(
-        private val threadInfo: CmdThreadInfo,
-        private val `is`: InputStream,
-        private val sc: ShellCallback?,
-        private val tc: ThreadsCallback?,
-        private val latch: CountDownLatch?
+    private val threadInfo: CmdThreadInfo,
+    private val `is`: InputStream,
+    private val sc: ShellCallback?,
+    private val tc: ThreadsCallback?,
+    private val latch: CountDownLatch?
 ) : Thread() {
 
     init {
@@ -201,7 +201,8 @@ private class StreamConsumeThread(
     }
 }
 
-private class ProcessWaitThread(internal val process: Process, internal val sc: ShellCallback?, internal val latch: CountDownLatch?) : Thread(ProcessWaitThread::class.java.name) {
+private class ProcessWaitThread(internal val process: Process, internal val sc: ShellCallback?, internal val latch: CountDownLatch?) :
+    Thread(ProcessWaitThread::class.java.name) {
 
     private val latchCounts: Long
         get() = latch?.count ?: 0
@@ -231,9 +232,11 @@ private class ProcessWaitThread(internal val process: Process, internal val sc: 
     }
 }
 
-class CmdThreadInfo(cmds: List<String>?,
-                    private val workingDir: String?,
-                    val type: StreamType) {
+class CmdThreadInfo(
+    cmds: List<String>?,
+    private val workingDir: String?,
+    val type: StreamType
+) {
 
     private val cmds: List<String> = if (cmds != null) ArrayList(cmds) else ArrayList()
 
@@ -291,9 +294,9 @@ interface IProcessBuilderConfigurator {
 }
 
 private class WrappedShellCallback(
-        private val sc: ShellCallback?,
-        private val stdOutLines: MutableList<String>,
-        private val stdErrLines: MutableList<String>
+    private val sc: ShellCallback?,
+    private val stdOutLines: MutableList<String>,
+    private val stdErrLines: MutableList<String>
 ) : ShellCallback {
 
     var wasStarted: Boolean = false
