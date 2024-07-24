@@ -287,19 +287,14 @@ fun Intent.wrapChooser(
  * Может быть использован в [Intent.EXTRA_INITIAL_INTENTS];
  * Требует <queries> в манифесте при targetSdkVersion = 30
  */
-fun Intent.flatten(context: Context, shouldFilterCaller: Boolean = true): List<Intent> {
-    val packageManager = context.packageManager
-    return (if (isAtLeastTiramisu()) {
-        packageManager.queryIntentActivities(
-            this,
-            PackageManager.ResolveInfoFlags.of(PackageManager.MATCH_DEFAULT_ONLY.toLong())
-        )
-    } else {
-        packageManager.queryIntentActivities(this, 0)
-    }).filter {
-        !shouldFilterCaller || it.activityInfo.packageName != context.packageName
-    }.map {
-        Intent(this).apply {
+@JvmOverloads
+fun Intent.flatten(
+    context: Context,
+    flags: Int = 0,
+    shouldFilterCaller: Boolean = true
+): List<Intent> {
+    return context.queryIntentActivitiesCompat(this, flags, shouldFilterCaller)
+        .map { Intent(this).apply {
             `package` = it.activityInfo.packageName
             component = ComponentName(it.activityInfo.packageName, it.activityInfo.name)
         }

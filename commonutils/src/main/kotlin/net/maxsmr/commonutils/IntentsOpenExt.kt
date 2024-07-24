@@ -4,6 +4,8 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.content.pm.ResolveInfo
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -126,8 +128,12 @@ fun Context.openDocument(
         errorHandler = errorHandler
     )
 
+/**
+ * Для открытия в конкретном аппе
+ * пользовать setPackage для [getViewUrlIntent]
+ */
 @JvmOverloads
-fun Context.openSystemBrowser(
+fun Context.openViewUrl(
     url: String,
     mimeType: String? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
@@ -137,12 +143,12 @@ fun Context.openSystemBrowser(
     return if (url.isEmpty()) {
         false
     } else {
-        openSystemBrowser(Uri.parse(url), mimeType, flags, options, errorHandler)
+        openViewUrl(Uri.parse(url), mimeType, flags, options, errorHandler)
     }
 }
 
 @JvmOverloads
-fun Context.openSystemBrowser(
+fun Context.openViewUrl(
     uri: Uri,
     mimeType: String? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
@@ -151,6 +157,46 @@ fun Context.openSystemBrowser(
 ): Boolean {
     return startActivitySafe(
         getViewUrlIntent(uri, mimeType, context = this).addFlags(flags),
+        options = options,
+        errorHandler = errorHandler
+    )
+}
+
+@RequiresApi(Build.VERSION_CODES.S)
+fun Context.openViewUrlNonBrowser(
+    url: String,
+    mimeType: String? = null,
+    flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
+    options: Bundle? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
+): Boolean {
+    return if (url.isEmpty()) {
+        false
+    } else {
+        openViewUrlNonBrowser(Uri.parse(url), mimeType, flags, options, errorHandler)
+    }
+}
+
+/**
+ * @return false if:
+ * 1. Only browser apps can handle the intent.
+ * 2. The user has set a browser app as the default app.
+ * 3. The user hasn't set any app as the default for handling this URL.
+ */
+@RequiresApi(Build.VERSION_CODES.S)
+fun Context.openViewUrlNonBrowser(
+    uri: Uri,
+    mimeType: String? = null,
+    flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
+    options: Bundle? = null,
+    errorHandler: ((RuntimeException) -> Unit)? = null,
+): Boolean {
+    return startActivitySafe(
+        getViewUrlIntent(uri, mimeType).addFlags(
+            flags
+                    or Intent.FLAG_ACTIVITY_REQUIRE_NON_BROWSER
+                    or Intent.FLAG_ACTIVITY_REQUIRE_DEFAULT
+        ).addCategory(Intent.CATEGORY_BROWSABLE),
         options = options,
         errorHandler = errorHandler
     )
@@ -191,14 +237,42 @@ fun Context.openRequestIgnoreBatteryOptimizations() {
     }
 }
 
+/**
+ * Текущий package установлен в системе в кач-ве дефолтного браузера
+ */
+fun Context.isSystemBrowserByDefault(url: String): Boolean {
+    val viewUrlResults = queryIntentActivitiesCompat(
+        getViewUrlIntent(url, null),
+        // CATEGORY_BROWSABLE не добавляем
+        PackageManager.MATCH_DEFAULT_ONLY,
+        false
+    )
+    return viewUrlResults.singleOrNull { it.activityInfo.packageName == packageName } != null
+}
+
 @SuppressLint("QueryPermissionsNeeded")
 @JvmOverloads
-fun Context.canHandleActivityIntentQuery(
+fun Context.queryIntentActivitiesCompat(
     intent: Intent,
-    flags: Int = 0
-): Boolean {
-    val resolveInfos = packageManager.queryIntentActivities(intent, flags)
-    return resolveInfos.isNotEmpty()
+    flags: Int = 0,
+    shouldFilterCaller: Boolean = true,
+): List<ResolveInfo> {
+    if (isAtLeastTiramisu()) {
+        packageManager.queryIntentActivities(
+            intent,
+            PackageManager.ResolveInfoFlags.of(flags.toLong())
+        )
+    } else {
+        packageManager.queryIntentActivities(intent, flags)
+    }.also { results ->
+        return if (shouldFilterCaller) {
+            results.filter {
+                it.activityInfo.packageName != packageName
+            }
+        } else {
+            results
+        }
+    }
 }
 
 @JvmOverloads
