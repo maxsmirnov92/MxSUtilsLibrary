@@ -6,7 +6,6 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
-import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -21,13 +20,17 @@ import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.io.File
 import java.io.Serializable
 
-const val URL_ANY_MARKET_FORMAT = "market://details?id=%s"
+const val URL_SCHEME_MARKET = "market"
+const val URL_SCHEME_MAIL = "mailto"
+const val URL_SCHEME_TEL = "tel"
+const val URL_SCHEME_GEO = "geo"
+const val URL_SCHEME_GEO_GOOGLE = "google.navigation"
+
+const val URL_ANY_MARKET_FORMAT = "$URL_SCHEME_MARKET://details?id=%s"
 const val URL_PLAY_MARKET_FORMAT = "https://play.google.com/store/apps/details?id=%s"
 const val ACTION_HUAWEI_MARKET = "com.huawei.appmarket.intent.action.AppDetail"
 
 const val URL_GOOGLE_PAY_SAVE_FORMAT = "https://pay.google.com/gp/v/save/%s"
-
-const val URL_SCHEME_MAIL = "mailto"
 
 @JvmOverloads
 fun getAppSettingsIntent(context: Context, packageName: String = context.packageName): Intent =
@@ -60,10 +63,11 @@ fun getIgnoreBatteryOptimizationsIntent(context: Context): Intent? {
     return null
 }
 
-fun getBrowseLocationIntent(latitude: Double, longitude: Double) = getViewIntent(
-    Uri.parse("geo:%1f,%2f".format(latitude, longitude))
-).apply {
-    setPackage("com.google.android.apps.maps")
+fun getAnyMarketIntent(uri: Uri): Intent? {
+    if (!URL_SCHEME_MARKET.equals(uri.scheme, true)) {
+        return null
+    }
+    return getViewUrlIntent(uri, null)
 }
 
 fun getAnyMarketIntent(appId: String): Intent =
@@ -223,7 +227,7 @@ fun getSendEmailIntent(
     sendAction: SendAction = SENDTO,
     addresses: List<String>? = null
 ): Intent? {
-    if (URL_SCHEME_MAIL != uri.scheme) {
+    if (!URL_SCHEME_MAIL.equals(uri.scheme, true)) {
         return null
     }
     return getSendIntent(sendAction).apply {
@@ -248,6 +252,30 @@ fun getSendIntent(sendAction: SendAction) = Intent(
         else -> Intent.ACTION_SEND
     }
 )
+
+fun getDialIntent(uri: Uri): Intent? {
+    if (!URL_SCHEME_TEL.equals(uri.scheme, true)) {
+        return null
+    }
+    return Intent(Intent.ACTION_DIAL, uri)
+}
+
+fun getViewLocationIntent(latitude: Double, longitude: Double): Intent = getViewLocationIntent(
+    Uri.parse("$URL_SCHEME_GEO:%1f,%2f".format(latitude, longitude))
+) ?: throw NullPointerException()
+
+fun getViewLocationIntent(uri: Uri): Intent? {
+    val scheme = uri.scheme
+    val isGoogle = URL_SCHEME_GEO_GOOGLE.equals(scheme, true)
+    if (!URL_SCHEME_GEO.equals(scheme, true) && !isGoogle) {
+        return null
+    }
+    return getViewUrlIntent(uri, null).apply {
+        if (isGoogle) {
+            setPackage("com.google.android.apps.maps")
+        }
+    }
+}
 
 @JvmOverloads
 fun Intent.wrapChooserWithInitial(
@@ -294,11 +322,12 @@ fun Intent.flatten(
     shouldFilterCaller: Boolean = true
 ): List<Intent> {
     return context.queryIntentActivitiesCompat(this, flags, shouldFilterCaller)
-        .map { Intent(this).apply {
-            `package` = it.activityInfo.packageName
-            component = ComponentName(it.activityInfo.packageName, it.activityInfo.name)
+        .map {
+            Intent(this).apply {
+                `package` = it.activityInfo.packageName
+                component = ComponentName(it.activityInfo.packageName, it.activityInfo.name)
+            }
         }
-    }
 }
 
 fun <T : Serializable> Intent.getSerializableExtraCompat(name: String, clazz: Class<T>): T? {

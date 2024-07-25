@@ -60,12 +60,12 @@ fun CharSequence?.parseClearedHtml(replaceNewLine: Boolean = true): String = par
  */
 fun CharSequence.createSpanText(vararg spanInfo: ISpanInfo): CharSequence {
     if (this.isEmpty() || spanInfo.isEmpty()) return this
-    return SpannableString(this).also {
+    return SpannableString(this).apply {
         spanInfo.forEach { info ->
             info.ranges(this).forEach { range ->
                 if (range.first in this.indices && range.last in 0..this.length) {
                     info.styles.forEach { style ->
-                        it.setSpan(style, range.first, range.last, FLAGS_DEFAULT)
+                        setSpan(style, range.first, range.last, FLAGS_DEFAULT)
                     }
                 }
             }
@@ -91,44 +91,44 @@ fun CharSequence.createSpanTextExpanded(args: Map<String, List<CharacterStyle>>)
 
 @JvmOverloads
 fun CharSequence.appendClickableImage(
-        context: Context,
-        @DrawableRes drawableResId: Int,
-        clickFunc: () -> Unit = {}
+    context: Context,
+    @DrawableRes drawableResId: Int,
+    clickFunc: () -> Unit = {}
 ): CharSequence = createSpanText(
-        RangeSpanInfo(length - 1, length, ImageSpan(context, drawableResId, ImageSpan.ALIGN_BASELINE)),
-        RangeSpanInfo(length - 1, length, AppClickableSpan(false) {
-            if (!isPreLollipop()) {
-                it.cancelPendingInputEvents()
-            }
-            clickFunc.invoke()
-        })
+    RangeSpanInfo(length - 1, length, ImageSpan(context, drawableResId, ImageSpan.ALIGN_BASELINE)),
+    RangeSpanInfo(length - 1, length, AppClickableSpan(false) {
+        if (!isPreLollipop()) {
+            it.cancelPendingInputEvents()
+        }
+        clickFunc.invoke()
+    })
 )
 
 @JvmOverloads
 fun CharSequence.replaceUrlSpansByClickableSpans(
-        parseHtml: Boolean,
-        isUnderlineText: Boolean = false,
-        replaceNewLine: Boolean = true,
-        action: ((URLSpan) -> Any)? = null
+    parseHtml: Boolean,
+    isUnderlineText: Boolean = false,
+    replaceNewLine: Boolean = true,
+    action: ((URLSpan) -> Any)? = null
 ): CharSequence = replaceSpansByCustomSpans(parseHtml, URLSpan::class.java, replaceNewLine) { span ->
     AppClickableSpan(isUnderlineText) { action?.invoke(span) }
 }
 
 @JvmOverloads
 fun CharSequence.removeUnderlineFromUrlSpans(
-        parseHtml: Boolean,
-        replaceNewLine: Boolean = true,
-        action: ((URLSpan) -> Any)? = null
+    parseHtml: Boolean,
+    replaceNewLine: Boolean = true,
+    action: ((URLSpan) -> Any)? = null
 ): CharSequence = replaceSpansByCustomSpans(parseHtml, URLSpan::class.java, replaceNewLine) { span ->
     UrlClickableSpan(span.url, false) { action?.invoke(span) }
 }
 
 @JvmOverloads
-fun <Style: CharacterStyle> CharSequence.replaceSpansByCustomSpans(
-        parseHtml: Boolean,
-        clazz: Class<Style>,
-        replaceNewLine: Boolean = true,
-        createSpanFunc: (Style) -> CharacterStyle,
+fun <Style : CharacterStyle> CharSequence.replaceSpansByCustomSpans(
+    parseHtml: Boolean,
+    clazz: Class<Style>,
+    replaceNewLine: Boolean = true,
+    createSpanFunc: (Style) -> CharacterStyle,
 ): SpannableStringBuilder {
     val sequence = if (parseHtml) orEmpty(parseHtmlToSpannedString(replaceNewLine)) else this
     val result = SpannableStringBuilder(sequence)
@@ -155,24 +155,24 @@ interface ISpanInfo {
  * Местоположение для применения стилей указывается диапазоном индексов строки
  */
 data class RangeSpanInfo(
-        val startIndex: Int,
-        val endIndex: Int,
-        override val styles: List<CharacterStyle>
+    val startIndex: Int,
+    val endIndex: Int,
+    override val styles: List<CharacterStyle>
 ) : ISpanInfo {
 
     constructor(
-            startIndex: Int,
-            endIndex: Int,
-            style: CharacterStyle
+        startIndex: Int,
+        endIndex: Int,
+        style: CharacterStyle
     ) : this(startIndex, endIndex, listOf(style))
 
     override fun ranges(fullText: CharSequence): List<IntRange> {
         return listOfNotNull(
-                if (startIndex > endIndex || startIndex !in 0..fullText.length || endIndex !in 0..fullText.length) {
-                    null
-                } else {
-                    IntRange(startIndex, endIndex)
-                }
+            if (startIndex > endIndex || startIndex !in 0..fullText.length || endIndex !in 0..fullText.length) {
+                null
+            } else {
+                IntRange(startIndex, endIndex)
+            }
         )
     }
 }
@@ -187,8 +187,8 @@ sealed class SubstringSpanInfo : ISpanInfo {
 
     override fun ranges(fullText: CharSequence): List<IntRange> {
         return indices(fullText)
-                .filter { it > 0 }
-                .map { IntRange(it, it + substring.length) }
+            .filter { it > 0 }
+            .map { IntRange(it, it + substring.length) }
     }
 
     protected abstract fun indices(fullText: CharSequence): List<Int>
@@ -198,8 +198,8 @@ sealed class SubstringSpanInfo : ISpanInfo {
      * Для установки спанов [styles] только для первого вхождения подстроки [substring] в строку
      */
     data class FirstEntry(
-            override val substring: String,
-            override val styles: List<CharacterStyle>
+        override val substring: String,
+        override val styles: List<CharacterStyle>
     ) : SubstringSpanInfo() {
 
         constructor(substring: String, style: CharacterStyle) : this(substring, listOf(style))
@@ -215,8 +215,8 @@ sealed class SubstringSpanInfo : ISpanInfo {
      * инстанс [CharacterStyle].
      */
     class AllEntries(
-            override val substring: String,
-            private val createSpans: () -> List<CharacterStyle>
+        override val substring: String,
+        private val createSpans: () -> List<CharacterStyle>
     ) : SubstringSpanInfo() {
 
         override val styles: List<CharacterStyle>
@@ -229,8 +229,8 @@ sealed class SubstringSpanInfo : ISpanInfo {
 }
 
 open class AppClickableSpan @JvmOverloads constructor(
-        private val isUnderlineText: Boolean = true,
-        private val onClick: ((View) -> Unit)? = null
+    private val isUnderlineText: Boolean = true,
+    private val onClick: ((View) -> Unit)? = null
 ) : ClickableSpan() {
 
     @CallSuper
@@ -246,9 +246,9 @@ open class AppClickableSpan @JvmOverloads constructor(
 }
 
 open class UrlClickableSpan @JvmOverloads constructor(
-        val url: String,
-        val isUnderlineText: Boolean = true,
-        val onClick: ((View) -> Unit)? = null
+    val url: String,
+    val isUnderlineText: Boolean = true,
+    val onClick: ((View) -> Unit)? = null
 ) : URLSpan(url) {
 
     @CallSuper

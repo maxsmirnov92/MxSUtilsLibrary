@@ -8,7 +8,6 @@ import android.graphics.drawable.Drawable
 import android.os.Build
 import android.os.Bundle
 import android.text.*
-import android.text.method.LinkMovementMethod
 import android.text.style.CharacterStyle
 import android.text.style.URLSpan
 import android.util.Base64
@@ -24,6 +23,7 @@ import android.widget.*
 import androidx.annotation.*
 import androidx.coordinatorlayout.widget.CoordinatorLayout
 import androidx.core.content.ContextCompat
+import androidx.core.text.method.LinkMovementMethodCompat
 import androidx.core.view.AccessibilityDelegateCompat
 import androidx.core.view.ViewCompat
 import androidx.core.view.accessibility.AccessibilityNodeInfoCompat
@@ -324,7 +324,7 @@ fun TextView.appendClickableImageTextView(
  */
 @JvmOverloads
 fun TextView.removeUnderlineFromUrlSpans(replaceNewLine: Boolean = true): CharSequence =
-    setTextWithMovementMethod(text.removeUnderlineFromUrlSpans(false, replaceNewLine))
+    setLinkableText(text.removeUnderlineFromUrlSpans(false, replaceNewLine))
 
 @JvmOverloads
 fun TextView.setHtmlText(
@@ -341,7 +341,7 @@ fun TextView.setHtmlText(
     text: CharSequence?,
     clearHtml: Boolean = false,
     replaceNewLine: Boolean = true
-): CharSequence = setTextWithMovementMethod(
+): CharSequence = setLinkableText(
     if (clearHtml) {
         text.parseClearedHtml(replaceNewLine)
     } else {
@@ -365,7 +365,7 @@ fun TextView.setLinkFromHtml(
     removeUnderline: Boolean = true,
     replaceNewLine: Boolean = true
 ): CharSequence = if (removeUnderline) {
-    setTextWithMovementMethod(htmlLink.removeUnderlineFromUrlSpans(true, replaceNewLine))
+    setLinkableText(htmlLink.removeUnderlineFromUrlSpans(true, replaceNewLine))
 } else {
     setHtmlText(htmlLink, replaceNewLine)
 }
@@ -376,7 +376,7 @@ fun TextView.setLinkFromHtml(
 fun TextView.setSpanText(
     text: CharSequence,
     vararg spanInfo: ISpanInfo
-): CharSequence = setTextWithMovementMethod(text.createSpanText(*spanInfo))
+): CharSequence = setLinkableText(text.createSpanText(*spanInfo))
 
 /**
  * @param text в строке аргументы с префиксами "^" будут заменены на [CharacterStyle]
@@ -386,7 +386,7 @@ fun TextView.setSpanText(
 fun TextView.setSpanTextExpanded(
     text: CharSequence,
     args: Map<String, List<CharacterStyle>>
-): CharSequence = setTextWithMovementMethod(text.createSpanTextExpanded(args))
+): CharSequence = setLinkableText(text.createSpanTextExpanded(args))
 
 
 /**
@@ -399,7 +399,7 @@ fun TextView.replaceUrlSpans(
     isUnderlineText: Boolean = false,
     replaceNewLine: Boolean = true,
     action: ((URLSpan) -> Boolean)? = null
-): CharSequence = setTextWithMovementMethod(
+): CharSequence = setLinkableText(
     html.replaceUrlSpansByClickableSpans(parseHtml, isUnderlineText, replaceNewLine, action)
 )
 
@@ -1124,9 +1124,9 @@ fun View.hideByReferenceViews(vararg otherViews: View) {
     visibility = if (isGone) View.GONE else View.INVISIBLE
 }
 
-fun TextView.setTextWithMovementMethod(text: CharSequence?): CharSequence {
+fun TextView.setLinkableText(text: CharSequence?): CharSequence {
     this.text = text
-    movementMethod = LinkMovementMethod.getInstance()
+    movementMethod = LinkMovementMethodCompat.getInstance()
     return orEmpty(text)
 }
 
