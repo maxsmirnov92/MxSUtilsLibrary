@@ -10,7 +10,10 @@ abstract class BaseLoggerHolder protected constructor() {
 
     private val loggersMap =  Collections.synchronizedMap(HashMap<String, BaseLogger>())
 
-    val loggersCount: Int get() = loggersMap.size
+    /**
+     * Задаёт уровень логгирования в рамках приложения
+     */
+    var loggerLevel: BaseLogger.Level = BaseLogger.Level.VERBOSE
 
     /**
      * @param clazz object class to get/create logger for
@@ -57,17 +60,12 @@ abstract class BaseLoggerHolder protected constructor() {
         private var sInstance: BaseLoggerHolder? = null
 
         @JvmStatic
-        fun initInstance(provider: () -> BaseLoggerHolder) {
+        fun init(provider: () -> BaseLoggerHolder) {
             synchronized(BaseLoggerHolder::class.java) {
                 if (sInstance == null) {
                     sInstance = provider()
                 }
             }
-        }
-
-        @JvmStatic
-        fun releaseInstance() {
-            synchronized(BaseLoggerHolder::class.java) { sInstance = null }
         }
 
         @JvmStatic

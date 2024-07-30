@@ -1,44 +1,152 @@
 package net.maxsmr.commonutils.logger
 
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
+
 abstract class BaseLogger(protected val tag: String) {
 
-    var isLoggingEnabled = true
+    abstract fun _v(message: String)
 
-    abstract fun v(message: String)
+    abstract fun _v(exception: Throwable)
 
-    abstract fun v(exception: Throwable)
+    abstract fun _v(message: String, exception: Throwable?)
 
-    abstract fun v(message: String, exception: Throwable?)
+    abstract fun _d(message: String)
 
-    abstract fun d(message: String)
+    abstract fun _d(exception: Throwable)
 
-    abstract fun d(exception: Throwable)
+    abstract fun _d(message: String, exception: Throwable?)
 
-    abstract fun d(message: String, exception: Throwable?)
+    abstract fun _i(message: String)
 
-    abstract fun i(message: String)
+    abstract fun _i(exception: Throwable)
 
-    abstract fun i(exception: Throwable)
+    abstract fun _i(message: String, exception: Throwable?)
 
-    abstract fun i(message: String, exception: Throwable?)
+    abstract fun _w(message: String)
 
-    abstract fun w(message: String)
+    abstract fun _w(exception: Throwable)
 
-    abstract fun w(exception: Throwable)
+    abstract fun _w(message: String, exception: Throwable?)
 
-    abstract fun w(message: String, exception: Throwable?)
+    abstract fun _e(message: String)
 
-    abstract fun e(message: String)
+    abstract fun _e(exception: Throwable)
 
-    abstract fun e(exception: Throwable)
+    abstract fun _e(message: String, exception: Throwable?)
 
-    abstract fun e(message: String, exception: Throwable?)
+    abstract fun _wtf(message: String)
 
-    abstract fun wtf(message: String)
+    abstract fun _wtf(exception: Throwable)
 
-    abstract fun wtf(exception: Throwable)
+    abstract fun _wtf(message: String, exception: Throwable?)
 
-    abstract fun wtf(message: String, exception: Throwable?)
+    fun v(message: String) {
+        if (BaseLoggerHolder.instance.loggerLevel.isVerbose) {
+            _v(message)
+        }
+    }
+
+    fun v(exception: Throwable) {
+        if (BaseLoggerHolder.instance.loggerLevel.isVerbose) {
+            _v(exception)
+        }
+    }
+
+    fun v(message: String, exception: Throwable?) {
+        if (BaseLoggerHolder.instance.loggerLevel.isVerbose) {
+            _v(message, exception)
+        }
+    }
+
+    fun d(message: String) {
+        if (BaseLoggerHolder.instance.loggerLevel.isDebug) {
+            _d(message)
+        }
+    }
+
+    fun d(exception: Throwable) {
+        if (BaseLoggerHolder.instance.loggerLevel.isDebug) {
+            _d(exception)
+        }
+    }
+
+    fun d(message: String, exception: Throwable?) {
+        if (BaseLoggerHolder.instance.loggerLevel.isDebug) {
+            _d(message, exception)
+        }
+    }
+
+    fun i(message: String) {
+        if (BaseLoggerHolder.instance.loggerLevel.isInfo) {
+            _i(message)
+        }
+    }
+
+    fun i(exception: Throwable) {
+        if (BaseLoggerHolder.instance.loggerLevel.isInfo) {
+            _i(exception)
+        }
+    }
+
+    fun i(message: String, exception: Throwable?) {
+        if (BaseLoggerHolder.instance.loggerLevel.isInfo) {
+            _i(message, exception)
+        }
+    }
+
+    fun w(message: String) {
+        if (BaseLoggerHolder.instance.loggerLevel.isWarn) {
+            _w(message)
+        }
+    }
+
+    fun w(exception: Throwable) {
+        if (BaseLoggerHolder.instance.loggerLevel.isWarn) {
+            _w(exception)
+        }
+    }
+
+    fun w(message: String, exception: Throwable?) {
+        if (BaseLoggerHolder.instance.loggerLevel.isWarn) {
+            _w(message, exception)
+        }
+    }
+
+    fun e(message: String) {
+        if (BaseLoggerHolder.instance.loggerLevel.isError) {
+            _e(message)
+        }
+    }
+
+    fun e(exception: Throwable) {
+        if (BaseLoggerHolder.instance.loggerLevel.isError) {
+            _e(exception)
+        }
+    }
+
+    fun e(message: String, exception: Throwable?) {
+        if (BaseLoggerHolder.instance.loggerLevel.isError) {
+            _e(message, exception)
+        }
+    }
+
+    fun wtf(message: String) {
+        if (BaseLoggerHolder.instance.loggerLevel.isWtf) {
+            _wtf(message)
+        }
+    }
+
+    fun wtf(exception: Throwable) {
+        if (BaseLoggerHolder.instance.loggerLevel.isWtf) {
+            _wtf(exception)
+        }
+    }
+
+    fun wtf(message: String, exception: Throwable?) {
+        if (BaseLoggerHolder.instance.loggerLevel.isWtf) {
+            _wtf(message, exception)
+        }
+    }
 
     enum class Level {
         VERBOSE, DEBUG, INFO, WARN, ERROR, WTF;
@@ -68,40 +176,58 @@ abstract class BaseLogger(protected val tag: String) {
 
     class Stub(tag: String) : BaseLogger(tag) {
 
-        override fun v(message: String) {}
+        override fun _v(message: String) {
+        }
 
-        override fun v(exception: Throwable) {}
+        override fun _v(exception: Throwable) {
+        }
 
-        override fun v(message: String, exception: Throwable?) {}
+        override fun _v(message: String, exception: Throwable?) {
+        }
 
-        override fun d(message: String) {}
+        override fun _d(message: String) {
+        }
 
-        override fun d(exception: Throwable) {}
+        override fun _d(exception: Throwable) {
+        }
 
-        override fun d(message: String, exception: Throwable?) {}
+        override fun _d(message: String, exception: Throwable?) {
+        }
 
-        override fun i(message: String) {}
+        override fun _i(message: String) {
+        }
 
-        override fun i(exception: Throwable) {}
+        override fun _i(exception: Throwable) {
+        }
 
-        override fun i(message: String, exception: Throwable?) {}
+        override fun _i(message: String, exception: Throwable?) {
+        }
 
-        override fun w(message: String) {}
+        override fun _w(message: String) {
+        }
 
-        override fun w(exception: Throwable) {}
+        override fun _w(exception: Throwable) {
+        }
 
-        override fun w(message: String, exception: Throwable?) {}
+        override fun _w(message: String, exception: Throwable?) {
+        }
 
-        override fun e(message: String) {}
+        override fun _e(message: String) {
+        }
 
-        override fun e(exception: Throwable) {}
+        override fun _e(exception: Throwable) {
+        }
 
-        override fun e(message: String, exception: Throwable?) {}
+        override fun _e(message: String, exception: Throwable?) {
+        }
 
-        override fun wtf(message: String) {}
+        override fun _wtf(message: String) {
+        }
 
-        override fun wtf(exception: Throwable) {}
+        override fun _wtf(exception: Throwable) {
+        }
 
-        override fun wtf(message: String, exception: Throwable?) {}
+        override fun _wtf(message: String, exception: Throwable?) {
+        }
     }
 }

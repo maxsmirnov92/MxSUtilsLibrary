@@ -6,102 +6,90 @@ import java.util.*
 
 class SimpleSystemLogger(tag: String) : BaseLogger(tag) {
 
-    override fun v(message: String) {
-        if (isLoggingEnabled) {
-            log(VERBOSE, message)
-        }
+    override fun _v(message: String) {
+        log(VERBOSE, message)
     }
 
-    override fun v(exception: Throwable) {
+    override fun _v(exception: Throwable) {
         v(exception.toString())
     }
 
-    override fun v(message: String, exception: Throwable?) {
+    override fun _v(message: String, exception: Throwable?) {
         v(message)
         exception?.let {
             v(it)
         }
     }
 
-    override fun d(message: String) {
-        if (isLoggingEnabled) {
-            log(DEBUG, message)
-        }
+    override fun _d(message: String) {
+        log(DEBUG, message)
     }
 
-    override fun d(exception: Throwable) {
+    override fun _d(exception: Throwable) {
         d(exception.toString())
     }
 
-    override fun d(message: String, exception: Throwable?) {
+    override fun _d(message: String, exception: Throwable?) {
         d(message)
         exception?.let {
             d(it)
         }
     }
 
-    override fun i(message: String) {
-        if (isLoggingEnabled) {
-            log(INFO, message)
-        }
+    override fun _i(message: String) {
+        log(INFO, message)
     }
 
-    override fun i(exception: Throwable) {
+    override fun _i(exception: Throwable) {
         i(exception.toString())
     }
 
-    override fun i(message: String, exception: Throwable?) {
+    override fun _i(message: String, exception: Throwable?) {
         i(message)
         exception?.let {
             i(it)
         }
     }
 
-    override fun w(message: String) {
-        if (isLoggingEnabled) {
-            log(WARN, message)
-        }
+    override fun _w(message: String) {
+        log(WARN, message)
     }
 
-    override fun w(exception: Throwable) {
+    override fun _w(exception: Throwable) {
         w(exception.toString())
     }
 
-    override fun w(message: String, exception: Throwable?) {
+    override fun _w(message: String, exception: Throwable?) {
         w(message)
         exception?.let {
             w(it)
         }
     }
 
-    override fun e(message: String) {
-        if (isLoggingEnabled) {
-            log(ERROR, message)
-        }
+    override fun _e(message: String) {
+        log(ERROR, message)
     }
 
-    override fun e(exception: Throwable) {
+    override fun _e(exception: Throwable) {
         e(exception.toString())
     }
 
-    override fun e(message: String, exception: Throwable?) {
+    override fun _e(message: String, exception: Throwable?) {
         e(message)
         exception?.let {
             e(it)
         }
     }
 
-    override fun wtf(message: String) {
-        if (isLoggingEnabled) {
-            log(WTF, message)
-        }
+    override fun _wtf(message: String) {
+        log(WTF, message)
     }
 
-    override fun wtf(exception: Throwable) {
+    override fun _wtf(exception: Throwable) {
         wtf(exception.toString())
     }
 
-    override fun wtf(message: String, exception: Throwable?) {
+    override fun _wtf(message: String, exception: Throwable?) {
         wtf(message)
         exception?.let {
             wtf(it)
@@ -117,7 +105,12 @@ class SimpleSystemLogger(tag: String) : BaseLogger(tag) {
         }
     }
 
-    private class LogEntry constructor(private val level: Level, private val tag: String, private val message: String, private val timestamp: Long) {
+    private class LogEntry constructor(
+        private val level: Level,
+        private val tag: String,
+        private val message: String,
+        private val timestamp: Long
+    ) {
 
         override fun toString(): String {
             return "[" + formatDate(Date(timestamp), "dd.MM.yyyy HH:mm:ss") + "] " + level.name + " " + tag + ": " + message
