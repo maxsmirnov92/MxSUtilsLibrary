@@ -170,8 +170,11 @@ fun InputStream.readStringsOrThrow(
 }
 
 @JvmOverloads
-fun InputStream.readString(charsetName: String = CHARSET_DEFAULT): String? = try {
-    readStringOrThrow(charsetName)
+fun InputStream.readString(
+    closeInput: Boolean = true,
+    charsetName: String = CHARSET_DEFAULT
+): String? = try {
+    readStringOrThrow(closeInput, charsetName)
 } catch (e: IOException) {
     logException(logger, e, "readString")
     null
@@ -180,9 +183,12 @@ fun InputStream.readString(charsetName: String = CHARSET_DEFAULT): String? = try
 
 @Throws(IOException::class)
 @JvmOverloads
-fun InputStream.readStringOrThrow(charsetName: String = CHARSET_DEFAULT): String {
+fun InputStream.readStringOrThrow(
+    closeInput: Boolean = true,
+    charsetName: String = CHARSET_DEFAULT
+): String {
     val result = ByteArrayOutputStream()
-    copyStreamOrThrow(result)
+    copyStreamOrThrow(result, closeInput = closeInput)
     return result.toString(charsetName)
 }
 

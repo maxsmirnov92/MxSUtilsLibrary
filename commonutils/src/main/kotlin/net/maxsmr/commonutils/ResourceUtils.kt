@@ -184,7 +184,33 @@ fun AssetManager.readStringsFromAssetOrThrow(
     return try {
         open(assetName).readStringsOrThrow(count, charsetName = charsetName)
     } catch (e: Exception) {
-        throw RuntimeException(formatException(e, "readStringsFromInputStream"), e)
+        throw RuntimeException(formatException(e, "readStrings from InputStream"), e)
+    }
+}
+
+@JvmOverloads
+fun AssetManager.readStringFromAsset(
+    assetName: String,
+    charsetName: String = CHARSET_DEFAULT
+): String? {
+    return try {
+        readStringFromAssetOrThrow(assetName, charsetName)
+    } catch (e: RuntimeException) {
+        logger.e(e)
+        null
+    }
+}
+
+@Throws(RuntimeException::class)
+@JvmOverloads
+fun AssetManager.readStringFromAssetOrThrow(
+    assetName: String,
+    charsetName: String = CHARSET_DEFAULT
+): String {
+    return try {
+        open(assetName).readStringOrThrow(charsetName = charsetName)
+    } catch (e: Exception) {
+        throw RuntimeException(formatException(e, "readString from InputStream"), e)
     }
 }
 
@@ -213,7 +239,31 @@ fun Resources.readStringsFromResOrThrow(
     return try {
         openRawResource(resId).readStringsOrThrow(count, charsetName = charsetName)
     } catch (e: Exception) {
-        throw RuntimeException(formatException(e, "readStringsFromInputStream"), e)
+        throw RuntimeException(formatException(e, "readStrings from InputStream"), e)
+    }
+}
+
+@JvmOverloads
+fun Resources.readStringFromRes(
+    @RawRes resId: Int,
+    charsetName: String = CHARSET_DEFAULT
+): String? = try {
+    readStringFromResOrThrow(resId, charsetName)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    null
+}
+
+@Throws(RuntimeException::class)
+@JvmOverloads
+fun Resources.readStringFromResOrThrow(
+    @RawRes resId: Int,
+    charsetName: String = CHARSET_DEFAULT
+): String {
+    return try {
+        openRawResource(resId).readStringOrThrow(charsetName = charsetName)
+    } catch (e: Exception) {
+        throw RuntimeException(formatException(e, "readString from InputStream"), e)
     }
 }
 
@@ -344,13 +394,11 @@ fun Resources.getViewsRotationForDisplay(displayRotation: Int): Int {
 }
 
 fun Context.getUriFromRawResource(@RawRes rawResId: Int): Uri {
-    return Uri.parse(
-        ContentResolver.SCHEME_ANDROID_RESOURCE
-                + File.pathSeparator + File.separator + File.separator
-                + packageName
-                + File.separator
-                + rawResId
-    )
+    return Uri.Builder()
+        .scheme(ContentResolver.SCHEME_ANDROID_RESOURCE)
+        .authority(packageName)
+        .appendPath("$rawResId")
+        .build()
 }
 
 fun createColorStateListFromRes(context: Context, @XmlRes res: Int): ColorStateList? {

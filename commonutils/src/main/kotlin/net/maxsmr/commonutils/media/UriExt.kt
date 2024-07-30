@@ -9,6 +9,7 @@ import android.database.Cursor
 import android.net.Uri
 import android.os.Build
 import android.os.ParcelFileDescriptor
+import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Base64
 import androidx.annotation.RequiresApi
@@ -91,7 +92,7 @@ fun Uri.readStringOrThrow(
     charsetName: String = CHARSET_DEFAULT,
 ): String? {
     return try {
-        openInputStreamOrThrow(contentResolver).readStringOrThrow(charsetName)
+        openInputStreamOrThrow(contentResolver).readStringOrThrow(charsetName = charsetName)
     } catch (e: IOException) {
         throw RuntimeException(formatException(e, "readStringOrThrow"), e)
     }
@@ -213,7 +214,6 @@ fun Uri.copyToOrThrow(
     return fileTo.toFileUri()
 }
 
-@RequiresApi(Build.VERSION_CODES.KITKAT)
 fun Uri.takePersistableReadPermission(contentResolver: ContentResolver) {
     if (this.scheme != SCHEME_CONTENT) return
     try {
@@ -509,6 +509,35 @@ fun Uri.nameOrThrow(contentResolver: ContentResolver): String {
                 contentResolver,
                 String::class.java,
                 OpenableColumns.DISPLAY_NAME
+            )
+        }
+
+        else -> {
+            throw RuntimeException("Incorrect uri scheme: $scheme")
+        }
+    }
+}
+
+fun Uri.path(contentResolver: ContentResolver): String = try {
+    pathOrThrow(contentResolver)
+} catch (e: RuntimeException) {
+    logger.e(e)
+    EMPTY_STRING
+}
+
+@Throws(RuntimeException::class)
+fun Uri.pathOrThrow(contentResolver: ContentResolver): String {
+    val path = this.path ?: throw RuntimeException("uri path is null")
+    return when {
+        isFileScheme() -> {
+            File(path).absolutePath
+        }
+
+        isContentScheme() -> {
+            queryFirstOrThrow(
+                contentResolver,
+                String::class.java,
+                MediaStore.Images.Media.DATA
             )
         }
 
