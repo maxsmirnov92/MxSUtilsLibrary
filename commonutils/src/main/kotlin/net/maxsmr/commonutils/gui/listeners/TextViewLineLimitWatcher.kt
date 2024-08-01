@@ -3,6 +3,7 @@ package net.maxsmr.commonutils.gui.listeners
 import android.view.ViewTreeObserver
 import android.widget.TextView
 import androidx.core.view.isVisible
+import net.maxsmr.commonutils.gui.runOnceLayoutChanges
 import net.maxsmr.commonutils.text.EMPTY_STRING
 
 /**
@@ -117,13 +118,10 @@ open class TextViewLineLimitWatcher @JvmOverloads constructor(
     }
 
     private fun observeLayoutChanges() {
-        observableTextView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-            override fun onGlobalLayout() {
-                observableTextView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                // фактическое число lineCount будет посчитано здесь
-                // и оно может быть > чем отображаемое в данный момент (maxLines)
-                refreshState()
-            }
-        })
+        observableTextView.runOnceLayoutChanges {
+            // фактическое число lineCount будет посчитано здесь
+            // и оно может быть > чем отображаемое в данный момент (maxLines)
+            refreshState()
+        }
     }
 }

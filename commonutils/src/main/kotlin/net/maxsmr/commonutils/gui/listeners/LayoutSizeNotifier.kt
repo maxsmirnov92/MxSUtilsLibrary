@@ -5,9 +5,7 @@ import android.view.View
 import android.view.ViewTreeObserver
 import net.maxsmr.commonutils.gui.getKeyboardHeight
 
-const val SIZE_UNKNOWN = -1
-
-class LayoutSizeNotifier(val rootView: View, val targetView: View): ViewTreeObserver.OnGlobalLayoutListener {
+class LayoutSizeNotifier(private val rootView: View, private  val targetView: View): ViewTreeObserver.OnGlobalLayoutListener {
 
     var listener: Listener? = null
 
@@ -21,7 +19,7 @@ class LayoutSizeNotifier(val rootView: View, val targetView: View): ViewTreeObse
 
     fun getKeyboardHeightWithCheck(): Int {
         if (keyboardHeight == SIZE_UNKNOWN || keyboardHeight == 0) {
-            keyboardHeight = getKeyboardHeight(rootView, targetView)
+            keyboardHeight = rootView.getKeyboardHeight(targetView)
         }
         return keyboardHeight
     }
@@ -44,5 +42,10 @@ class LayoutSizeNotifier(val rootView: View, val targetView: View): ViewTreeObse
     interface Listener {
 
         fun onSizeChanged(keyboardHeight: Int, isWidthGreater: Boolean)
+    }
+
+    companion object {
+
+        const val SIZE_UNKNOWN = -1
     }
 }

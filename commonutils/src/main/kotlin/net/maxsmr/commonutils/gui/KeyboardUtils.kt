@@ -15,34 +15,39 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("KeyboardUtils")
 
-fun getKeyboardHeight(rootView: View, targetView: View): Int {
+/**
+ * [this] корневая [View] на экране
+ */
+fun View.getKeyboardHeight(targetView: View): Int {
     val rect = Rect()
     targetView.getWindowVisibleDisplayFrame(rect)
     val usableViewHeight =
-        rootView.height - (if (rect.top != 0) {
-            rootView.context.resources.getStatusBarHeight()
+        height - (if (rect.top != 0) {
+            context.resources.getStatusBarHeight()
         } else {
             0
-        }) - rootView.getViewInset()
+        }) - getViewInset()
     return usableViewHeight - (rect.bottom - rect.top)
 }
 
 /**
  * Добавление слушателя на состояние клавиатуры
  *
- * @param rootView корневай [View] на экране
+ * [this] корневая [View] на экране
  */
-fun addSoftInputStateListener(
-    rootView: View,
-    keyboardVisibilityChangeListener: (Boolean) -> Unit,
-): ViewTreeObserver.OnGlobalLayoutListener {
+fun View.addSoftInputStateListener(keyboardVisibilityChangeListener: (Boolean) -> Unit): ViewTreeObserver.OnGlobalLayoutListener {
+    var lastState: Boolean? = null
     ViewTreeObserver.OnGlobalLayoutListener {
-        val insets = ViewCompat.getRootWindowInsets(rootView)
+        val insets = ViewCompat.getRootWindowInsets(this)
         insets?.let {
-            keyboardVisibilityChangeListener(insets.isVisible(WindowInsetsCompat.Type.ime()))
+            val state = insets.isVisible(WindowInsetsCompat.Type.ime())
+            if (lastState != state) {
+                keyboardVisibilityChangeListener(state)
+                lastState = state
+            }
         }
     }.let { listener ->
-        rootView.viewTreeObserver.addOnGlobalLayoutListener(listener)
+        viewTreeObserver.addOnGlobalLayoutListener(listener)
         return listener
     }
 }

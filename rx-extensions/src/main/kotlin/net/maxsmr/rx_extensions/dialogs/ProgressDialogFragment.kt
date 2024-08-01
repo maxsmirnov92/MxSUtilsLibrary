@@ -10,6 +10,7 @@ import android.widget.TextView
 import androidx.annotation.IdRes
 import androidx.annotation.LayoutRes
 import androidx.appcompat.app.AlertDialog
+import net.maxsmr.commonutils.gui.runOnceLayoutChanges
 
 const val ARG_PROGRESS_BAR_ID = "BaseProgressTypedDialogFragment#ARG_PROGRESS_BAR_ID"
 const val ARG_LOADING_MESSAGE_VIEW_ID = "BaseProgressTypedDialogFragment#ARG_LOADING_MESSAGE_VIEW_ID"
@@ -46,13 +47,10 @@ open class ProgressDialogFragment : AlertTypedDialogFragment() {
                 val containerId = args.getInt(ARG_CONTAINER_ID)
 //            it.setContentView(layoutRes)
                 if (containerId != 0) {
-                    val dialogContainer = it.findViewById(containerId) as View
-                    dialogContainer.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
-                        override fun onGlobalLayout() {
-                            it.setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
-                            dialogContainer.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                        }
-                    })
+                    val dialogContainer: View = it.findViewById(containerId)
+                    dialogContainer.runOnceLayoutChanges {
+                        it.setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
+                    }
 //                forceLayoutParams(dialogContainer, WRAP_CONTENT, WRAP_CONTENT)
                 } else {
                     it.setLayout(ViewGroup.LayoutParams.WRAP_CONTENT, ViewGroup.LayoutParams.WRAP_CONTENT)
