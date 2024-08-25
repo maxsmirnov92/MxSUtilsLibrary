@@ -215,11 +215,11 @@ private fun ViewGroup.detectScrollChangesByParams(scrollX: Int, scrollY: Int, ol
         scrollX == (getChildAt(0).measuredWidth - measuredWidth) && scrollX != oldScrollX -> END
         scrollX > oldScrollX -> RIGHT
         scrollX < oldScrollX -> LEFT
-        scrollX == 0 && oldScrollX != 0 -> START
+        scrollX == 0 -> START
         scrollY == (getChildAt(0).measuredHeight - measuredHeight) && scrollY != oldScrollY -> BOTTOM
         scrollY < oldScrollY -> UP
         scrollY > oldScrollY -> DOWN
-        scrollY == 0 && oldScrollY != 0 -> TOP
+        scrollY == 0 -> TOP
         else -> UNKNOWN
     }
 

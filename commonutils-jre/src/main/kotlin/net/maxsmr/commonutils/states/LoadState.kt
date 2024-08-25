@@ -15,7 +15,7 @@ enum class Status {
 /**
  * Базовый контейнер для состояния загрузки
  */
-interface ILoadState<D> : Serializable {
+interface ILoadState<D>  {
 
     /**
      * Флаг о том, что загрузка завершилась с любым результатом

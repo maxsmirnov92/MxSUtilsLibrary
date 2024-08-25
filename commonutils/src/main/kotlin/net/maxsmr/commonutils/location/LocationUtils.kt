@@ -84,7 +84,7 @@ fun angularDistanceToKilometers(x1: Double, y1: Double, x2: Double, y2: Double):
  * @param end - конечная точка [Point]
  * @return - расстояние, окргуленное до целого значения
  */
-fun distance(begin: PointF, end: PointF): Int {
+fun distance(begin: PointF, end: PointF): Float {
     val xLat = begin.x.toDouble()
     val xLong = begin.y.toDouble()
     val yLat = end.x.toDouble()
@@ -96,7 +96,36 @@ fun distance(begin: PointF, end: PointF): Int {
     result = Math.toDegrees(result)
     result *= 60 * 1.1515
     result *= 1.609344 * 1000 // перевод км в м
-    return abs(result.toInt())
+    return abs(result).toFloat()
+}
+
+/**
+ * Calculate distance between two points in latitude and longitude taking
+ * into account height difference. If you are not interested in height
+ * difference pass 0.0. Uses Haversine method as its base.
+ *
+ * lat1, lon1 Start point lat2, lon2 End point el1 Start altitude in meters
+ * el2 End altitude in meters
+ * @return Distance in Meters
+ */
+fun distance2(
+    begin: PointF,
+    end: PointF,
+    startAltitude: Float = 0f,
+    endAltitude: Float = 0f,
+): Float {
+    val latDistance = Math.toRadians((end.x - begin.x).toDouble())
+    val lonDistance = Math.toRadians((end.y - begin.y).toDouble())
+    val a = sin(latDistance / 2) * sin(latDistance / 2) +
+            cos(Math.toRadians(begin.x.toDouble())) * cos(Math.toRadians((end.x.toDouble()))) * sin(lonDistance / 2) *
+            sin(lonDistance / 2)
+    val c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    // convert to meters, 6371 km is radius of the earth
+    var distance = 6371 * c * 1000
+
+    val height = (startAltitude - endAltitude).toDouble()
+    distance = distance.pow(2.0) + height.pow(2.0)
+    return sqrt(distance).toFloat()
 }
 
 /**

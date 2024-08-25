@@ -260,17 +260,24 @@ fun getDialIntent(uri: Uri): Intent? {
     return Intent(Intent.ACTION_DIAL, uri)
 }
 
-fun getViewLocationIntent(latitude: Double, longitude: Double): Intent = getViewLocationIntent(
-    Uri.parse("$URL_SCHEME_GEO:%1f,%2f".format(latitude, longitude))
-) ?: throw NullPointerException()
-
-fun getViewLocationIntent(uri: Uri): Intent? {
-    val scheme = uri.scheme
-    val isGoogle = URL_SCHEME_GEO_GOOGLE.equals(scheme, true)
-    if (!URL_SCHEME_GEO.equals(scheme, true) && !isGoogle) {
-        return null
+fun getViewLocationIntent(
+    latitude: Float?,
+    longitude: Float?,
+    query: String = EMPTY_STRING,
+    isGoogle: Boolean = false,
+): Intent {
+    val uri = StringBuilder()
+    uri.append("${if (isGoogle) URL_SCHEME_GEO_GOOGLE else URL_SCHEME_GEO}:")
+    if (latitude != null && longitude != null) {
+        uri.append("%1f,%2f".format(latitude, longitude))
     }
-    return getViewUrlIntent(uri, null).apply {
+    if (query.isNotEmpty()) {
+        if (uri.isNotEmpty()) {
+            uri.append("?")
+        }
+        uri.append("q=$query")
+    }
+    return getViewUrlIntent(Uri.parse(uri.toString()), null).apply {
         if (isGoogle) {
             setPackage("com.google.android.apps.maps")
         }
