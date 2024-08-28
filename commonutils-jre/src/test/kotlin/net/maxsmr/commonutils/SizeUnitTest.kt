@@ -9,9 +9,7 @@ class SizeUnitTest {
 
     @Test
     fun testDecomposeUnit() {
-        var result: Map<SizeUnit, Number>
-
-        result = decomposeSize(
+        var result: Map<SizeUnit, Number> = decomposeSize(
             999.235,
             SizeUnit.BYTES,
             sizeUnitsToExclude = setOf(SizeUnit.BYTES),
@@ -65,6 +63,14 @@ class SizeUnitTest {
             ignoreExclusionIfOnly = true,
             precision = 2,
             singleResult = true
+        )
+        assertEquals(result.size, 1)
+
+        result = decomposeSize(
+            0,
+            SizeUnit.GBYTES,
+            sizeUnitsToExclude = setOf(SizeUnit.BYTES),
+            emptyMapIfZero = false
         )
         assertEquals(result.size, 1)
     }

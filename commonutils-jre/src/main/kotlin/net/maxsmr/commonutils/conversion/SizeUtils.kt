@@ -3,7 +3,12 @@ package net.maxsmr.commonutils.conversion
 import net.maxsmr.commonutils.collection.toSortedSetExclude
 import net.maxsmr.commonutils.conversion.SizeUnit.Companion.SIZE_UNIT_BYTES_LARGEST
 import net.maxsmr.commonutils.conversion.SizeUnit.Companion.SIZE_UNIT_BYTES_SMALLEST
-import net.maxsmr.commonutils.number.*
+import net.maxsmr.commonutils.conversion.SizeUnit.Companion.except
+import net.maxsmr.commonutils.number.fraction
+import net.maxsmr.commonutils.number.isGreater
+import net.maxsmr.commonutils.number.isNotZero
+import net.maxsmr.commonutils.number.isZero
+import net.maxsmr.commonutils.number.roundFormatted
 import java.lang.Double.isInfinite
 import java.lang.Double.isNaN
 import java.math.BigDecimal
@@ -222,7 +227,7 @@ enum class SizeUnit {
             }
         }
 
-        fun Collection<SizeUnit>.toExcluded(): Set<SizeUnit> {
+        fun Collection<SizeUnit>.except(): Set<SizeUnit> {
             return if (isEmpty()) {
                 SizeUnit.entries.toSet()
             } else {
@@ -442,7 +447,7 @@ enum class SizeUnitBits {
             }
         }
 
-        fun Collection<SizeUnitBits>.toExcluded(): Set<SizeUnitBits> {
+        fun Collection<SizeUnitBits>.except(): Set<SizeUnitBits> {
             return if (isEmpty()) {
                 SizeUnitBits.entries.toSet()
             } else {
@@ -482,7 +487,7 @@ fun decomposeSize(
         } else {
             val fraction = this.toBigDecimal().fraction()
             // у этой отбрасываем дробную часть, если:
-           if (precision == 0 // целевое число знаков после запятой 0
+            if (precision == 0 // целевое число знаков после запятой 0
                 || fraction.isZero() // или дробная часть 0
                 || fraction.isGreater(BigDecimal.ZERO) && hasSmaller // или есть следующая по мелкости
             ) {
@@ -518,9 +523,20 @@ fun decomposeSize(
         }
     }
 
-    if (!emptyMapIfZero && result.isEmpty() && !sizeUnitsToExclude.contains(SIZE_UNIT_BYTES_SMALLEST)) {
-        // по желанию при пустой мапе докидываем 0
-        result[SIZE_UNIT_BYTES_SMALLEST] = 0
+    if (!emptyMapIfZero && result.isEmpty()) {
+        val allowedSmallestUnit = if (sizeUnitsToExclude.contains(SIZE_UNIT_BYTES_SMALLEST)) {
+            sizeUnitsToExclude.except().minOfOrNull {
+                SizeUnit.entries.indexOf(it)
+            }?.let {
+                SizeUnit.entries[it]
+            }
+        } else {
+            SIZE_UNIT_BYTES_SMALLEST
+        }
+        allowedSmallestUnit?.let {
+            // при пустой мапе докидываем 0
+            result[it] = 0
+        }
     }
     return result
 }

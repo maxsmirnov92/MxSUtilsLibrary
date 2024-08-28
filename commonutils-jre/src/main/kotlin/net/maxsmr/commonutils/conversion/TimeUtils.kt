@@ -163,9 +163,7 @@ fun decomposeTimeSingle(
 }
 
 /**
- * Позволяет разложить время [time] в заданных единицах измерения на требуемые единицы измерения [timeUnitsToInclude].
- * Если число единиц любого из запрошенных [timeUnitsToInclude] равно 0, то TimeUnit не будет включен в результат
- * (требуется проверять на null в месте вызова функции).
+ * Позволяет разложить время [time] в заданных единицах измерения на не запрещённые единицы измерения [timeUnitsToExclude].
  *
  * @param time неотрицательное исходное время в [timeUnit]
  * @param timeUnitsToExclude единицы, нежелательные в итоговом результате
@@ -183,9 +181,20 @@ fun decomposeTime(
     timeUnitsToExclude: Set<TimeUnit> = setOf(),
 ): Map<TimeUnit, Long> {
     val result = decomposeTime(time, timeUnit, ignoreExclusionIfOnly, timeUnitsToExclude, setOf()).toMutableMap()
-    if (!emptyMapIfZero && result.isEmpty() && !timeUnitsToExclude.contains(TIME_UNIT_SMALLEST)) {
-        // по желанию при пустой мапе докидываем 0
-        result[TIME_UNIT_SMALLEST] = 0
+    if (!emptyMapIfZero && result.isEmpty()) {
+        val allowedSmallestUnit = if (timeUnitsToExclude.contains(TIME_UNIT_SMALLEST)) {
+            timeUnitsToExclude.except().minOfOrNull {
+                TimeUnit.entries.indexOf(it)
+            }?.let {
+                TimeUnit.entries[it]
+            }
+        } else {
+            TIME_UNIT_SMALLEST
+        }
+        allowedSmallestUnit?.let {
+            // при пустой мапе докидываем 0
+            result[it] = 0
+        }
     }
     return result
 }
@@ -369,7 +378,7 @@ private fun decomposeTimeStep(
     return emptyMap()
 }
 
-fun Collection<TimeUnit>.toExcluded(): Set<TimeUnit> {
+fun Collection<TimeUnit>.except(): Set<TimeUnit> {
     return if (isEmpty()) {
         TimeUnit.entries.toSet()
     } else {
