@@ -149,7 +149,7 @@ fun mergeDigits(numbers: Collection<Number?>?): Double {
     return result
 }
 
-fun splitNumberToDigits(number: Number?): List<Int>? {
+fun splitNumberToDigits(number: Number?): List<Int> {
     val result = mutableListOf<Int>()
     if (number != null) {
         var n: Int = number.toInt()

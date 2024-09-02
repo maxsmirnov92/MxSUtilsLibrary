@@ -539,12 +539,15 @@ fun ImageView.setImageResourceOrHide(@DrawableRes iconResId: Int?): Boolean = if
 @JvmOverloads
 fun EditText.setTextWithSelectionToEnd(
     text: CharSequence,
-    distinct: Boolean = true,
     asString: Boolean = true
-) {
-    setTextChecked(text, distinct, asString)
-    // после возможных фильтров текст мог измениться
-    setSelectionToEnd()
+): Boolean {
+    return if (setTextDistinct(text, asString)) {
+        // после возможных фильтров текст мог измениться
+        setSelectionToEnd()
+        true
+    } else {
+        false
+    }
 }
 
 fun TextInputLayout.setInputErrorTextColor(color: Int) {
