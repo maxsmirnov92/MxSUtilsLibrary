@@ -6,6 +6,7 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentSender
+import android.graphics.PointF
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -260,18 +261,19 @@ fun getDialIntent(uri: Uri): Intent? {
     return Intent(Intent.ACTION_DIAL, uri)
 }
 
+@JvmOverloads
 fun getViewLocationIntent(
-    latitude: Float?,
-    longitude: Float?,
-    query: String = EMPTY_STRING,
+    location: PointF?,
+    query: String? = null,
     isGoogle: Boolean = false,
-): Intent {
+): Intent? {
+    if (location == null && !query.isNullOrEmpty()) return null
     val uri = StringBuilder()
     uri.append("${if (isGoogle) URL_SCHEME_GEO_GOOGLE else URL_SCHEME_GEO}:")
-    if (latitude != null && longitude != null) {
-        uri.append("%1f,%2f".format(latitude, longitude))
+    if (location != null) {
+        uri.append("${location.x},${location.y}")
     }
-    if (query.isNotEmpty()) {
+    if (!query.isNullOrEmpty()) {
         if (uri.isNotEmpty()) {
             uri.append("?")
         }
