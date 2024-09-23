@@ -15,6 +15,7 @@ import androidx.core.widget.NestedScrollView
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.google.android.material.appbar.AppBarLayout
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import net.maxsmr.commonutils.gui.RecyclerScrollState.*
 import net.maxsmr.commonutils.gui.ScrollState.*
 import net.maxsmr.commonutils.gui.ScrollState.UNKNOWN
@@ -44,12 +45,12 @@ fun RecyclerView.isScrollable(isFromStart: Boolean = false): Boolean? {
 }
 
 @JvmOverloads
-fun RecyclerView.setOnScrollChangesListener(
+fun RecyclerView.addOnScrollStateListener(
     layoutManager: LinearLayoutManager,
     controlState: Int = ALL_STATES,
-    listener: ((RecyclerScrollState) -> Unit)
-) {
-    addOnScrollListener(object : RecyclerView.OnScrollListener() {
+    stateListener: ((RecyclerScrollState, Int) -> Unit)
+): RecyclerView.OnScrollListener {
+    val listener = object : RecyclerView.OnScrollListener() {
 
         var previousFirstVisiblePosition: Int? = null
 
@@ -67,12 +68,45 @@ fun RecyclerView.setOnScrollChangesListener(
                         currentPosition < it -> PREVIOUS
                         else -> RecyclerScrollState.UNKNOWN
                     }
-                    listener.invoke(state)
+                    stateListener.invoke(state, currentPosition)
                 }
             }
             previousFirstVisiblePosition = currentPosition
         }
-    })
+    }
+    addOnScrollListener(listener)
+    return listener
+}
+
+fun RecyclerView.addFloatingActionButtonScrollListener(
+    fab: FloatingActionButton,
+    showDelay: Long = 0,
+    shouldHideFunc: ((Int) -> Boolean)? = null,
+): RecyclerView.OnScrollListener {
+    val listener = object : RecyclerView.OnScrollListener() {
+
+        override fun onScrollStateChanged(recyclerView: RecyclerView, newState: Int) {
+            super.onScrollStateChanged(recyclerView, newState)
+            if (newState == RecyclerView.SCROLL_STATE_IDLE) {
+                if (showDelay <= 0) {
+                    fab.show()
+                } else {
+                    fab.postDelayed({
+                        fab.show()
+                    }, showDelay)
+                }
+            }
+        }
+
+        override fun onScrolled(recyclerView: RecyclerView, dx: Int, dy: Int) {
+            super.onScrolled(recyclerView, dx, dy)
+            if (shouldHideFunc?.invoke(dy) != false && (dy > 0 || dy < 0)) {
+                fab.hide()
+            }
+        }
+    }
+    addOnScrollListener(listener)
+    return listener
 }
 
 @TargetApi(Build.VERSION_CODES.M)
