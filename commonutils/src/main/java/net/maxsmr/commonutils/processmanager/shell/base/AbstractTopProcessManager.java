@@ -1,7 +1,6 @@
 package net.maxsmr.commonutils.processmanager.shell.base;
 
 import android.content.Context;
-import net.maxsmr.commonutils.Pair;
 
 import net.maxsmr.commonutils.Predicate;
 
@@ -10,6 +9,8 @@ import org.jetbrains.annotations.NotNull;
 import java.util.List;
 
 import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
+
+import kotlin.Pair;
 
 public abstract class AbstractTopProcessManager extends AbstractShellProcessManager {
 
@@ -32,8 +33,8 @@ public abstract class AbstractTopProcessManager extends AbstractShellProcessMana
             }
             return false;
         });
-        if (headerIndex != null && headerIndex.first != null && headerIndex.first >= 0) {
-            return headerIndex.first;
+        if (headerIndex != null && headerIndex.getFirst() != null && headerIndex.getFirst() >= 0) {
+            return headerIndex.getFirst();
         } else {
             return super.getOutputHeaderIndex(output);
         }

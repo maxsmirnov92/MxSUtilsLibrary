@@ -18,22 +18,22 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatExc
  */
 @MainThread
 open class WindowsHolder(
-        protected val viewFactory: ViewFactory,
-        context: Context,
-        tags: Collection<String>?
+    protected val viewFactory: ViewFactory,
+    context: Context,
+    tags: Collection<String>?
 ) {
 
     protected val logger: BaseLogger = BaseLoggerHolder.instance.getLogger(WindowsHolder::class.java)
 
     protected val windowManager: WindowManager = context.getSystemService(Context.WINDOW_SERVICE) as WindowManager?
-            ?: throw RuntimeException("WindowManager is null")
+        ?: throw RuntimeException("WindowManager is null")
 
     /**
      * tags to use in this helper
      */
     protected val tags: MutableList<String> = mutableListOf()
 
-    protected var defaultLayoutParams : ViewGroup.LayoutParams? = null
+    protected var defaultLayoutParams: ViewGroup.LayoutParams? = null
 
     /**
      * active views, added to [android.view.WindowManager]
@@ -49,22 +49,22 @@ open class WindowsHolder(
     }
 
     fun isAnyViewAdded(): Boolean =
-            getAddedViewsCount() > 0
+        getAddedViewsCount() > 0
 
     fun getAddedViewsCount(): Int = activeViews.size
 //        return Predicate.Methods.filter<View>(activeViews) { v -> isAttached(v) }.size
 
     fun isViewAdded(tag: String): Boolean =
-            getAddedViewByTag<View>((tag)) != null
+        getAddedViewByTag<View>((tag)) != null
 
     @Suppress("UNCHECKED_CAST")
     fun <V : View> getAddedViewByTag(tag: String): V? =
-            Predicate.Methods.find(activeViews) { v -> /*isAttached(v) &&*/ tag == v.tag } as V?
+        Predicate.Methods.find(activeViews) { v -> /*isAttached(v) &&*/ tag == v.tag } as V?
 
     @JvmOverloads
     protected open fun addView(tag: String, reAdd: Boolean = true): Boolean {
         val params = defaultLayoutParams
-                ?: throw IllegalStateException("Default layout params was not specified")
+            ?: throw IllegalStateException("Default layout params was not specified")
         return addView(tag, params, reAdd)
     }
 
@@ -77,9 +77,9 @@ open class WindowsHolder(
      */
     @JvmOverloads
     protected open fun addView(
-            tag: String,
-            layoutParams: ViewGroup.LayoutParams,
-            reAdd: Boolean = true
+        tag: String,
+        layoutParams: ViewGroup.LayoutParams,
+        reAdd: Boolean = true
     ): Boolean {
         checkTag(tag)
 
@@ -153,7 +153,7 @@ open class WindowsHolder(
 
     interface ViewFactory {
 
-        fun createViewByTag(tag: String) : View
+        fun createViewByTag(tag: String): View
     }
 
     companion object {

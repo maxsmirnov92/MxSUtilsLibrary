@@ -15,7 +15,7 @@ enum class Status {
 /**
  * Базовый контейнер для состояния загрузки
  */
-interface ILoadState<D>  {
+sealed interface ILoadState<D>  {
 
     /**
      * Флаг о том, что загрузка завершилась с любым результатом
@@ -114,7 +114,7 @@ interface ILoadState<D>  {
 /**
  * Базовый контейнер для состояния загрузки с пагинацией
  */
-interface IPgnLoadState<D> : ILoadState<D> {
+sealed interface IPgnLoadState<D> : ILoadState<D> {
 
     fun prePgnLoading(): Boolean
 }

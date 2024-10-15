@@ -4,7 +4,6 @@ import android.content.Context;
 
 import androidx.annotation.RawRes;
 
-import net.maxsmr.commonutils.Pair;
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 
@@ -30,6 +29,8 @@ import java.util.Set;
 import javax.net.ssl.TrustManagerFactory;
 
 import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
+
+import kotlin.Pair;
 
 public final class CertificateHelper {
 
@@ -90,11 +91,11 @@ public final class CertificateHelper {
             keyStore.load(keyStoreInitStream, !isEmpty(keyStoreInitStreamPassword) ? keyStoreInitStreamPassword.toCharArray() : null);
 
             for (Pair<String, Certificate> certificate : certificates) {
-                if (certificate.second == null) {
-                    throw new IllegalArgumentException("certificate with alias " + certificate.first + " is null");
+                if (certificate.getSecond() == null) {
+                    throw new IllegalArgumentException("certificate with alias " + certificate.getFirst() + " is null");
                 }
                 // throwing UnsupportedOperationException if writing is not supported
-                keyStore.setCertificateEntry(certificate.first, certificate.second);
+                keyStore.setCertificateEntry(certificate.getFirst(), certificate.getSecond());
             }
 
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm());
@@ -125,7 +126,7 @@ public final class CertificateHelper {
         try {
             KeyStore ks = KeyStore.getInstance(keystoreType);
             ks.load(keyStoreInitStream, !isEmpty(keyStoreInitStreamPassword) ? keyStoreInitStreamPassword.toCharArray() : null);
-            Enumeration aliases = ks.aliases();
+            Enumeration<String> aliases = ks.aliases();
             while (aliases.hasMoreElements()) {
                 String alias = (String) aliases.nextElement();
                 Certificate certificate = ks.getCertificate(alias);
@@ -144,8 +145,8 @@ public final class CertificateHelper {
 
     public static boolean isCertificateExist(Set<Pair<String, Certificate>> certificates, String x509Name) throws RuntimeException {
         for (Pair<String, Certificate> cert : certificates) {
-            if (cert.second instanceof X509Certificate) {
-                if (((X509Certificate) cert.second).getIssuerDN().getName().contains(x509Name)) {
+            if (cert.getSecond() instanceof X509Certificate) {
+                if (((X509Certificate) cert.getSecond()).getIssuerDN().getName().contains(x509Name)) {
                     return true;
                 }
             }

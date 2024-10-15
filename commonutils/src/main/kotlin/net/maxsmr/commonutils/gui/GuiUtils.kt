@@ -1,11 +1,8 @@
 package net.maxsmr.commonutils.gui
 
-import android.annotation.TargetApi
 import android.app.Activity
-import android.content.Context
-import android.graphics.PointF
-import android.os.Build
 import android.os.CountDownTimer
+import android.util.Size
 import android.view.KeyEvent
 import android.view.Surface
 import android.view.View
@@ -155,20 +152,12 @@ fun showToastWithDuration(targetDuration: Long, toastFunc: (() -> Toast)): Count
     }.start()
 }
 
-@TargetApi(Build.VERSION_CODES.R)
-fun getCurrentDisplayOrientation(context: Context): Int? {
-    val display = context.display ?: return null
-    return when (display.rotation) {
-        Surface.ROTATION_90 -> 90
-        Surface.ROTATION_180 -> 180
-        Surface.ROTATION_270 -> 270
-        else -> 0
-    }
-}
-
+/**
+ * @return одно из возможных значений из 0, 90, 180, 270 как наиболее близкое
+ */
 fun getCorrectedDisplayRotation(rotation: Int): Int {
-    val correctedRotation = rotation % 360
-    var result = OrientationIntervalListener.ROTATION_NOT_SPECIFIED
+    val correctedRotation = if (rotation >= 360) rotation % 360 else rotation
+    var result = DiffOrientationEventListener.ROTATION_NOT_SPECIFIED
     when (correctedRotation) {
         in 315..359, in 0..44 -> {
             result = 0
@@ -186,24 +175,22 @@ fun getCorrectedDisplayRotation(rotation: Int): Int {
     return result
 }
 
-fun getFixedSize(sourceSize: Pair<Int, Int>, maxSize: Int): PointF =
-        getFixedSize(sourceSize.first, sourceSize.second, maxSize)
-
-fun getFixedSize(
-        sourceWidth: Int,
-        sourceHeight: Int,
-        maxSize: Int
-): PointF {
-    var w = sourceWidth.toFloat()
-    var h = sourceHeight.toFloat()
-    if (w > maxSize || h > maxSize) {
-        if (w > h) {
-            h = h * maxSize / w
-            w = maxSize.toFloat()
-        } else {
-            w = w * maxSize / h
-            h = maxSize.toFloat()
-        }
+fun getRotationDegrees(surfaceRotation: Int): Int {
+    return when (surfaceRotation) {
+        Surface.ROTATION_0 -> 0
+        Surface.ROTATION_90 -> 90
+        Surface.ROTATION_180 -> 180
+        Surface.ROTATION_270 -> 270
+        else -> 0
     }
-    return PointF(w, h)
+}
+
+fun getSurfaceRotation(rotationDegrees: Int): Int {
+    return when (rotationDegrees) {
+        0 -> Surface.ROTATION_0
+        90 -> Surface.ROTATION_90
+        180 -> Surface.ROTATION_180
+        270 -> Surface.ROTATION_270
+        else -> 0
+    }
 }

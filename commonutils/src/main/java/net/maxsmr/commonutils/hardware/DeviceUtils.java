@@ -1,5 +1,11 @@
 package net.maxsmr.commonutils.hardware;
 
+import static net.maxsmr.commonutils.SdkVersionsKt.isAtLeastLollipop;
+import static net.maxsmr.commonutils.format.DateFormatUtilsKt.formatDate;
+import static net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException;
+import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
+import static net.maxsmr.commonutils.text.SymbolConstsKt.EMPTY_STRING;
+
 import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.Activity;
@@ -19,6 +25,8 @@ import android.text.TextUtils;
 import android.util.DisplayMetrics;
 import android.view.WindowManager;
 
+import androidx.annotation.RequiresPermission;
+
 import net.maxsmr.commonutils.logger.BaseLogger;
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder;
 import net.maxsmr.commonutils.shell.ShellCallback;
@@ -27,22 +35,12 @@ import net.maxsmr.commonutils.shell.ShellWrapper;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.TimeUnit;
-
-import static net.maxsmr.commonutils.AppUtilsKt.getDisplayMetrics;
-import static net.maxsmr.commonutils.SdkVersionsKt.isAtLeastLollipop;
-import static net.maxsmr.commonutils.format.DateFormatUtilsKt.formatDate;
-import static net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.formatException;
-import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
-import static net.maxsmr.commonutils.text.SymbolConstsKt.EMPTY_STRING;
-
-import androidx.annotation.RequiresPermission;
 
 public final class DeviceUtils {
 
@@ -332,9 +330,10 @@ public final class DeviceUtils {
         new ShellWrapper(false).executeCommand(Arrays.asList("date", "-s", formatTime), true, DEFAULT_TARGET_CODE, 0, TimeUnit.MILLISECONDS, sc);
     }
 
-    public DeviceType getScreenType(Context context) {
-        final DisplayMetrics outMetrics = getDisplayMetrics(context);
-        final int shortSize = Math.min(outMetrics.heightPixels, outMetrics.widthPixels);
+    public DeviceType getScreenType(Activity activity) {
+        DisplayMetrics outMetrics = new DisplayMetrics();
+        activity.getWindowManager().getDefaultDisplay().getMetrics(outMetrics);
+        final int shortSize = Math.min(outMetrics.widthPixels, outMetrics.heightPixels);
         final int shortSizeDp = shortSize * DisplayMetrics.DENSITY_DEFAULT / outMetrics.densityDpi;
         if (shortSizeDp < 600) { // 0-599dp: "phone" UI with a separate status & navigation bar
             return DeviceType.PHONE;

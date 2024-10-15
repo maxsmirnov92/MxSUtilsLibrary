@@ -1,7 +1,6 @@
 package net.maxsmr.commonutils.collection
 
 import net.maxsmr.commonutils.Predicate
-import net.maxsmr.commonutils.Pair
 import net.maxsmr.commonutils.compareNumbers
 
 @JvmOverloads

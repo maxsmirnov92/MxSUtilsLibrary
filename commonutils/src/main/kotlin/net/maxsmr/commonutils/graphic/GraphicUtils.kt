@@ -18,7 +18,6 @@ import android.renderscript.*
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
-import net.maxsmr.commonutils.gui.getFixedSize
 import net.maxsmr.commonutils.isPreKitkat
 import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.text.isEmpty
@@ -117,7 +116,7 @@ fun reconfigureBitmap(
 fun getBitmapPixelBuffer(
     bitmap: Bitmap?,
     recycleSource: Boolean = true
-): Pair<ByteArray, Config>? {
+): Pair<ByteArray?, Config>? {
     if (bitmap == null || !isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
         return null
@@ -505,22 +504,6 @@ fun createResizedBitmapIfNeeded(
         }
     }
     return bitmap
-}
-
-@JvmOverloads
-fun scaleDownBitmap(
-    bitmap: Bitmap?,
-    maxSize: Int,
-    filter: Boolean = true,
-    recycleSource: Boolean = true
-): Bitmap? {
-    if (bitmap == null || !isBitmapValid(bitmap)) {
-        logger.e("Incorrect bitmap: $bitmap")
-        return null
-    }
-    val fixedSize = getFixedSize(bitmap.width, bitmap.height, maxSize)
-    // без отбрасывания дробной части будет более точный коэффициент, а значит и посчитанный height
-    return bitmap.scaleByWidth(fixedSize.x, filter, recycleSource)
 }
 
 fun canDecodeImage(file: File): Boolean {

@@ -3,7 +3,6 @@ package net.maxsmr.commonutils.certs;
 import android.content.Context;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-import net.maxsmr.commonutils.Pair;
 
 import java.security.KeyManagementException;
 import java.security.NoSuchAlgorithmException;
@@ -17,6 +16,8 @@ import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 
+import kotlin.Pair;
+
 public final class SocketFactoryInitializer {
 
     public SocketFactoryInitializer() {
@@ -24,10 +25,9 @@ public final class SocketFactoryInitializer {
     }
 
     public static void init(@NotNull Context context, @NotNull Set<Pair<String, Integer>> certificateResIds) throws RuntimeException {
-        Set<Pair<String, Certificate>> certificatePairs = new LinkedHashSet<>();
-        certificatePairs.addAll(CertificateHelper.retrieveKeyStoreCertificates(CertificateHelper.KeyStores.KEYSTORE_ANDROID));
+        Set<Pair<String, Certificate>> certificatePairs = new LinkedHashSet<>(CertificateHelper.retrieveKeyStoreCertificates(CertificateHelper.KeyStores.KEYSTORE_ANDROID));
         for (Pair<String, Integer> certificateResIdPair : certificateResIds) {
-            certificatePairs.add(new Pair<>(certificateResIdPair.first, CertificateHelper.generateCertificate(context, certificateResIdPair.second)));
+            certificatePairs.add(new Pair<>(certificateResIdPair.getFirst(), CertificateHelper.generateCertificate(context, certificateResIdPair.getSecond())));
         }
         initSocketFactory(certificatePairs, null, "SSL");
     }

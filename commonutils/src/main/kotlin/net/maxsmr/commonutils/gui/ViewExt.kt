@@ -45,7 +45,6 @@ import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.ReflectionUtils.getFieldValue
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.format.getUnformattedText
-import net.maxsmr.commonutils.graphic.scaleDownBitmap
 import net.maxsmr.commonutils.gui.listeners.AfterTextChangeListener
 import net.maxsmr.commonutils.live.field.Field
 import net.maxsmr.commonutils.live.setValueIfNew
@@ -56,10 +55,9 @@ import net.maxsmr.commonutils.text.*
 import ru.tinkoff.decoro.Mask
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 import java.nio.charset.Charset
+import android.util.Size
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("ViewExt")
-
-private const val IMAGE_VIEW_MAX_WIDTH = 4096
 
 private const val MIME_TYPE_WITH_CHARSET_FORMAT = "%s; charset=%s"
 
@@ -692,10 +690,10 @@ fun ImageView.setTint(
     }
 }
 
-fun ImageView.getContentSize(): Pair<Int, Int> =
-    drawable?.let { Pair(it.intrinsicWidth, it.intrinsicHeight) } ?: Pair(0, 0)
+fun ImageView.getContentSize(): Size =
+    drawable?.let { Size(it.intrinsicWidth, it.intrinsicHeight) } ?: Size(0, 0)
 
-fun ImageView.getRescaledImageViewSize(): Pair<Int?, Int?> {
+fun ImageView.getRescaledImageViewSize(): Size {
     var measuredWidth: Int
     var measuredHeight: Int
     val intrinsicHeight: Int
@@ -703,8 +701,8 @@ fun ImageView.getRescaledImageViewSize(): Pair<Int?, Int?> {
     measuredWidth = this.measuredWidth //width of imageView
     measuredHeight = this.measuredHeight //height of imageView
     val size = getContentSize()
-    intrinsicWidth = size.first //original width of underlying image
-    intrinsicHeight = size.second //original height of underlying image
+    intrinsicWidth = size.width //original width of underlying image
+    intrinsicHeight = size.height //original height of underlying image
     if (intrinsicHeight > 0 && intrinsicWidth > 0) {
         if (measuredHeight / intrinsicHeight <= measuredWidth / intrinsicWidth) {
             measuredWidth = intrinsicWidth * measuredHeight / intrinsicHeight
@@ -713,7 +711,7 @@ fun ImageView.getRescaledImageViewSize(): Pair<Int?, Int?> {
             measuredHeight = intrinsicHeight * measuredWidth / intrinsicWidth
         } //rescaled height of image within ImageView;
     }
-    return Pair(measuredWidth, measuredHeight)
+    return Size(measuredWidth, measuredHeight)
 }
 
 fun View.getViewInset(): Int {
@@ -804,17 +802,17 @@ fun BottomSheetDialog.setHideable(toggle: Boolean) {
     }
 }
 
-fun View.getSize(): Pair<Int, Int> {
+fun View.getSize(): Size {
     layoutParams.let {
-        return Pair(it.width, it.height)
+        return Size(it.width, it.height)
     }
 }
 
-fun View.setSize(size: Pair<Int, Int>) {
-    require(!(size.first < -1 || size.second < -1)) { "incorrect view size: " + size.first + "x" + size.second }
+fun View.setSize(size: Size) {
+    require(!(size.width < -1 || size.height < -1)) { "Incorrect view size: " + size.width + "x" + size.height }
     val layoutParams = this.layoutParams
-    layoutParams.width = size.first
-    layoutParams.height = size.second
+    layoutParams.width = size.width
+    layoutParams.height = size.height
     this.layoutParams = layoutParams
 }
 
@@ -1389,15 +1387,7 @@ fun TextView.setupPlaceholderOrLabelHint(
     }
 }
 
-@JvmOverloads
-fun ImageView.setImageBitmapWithResize(
-    bitmap: Bitmap?,
-    maxSize: Int = IMAGE_VIEW_MAX_WIDTH
-): Bitmap? {
-    val resultBitmap = scaleDownBitmap(bitmap, maxSize, recycleSource = false) ?: bitmap
-    setImageBitmap(resultBitmap)
-    return resultBitmap
-}
+fun View.getDisplayRotation(): Int = display.rotation
 
 enum class RequiredFieldRule {
 
