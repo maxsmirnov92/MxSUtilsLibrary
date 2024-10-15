@@ -7,17 +7,22 @@ import android.content.Intent
 import android.content.res.Resources
 import android.database.Cursor
 import android.net.Uri
-import android.os.Build
 import android.os.ParcelFileDescriptor
 import android.provider.MediaStore
 import android.provider.OpenableColumns
 import android.util.Base64
-import androidx.annotation.RequiresApi
 import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
+import net.maxsmr.commonutils.stream.IStreamNotifier
+import net.maxsmr.commonutils.stream.copyStreamOrThrow
+import net.maxsmr.commonutils.stream.readBytesOrThrow
+import net.maxsmr.commonutils.stream.readStringOrThrow
+import net.maxsmr.commonutils.stream.readStringsOrThrow
+import net.maxsmr.commonutils.stream.writeBytesOrThrow
+import net.maxsmr.commonutils.stream.writeStringOrThrow
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.isEmpty
 import java.io.*
@@ -53,7 +58,7 @@ fun Uri.readBytesOrThrow(
 fun Uri.readStrings(
     contentResolver: ContentResolver,
     count: Int = 0,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): List<String> = try {
     readStringsOrThrow(contentResolver, count, charsetName)
 } catch (e: RuntimeException) {
@@ -66,7 +71,7 @@ fun Uri.readStrings(
 fun Uri.readStringsOrThrow(
     contentResolver: ContentResolver,
     count: Int = 0,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): List<String> {
     return try {
         openInputStreamOrThrow(contentResolver).readStringsOrThrow(count, charsetName = charsetName)
@@ -78,7 +83,7 @@ fun Uri.readStringsOrThrow(
 @JvmOverloads
 fun Uri.readString(
     contentResolver: ContentResolver,
-    charsetName: String = CHARSET_DEFAULT,
+    charsetName: String = Charset.defaultCharset().name(),
 ): String? = try {
     readStringOrThrow(contentResolver, charsetName)
 } catch (e: RuntimeException) {
@@ -89,7 +94,7 @@ fun Uri.readString(
 @JvmOverloads
 fun Uri.readStringOrThrow(
     contentResolver: ContentResolver,
-    charsetName: String = CHARSET_DEFAULT,
+    charsetName: String = Charset.defaultCharset().name(),
 ): String? {
     return try {
         openInputStreamOrThrow(contentResolver).readStringOrThrow(charsetName = charsetName)

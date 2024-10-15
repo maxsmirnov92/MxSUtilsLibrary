@@ -27,8 +27,13 @@ import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
+import net.maxsmr.commonutils.stream.IStreamNotifier
+import net.maxsmr.commonutils.stream.copyStreamOrThrow
+import net.maxsmr.commonutils.stream.readStringOrThrow
+import net.maxsmr.commonutils.stream.readStringsOrThrow
 import java.io.File
 import java.io.InputStream
+import java.nio.charset.Charset
 
 const val EMPTY_ID = 0
 const val INVALID_ATTRIBUTE = 0
@@ -162,7 +167,7 @@ fun Resources.getNavigationBarHeight(): Int {
 fun AssetManager.readStringsFromAsset(
     assetName: String,
     count: Int = 0,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): List<String> = try {
     readStringsFromAssetOrThrow(assetName, count, charsetName)
 } catch (e: RuntimeException) {
@@ -178,7 +183,7 @@ fun AssetManager.readStringsFromAsset(
 fun AssetManager.readStringsFromAssetOrThrow(
     assetName: String,
     count: Int = 0,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): List<String> {
     return try {
         open(assetName).readStringsOrThrow(count, charsetName = charsetName)
@@ -190,7 +195,7 @@ fun AssetManager.readStringsFromAssetOrThrow(
 @JvmOverloads
 fun AssetManager.readStringFromAsset(
     assetName: String,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): String? {
     return try {
         readStringFromAssetOrThrow(assetName, charsetName)
@@ -204,7 +209,7 @@ fun AssetManager.readStringFromAsset(
 @JvmOverloads
 fun AssetManager.readStringFromAssetOrThrow(
     assetName: String,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): String {
     return try {
         open(assetName).readStringOrThrow(charsetName = charsetName)
@@ -217,7 +222,7 @@ fun AssetManager.readStringFromAssetOrThrow(
 fun Resources.readStringsFromRes(
     @RawRes resId: Int,
     count: Int = 0,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): List<String> = try {
     readStringsFromResOrThrow(resId, count, charsetName)
 } catch (e: RuntimeException) {
@@ -233,7 +238,7 @@ fun Resources.readStringsFromRes(
 fun Resources.readStringsFromResOrThrow(
     @RawRes resId: Int,
     count: Int = 0,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): List<String> {
     return try {
         openRawResource(resId).readStringsOrThrow(count, charsetName = charsetName)
@@ -245,7 +250,7 @@ fun Resources.readStringsFromResOrThrow(
 @JvmOverloads
 fun Resources.readStringFromRes(
     @RawRes resId: Int,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): String? = try {
     readStringFromResOrThrow(resId, charsetName)
 } catch (e: RuntimeException) {
@@ -257,7 +262,7 @@ fun Resources.readStringFromRes(
 @JvmOverloads
 fun Resources.readStringFromResOrThrow(
     @RawRes resId: Int,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): String {
     return try {
         openRawResource(resId).readStringOrThrow(charsetName = charsetName)

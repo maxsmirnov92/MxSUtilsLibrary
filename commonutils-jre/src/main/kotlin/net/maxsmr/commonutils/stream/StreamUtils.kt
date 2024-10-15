@@ -1,4 +1,4 @@
-package net.maxsmr.commonutils
+package net.maxsmr.commonutils.stream
 
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.NEXT_LINE
@@ -6,6 +6,7 @@ import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import java.io.*
+import java.nio.charset.Charset
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
 import java.util.zip.ZipOutputStream
@@ -14,8 +15,6 @@ import java.util.zip.ZipOutputStream
 // и записи в {@link OutputStream}
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("StreamUtils")
-
-const val CHARSET_DEFAULT = "UTF-8"
 
 /**
  * @return amount of bytes copied
@@ -132,7 +131,7 @@ fun InputStream.readBytesOrThrow(
 fun InputStream.readStrings(
     count: Int = 0,
     closeInput: Boolean = true,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): List<String> = try {
     readStringsOrThrow(count, closeInput, charsetName)
 } catch (e: IOException) {
@@ -151,7 +150,7 @@ fun InputStream.readStrings(
 fun InputStream.readStringsOrThrow(
     count: Int = 0,
     closeInput: Boolean = true,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): List<String> {
     val out = mutableListOf<String>()
     var `in`: BufferedReader? = null
@@ -172,7 +171,7 @@ fun InputStream.readStringsOrThrow(
 @JvmOverloads
 fun InputStream.readString(
     closeInput: Boolean = true,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): String? = try {
     readStringOrThrow(closeInput, charsetName)
 } catch (e: IOException) {
@@ -185,7 +184,7 @@ fun InputStream.readString(
 @JvmOverloads
 fun InputStream.readStringOrThrow(
     closeInput: Boolean = true,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): String {
     val result = ByteArrayOutputStream()
     copyStreamOrThrow(result, closeInput = closeInput)

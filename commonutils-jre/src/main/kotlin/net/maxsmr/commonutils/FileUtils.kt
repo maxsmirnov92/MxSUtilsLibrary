@@ -13,6 +13,14 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRunt
 import net.maxsmr.commonutils.shell.DEFAULT_TARGET_CODE
 import net.maxsmr.commonutils.shell.ShellCallback
 import net.maxsmr.commonutils.shell.ShellWrapper
+import net.maxsmr.commonutils.stream.IStreamNotifier
+import net.maxsmr.commonutils.stream.compressStreamsToZipOrThrow
+import net.maxsmr.commonutils.stream.copyStreamOrThrow
+import net.maxsmr.commonutils.stream.readBytesOrThrow
+import net.maxsmr.commonutils.stream.readStringsOrThrow
+import net.maxsmr.commonutils.stream.unzipStreamOrThrow
+import net.maxsmr.commonutils.stream.writeBytesOrThrow
+import net.maxsmr.commonutils.stream.writeStringOrThrow
 import net.maxsmr.commonutils.text.*
 import java.io.*
 import java.nio.channels.FileChannel
@@ -660,7 +668,7 @@ fun File.readBytesOrThrow(
 @JvmOverloads
 fun File.readStrings(
     count: Int = 0,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): List<String> = try {
     readStringsOrThrow(count, charsetName)
 } catch (e: RuntimeException) {
@@ -672,7 +680,7 @@ fun File.readStrings(
 @JvmOverloads
 fun File.readStringsOrThrow(
     count: Int = 0,
-    charsetName: String = CHARSET_DEFAULT
+    charsetName: String = Charset.defaultCharset().name()
 ): List<String> {
     if (!isFileValidOrThrow(this)) {
         throw RuntimeException("Incorrect file: '$this'")
