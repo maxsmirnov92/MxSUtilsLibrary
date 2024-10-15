@@ -4,7 +4,6 @@ import android.content.Context;
 import android.content.pm.ApplicationInfo;
 import android.os.Environment;
 
-import net.maxsmr.commonutils.Pair;
 import net.maxsmr.commonutils.Predicate;
 import net.maxsmr.commonutils.processmanager.AbstractProcessManager;
 import net.maxsmr.commonutils.processmanager.model.ProcessInfo;
@@ -32,6 +31,8 @@ import static net.maxsmr.commonutils.conversion.NumberConversionUtilsKt.toIntNot
 import static net.maxsmr.commonutils.shell.CommandResultKt.DEFAULT_TARGET_CODE;
 import static net.maxsmr.commonutils.shell.RootShellCommandsKt.isRootAvailable;
 import static net.maxsmr.commonutils.text.TextUtilsKt.isEmpty;
+
+import kotlin.Pair;
 
 public abstract class AbstractShellProcessManager extends AbstractProcessManager {
 
@@ -145,7 +146,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
 
         final Pair<Map<Column, Integer>, List<String>> columnPair = parseColumnIndexes(headerIndex, headerLine);
 
-        if (columnPair.first == null || columnPair.second == null) {
+        if (columnPair.getFirst() == null || columnPair.getSecond() == null) {
             throw new RuntimeException("Cannot parse shell output: pair cannot be null");
         }
 
@@ -161,7 +162,7 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
 
             final String line = output.get(i);
 
-            ProcessInfo processInfo = parseProcessInfoLine(i, line, columnPair.second, columnPair.first);
+            ProcessInfo processInfo = parseProcessInfoLine(i, line, columnPair.getSecond(), columnPair.getFirst());
 
             if (processInfo == null) {
 //                logger.e("Cannot parse process info for '" + line + "'");
@@ -249,8 +250,8 @@ public abstract class AbstractShellProcessManager extends AbstractProcessManager
                 Pair<Integer, String> indexPair = Predicate.Methods.findIndexed(columnNamesList, element -> {
                     return stringsEqual(element, columnName, true); // May be "NAME" or "Name", for example
                 });
-                if (indexPair != null && indexPair.first != null && indexPair.first >= 0) {
-                    indexMap.put(column, indexPair.first);
+                if (indexPair != null && indexPair.getFirst() != null && indexPair.getFirst() >= 0) {
+                    indexMap.put(column, indexPair.getFirst());
                     break;
                 }
             }

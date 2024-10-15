@@ -276,7 +276,7 @@ fun Context.queryIntentActivitiesCompat(
 }
 
 @JvmOverloads
-fun Context.startActivitySafe(
+fun  Context.startActivitySafe(
     intent: Intent,
     requestCode: Int? = null,
     options: Bundle? = null,

@@ -10,6 +10,7 @@ import android.graphics.drawable.LayerDrawable;
 import android.os.Build;
 import android.util.AttributeSet;
 import android.util.DisplayMetrics;
+import android.util.Size;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.WindowManager;
@@ -20,7 +21,6 @@ import androidx.annotation.ColorInt;
 import androidx.annotation.DrawableRes;
 
 import net.maxsmr.commonutils.Observable;
-import net.maxsmr.commonutils.Pair;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -41,6 +41,8 @@ import static net.maxsmr.commonutils.gui.ViewExtKt.getRescaledImageViewSize;
 import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.createBitmapFromResource;
 import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.mirrorBitmap;
 import static net.maxsmr.commonutils.graphic.GraphicUtilsKt.rotateBitmap;
+
+import kotlin.Pair;
 
 public class MaskClickLayout extends FrameLayout {
 
@@ -88,12 +90,12 @@ public class MaskClickLayout extends FrameLayout {
             if (event.getPointerCount() == 1) {
                 if (event.getAction() == MotionEvent.ACTION_DOWN) {
 
-                    Pair<Integer, Integer> backgroundSize = getBackgroundImageSize();
+                    Size backgroundSize = getBackgroundImageSize();
 
                     int x = (int) event.getX();
                     int y = (int) event.getY();
 
-                    Point point = correctCoordsBySize(new Point(x, y), new Pair<>(backgroundImageView.getMeasuredWidth(), backgroundImageView.getMeasuredHeight()), new Pair<>(backgroundSize.first, backgroundSize.second));
+                    Point point = correctCoordsBySize(new Point(x, y), new Size(backgroundImageView.getMeasuredWidth(), backgroundImageView.getMeasuredHeight()), new Size(backgroundSize.getWidth(), backgroundSize.getHeight()));
                     point.set(x = point.x, y = point.y);
 
 //                  List<Drawable> drawables = new ArrayList<>();
@@ -102,15 +104,11 @@ public class MaskClickLayout extends FrameLayout {
 
                     for (Item item : clickMask.items) {
 
-                        Bitmap maskBitmap = item.maskedPair.second; // createBitmapFromResource(item.maskResId, 1, getContext());
+                        Bitmap maskBitmap = item.maskedPair.getSecond(); // createBitmapFromResource(item.maskResId, 1, getContext());
 
                         if (item.options.scaleToParent) {
-                            if (backgroundSize.first > 0 && backgroundSize.second > 0) {
-                                Bitmap scaledMaskBitmap = createScaledBitmap(maskBitmap, backgroundSize.first, backgroundSize.second, false);
-
-                                if (scaledMaskBitmap == null) {
-                                    throw new RuntimeException("could not create scaled bitmap: " + backgroundSize.first + "x" + backgroundSize.second);
-                                }
+                            if (backgroundSize.getWidth() > 0 && backgroundSize.getHeight() > 0) {
+                                Bitmap scaledMaskBitmap = createScaledBitmap(maskBitmap, backgroundSize.getWidth(), backgroundSize.getHeight(), false);
 
                                 maskBitmap.recycle();
                                 maskBitmap = scaledMaskBitmap;
@@ -256,7 +254,7 @@ public class MaskClickLayout extends FrameLayout {
 
                     case MULTIPLE:
                         for (Item selectedItem : selectedItems) {
-                            drawables.add(new BitmapDrawable(getContext().getResources(), selectedItem.layerPair.second));
+                            drawables.add(new BitmapDrawable(getContext().getResources(), selectedItem.layerPair.getSecond()));
                         }
                         break;
 
@@ -265,7 +263,7 @@ public class MaskClickLayout extends FrameLayout {
                 }
 
                 if (isSelected) {
-                    drawables.add(new BitmapDrawable(getContext().getResources(), item.layerPair.second));
+                    drawables.add(new BitmapDrawable(getContext().getResources(), item.layerPair.getSecond()));
                 }
 
                 LayerDrawable layerDrawable = !drawables.isEmpty() ? new LayerDrawable(drawables.toArray(new Drawable[drawables.size()])) : null;
@@ -431,7 +429,7 @@ public class MaskClickLayout extends FrameLayout {
         }
 
         for (Item it : clickMask.items) {
-            if (it.maskedPair.first == id) {
+            if (it.maskedPair.getFirst() == id) {
                 LayerDrawable masksDrawable = getMasks();
                 List<Drawable> drawables = new ArrayList<>();
                 if (masksDrawable != null) {
@@ -439,7 +437,7 @@ public class MaskClickLayout extends FrameLayout {
                         drawables.add(masksDrawable.getDrawable(i));
                     }
                 }
-                drawables.add(new BitmapDrawable(getContext().getResources(), it.maskedPair.second));
+                drawables.add(new BitmapDrawable(getContext().getResources(), it.maskedPair.getSecond()));
                 masksDrawable = new LayerDrawable(drawables.toArray(new Drawable[drawables.size()]));
                 masksImageView.setImageDrawable(masksDrawable);
             }
@@ -463,7 +461,7 @@ public class MaskClickLayout extends FrameLayout {
 
         List<Drawable> drawables = new ArrayList<>();
         for (Item it : clickMask.items) {
-            drawables.add(new BitmapDrawable(getContext().getResources(), it.maskedPair.second));
+            drawables.add(new BitmapDrawable(getContext().getResources(), it.maskedPair.getSecond()));
         }
         LayerDrawable masksDrawable = new LayerDrawable(drawables.toArray(new Drawable[drawables.size()]));
         masksImageView.setImageDrawable(masksDrawable);
@@ -500,32 +498,32 @@ public class MaskClickLayout extends FrameLayout {
     }
 
     @NotNull
-    public Pair<Integer, Integer> getBackgroundImageSize() {
+    public Size getBackgroundImageSize() {
         return getContentSize(backgroundImageView);
     }
 
     @NotNull
-    public Pair<Integer, Integer> getLayersImageSize() {
+    public Size getLayersImageSize() {
         return getContentSize(layersImageView);
     }
 
     @NotNull
-    public Pair<Integer, Integer> getMasksImageSize() {
+    public Size getMasksImageSize() {
         return getContentSize(masksImageView);
     }
 
     @NotNull
-    public Pair<Integer, Integer> getBackgroundRescaledSize() {
+    public Size getBackgroundRescaledSize() {
         return getContentSize(backgroundImageView);
     }
 
     @NotNull
-    public Pair<Integer, Integer> getLayersRescaledSize() {
+    public Size getLayersRescaledSize() {
         return getContentSize(layersImageView);
     }
 
     @NotNull
-    public Pair<Integer, Integer> getMasksRescaledSize() {
+    public Size getMasksRescaledSize() {
         return getContentSize(masksImageView);
     }
 
@@ -576,12 +574,12 @@ public class MaskClickLayout extends FrameLayout {
 //            for (Item item : clickMask.items) {
 ////                if (item.options.rotateAngleCorrect() || item.options.mirror) {
 ////                    if (item.options.rotateAngleCorrect()) {
-////                        layers[i] = new BitmapDrawable(getContext().getResources(), item.maskedPair.second);
+////                        layers[i] = new BitmapDrawable(getContext().getResources(), item.maskedPair.getSecond());
 ////                    }
 ////                } else {
 ////                    layers[i] = ContextCompat.getDrawable(getContext(), clickMask.items.get(i).layerResId);
 ////                }
-//                layers[i] = new BitmapDrawable(getContext().getResources(), item.maskedPair.second);
+//                layers[i] = new BitmapDrawable(getContext().getResources(), item.maskedPair.getSecond());
 //                i++;
 //            }
 //            LayerDrawable layerDrawable = new LayerDrawable(layers);
@@ -602,11 +600,11 @@ public class MaskClickLayout extends FrameLayout {
             masksImageView.setImageDrawable(null);
 
             for (Item i : clickMask.items) {
-                if (!i.layerPair.second.isRecycled()) {
-                    i.layerPair.second.recycle();
+                if (!i.layerPair.getSecond().isRecycled()) {
+                    i.layerPair.getSecond().recycle();
                 }
-                if (!i.maskedPair.second.isRecycled()) {
-                    i.maskedPair.second.recycle();
+                if (!i.maskedPair.getSecond().isRecycled()) {
+                    i.maskedPair.getSecond().recycle();
                 }
             }
             clickMask.items.clear();
@@ -615,16 +613,16 @@ public class MaskClickLayout extends FrameLayout {
     }
 
     @NotNull
-    private Point correctCoordsBySize(@NotNull Point p, @NotNull Pair<Integer, Integer> size, @NotNull Pair<Integer, Integer> targetSize) {
-        float scalerX = (float) p.x / (float) size.first;
-        float scalerY = (float) p.y / (float) size.second;
-        return new Point(Math.round((float) targetSize.first * scalerX), Math.round((float) targetSize.second * scalerY));
+    private Point correctCoordsBySize(@NotNull Point p, @NotNull Size size, @NotNull Size targetSize) {
+        float scaleX = (float) p.x / (float) size.getWidth();
+        float scaleY = (float) p.y / (float) size.getHeight();
+        return new Point(Math.round((float) targetSize.getWidth() * scaleX), Math.round((float) targetSize.getHeight() * scaleY));
     }
 
     private static void correctImageViewSize(@NotNull ImageView v) {
-        Pair<Integer, Integer> viewSize = getRescaledImageViewSize(v);
-        v.setMaxWidth(viewSize.first);
-        v.setMaxHeight(viewSize.second);
+        Size viewSize = getRescaledImageViewSize(v);
+        v.setMaxWidth(viewSize.getWidth());
+        v.setMaxHeight(viewSize.getHeight());
         v.invalidate();
         v.requestLayout();
     }
@@ -676,12 +674,12 @@ public class MaskClickLayout extends FrameLayout {
 
         @NotNull
         public Pair<Integer, Bitmap> getLayerPair() {
-            return new Pair<>(layerPair.first, layerPair.second);
+            return new Pair<>(layerPair.getFirst(), layerPair.getSecond());
         }
 
         @NotNull
         public Pair<Integer, Bitmap> getMaskedPair() {
-            return new Pair<>(maskedPair.first, maskedPair.second);
+            return new Pair<>(maskedPair.getFirst(), maskedPair.getSecond());
         }
 
         @ColorInt

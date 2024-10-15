@@ -10,6 +10,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import kotlin.Pair;
+
 public interface Predicate<V> {
 
     boolean apply(V element);
@@ -46,7 +48,7 @@ public interface Predicate<V> {
         @Nullable
         public static <V> V find(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             Pair<Integer, V> result = findIndexed(elements, predicate);
-            return result != null ? result.second : null;
+            return result != null ? result.getSecond() : null;
         }
 
         @NotNull
@@ -94,7 +96,7 @@ public interface Predicate<V> {
         @Nullable
         public static <V> V removeFirst(@Nullable Collection<V> elements, @NotNull Predicate<V> predicate) {
             Pair<Integer, V> result = removeFirstIndex(elements, predicate);
-            return result != null ? result.second : null;
+            return result != null ? result.getSecond() : null;
         }
 
         @NotNull

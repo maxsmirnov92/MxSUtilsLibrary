@@ -2,7 +2,6 @@ package net.maxsmr.commonutils.format
 
 import android.content.Context
 import androidx.annotation.PluralsRes
-import net.maxsmr.commonutils.Pair
 import net.maxsmr.commonutils.R
 import net.maxsmr.commonutils.conversion.SizeUnit
 import net.maxsmr.commonutils.conversion.SizeUnitBits
@@ -19,15 +18,15 @@ private const val FORMAT_FILE_SIZE = "%s: %s"
 
 fun filePairsToString(
     context: Context,
-    files: Collection<Pair<File, File>>,
+    files: Collection<Pair<File?, File>>,
     depth: Int,
     sizeUnitsToExclude: Set<SizeUnit> = setOf(),
     precision: Int? = 0,
 ): String {
     val map = mutableMapOf<Pair<File, File>, Long>()
     for (p in files) {
-        if (p.first != null) {
-            map[p] = getSize(p.first, depth)
+        p.first?.let {
+            map[it to p.second] = getSize(it, depth)
         }
     }
     return filePairsWithSizeToString(context, map, sizeUnitsToExclude, precision)

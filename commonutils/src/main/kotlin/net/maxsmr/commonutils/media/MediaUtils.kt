@@ -680,8 +680,9 @@ fun getRotationAngleFromExifOrThrow(contentResolver: ContentResolver, imageUri: 
 private fun ExifInterface.getRotationAngleOrThrow(): Int {
     val orientation =
         getAttributeInt(ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL)
-    if (orientation == ExifInterface.ORIENTATION_UNDEFINED)
+    if (orientation == ExifInterface.ORIENTATION_UNDEFINED) {
         throw RuntimeException("Orientation undefined")
+    }
     return getRotationAngleByExifOrientation(orientation)
 }
 
@@ -833,7 +834,7 @@ private fun createExifOrThrow(file: File?) =
 
 @Throws(RuntimeException::class)
 private fun createExifOrThrow(path: String?): ExifInterface {
-    if (path == null || path.isEmpty()) {
+    if (path.isNullOrEmpty()) {
         throw NullPointerException("path is null or empty")
     }
     return try {

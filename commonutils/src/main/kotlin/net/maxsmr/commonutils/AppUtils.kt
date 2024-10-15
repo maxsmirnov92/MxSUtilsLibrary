@@ -6,10 +6,14 @@ import android.content.*
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
+import android.graphics.Insets
 import android.os.Build
 import android.os.StrictMode
 import android.util.DisplayMetrics
-import android.view.WindowManager
+import android.util.Size
+import android.view.View
+import android.view.WindowInsets
+import android.view.WindowMetrics
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -22,6 +26,7 @@ import net.maxsmr.commonutils.text.isEmpty
 import java.io.File
 import java.lang.reflect.Method
 import java.util.*
+
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AppUtils")
 
@@ -327,11 +332,48 @@ fun Context.copyToClipboard(label: String, text: String) {
     clipboard.setPrimaryClip(clip)
 }
 
-fun Context.getDisplayMetrics(): DisplayMetrics {
-    val wm = getSystemService(Context.WINDOW_SERVICE) as WindowManager
-    val outMetrics = DisplayMetrics()
-    wm.defaultDisplay.getMetrics(outMetrics)
-    return outMetrics
+fun Activity.getDisplaySize(): Size {
+    return if (isAtLeastR()) {
+        val windowMetrics: WindowMetrics = windowManager.currentWindowMetrics
+        val insets: Insets = windowMetrics.windowInsets
+            .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
+        Size(
+            windowMetrics.bounds.width() - insets.left - insets.right,
+            windowMetrics.bounds.height() - insets.top - insets.bottom
+        )
+    } else {
+        val outMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(outMetrics)
+        Size(outMetrics.widthPixels, outMetrics.heightPixels)
+    }
+}
+
+fun Activity.getDisplaySizeWithDensity(): Pair<Size, Float> {
+    return if (isAtLeastUpsideDownCake()) {
+        val windowMetrics: WindowMetrics = windowManager.currentWindowMetrics
+        val insets: Insets = windowMetrics.windowInsets
+            .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
+        Size(
+            windowMetrics.bounds.width() - insets.left - insets.right,
+            windowMetrics.bounds.height() - insets.top - insets.bottom
+        ) to windowMetrics.density
+    } else {
+        val outMetrics = DisplayMetrics()
+        windowManager.defaultDisplay.getMetrics(outMetrics)
+        Size(outMetrics.widthPixels, outMetrics.heightPixels) to outMetrics.density
+    }
+}
+
+/**
+ * @return одна из 4-х констант, соответствующая ориентации в текущей конфигурации
+ * (значение не меняется при фактическом повороте без пересоздания активити)
+ */
+fun Activity.getDisplayRotation(): Int? {
+    return if (isAtLeastR()) {
+        display?.rotation
+    } else {
+        windowManager.defaultDisplay.rotation
+    }
 }
 
 @JvmOverloads
@@ -418,6 +460,17 @@ fun Any.asActivityOrThrow(): Activity {
 
         is Fragment -> {
             this.requireActivity()
+        }
+
+        is View -> {
+            var context = context
+            while (context is ContextWrapper) {
+                if (context is Activity) {
+                    return context
+                }
+                context = context.baseContext
+            }
+            throw ClassCastException("Cannot retrieve Activity from View")
         }
 
         else -> {

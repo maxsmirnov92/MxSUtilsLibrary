@@ -26,6 +26,7 @@ const val URL_SCHEME_MAIL = "mailto"
 const val URL_SCHEME_TEL = "tel"
 const val URL_SCHEME_GEO = "geo"
 const val URL_SCHEME_GEO_GOOGLE = "google.navigation"
+const val URL_SCHEME_INTENT = "intent"
 
 const val URL_ANY_MARKET_FORMAT = "$URL_SCHEME_MARKET://details?id=%s"
 const val URL_PLAY_MARKET_FORMAT = "https://play.google.com/store/apps/details?id=%s"

@@ -21,14 +21,13 @@ import androidx.core.content.res.ResourcesCompat
 import androidx.core.graphics.drawable.DrawableCompat
 import net.maxsmr.commonutils.*
 import net.maxsmr.commonutils.ReflectionUtils.invokeMethod
-import net.maxsmr.commonutils.gui.OrientationIntervalListener
+import net.maxsmr.commonutils.gui.DiffOrientationEventListener
 import net.maxsmr.commonutils.gui.getCorrectedDisplayRotation
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
 import java.io.File
-import java.io.IOException
 import java.io.InputStream
 
 const val EMPTY_ID = 0
@@ -371,8 +370,12 @@ fun Resources.convertAnyToPx(
 
 fun Resources.getViewsRotationForDisplay(displayRotation: Int): Int {
     var result = 0
-    val correctedDisplayRotation = getCorrectedDisplayRotation(displayRotation)
-    if (correctedDisplayRotation != OrientationIntervalListener.ROTATION_NOT_SPECIFIED) {
+    val correctedDisplayRotation = if (displayRotation !in arrayOf(0, 90, 180, 270)) {
+        getCorrectedDisplayRotation(displayRotation)
+    } else {
+        displayRotation
+    }
+    if (correctedDisplayRotation != DiffOrientationEventListener.ROTATION_NOT_SPECIFIED) {
         val currentOrientation = configuration.orientation
         if (currentOrientation == Configuration.ORIENTATION_LANDSCAPE) {
             when (correctedDisplayRotation) {

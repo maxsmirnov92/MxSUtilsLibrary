@@ -1,13 +1,14 @@
 package net.maxsmr.commonutils.hardware;
 
 import android.content.Context;
-import org.jetbrains.annotations.NotNull;
-import net.maxsmr.commonutils.Pair;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 
 import net.maxsmr.commonutils.Observable;
+import org.jetbrains.annotations.NotNull;
+
+import kotlin.Pair;
 
 public class SimpleGestureListener implements ScaleGestureDetector.OnScaleGestureListener, View.OnTouchListener {
 
