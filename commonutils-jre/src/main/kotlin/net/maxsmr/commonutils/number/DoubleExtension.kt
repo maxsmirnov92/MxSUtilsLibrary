@@ -98,7 +98,7 @@ fun Double.roundFormatted(precision: Int): Double {
 /**
  * Округляет число с плавающей точкой до ближайшего целого
  */
-fun Double.roundInt(): Int {
+fun Double.roundUpInt(): Int {
     return ceil(this).toInt()
 }
 

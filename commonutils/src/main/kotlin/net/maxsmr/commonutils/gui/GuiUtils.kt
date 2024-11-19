@@ -2,6 +2,7 @@ package net.maxsmr.commonutils.gui
 
 import android.app.Activity
 import android.os.CountDownTimer
+import android.util.Rational
 import android.util.Size
 import android.view.KeyEvent
 import android.view.Surface
@@ -14,13 +15,20 @@ import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.ColorUtils
 import net.maxsmr.commonutils.getColorFromAttrs
+import net.maxsmr.commonutils.getDisplaySize
 import net.maxsmr.commonutils.isAtLeastLollipop
 import net.maxsmr.commonutils.isAtLeastMarshmallow
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import java.util.concurrent.TimeUnit
+import kotlin.math.abs
+import kotlin.math.max
+import kotlin.math.min
 
 private const val DEFAULT_DARK_COLOR_RATIO = 0.7
+
+private const val RATIO_4_3_VALUE = 4.0 / 3.0
+private const val RATIO_16_9_VALUE = 16.0 / 9.0
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("GuiUtils")
 
@@ -119,6 +127,48 @@ private fun Window.toggleAboveLockscreen(wakeScreen: Boolean, toggle: Boolean) {
  */
 fun Activity?.clearFocus(): Boolean =
         this?.currentFocus.clearFocusWithCheck()
+
+fun Activity.getDisplayStandardAspectRatio(): StandardAspectRatio {
+    return getStandardAspectRatio(getDisplaySize())
+}
+
+fun getStandardAspectRatio(size: Size): StandardAspectRatio {
+    val previewRatio = max(size.width, size.height).toDouble() / min(size.width, size.height)
+    return  if (abs(previewRatio - RATIO_4_3_VALUE) <= abs(previewRatio - RATIO_16_9_VALUE)) {
+        StandardAspectRatio._4_3
+    } else {
+        StandardAspectRatio._16_9
+    }
+}
+
+enum class StandardAspectRatio {
+    _4_3,
+    _16_9;
+
+    val value: Rational
+        get() = when(this) {
+            _4_3 -> Rational(4, 3)
+            _16_9 -> Rational(16, 9)
+        }
+}
+
+fun getAspectRatio(size: Size): Rational {
+
+    // НОД
+    fun gcd(a: Int, b: Int): Int {
+        var result: Int = a
+        var divider: Int = b
+        while (divider != 0) {
+            val temp = divider
+            divider = result % divider
+            result = temp
+        }
+        return result
+    }
+
+    val gcd = gcd(size.width, size.height)
+    return Rational(size.width / gcd, size.height / gcd)
+}
 
 /**
  * Показать тост с длительностью, отличающейся от стандартных

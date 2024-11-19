@@ -6,7 +6,7 @@ import net.maxsmr.commonutils.format.price.KopecksFormat
 import net.maxsmr.commonutils.format.price.PriceFormatter.Companion.CHAR_SPACE_INSEPARABLE
 import net.maxsmr.commonutils.number.fraction
 import net.maxsmr.commonutils.number.isNotZero
-import net.maxsmr.commonutils.number.roundInt
+import net.maxsmr.commonutils.number.roundUpInt
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.text.DecimalFormat
 
@@ -23,7 +23,7 @@ fun Double.formatPrice(
 ): String {
     val result = StringBuilder()
     val intPart = if (kopecksFormat == KopecksFormat.ROUNDUP) {
-        roundInt()
+        roundUpInt()
     } else {
         toInt()
     }

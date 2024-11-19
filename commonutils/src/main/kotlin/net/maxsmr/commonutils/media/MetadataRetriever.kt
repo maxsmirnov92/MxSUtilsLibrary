@@ -234,7 +234,7 @@ fun getMediaFileCoverArt(filePath: String?, headers: Map<String, String>? = null
 @JvmOverloads
 fun getMediaFileCoverArt(resourceUri: Uri?, headers: Map<String, String>? = null): Bitmap? {
     val retriever = createMediaMetadataRetriever(resourceUri, headers)
-    return if (retriever != null) createBitmapFromByteArray(retriever.embeddedPicture) else null
+    return retriever?.embeddedPicture?.let { createBitmapFromByteArray(it) }
 }
 
 @JvmOverloads

@@ -5,29 +5,60 @@ import android.content.ContentResolver
 import android.content.Context
 import android.content.res.ColorStateList
 import android.content.res.Resources
-import android.graphics.*
+import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
 import android.graphics.Bitmap.Config
+import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color
+import android.graphics.ImageFormat
+import android.graphics.Matrix
+import android.graphics.Paint
+import android.graphics.Point
+import android.graphics.PorterDuff
+import android.graphics.PorterDuffXfermode
+import android.graphics.Rect
+import android.graphics.RectF
+import android.graphics.Typeface
+import android.graphics.YuvImage
 import android.graphics.drawable.BitmapDrawable
 import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.RippleDrawable
 import android.net.Uri
 import android.os.Build
-import android.renderscript.*
+import android.renderscript.Allocation
+import android.renderscript.Element
+import android.renderscript.RenderScript
+import android.renderscript.ScriptIntrinsicYuvToRGB
+import android.renderscript.Type
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
 import androidx.annotation.RequiresApi
+import net.maxsmr.commonutils.checkFile
+import net.maxsmr.commonutils.createFile
+import net.maxsmr.commonutils.deleteFile
+import net.maxsmr.commonutils.isAtLeastR
+import net.maxsmr.commonutils.isFileValid
 import net.maxsmr.commonutils.isPreKitkat
-import net.maxsmr.commonutils.*
-import net.maxsmr.commonutils.text.isEmpty
+import net.maxsmr.commonutils.isPreMarshmallow
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
-import net.maxsmr.commonutils.media.*
+import net.maxsmr.commonutils.media.extractFramesFromFile
+import net.maxsmr.commonutils.media.extractMediaDurationFromFile
+import net.maxsmr.commonutils.media.extractMediaDurationFromUri
+import net.maxsmr.commonutils.media.openInputStream
+import net.maxsmr.commonutils.media.openOutputStream
+import net.maxsmr.commonutils.openOutputStream
 import net.maxsmr.commonutils.text.getExtension
+import net.maxsmr.commonutils.text.isEmpty
 import net.maxsmr.commonutils.text.removeExtension
-import java.io.*
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.IOException
+import java.io.InputStream
+import java.io.OutputStream
 import java.nio.ByteBuffer
 import kotlin.math.abs
 import kotlin.math.ceil
@@ -88,16 +119,11 @@ fun copyBitmap(
 /**
  * @param bitmap must be mutable
  */
-@TargetApi(Build.VERSION_CODES.KITKAT)
 @JvmOverloads
 fun reconfigureBitmap(
-    bitmap: Bitmap?,
+    bitmap: Bitmap,
     config: Config = Config.ARGB_8888
 ): Bitmap? {
-    if (bitmap == null) {
-        logger.e("bitmap is null: $bitmap")
-        return null
-    }
     if (!bitmap.isMutable) {
         logger.e("bitmap $bitmap is immutable")
         return null
@@ -114,10 +140,10 @@ fun reconfigureBitmap(
 
 @JvmOverloads
 fun getBitmapPixelBuffer(
-    bitmap: Bitmap?,
+    bitmap: Bitmap,
     recycleSource: Boolean = true
 ): Pair<ByteArray?, Config>? {
-    if (bitmap == null || !isBitmapValid(bitmap)) {
+    if (!isBitmapValid(bitmap)) {
         logger.e("Incorrect bitmap: $bitmap")
         return null
     }
@@ -140,13 +166,13 @@ fun getBitmapPixelBuffer(
 
 @JvmOverloads
 fun createBitmapByPixelBuffer(
-    data: ByteArray?,
+    data: ByteArray,
     width: Int,
     height: Int,
     config: Config = Config.ARGB_8888
 ): Bitmap? {
-    if (data == null || data.isEmpty()) {
-        logger.e("data is null or empty")
+    if (data.isEmpty()) {
+        logger.e("data is empty")
         return null
     }
     if (width <= 0 || height <= 0) {
@@ -193,13 +219,13 @@ fun createBitmapFromFile(
 
 @JvmOverloads
 fun createBitmapFromByteArray(
-    data: ByteArray?,
+    data: ByteArray,
     scale: Int = 1,
     config: Config = BITMAP_CONFIG_DEFAULT,
     withSampleSize: Boolean = isPreMarshmallow()
 ): Bitmap? {
-    if (data == null || data.isEmpty()) {
-        logger.e("data is null or empty")
+    if (data.isEmpty()) {
+        logger.e("data is empty")
         return null
     }
     val options = BitmapFactory.Options()
@@ -224,36 +250,30 @@ fun createBitmapFromByteArray(
 }
 
 fun createBitmapFromUri(
-    uri: Uri?,
+    uri: Uri,
     contentResolver: ContentResolver,
     scale: Int = 1,
     config: Config = BITMAP_CONFIG_DEFAULT,
     withSampleSize: Boolean = isPreMarshmallow()
 ): Bitmap? {
-    if (uri == null) {
-        logger.e("uri is null")
-        return null
+    return uri.openInputStream(contentResolver)?.let {
+        createBitmapFromStream(
+            it,
+            scale,
+            config,
+            withSampleSize
+        )
     }
-    return createBitmapFromStream(
-        uri.openInputStream(contentResolver),
-        scale,
-        config,
-        withSampleSize
-    )
 }
 
 @JvmOverloads
 fun createBitmapFromStream(
-    inputStream: InputStream?,
+    inputStream: InputStream,
     scale: Int = 1,
     config: Config = BITMAP_CONFIG_DEFAULT,
     withSampleSize: Boolean = isPreMarshmallow(),
     closeStream: Boolean = true
 ): Bitmap? {
-    if (inputStream == null) {
-        logger.e("inputStream is null")
-        return null
-    }
     val options = BitmapFactory.Options()
     return try {
         if (withSampleSize) {
