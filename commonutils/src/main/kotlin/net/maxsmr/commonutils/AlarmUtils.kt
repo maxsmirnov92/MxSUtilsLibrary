@@ -1,49 +1,54 @@
 package net.maxsmr.commonutils
 
+import android.Manifest
 import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.os.SystemClock
+import android.provider.Settings
+import androidx.annotation.RequiresPermission
 import androidx.core.app.AlarmManagerCompat
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 
+
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AlarmUtils")
 
 @JvmOverloads
-fun setAlarm(
-        context: Context,
-        alarmIntent: PendingIntent,
-        delayTime: Long,
-        shouldWakeUp: Boolean,
-        showIntent: PendingIntent? = null
+@RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
+fun Context.setAlarm(
+    alarmIntent: PendingIntent,
+    delayTime: Long,
+    shouldWakeUp: Boolean,
+    showIntent: PendingIntent? = null
 ): Boolean {
     if (delayTime <= 0) {
         logger.e("Incorrect delay time: $delayTime")
         return false
     }
-    return setAlarm(context,
-            alarmIntent,
-            System.currentTimeMillis() + delayTime,
-            if (shouldWakeUp) AlarmType.RTC_WAKE_UP else AlarmType.RTC,
-            showIntent
+    return setAlarm(
+        alarmIntent,
+        System.currentTimeMillis() + delayTime,
+        if (shouldWakeUp) AlarmType.RTC_WAKE_UP else AlarmType.RTC,
+        showIntent
     )
 }
 
-/** compat use of [AlarmManager]  */
 @JvmOverloads
-fun setAlarm(
-        context: Context,
-        alarmIntent: PendingIntent,
-        triggerTime: Long,
-        alarmType: AlarmType,
-        showIntent: PendingIntent? = null
+@RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
+fun Context.setAlarm(
+    alarmIntent: PendingIntent,
+    triggerTime: Long,
+    alarmType: AlarmType,
+    showIntent: PendingIntent? = null
 ): Boolean {
     logger.d("setAlarm(), alarmIntent: $alarmIntent, triggerTime: $triggerTime, alarmType: $alarmType, showIntent: $showIntent")
 
-    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager?
-            ?: throw RuntimeException(AlarmManager::class.java.simpleName + " is null")
+    val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager?
+        ?: throw RuntimeException(AlarmManager::class.java.simpleName + " is null")
 
     if (alarmType.isRTC) {
         val currentTime = System.currentTimeMillis()
@@ -59,12 +64,23 @@ fun setAlarm(
         }
     }
 
-    // setExactAndAllowWhileIdle is not working in doze mode
+    if (isAtLeastS()) {
+        if (!alarmManager.canScheduleExactAlarms()) {
+            val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+            if (isAtLeastTiramisu()) {
+                intent.setData(Uri.parse("package:$packageName"))
+            }
+            startActivity(intent)
+            return false
+        }
+    }
+
     return try {
         if (isAtLeastLollipop()) {
             alarmManager.setAlarmClock(AlarmManager.AlarmClockInfo(triggerTime, showIntent), alarmIntent)
         } else {
-            AlarmManagerCompat.setExact(alarmManager, alarmType.value, triggerTime, alarmIntent)
+            // setExact
+            AlarmManagerCompat.setAndAllowWhileIdle(alarmManager, alarmType.value, triggerTime, alarmIntent)
         }
         true
     } catch (e: Exception) {
@@ -73,9 +89,9 @@ fun setAlarm(
     }
 }
 
-fun cancelAlarm(context: Context, pendingIntent: PendingIntent): Boolean {
-    val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager?
-            ?: throw RuntimeException(AlarmManager::class.java.simpleName + " is null")
+fun Context.cancelAlarm(pendingIntent: PendingIntent): Boolean {
+    val alarmManager = getSystemService(Context.ALARM_SERVICE) as AlarmManager?
+        ?: throw RuntimeException(AlarmManager::class.java.simpleName + " is null")
     return try {
         alarmManager.cancel(pendingIntent)
         true

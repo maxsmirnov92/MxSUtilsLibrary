@@ -56,6 +56,9 @@ import ru.tinkoff.decoro.Mask
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 import java.nio.charset.Charset
 import android.util.Size
+import androidx.appcompat.widget.ActionMenuView
+import androidx.appcompat.widget.Toolbar
+import androidx.core.view.descendants
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("ViewExt")
 
@@ -794,6 +797,37 @@ fun CoordinatorLayout.collapseToolbar(coordinatorChild: View, appBarLayout: AppB
     behavior?.onNestedFling(this, appBarLayout, coordinatorChild, 0f, 10000f, true)
 }
 
+fun Toolbar.findOverflowButton(): View? {
+    for (i in 0 until childCount) {
+        val child: View = getChildAt(i)
+        if (child is ActionMenuView) {
+            for (j in 0 until child.childCount) {
+                val innerChild: View = child.getChildAt(j)
+                if (innerChild.javaClass.simpleName == "OverflowMenuButton") {
+                    // Это кнопка с тремя точками
+                    return innerChild
+                }
+            }
+        }
+    }
+    return null
+}
+
+fun Toolbar.findActionMenuItemView(@IdRes actionId: Int): View? {
+    for (i in 0 until childCount) {
+        val child: View = getChildAt(i)
+        if (child is ActionMenuView) {
+            for (j in 0 until child.childCount) {
+                val innerChild: View = child.getChildAt(j)
+                if (innerChild.id == actionId) {
+                    return innerChild
+                }
+            }
+        }
+    }
+    return null
+}
+
 fun BottomSheetDialog.setHideable(toggle: Boolean) {
     val behavior: BottomSheetBehavior<*>? =
         ReflectionUtils.getFieldValue<BottomSheetBehavior<*>, BottomSheetDialog>(BottomSheetDialog::class.java, this, "mBehavior")
@@ -1048,11 +1082,21 @@ private fun reduceTextByMaxWidth(
 /**
  * @return relative coordinates to the parent
  */
-fun View.getOffsetByParent(parent: ViewGroup): Rect {
-    val offsetViewBounds = Rect()
-    getDrawingRect(offsetViewBounds)
-    parent.offsetDescendantRectToMyCoords(this, offsetViewBounds)
-    return offsetViewBounds
+fun View.getOffsetByParent(parent: ViewGroup): Rect? {
+    return if (id != View.NO_ID && parent.descendants.any { it.id == id }) {
+        val offsetViewBounds = Rect()
+        getDrawingRect(offsetViewBounds)
+        parent.offsetDescendantRectToMyCoords(this, offsetViewBounds)
+        offsetViewBounds
+    } else {
+        null
+    }
+}
+
+fun View.isFullyVisible(): Boolean {
+    val rect = Rect()
+    return getGlobalVisibleRect(rect)
+            && height == rect.height() && width == rect.width()
 }
 
 @JvmOverloads

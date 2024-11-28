@@ -30,6 +30,8 @@ import java.util.*
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AppUtils")
 
+private const val REG_EX_PACKAGE_NAME = "^([A-Za-z]{1}[A-Za-z\\d_]*\\.)+[A-Za-z][A-Za-z\\d_]*\$"
+
 fun PackageManager.isPackageInstalled(packageName: String): Boolean =
     getApplicationInfoOrNull(packageName) != null
 
@@ -115,6 +117,10 @@ fun PackageManager.getArchiveLaunchIntentForPackage(apkFile: File): Intent? {
     } else {
         null
     }
+}
+
+fun isPackageNameValid(packageName: String): Boolean {
+    return Regex(REG_EX_PACKAGE_NAME).matches(packageName)
 }
 
 fun Context.getSelfLaunchIntentForPackage(): Intent? =

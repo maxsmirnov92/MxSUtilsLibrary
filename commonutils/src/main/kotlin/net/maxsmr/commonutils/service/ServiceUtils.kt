@@ -1,19 +1,26 @@
 package net.maxsmr.commonutils.service
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.app.ActivityManager
+import android.app.Notification
 import android.app.PendingIntent
 import android.app.Service
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.content.ServiceConnection
+import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
 import android.text.TextUtils
+import androidx.annotation.RequiresPermission
 import net.maxsmr.commonutils.cancelAlarm
 import net.maxsmr.commonutils.isAtLeastNougat
 import net.maxsmr.commonutils.isAtLeastOreo
 import net.maxsmr.commonutils.isAtLeastS
+import net.maxsmr.commonutils.isAtLeastUpsideDownCake
+import net.maxsmr.commonutils.isSelfAppInBackground
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
@@ -34,6 +41,10 @@ fun <S : Service> isServiceRunning(
                 (isForeground == null || service.foreground == isForeground)
     } != null
 }
+
+fun canStartForegroundService(context: Context) = context.isSelfAppInBackground() == false
+        || (Build.VERSION.SDK_INT < Build.VERSION_CODES.O
+        || Settings.canDrawOverlays(context))
 
 @JvmOverloads
 fun <S : Service> start(
@@ -73,6 +84,7 @@ fun <S : Service> stop(context: Context, serviceClass: Class<S>): Boolean {
     return true
 }
 
+@RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
 fun <S : Service> restartDelay(
     context: Context,
     serviceClass: Class<S>,
@@ -102,7 +114,7 @@ fun <S : Service> restartDelay(
     )
 }
 
-
+@RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
 fun <S : Service> startDelay(
     context: Context,
     serviceClass: Class<S>,
@@ -155,7 +167,7 @@ fun <S : Service> cancelDelay(
         args,
         action
     )
-    cancelAlarm(context, pendingIntent)
+    context.cancelAlarm(pendingIntent)
 }
 
 fun <C : ServiceConnection, S : Service> bindService(
@@ -293,15 +305,32 @@ fun withMutabilityFlag(flags: Int, mutable: Boolean): Int {
     return flags or mutableFlag
 }
 
-fun Service.stopForegroundCompat(removeNotification: Boolean) {
-    if (removeNotification) {
-        stopForeground(true)
+fun Service.startForegroundCompat(
+    notificationId: Int,
+    notification: Notification,
+    serviceType: Int? = null
+) {
+    if (isAtLeastUpsideDownCake()) {
+        require(serviceType != null) { "foregroundServiceType required when API >= 34" }
+        startForeground(
+            notificationId,
+            notification,
+            serviceType
+        )
     } else {
-        if (isAtLeastNougat()) {
-            stopForeground(Service.STOP_FOREGROUND_DETACH)
+        startForeground(notificationId, notification)
+    }
+}
+
+fun Service.stopForegroundCompat(removeNotification: Boolean) {
+    if (isAtLeastNougat()) {
+        stopForeground(if (removeNotification) {
+            Service.STOP_FOREGROUND_REMOVE
         } else {
-            stopForeground(false)
-        }
+            Service.STOP_FOREGROUND_DETACH
+        })
+    } else {
+        stopForeground(removeNotification)
     }
 }
 
@@ -310,6 +339,7 @@ private fun <S : Service> stopNoCheck(context: Context, serviceClass: Class<S>):
     return context.stopService(service)
 }
 
+@RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
 private fun <S : Service> restartDelayNoCheck(
     context: Context,
     serviceClass: Class<S>,
@@ -340,6 +370,7 @@ private fun <S : Service> restartDelayNoCheck(
     )
 }
 
+@RequiresPermission(Manifest.permission.SCHEDULE_EXACT_ALARM)
 private fun <S : Service> startDelayNoCheck(
     context: Context,
     serviceClass: Class<S>,
@@ -353,8 +384,7 @@ private fun <S : Service> startDelayNoCheck(
     shouldWakeUp: Boolean = true
 ): Boolean {
     cancelDelay(context, serviceClass, requestCode)
-    return setAlarm(
-        context,
+    return context.setAlarm(
         createServicePendingIntent(
             context,
             serviceClass,

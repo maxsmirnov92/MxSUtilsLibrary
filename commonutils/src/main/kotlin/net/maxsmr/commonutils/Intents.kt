@@ -38,15 +38,27 @@ const val URL_GOOGLE_PAY_SAVE_FORMAT = "https://pay.google.com/gp/v/save/%s"
 fun getAppSettingsIntent(context: Context, packageName: String = context.packageName): Intent =
     Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
         .setData(Uri.parse("package:$packageName"))
+
 // для MIUI:
 // setClassName("com.miui.securitycenter", "com.miui.appmanager.ApplicationsDetailsActivity")
 // putExtra("package_name", fragment.requireContext().packageName)
 
 @TargetApi(Build.VERSION_CODES.M)
 @JvmOverloads
-fun getManageSettingsIntent(context: Context, packageName: String = context.packageName) =
+fun getManageWriteSettingsIntent(context: Context, packageName: String = context.packageName) =
     Intent(Settings.ACTION_MANAGE_WRITE_SETTINGS)
         .setData(Uri.parse("package:$packageName"))
+
+@TargetApi(Build.VERSION_CODES.M)
+@JvmOverloads
+fun getManageOverlayPermissionIntent(context: Context, packageName: String = context.packageName): Intent? {
+    if (!Settings.canDrawOverlays(context)) {
+        val intent = Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION)
+        intent.setData(Uri.fromParts("package", packageName, null))
+        return intent
+    }
+    return null
+}
 
 fun getLocationSettingsIntent() = Intent(Settings.ACTION_LOCATION_SOURCE_SETTINGS)
 

@@ -3,6 +3,7 @@ package net.maxsmr.commonutils.gui
 import android.animation.ValueAnimator
 import android.annotation.TargetApi
 import android.app.Activity
+import android.graphics.Point
 import android.graphics.Rect
 import android.os.Build
 import android.view.View
@@ -126,32 +127,54 @@ fun NestedScrollView.setOnScrollChangesListener(listener: ((ScrollState) -> Unit
 fun ViewGroup.calculateCoordsForScroll(
     target: View,
     isVertically: Boolean,
-    fromStart: Boolean = true,
-): Pair<Int, Int> {
+    alignToBottomOrRight: Boolean = false,
+): Point? {
+    val coords = target.getOffsetByParent(this) ?: return null
+
     val x: Int
     val y: Int
-    val coords = target.getOffsetByParent(this)
+
     if (isVertically) {
+        if (alignToBottomOrRight) {
+            // Учитываем высоту NestedScrollView и высоту контента
+            val scrollViewHeight = height
+            val contentHeight = getChildAt(0)?.height ?: 0
+            val targetBottom = coords.bottom
+
+            // Рассчитываем позицию, чтобы target был внизу
+            y = (targetBottom - scrollViewHeight).coerceAtMost(contentHeight - scrollViewHeight)
+        } else {
+            y = coords.top
+        }
         x = 0
-        y = if (fromStart) coords.top else coords.bottom
     } else {
-        x = if (fromStart) coords.left else coords.right
+        if (alignToBottomOrRight) {
+            // Учитываем ширину NestedScrollView и ширину контента
+            val scrollViewWidth = width
+            val contentWidth = getChildAt(0)?.width ?: 0
+            val targetRight = coords.right
+
+            // Рассчитываем позицию, чтобы target был справа
+            x = (targetRight - scrollViewWidth).coerceAtMost(contentWidth - scrollViewWidth)
+        } else {
+            x = coords.left
+        }
         y = 0
     }
-    return Pair(x, y)
+    return Point(x, y)
 }
 
 @JvmOverloads
 fun ViewGroup.scrollToView(
     target: View,
     isVertically: Boolean,
-    fromStart: Boolean = true,
+    alignToBottomOrRight: Boolean = false,
     smoothScroll: Boolean = true,
     changeFocus: Boolean = false,
     activity: Activity? = null,
 ) {
-    val coords = calculateCoordsForScroll(target, isVertically, fromStart)
-    scrollTo(coords.first, coords.second, smoothScroll, changeFocus, activity)
+    val coords = calculateCoordsForScroll(target, isVertically, alignToBottomOrRight) ?: return
+    scrollTo(coords.x, coords.y, smoothScroll, changeFocus, activity)
 }
 
 /**
