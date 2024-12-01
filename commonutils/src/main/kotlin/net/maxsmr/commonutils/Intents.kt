@@ -307,14 +307,14 @@ fun Intent.wrapChooserWithInitial(
 ): Intent = wrapChooser(
     title,
     intentSender,
-    flatten(context)
+    *flatten(context).toTypedArray()
 )
 
 @JvmOverloads
 fun Intent.wrapChooser(
     title: String?,
     intentSender: IntentSender? = null,
-    initialIntents: List<Intent>? = null
+    vararg initialIntents: Intent
 ): Intent {
     return if (!title.isNullOrEmpty()) {
         (if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP_MR1 && intentSender != null) {
@@ -322,8 +322,8 @@ fun Intent.wrapChooser(
         } else {
             Intent.createChooser(this, title)
         }).apply {
-            initialIntents?.takeIf { it.isNotEmpty() }?.let {
-                putExtra(Intent.EXTRA_INITIAL_INTENTS, ArrayList(it))
+            initialIntents.takeIf { it.isNotEmpty() }?.let {
+                putExtra(Intent.EXTRA_INITIAL_INTENTS, initialIntents)
             }
         }
     } else {
