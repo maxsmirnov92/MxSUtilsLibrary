@@ -46,28 +46,24 @@ fun filePairsWithSizeToString(
         val key = f.key
         val sourceFile = key.first
         val destinationFile = key.second
-        if (sourceFile != null) {
-            val sb = StringBuilder()
-            sb.append(sourceFile.absolutePath)
-            if (destinationFile != null) {
-                sb.append(" -> ")
-                sb.append(destinationFile.absolutePath)
-            }
-            val size = f.value
-            result.add(
-                String.format(
-                    FORMAT_FILE_SIZE,
-                    sb.toString(),
-                    decomposeSizeFormatted(
-                        size.toDouble(),
-                        SizeUnit.BYTES,
-                        sizeUnitsToExclude,
-                        precision = precision,
-                        formatWithValue = true,
-                    ).joinToString { it.get(context) }
-                )
+        val sb = StringBuilder()
+        sb.append(sourceFile.absolutePath)
+        sb.append(" -> ")
+        sb.append(destinationFile.absolutePath)
+        val size = f.value
+        result.add(
+            String.format(
+                FORMAT_FILE_SIZE,
+                sb.toString(),
+                decomposeSizeFormatted(
+                    size.toDouble(),
+                    SizeUnit.BYTES,
+                    sizeUnitsToExclude,
+                    precision = precision,
+                    formatWithValue = true,
+                ).joinToString { it.get(context) }
             )
-        }
+        )
     }
     return join(NEXT_LINE, result)
 }

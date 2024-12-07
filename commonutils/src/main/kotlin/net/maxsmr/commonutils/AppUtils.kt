@@ -165,11 +165,7 @@ fun disableFileUriStrictMode(): Boolean {
 }
 
 fun getPackageActivitiesCount(packageInfo: PackageInfo): Int {
-    return if (packageInfo.activities == null || packageInfo.activities.isEmpty()) {
-        0
-    } else {
-        packageInfo.activities.size
-    }
+    return packageInfo.activities?.size ?: 0
 }
 
 /**
@@ -322,7 +318,7 @@ fun PackageInfo?.getVersionCode(): Long? {
 }
 
 fun PackageInfo.isSystemApp(): Boolean =
-    applicationInfo.isSystemApp()
+    applicationInfo?.isSystemApp() == true
 
 /**
  * @return null if not found

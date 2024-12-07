@@ -148,7 +148,7 @@ fun getBitmapPixelBuffer(
         bitmap.copyPixelsToBuffer(buffer)
         return Pair(
             if (buffer.hasArray()) buffer.array() else null,
-            bitmap.config
+            bitmap.config ?: BITMAP_CONFIG_DEFAULT
         )
     } catch (e: Throwable) {
         logger.e(formatException(e))
@@ -461,7 +461,7 @@ fun createResizedBitmapFitXY(
         logger.e("Incorrect bitmap: $bitmap")
         return null
     }
-    val newBitmap = createBitmapSafe(width, height, config ?: bitmap.config) ?: return null
+    val newBitmap = createBitmapSafe(width, height, config ?: bitmap.config ?: BITMAP_CONFIG_DEFAULT) ?: return null
     val originalWidth = bitmap.width.toFloat()
     val originalHeight = bitmap.height.toFloat()
 
@@ -867,7 +867,7 @@ fun cropBitmap(
     }
     val rectWidth = toX - fromX
     val rectHeight = toY - fromY
-    val overlayBitmap = createBitmapSafe(rectWidth, rectHeight, config ?: bitmap.config)
+    val overlayBitmap = createBitmapSafe(rectWidth, rectHeight, config ?: bitmap.config ?: BITMAP_CONFIG_DEFAULT)
         ?: return null
     val p = Paint()
     p.xfermode = PorterDuffXfermode(PorterDuff.Mode.CLEAR)
@@ -981,7 +981,7 @@ fun curveImage(bitmap: Bitmap, corners: Point): Bitmap? {
     // want rounded
     val w = bitmap.width
     val h = bitmap.height
-    val c = bitmap.config
+    val c = bitmap.config ?: BITMAP_CONFIG_DEFAULT
 
     // We have to make sure our rounded corners have an
     // alpha channel in most cases

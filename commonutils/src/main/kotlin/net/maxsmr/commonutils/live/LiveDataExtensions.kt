@@ -2,6 +2,7 @@ package net.maxsmr.commonutils.live
 
 import android.os.CountDownTimer
 import android.os.Handler
+import android.os.Looper
 import android.widget.TextView
 import androidx.lifecycle.LifecycleOwner
 import androidx.lifecycle.LiveData
@@ -648,7 +649,7 @@ private class OnceRemoveIfObserver<T>(
 }
 
 private class UpdatingLiveData<X>(private val intervalMillis: Long) : MediatorLiveData<X>() {
-    private val handler = Handler()
+    private val handler = Handler(Looper.getMainLooper())
     private val updateRunnable = Runnable {
         update()
     }
