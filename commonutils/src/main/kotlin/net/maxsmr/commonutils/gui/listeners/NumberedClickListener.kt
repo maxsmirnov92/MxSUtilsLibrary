@@ -1,6 +1,7 @@
 package net.maxsmr.commonutils.gui.listeners
 
-import android.view.View
+import android.os.Handler
+import android.os.Looper
 
 const val DEFAULT_TARGET_INTERVAL = 200L
 
@@ -11,50 +12,36 @@ const val DEFAULT_TARGET_INTERVAL = 200L
  * @param targetInterval целевой интервал: при превышении счётчик нажатий сбрасывается
  */
 class NumberedClickListener(
-        targetCount: Int,
-        targetInterval: Long = DEFAULT_TARGET_INTERVAL,
-        targetAction: (count: Int) -> Unit
-) : View.OnClickListener {
+    private val targetCount: Int,
+    private val targetInterval: Long = DEFAULT_TARGET_INTERVAL,
+) {
 
-    var targetCount: Int = 1
-        set(value) {
-            require(value > 0) { "Incorrect targetCount: $value" }
-            field = value
-        }
+    private val handler = Handler(Looper.getMainLooper())
 
-    var targetInterval: Long = DEFAULT_TARGET_INTERVAL
-        set(value) {
-            require(value >= 0) { "Incorrect targetInterval: $value" }
-            field = value
-        }
-
-    var targetAction: (count: Int) -> Unit
-
-    private var lastClickTime = 0L
-
-    private var currentCount = 0
-
-    init {
-        this.targetCount = targetCount
-        this.targetInterval = targetInterval
-        this.targetAction = targetAction
+    private val clickResetRunnable = Runnable {
+        currentCount = 0
     }
 
-    override fun onClick(v: View) {
-        val currentTime = System.currentTimeMillis()
-        with (lastClickTime) {
-            if (targetInterval > 0L && this != 0L && this <= currentTime) {
-                val interval = currentTime - this
-                if (interval > targetInterval) {
-                    currentCount = 0
-                }
-            }
-        }
+    var currentCount = 0
+        private set
+
+    init {
+        require(targetCount > 0) { "Incorrect targetCount: $targetCount" }
+        require(targetInterval >= 0) { "Incorrect targetInterval: $targetInterval" }
+    }
+
+    fun onClick(): Boolean {
+        handler.removeCallbacks(clickResetRunnable)
         currentCount++
-        if (currentCount >= targetCount) {
-            targetAction.invoke(currentCount)
+        val result = if (currentCount >= targetCount) {
             currentCount = 0
+            true
+        } else {
+            false
         }
-        lastClickTime = currentTime
+        targetInterval.takeIf { it > 0 }?.let {
+            handler.postDelayed(clickResetRunnable, it)
+        }
+        return result
     }
 }
