@@ -5,12 +5,43 @@ package net.maxsmr.commonutils.model
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
+import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import org.json.JSONArray
 import org.json.JSONException
 import org.json.JSONObject
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("JsonUtils")
+
+fun String.toJSONObjectOrThrow(): JSONObject = if (this.isNotEmpty()) {
+    JSONObject(this)
+} else {
+    JSONObject()
+}
+
+fun String.toJSONObject(): JSONObject? {
+    return try {
+        toJSONObjectOrThrow()
+    } catch (e: JSONException) {
+        logException(logger, e, "toJSONObject")
+        null
+    }
+}
+
+fun String.toJSONArrayOrThrow(): JSONArray = if (this.isNotEmpty()) {
+    JSONArray(this)
+} else {
+    JSONArray()
+}
+
+fun String.toJSONArray(): JSONArray? {
+    return try {
+        toJSONArrayOrThrow()
+    } catch (e: JSONException) {
+        logException(logger, e, "toJSONArray")
+        null
+    }
+}
 
 fun JSONObject?.isJsonField(fieldName: String?): Boolean {
     if (this != null) {
@@ -107,6 +138,7 @@ private fun toLong(value: Any?) = when (value) {
         } catch (ignored: NumberFormatException) {
             null
         }
+
     else -> null
 }
 
@@ -118,6 +150,7 @@ private fun toDouble(value: Any?) = when (value) {
         } catch (ignored: NumberFormatException) {
             null
         }
+
     else -> null
 }
 
