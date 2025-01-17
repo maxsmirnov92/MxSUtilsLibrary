@@ -12,10 +12,9 @@ import androidx.lifecycle.Observer
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.gui.setTextChecked
 import net.maxsmr.commonutils.gui.setTextDistinctFormatted
-import net.maxsmr.commonutils.live.wrappers.NotifyCheckMutableLiveData
 import net.maxsmr.commonutils.states.ILoadState
 import net.maxsmr.commonutils.states.LoadState
-import net.maxsmr.commonutils.validation.BaseValidator
+import net.maxsmr.commonutils.states.PgnLoadState
 import ru.tinkoff.decoro.Mask
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
 
@@ -129,6 +128,35 @@ fun <T> LiveData<T>.observeOnceIf(
     observeIf: (T?) -> Boolean,
 ) {
     observe(lifecycleOwner, OnceIfObserver(this, observer, observeIf))
+}
+
+fun <T> LiveData<T>.observeRemoveIf(observer: Observer<T>? = null, observeIf: (T?) -> Boolean) {
+    observeForever(OnceRemoveIfObserver(this, observer, observeIf))
+}
+
+fun <T> LiveData<T>.observeRemoveIf(
+    lifecycleOwner: LifecycleOwner,
+    observer: Observer<T>? = null,
+    observeIf: (T?) -> Boolean,
+) {
+    observe(lifecycleOwner, OnceRemoveIfObserver(this, observer, observeIf))
+}
+
+fun <D> LiveData<LoadState<D>>.observeLoadStateOnce(
+    observer: Observer<LoadState<D>>? = null
+) {
+    observeRemoveIf(observer) {
+        it?.isLoading == false
+    }
+}
+
+fun <D> LiveData<LoadState<D>>.observeLoadStateOnce(
+    lifecycleOwner: LifecycleOwner,
+    observer: Observer<LoadState<D>>? = null
+) {
+    observeRemoveIf(lifecycleOwner, observer) {
+        it?.isLoading == false
+    }
 }
 
 /**
@@ -303,17 +331,6 @@ fun <T> MutableLiveData<T>.postValueIfNew(newValue: T): Boolean {
 }
 
 /**
- * Присваивает [NotifyCheckMutableLiveData] новое значение, только если оно изменилось
- */
-fun <T> NotifyCheckMutableLiveData<T>.setValueIfNewNotify(newValue: T?, eagerNotify: Boolean = false, shouldNotify: Boolean = true) {
-    if (eagerNotify || this.value != newValue) setValue(newValue, shouldNotify)
-}
-
-fun <T> NotifyCheckMutableLiveData<T>.postValueIfNewNotify(newValue: T?, eagerNotify: Boolean = false, shouldNotify: Boolean = true) {
-    if (eagerNotify || this.value != newValue) postValue(newValue, shouldNotify)
-}
-
-/**
  * Переприсвает текущее значение LiveData, вызывая ее "перезарядку"
  */
 fun <T> MutableLiveData<T>.recharge() {
@@ -469,139 +486,108 @@ fun <X, Y> combineLatest(sources: List<LiveData<out X>>, combine: (List<X?>) -> 
 // region LoadState
 
 @JvmOverloads
-fun <D, S: ILoadState<D>> MutableLiveData<S>.preLoad(
-    setOrPost: Boolean = false,
-    eagerNotify: Boolean = false,
-    shouldNotify: Boolean = true,
-    createEmptyStateFunc: () -> S
-): S {
-    var hasChanged = false
-    var state = value
-    if (state == null) {
-        state = createEmptyStateFunc()
-        hasChanged = true
-    }
-    hasChanged = state.preLoad() || hasChanged
-    if (eagerNotify || hasChanged) {
-        setOrPost(state, setOrPost, shouldNotify)
-    }
-    return state
-}
-
-@JvmOverloads
-fun <D, S: ILoadState<D>> MutableLiveData<S>.successLoad(
-    data: D,
-    setOrPost: Boolean = false,
-    eagerNotify: Boolean = false,
-    shouldNotify: Boolean = true,
-    createEmptyStateFunc: () -> S
-): S {
-    var hasChanged = false
-    var state = value
-    if (state == null) {
-        state = createEmptyStateFunc()
-        hasChanged = true
-    }
-    hasChanged = state.successLoad(data) || hasChanged
-    if (eagerNotify || hasChanged) {
-        setOrPost(state, setOrPost, shouldNotify)
-    }
-    return state
-}
-
-@JvmOverloads
-fun <D, S: ILoadState<D>> MutableLiveData<S>.errorLoad(
-    error: Throwable,
-    setOrPost: Boolean = false,
-    eagerNotify: Boolean = false,
-    shouldNotify: Boolean = true,
-    createEmptyStateFunc: () -> S
-): S {
-    var hasChanged = false
-    var state = value
-    if (state == null) {
-        state = createEmptyStateFunc()
-        hasChanged = true
-    }
-    hasChanged = state.errorLoad(error) || hasChanged
-    if (eagerNotify || hasChanged) {
-        setOrPost(state, setOrPost, shouldNotify)
-    }
-    return state
-}
-
-@JvmOverloads
-fun <D> MutableLiveData<LoadState<D>>.preLoad(
-    setOrPost: Boolean = false,
-    eagerNotify: Boolean = false,
-    shouldNotify: Boolean = true,
-): LoadState<D> =  preLoad(setOrPost, eagerNotify, shouldNotify) {
-    LoadState.empty()
-}
-
-@JvmOverloads
-fun <D> MutableLiveData<LoadState<D>>.errorLoad(
-    error: Throwable,
-    setOrPost: Boolean = false,
-    eagerNotify: Boolean = false,
-    shouldNotify: Boolean = true,
-): LoadState<D> = errorLoad(error, setOrPost, eagerNotify, shouldNotify) {
-    LoadState.empty()
+fun <D> MutableLiveData<LoadState<D>>.loading(
+    setValue: Boolean = true,
+    distinctUntilChanged: Boolean = true
+): LoadState<D> {
+    val initial = value ?: LoadState()
+    setOrPost(initial.preLoad(), setValue, distinctUntilChanged)
+    return initial
 }
 
 @JvmOverloads
 fun <D> MutableLiveData<LoadState<D>>.successLoad(
     data: D,
-    setOrPost: Boolean = false,
-    eagerNotify: Boolean = false,
-    shouldNotify: Boolean = true,
-): LoadState<D> =  successLoad(data, setOrPost, eagerNotify, shouldNotify) {
-    LoadState.empty()
+    setValue: Boolean = true,
+    distinctUntilChanged: Boolean = true
+): LoadState<D> {
+    val initial = value ?: LoadState()
+    setOrPost(initial.successLoad(data), setValue, distinctUntilChanged)
+    return initial
+}
+
+@JvmOverloads
+fun <D> MutableLiveData<LoadState<D>>.errorLoad(
+    error: Throwable,
+    setValue: Boolean = true,
+    distinctUntilChanged: Boolean = true
+): LoadState<D> {
+    val initial = value ?: LoadState()
+    setOrPost(initial.errorLoad(error), setValue, distinctUntilChanged)
+    return initial
+}
+
+@JvmOverloads
+fun <D> MutableLiveData<PgnLoadState<D>>.pgnLoading(
+    isFromStart: Boolean,
+    setValue: Boolean = true,
+    distinctUntilChanged: Boolean = true
+): PgnLoadState<D> {
+    val initial = value ?: PgnLoadState()
+    setOrPost(
+        if (isFromStart) {
+            initial.preLoad()
+        } else {
+            initial.prePgnLoading()
+        },
+        setValue,
+        distinctUntilChanged
+    )
+    return initial
+}
+
+@JvmOverloads
+fun <D> MutableLiveData<PgnLoadState<D>>.pgnSuccessLoad(
+    data: D,
+    isComplete: Boolean,
+    setValue: Boolean = true,
+    distinctUntilChanged: Boolean = true
+): PgnLoadState<D> {
+    val initial = value ?: PgnLoadState()
+    setOrPost(
+        initial.successLoad(data).copy(
+            loadingState = PgnLoadState.PgnLoading.StandBy(isComplete)
+        ),
+        setValue,
+        distinctUntilChanged
+    )
+    return initial
+}
+
+@JvmOverloads
+fun <D> MutableLiveData<PgnLoadState<D>>.pgnErrorLoad(
+    error: Throwable,
+    isComplete: Boolean,
+    setValue: Boolean = true,
+    distinctUntilChanged: Boolean = true
+): PgnLoadState<D> {
+    val initial = value ?: PgnLoadState()
+    setOrPost(
+        initial.errorLoad(error).copy(
+            loadingState = PgnLoadState.PgnLoading.StandBy(isComplete)
+        ),
+        setValue,
+        distinctUntilChanged
+    )
+    return initial
 }
 
 // endregion
 
-fun <D> MutableLiveData<D>.bindValidate(vararg validators: BaseValidator<D>) {
-    observeForever { data ->
-        validators.forEach {
-            it.validate(data)
-        }
-    }
-}
-
-/**
- * Для случая, когда [validators] принимают не исходный тип [D], а комбинированный [T]
- */
-fun <D, T> MutableLiveData<D>.bindValidate(validators: Collection<BaseValidator<T>>, mapFunc: (D) -> T) {
-    observeForever { data ->
-        validators.forEach {
-            it.validate(mapFunc(data))
-        }
-    }
-}
-
-fun MutableLiveData<*>.bindClearError(vararg validators: BaseValidator<*>) {
-    observeForever {
-        validators.forEach {
-            it.clearError()
-        }
-    }
-}
-
 private fun <D, S : ILoadState<D>> MutableLiveData<S>.setOrPost(
     state: S,
-    setOrPost: Boolean,
-    shouldNotify: Boolean
+    shouldSet: Boolean,
+    distinctUntilChanged: Boolean = true
 ) {
-    if (this is NotifyCheckMutableLiveData<S>) {
-        if (setOrPost) {
-            setValue(state, shouldNotify)
+    if (shouldSet) {
+        if (distinctUntilChanged) {
+            setValueIfNew(state)
         } else {
-            postValue(state, shouldNotify)
+            value = state
         }
     } else {
-        if (setOrPost) {
-            setValue(state)
+        if (distinctUntilChanged) {
+            postValueIfNew(state)
         } else {
             postValue(state)
         }
@@ -610,8 +596,8 @@ private fun <D, S : ILoadState<D>> MutableLiveData<S>.setOrPost(
 
 private class OnceObserver<T>(val liveData: LiveData<T>, val observer: Observer<T>?) : Observer<T> {
 
-    override fun onChanged(data: T) {
-        observer?.onChanged(data)
+    override fun onChanged(value: T) {
+        observer?.onChanged(value)
         liveData.removeObserver(this)
     }
 }
@@ -737,11 +723,11 @@ private class UpdatingTransformLiveData<X, Y>(
 
     inner class UpdatingObserver : Observer<X> {
 
-        override fun onChanged(t: X) {
+        override fun onChanged(value: X) {
             // при каждом изменении исходного значения
             // прекращаем текущий счёт, если был начат
             disposeTimer()
-            paramsFunc(t)?.takeIf { it.first > 0 && it.second > 0 }?.let { params ->
+            paramsFunc(value)?.takeIf { it.first > 0 && it.second > 0 }?.let { params ->
                 if (hasActiveObservers()) {
                     // и запускаем с новыми параметрами, при наличии активных слушателей
                     startTimer(params)
