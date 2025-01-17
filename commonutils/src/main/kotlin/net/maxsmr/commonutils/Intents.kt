@@ -352,22 +352,6 @@ fun Intent.flatten(
         }
 }
 
-fun <T : Serializable> Intent.getSerializableExtraCompat(name: String, clazz: Class<T>): T? {
-    return if (isAtLeastTiramisu()) {
-        getSerializableExtra(name, clazz)
-    } else {
-        getSerializableExtra(name) as? T
-    }
-}
-
-fun <T : Serializable> Bundle.getSerializableCompat(name: String, clazz: Class<T>): T? {
-    return if (isAtLeastTiramisu()) {
-        getSerializable(name, clazz)
-    } else {
-        getSerializable(name) as? T
-    }
-}
-
 private fun getIntentType(intentType: String?, mimeTypes: List<String>?) = when {
     // при заполнении несколькими основной тип не должен оставаться нульным
     intentType == null -> if (!mimeTypes.isNullOrEmpty()) mimeTypes[0] else null
