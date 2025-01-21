@@ -30,9 +30,9 @@ fun Double.formatPrice(
     result.append(
         context.resources.getQuantityString(
             if (isLoyalty) {
-                R.plurals.loyalty_price_quantity
+                R.plurals.currency_loyalty_price_quantity
             } else {
-                R.plurals.rubles_quantity
+                R.plurals.currency_rubles_quantity
             },
             intPart,
             intPart
@@ -56,7 +56,7 @@ fun Double.formatPrice(
                 result.append(", ")
                 result.append(
                     context.resources.getQuantityString(
-                        R.plurals.kopecks_quantity,
+                        R.plurals.currency_kopecks_quantity,
                         fractionPartInt,
                         fractionPartInt
                     )
@@ -84,9 +84,9 @@ fun String.reformatPrice(
     result.append(
         context.resources.getQuantityString(
             if (isLoyalty) {
-                R.plurals.loyalty_price_quantity
+                R.plurals.currency_loyalty_price_quantity
             } else {
-                R.plurals.rubles_quantity
+                R.plurals.currency_rubles_quantity
             },
             intPart,
             intPart
@@ -98,7 +98,7 @@ fun String.reformatPrice(
             result.append(", ")
             result.append(
                 context.resources.getQuantityString(
-                    R.plurals.kopecks_quantity,
+                    R.plurals.currency_kopecks_quantity,
                     fractionPart,
                     fractionPart
                 )

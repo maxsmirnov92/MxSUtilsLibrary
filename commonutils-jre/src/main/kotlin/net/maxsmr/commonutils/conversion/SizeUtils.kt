@@ -39,7 +39,7 @@ enum class SizeUnit {
             return s / C5
         }
     },
-    KBYTES {
+    K_BYTES {
         override fun toBytes(s: Double): Double {
             return s * C1
         }
@@ -65,7 +65,7 @@ enum class SizeUnit {
         }
 
     },
-    MBYTES {
+    M_BYTES {
         override fun toBytes(s: Double): Double {
             return s * C2
         }
@@ -90,7 +90,7 @@ enum class SizeUnit {
             return s / C3
         }
     },
-    GBYTES {
+    G_BYTES {
         override fun toBytes(s: Double): Double {
             return s * C3
         }
@@ -116,7 +116,7 @@ enum class SizeUnit {
         }
     },
 
-    TBYTES {
+    T_BYTES {
         override fun toBytes(s: Double): Double {
             return s * C4
         }
@@ -142,7 +142,7 @@ enum class SizeUnit {
         }
     },
 
-    PBYTES {
+    P_BYTES {
 
         override fun toBytes(s: Double): Double {
             return s * C5
@@ -209,7 +209,7 @@ enum class SizeUnit {
         const val C4 = C3 * 1024L
         const val C5 = C4 * 1024L
 
-        val SIZE_UNIT_BYTES_LARGEST = PBYTES
+        val SIZE_UNIT_BYTES_LARGEST = P_BYTES
         val SIZE_UNIT_BYTES_SMALLEST = BYTES
 
         fun toBitsFromBytes(s: Double): Long {
@@ -219,11 +219,11 @@ enum class SizeUnit {
         fun convert(value: Number, from: SizeUnit, to: SizeUnit): Number {
             return when (to) {
                 BYTES -> from.toBytes(value.toDouble())
-                KBYTES -> from.toKBytes(value.toDouble())
-                MBYTES -> from.toMBytes(value.toDouble())
-                GBYTES -> from.toGBytes(value.toDouble())
-                TBYTES -> from.toTBytes(value.toDouble())
-                PBYTES -> from.toPBytes(value.toDouble())
+                K_BYTES -> from.toKBytes(value.toDouble())
+                M_BYTES -> from.toMBytes(value.toDouble())
+                G_BYTES -> from.toGBytes(value.toDouble())
+                T_BYTES -> from.toTBytes(value.toDouble())
+                P_BYTES -> from.toPBytes(value.toDouble())
             }
         }
 
@@ -557,11 +557,11 @@ private fun decomposeSize(
     val s = sizeUnit.toBytes(size)
 
     fun SizeUnit.isInRange() = when (this) {
-        SizeUnit.PBYTES -> s >= SizeUnit.C5
-        SizeUnit.TBYTES -> s >= SizeUnit.C4 && s < SizeUnit.C5
-        SizeUnit.GBYTES -> s >= SizeUnit.C3 && s < SizeUnit.C4
-        SizeUnit.MBYTES -> s >= SizeUnit.C2 && s < SizeUnit.C3
-        SizeUnit.KBYTES -> s >= SizeUnit.C1 && s < SizeUnit.C2
+        SizeUnit.P_BYTES -> s >= SizeUnit.C5
+        SizeUnit.T_BYTES -> s >= SizeUnit.C4 && s < SizeUnit.C5
+        SizeUnit.G_BYTES -> s >= SizeUnit.C3 && s < SizeUnit.C4
+        SizeUnit.M_BYTES -> s >= SizeUnit.C2 && s < SizeUnit.C3
+        SizeUnit.K_BYTES -> s >= SizeUnit.C1 && s < SizeUnit.C2
         SizeUnit.BYTES -> s < SizeUnit.C1
     }
 
@@ -607,77 +607,77 @@ private fun decomposeSize(
 
     val result = sortedMapOf<SizeUnit, Number>()
 
-    if (SizeUnit.PBYTES.checkAcceptable()) {
+    if (SizeUnit.P_BYTES.checkAcceptable()) {
         val pBytes = SizeUnit.BYTES.toPBytes(s)
         val pBytesLong = pBytes.toLong().toDouble()
         if (pBytes.isNotZero()) {
-            result[SizeUnit.PBYTES] = pBytes
+            result[SizeUnit.P_BYTES] = pBytes
         }
         result.putAll(
             decomposeSizeStep(
-                SizeUnit.PBYTES.toBytes(pBytesLong),
+                SizeUnit.P_BYTES.toBytes(pBytesLong),
                 s,
                 sizeUnitsToExclude,
                 ignoreExclusionIfOnly,
                 result.keys,
             )
         )
-    } else if (SizeUnit.TBYTES.checkAcceptable()) {
+    } else if (SizeUnit.T_BYTES.checkAcceptable()) {
         val tBytes = SizeUnit.BYTES.toTBytes(s)
         val tBytesLong = tBytes.toLong().toDouble()
         if (tBytes.isNotZero()) {
-            result[SizeUnit.TBYTES] = tBytes
+            result[SizeUnit.T_BYTES] = tBytes
         }
         result.putAll(
             decomposeSizeStep(
-                SizeUnit.TBYTES.toBytes(tBytesLong),
+                SizeUnit.T_BYTES.toBytes(tBytesLong),
                 s,
                 sizeUnitsToExclude,
                 ignoreExclusionIfOnly,
                 result.keys,
             )
         )
-    } else if (SizeUnit.GBYTES.checkAcceptable()) {
+    } else if (SizeUnit.G_BYTES.checkAcceptable()) {
         val gBytes = SizeUnit.BYTES.toGBytes(s)
         val gBytesLong = gBytes.toLong().toDouble()
         if (gBytes.isNotZero()) {
-            result[SizeUnit.GBYTES] = gBytes
+            result[SizeUnit.G_BYTES] = gBytes
         }
         result.putAll(
             decomposeSizeStep(
-                SizeUnit.GBYTES.toBytes(gBytesLong),
+                SizeUnit.G_BYTES.toBytes(gBytesLong),
                 s,
                 sizeUnitsToExclude,
                 ignoreExclusionIfOnly,
                 result.keys,
             )
         )
-    } else if (SizeUnit.MBYTES.checkAcceptable()) {
+    } else if (SizeUnit.M_BYTES.checkAcceptable()) {
         val mBytes = SizeUnit.BYTES.toMBytes(s)
         val mBytesLong = mBytes.toLong().toDouble()
         if (mBytes.isNotZero()) {
-            result[SizeUnit.MBYTES] = mBytes
+            result[SizeUnit.M_BYTES] = mBytes
         }
         result.putAll(
             decomposeSizeStep(
-                SizeUnit.MBYTES.toBytes(mBytesLong),
+                SizeUnit.M_BYTES.toBytes(mBytesLong),
                 s,
-                sizeUnitsToExclude.toSortedSetExclude(setOf(SizeUnit.GBYTES)),
+                sizeUnitsToExclude.toSortedSetExclude(setOf(SizeUnit.G_BYTES)),
                 ignoreExclusionIfOnly,
                 result.keys,
             )
         )
-    } else if (SizeUnit.KBYTES.checkAcceptable()) {
+    } else if (SizeUnit.K_BYTES.checkAcceptable()) {
         val kBytes = SizeUnit.BYTES.toKBytes(s)
         val kBytesLong = kBytes.toLong().toDouble()
         if (kBytes.isNotZero()) {
-            result[SizeUnit.KBYTES] = kBytes
+            result[SizeUnit.K_BYTES] = kBytes
         }
         result.putAll(
             decomposeSizeStep(
-                SizeUnit.KBYTES.toBytes(kBytesLong),
+                SizeUnit.K_BYTES.toBytes(kBytesLong),
                 s,
-                sizeUnitsToExclude.toSortedSetExclude(setOf(SizeUnit.MBYTES)),
+                sizeUnitsToExclude.toSortedSetExclude(setOf(SizeUnit.M_BYTES)),
                 ignoreExclusionIfOnly,
                 result.keys,
             )

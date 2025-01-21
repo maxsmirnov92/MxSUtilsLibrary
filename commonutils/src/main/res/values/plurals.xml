@@ -214,7 +214,9 @@
         <item quantity="other">%d pBits</item>
     </plurals>
 
-    <plurals name="rubles_quantity">
+    <!--  CURRENCY  -->
+
+    <plurals name="currency_rubles_quantity">
         <item quantity="zero">%d рублей</item>
         <item quantity="one">%d рубль</item>
         <item quantity="two">%d рубля</item>
@@ -222,7 +224,7 @@
         <item quantity="many">%d рублей</item>
         <item quantity="other">%d рублей</item>
     </plurals>
-    <plurals name="kopecks_quantity">
+    <plurals name="currency_kopecks_quantity">
         <item quantity="zero">%d копеек</item>
         <item quantity="one">%d копейка</item>
         <item quantity="two">%d копейки</item>
@@ -230,7 +232,7 @@
         <item quantity="many">%d копеек</item>
         <item quantity="other">%d копеек</item>
     </plurals>
-    <plurals name="loyalty_price_quantity">
+    <plurals name="currency_loyalty_price_quantity">
         <item quantity="zero">%d баллов</item>
         <item quantity="one">%d балл</item>
         <item quantity="two">%d балла</item>

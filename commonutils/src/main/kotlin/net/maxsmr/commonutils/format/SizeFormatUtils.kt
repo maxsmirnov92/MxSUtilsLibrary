@@ -77,7 +77,7 @@ fun decomposeSizeFormatted(
     precision: Int? = 0,
     singleResult: Boolean = false,
     emptyIfZero: Boolean = true,
-    formatWithValue: Boolean,
+    formatWithValue: Boolean = true,
 ): List<PluralTextMessage> {
     return decomposeSizeFormatted(
         size,
@@ -111,7 +111,7 @@ fun <F> decomposeSizeFormatted(
     precision: Int? = 0,
     singleResult: Boolean = false,
     emptyIfZero: Boolean = true,
-    formatWithValue: Boolean,
+    formatWithValue: Boolean = true,
     formatFunc: (Int, Number) -> F,
 ): List<F> {
     val map = decomposeSize(size, sizeUnit, sizeUnitsToExclude, ignoreExclusionIfOnly, precision, singleResult, emptyIfZero)
@@ -221,7 +221,7 @@ private fun getPluralTextResId(sizeUnit: SizeUnit, isWithValue: Boolean): Int {
             }
         }
 
-        SizeUnit.KBYTES -> {
+        SizeUnit.K_BYTES -> {
             if (isWithValue) {
                 R.plurals.size_unit_kbytes_format
             } else {
@@ -229,7 +229,7 @@ private fun getPluralTextResId(sizeUnit: SizeUnit, isWithValue: Boolean): Int {
             }
         }
 
-        SizeUnit.MBYTES -> {
+        SizeUnit.M_BYTES -> {
             if (isWithValue) {
                 R.plurals.size_unit_mbytes_format
             } else {
@@ -237,7 +237,7 @@ private fun getPluralTextResId(sizeUnit: SizeUnit, isWithValue: Boolean): Int {
             }
         }
 
-        SizeUnit.GBYTES -> {
+        SizeUnit.G_BYTES -> {
             if (isWithValue) {
                 R.plurals.size_unit_gbytes_format
             } else {
@@ -245,7 +245,7 @@ private fun getPluralTextResId(sizeUnit: SizeUnit, isWithValue: Boolean): Int {
             }
         }
 
-        SizeUnit.TBYTES -> {
+        SizeUnit.T_BYTES -> {
             if (isWithValue) {
                 R.plurals.size_unit_tbytes_format
             } else {
@@ -253,7 +253,7 @@ private fun getPluralTextResId(sizeUnit: SizeUnit, isWithValue: Boolean): Int {
             }
         }
 
-        SizeUnit.PBYTES -> {
+        SizeUnit.P_BYTES -> {
             if (isWithValue) {
                 R.plurals.size_unit_pbytes_format
             } else {

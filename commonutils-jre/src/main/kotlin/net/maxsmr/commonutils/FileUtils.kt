@@ -2028,7 +2028,7 @@ fun getFilesWithLs(
                                 notifier?.onExceptionOccurred(RuntimeException(formatException(e, "parseLong")))
                             }
                         }
-                        collectedMap[current] = SizeUnit.KBYTES.toBytes(size.toDouble())
+                        collectedMap[current] = SizeUnit.K_BYTES.toBytes(size.toDouble())
                     }
                 }
 

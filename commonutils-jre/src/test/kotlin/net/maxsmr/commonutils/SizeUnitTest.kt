@@ -16,7 +16,7 @@ class SizeUnitTest {
             ignoreExclusionIfOnly = false,
             precision = null
         )
-        assertEquals(result.size, 0)
+        assertEquals(0, result.size)
 
         result = decomposeSize(
             999.643453,
@@ -25,53 +25,53 @@ class SizeUnitTest {
             ignoreExclusionIfOnly = true,
             precision = 2
         )
-        assertEquals(result.size, 1)
+        assertEquals(1, result.size)
 
         result = decomposeSize(
             345999,
-            SizeUnit.KBYTES,
-            sizeUnitsToExclude = setOf(SizeUnit.KBYTES),
+            SizeUnit.K_BYTES,
+            sizeUnitsToExclude = setOf(SizeUnit.K_BYTES),
             ignoreExclusionIfOnly = true,
             precision = 2
         )
-        assertEquals(result.size, 2)
+        assertEquals(2, result.size)
 
         result = decomposeSize(
             345999,
-            SizeUnit.KBYTES,
+            SizeUnit.K_BYTES,
             sizeUnitsToExclude = setOf(SizeUnit.BYTES),
             ignoreExclusionIfOnly = true,
             precision = 2
         )
-        assertEquals(result.size, 2)
+        assertEquals(2, result.size)
 
 
         result = decomposeSize(
             345999.22222,
             SizeUnit.BYTES,
-            sizeUnitsToExclude = setOf(SizeUnit.KBYTES),
+            sizeUnitsToExclude = setOf(SizeUnit.K_BYTES),
             ignoreExclusionIfOnly = true,
             precision = 2,
             singleResult = false
         )
-        assertEquals(result.size, 1)
+        assertEquals(1, result.size)
 
         result = decomposeSize(
             345999.22222,
             SizeUnit.BYTES,
-            sizeUnitsToExclude = setOf(SizeUnit.KBYTES, SizeUnit.BYTES),
+            sizeUnitsToExclude = setOf(SizeUnit.K_BYTES, SizeUnit.BYTES),
             ignoreExclusionIfOnly = true,
             precision = 2,
             singleResult = true
         )
-        assertEquals(result.size, 1)
+        assertEquals(1, result.size)
 
         result = decomposeSize(
             0,
-            SizeUnit.GBYTES,
+            SizeUnit.G_BYTES,
             sizeUnitsToExclude = setOf(SizeUnit.BYTES),
             emptyMapIfZero = false
         )
-        assertEquals(result.size, 1)
+        assertEquals(1, result.size)
     }
 }
