@@ -6,6 +6,7 @@ import com.google.gson.internal.LazilyParsedNumber
 import net.maxsmr.commonutils.gui.message.TextMessage.Arg
 import net.maxsmr.commonutils.gui.message.TextMessage.ResArg
 import net.maxsmr.commonutils.text.EMPTY_STRING
+import net.maxsmr.commonutils.text.ITextMessage
 import java.io.IOException
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
@@ -44,7 +45,7 @@ open class TextMessage internal constructor(
     message: CharSequence?,
     @StringRes messageResId: Int?,
     vararg args: Any?,
-) : Serializable {
+) : ITextMessage<Context> {
 
     var message: CharSequence? = message
         protected set
@@ -59,6 +60,10 @@ open class TextMessage internal constructor(
     constructor(message: CharSequence, vararg args: Any) : this(message, null, *args)
 
     constructor(@StringRes messageResId: Int, vararg args: Any?) : this(null, messageResId, *args)
+
+    override fun get(with: Context): CharSequence {
+        return getWithArgs(with, args.flattenArgs(with))
+    }
 
     override fun equals(other: Any?): Boolean {
         if (this === other) return true
@@ -78,10 +83,6 @@ open class TextMessage internal constructor(
 
     override fun toString(): String {
         return "TextMessage(message=$message, messageResId=$messageResId, args=${args.contentToString()})"
-    }
-
-    open fun get(context: Context): CharSequence {
-        return getWithArgs(context, args.flattenArgs(context))
     }
 
     fun argValueAt(context: Context, index: Int): String? = args.getOrNull(index)?.get(context)?.toString()

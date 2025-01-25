@@ -1,13 +1,8 @@
 package net.maxsmr.commonutils.states
 
-/**
- * Статус [ILoadState]
- */
-enum class Status {
-    SUCCESS,
-    ERROR,
-    LOADING
-}
+import net.maxsmr.commonutils.states.ILoadState.ErrorData
+import net.maxsmr.commonutils.states.PgnLoadState.PgnLoading
+import net.maxsmr.commonutils.text.ITextMessage
 
 /**
  * Базовый контейнер для состояния загрузки
@@ -23,7 +18,7 @@ interface ILoadState<D> {
 
     val data: D?
 
-    val error: Throwable?
+    val error: ErrorData?
 
     fun preLoad(): ILoadState<D>
 
@@ -32,7 +27,7 @@ interface ILoadState<D> {
      */
     fun successLoad(result: D?): ILoadState<D>
 
-    fun errorLoad(error: Throwable): ILoadState<D>
+    fun errorLoad(error: ErrorData): ILoadState<D>
 
     fun hasData(dataValidator: ((D?) -> Boolean)? = null) = data != null
             && (dataValidator == null || dataValidator(data))
@@ -52,6 +47,22 @@ interface ILoadState<D> {
         isSuccess() -> Status.SUCCESS
         else -> Status.ERROR
     }
+
+    enum class Status {
+        SUCCESS,
+        ERROR,
+        LOADING
+    }
+
+    data class ErrorData(
+        val error: Throwable,
+        val message: ITextMessage<*>? = null
+    ) {
+
+        override fun toString(): String {
+            return "ErrorData(error=$error, message=$message)"
+        }
+    }
 }
 
 /**
@@ -63,13 +74,13 @@ interface IPgnLoadState<D> : ILoadState<D> {
 }
 
 /**
- * Контейнер для состояния загрузки с флажком загрузки
+ * Контейнер для состояния загрузки с флагом загрузки
  */
 data class LoadState<D>(
     override val wasLoaded: Boolean = false,
     override val isLoading: Boolean = false,
     override val data: D? = null,
-    override val error: Throwable? = null,
+    override val error: ErrorData? = null,
 ) : ILoadState<D> {
 
     override fun preLoad(): LoadState<D> {
@@ -80,7 +91,7 @@ data class LoadState<D>(
         return stateOf(this, wasLoaded = true, isLoading = false, data = result, error = null)
     }
 
-    override fun errorLoad(error: Throwable): LoadState<D> {
+    override fun errorLoad(error: ErrorData): LoadState<D> {
         return stateOf(this, wasLoaded = true, isLoading = false, data = null, error = error)
     }
 
@@ -120,6 +131,12 @@ data class LoadState<D>(
         fun <D> error(
             error: Throwable,
             data: D? = null,
+        ): LoadState<D> = error(ErrorData(error), data)
+
+        @JvmStatic
+        fun <D> error(
+            error: ErrorData,
+            data: D? = null,
         ): LoadState<D> = stateOf(
             null,
             wasLoaded = true,
@@ -145,7 +162,7 @@ data class LoadState<D>(
             data: D? = current?.data,
             wasLoaded: Boolean? = current?.wasLoaded,
             isLoading: Boolean? = current?.isLoading,
-            error: Throwable? = current?.error,
+            error: ErrorData? = current?.error,
         ): LoadState<D> {
             val initial: LoadState<D> = current ?: LoadState()
             return initial.copy(
@@ -165,7 +182,7 @@ data class PgnLoadState<D>(
     val loadingState: PgnLoading = PgnLoading.StandBy(true),
     override val wasLoaded: Boolean = false,
     override val data: D? = null,
-    override val error: Throwable? = null,
+    override val error: ErrorData? = null,
 ) : IPgnLoadState<D> {
 
     override val isLoading: Boolean = loadingState.isLoading
@@ -191,7 +208,7 @@ data class PgnLoadState<D>(
         )
     }
 
-    override fun errorLoad(error: Throwable): PgnLoadState<D> {
+    override fun errorLoad(error: ErrorData): PgnLoadState<D> {
         return pgnStateOf(this,
             wasLoaded = true,
             loadingState = if (loadingState is PgnLoading.StandBy) {
@@ -255,6 +272,17 @@ data class PgnLoadState<D>(
             error: Throwable,
             data: D? = null,
             isComplete: Boolean = true
+        ): PgnLoadState<D> = pgnError(
+            ErrorData(error),
+            data,
+            isComplete
+        )
+
+        @JvmStatic
+        fun <D> pgnError(
+            error: ErrorData,
+            data: D? = null,
+            isComplete: Boolean = true
         ): PgnLoadState<D> = pgnStateOf(
             null,
             wasLoaded = true,
@@ -287,7 +315,7 @@ data class PgnLoadState<D>(
             data: D? = current?.data,
             wasLoaded: Boolean? = current?.wasLoaded,
             loadingState: PgnLoading? = current?.loadingState,
-            error: Throwable? = current?.error,
+            error: ErrorData? = current?.error,
         ): PgnLoadState<D> {
             val initial: PgnLoadState<D> = current ?: PgnLoadState()
             return initial.copy(

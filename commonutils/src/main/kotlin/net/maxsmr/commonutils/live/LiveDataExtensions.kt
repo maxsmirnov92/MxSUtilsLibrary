@@ -511,6 +511,15 @@ fun <D> MutableLiveData<LoadState<D>>.errorLoad(
     error: Throwable,
     setValue: Boolean = true,
     distinctUntilChanged: Boolean = true
+): LoadState<D> = errorLoad(
+    ILoadState.ErrorData(error), setValue, distinctUntilChanged
+)
+
+@JvmOverloads
+fun <D> MutableLiveData<LoadState<D>>.errorLoad(
+    error: ILoadState.ErrorData,
+    setValue: Boolean = true,
+    distinctUntilChanged: Boolean = true
 ): LoadState<D> {
     val initial = value ?: LoadState()
     setOrPost(initial.errorLoad(error), setValue, distinctUntilChanged)
@@ -556,7 +565,7 @@ fun <D> MutableLiveData<PgnLoadState<D>>.pgnSuccessLoad(
 
 @JvmOverloads
 fun <D> MutableLiveData<PgnLoadState<D>>.pgnErrorLoad(
-    error: Throwable,
+    error: ILoadState.ErrorData,
     isComplete: Boolean,
     setValue: Boolean = true,
     distinctUntilChanged: Boolean = true

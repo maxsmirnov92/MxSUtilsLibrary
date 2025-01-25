@@ -57,7 +57,7 @@ class JoinTextMessage internal constructor(
         return "JoinTextMessage(dividerResId=$dividerResId, partsToJoin=${partsToJoin.contentToString()}, super=${super.toString()})"
     }
 
-    override fun get(context: Context): CharSequence {
+    override fun get(with: Context): CharSequence {
         return if (partsToJoin.isNotEmpty()) {
             val _divider = divider
             val dividerResId = dividerResId
@@ -66,11 +66,11 @@ class JoinTextMessage internal constructor(
                     _divider
                 }
                 dividerResId != null && dividerResId != 0 -> {
-                    context.getString(dividerResId)
+                    with.getString(dividerResId)
                 }
                 else -> EMPTY_STRING
             }
-            TextUtils.join(divider, partsToJoin.flattenArgs(context))
+            TextUtils.join(divider, partsToJoin.flattenArgs(with))
         } else {
             EMPTY_STRING
         }

@@ -40,10 +40,10 @@ class PluralTextMessage(
         messageResId = resId
     }
 
-    override fun get(context: Context): CharSequence {
-        val pluralText = context.resources.getQuantityString(pluralResId, quantity, *args.flattenArgs(context))
+    override fun get(with: Context): CharSequence {
+        val pluralText = with.resources.getQuantityString(pluralResId, quantity, *args.flattenArgs(with))
         return if (!message.isNullOrEmpty() || messageResId != null) {
-            getWithArgs(context, arrayOf(pluralText))
+            getWithArgs(with, arrayOf(pluralText))
         } else {
             pluralText
         }
