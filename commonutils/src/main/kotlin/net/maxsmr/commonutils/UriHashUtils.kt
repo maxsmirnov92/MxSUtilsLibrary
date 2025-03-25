@@ -30,7 +30,7 @@ fun Uri.digest(contentResolver: ContentResolver, algorithm: MessageDigest): Byte
 
 @Throws(RuntimeException::class)
 fun Uri.digestOrThrow(contentResolver: ContentResolver, algorithm: MessageDigest): ByteArray =
-        openInputStreamOrThrow(contentResolver).digestOrThrow(algorithm, true)
+        openInputStreamOrThrow(contentResolver).digestOrThrow(algorithm)
 
 fun Uri.getCrc32Hash(contentResolver: ContentResolver): Long =
         readBytes(contentResolver).getCrc32Hash()

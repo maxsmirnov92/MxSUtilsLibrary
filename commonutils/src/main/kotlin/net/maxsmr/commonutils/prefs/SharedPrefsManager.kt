@@ -4,16 +4,15 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.preference.PreferenceManager
-import net.maxsmr.commonutils.prefs.SharedPrefsHolder.PrefType
 import net.maxsmr.commonutils.Observable
-import net.maxsmr.commonutils.text.EMPTY_STRING
-import net.maxsmr.commonutils.text.isEmpty
+import net.maxsmr.commonutils.prefs.SharedPrefsHolder.PrefType
 
 class SharedPrefsManager @JvmOverloads constructor(
     context: Context,
-    _prefsName: String? = EMPTY_STRING,
+    prefsName: String? = null,
     mode: Int = Context.MODE_PRIVATE
 ) {
+
     private val prefs: SharedPreferences
 
     private val prefsName: String
@@ -21,9 +20,9 @@ class SharedPrefsManager @JvmOverloads constructor(
     private val changeObservable = ChangeObservable()
 
     init {
-        with(getSharedPreferences(context, _prefsName, mode)) {
-            prefs = first
-            prefsName = second
+        getSharedPreferences(context, prefsName, mode).also {
+            this.prefs = it.first
+            this.prefsName = it.second
         }
     }
 
@@ -160,7 +159,7 @@ class SharedPrefsManager @JvmOverloads constructor(
             name: String?,
             mode: Int = Context.MODE_PRIVATE
         ): Pair<SharedPreferences, String> =
-            if (name == null || name.isEmpty()) {
+            if (name.isNullOrEmpty()) {
                 @Suppress("DEPRECATION")
                 Pair(
                     PreferenceManager.getDefaultSharedPreferences(context),

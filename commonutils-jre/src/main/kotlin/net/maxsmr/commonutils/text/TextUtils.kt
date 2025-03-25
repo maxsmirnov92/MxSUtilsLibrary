@@ -20,8 +20,8 @@ fun String?.getExtension() = this?.substringAfterLast('.', missingDelimiterValue
  *
  * @return новое имя
  */
-fun String?.removeExtension(): String {
-     return this?.substringBeforeLast('.').orEmpty()
+fun String.removeExtension(): String {
+     return this.substringBeforeLast('.')
 //    if (!this.isNullOrEmpty()) {
 //        val startIndex = this.lastIndexOf('.')
 //        if (startIndex >= 0) {
@@ -35,22 +35,20 @@ fun String?.removeExtension(): String {
  * Дописать расширение
  * @param shouldReplace true для убирания существующего
  */
-@JvmOverloads
-fun String?.appendExtension(
+fun String.appendExtension(
     extension: String?,
     shouldReplace: Boolean = true
 ): String {
-    this?.let {
-        val newName = if (shouldReplace) removeExtension() else this
-        if (newName.isNotEmpty()) {
-            return if (!isEmpty(extension)) {
-                "$newName.$extension"
-            } else {
-                newName
-            }
+    val newName = if (shouldReplace) removeExtension() else this
+    return if (newName.isNotEmpty()) {
+        if (!extension.isNullOrEmpty()) {
+            "$newName.$extension"
+        } else {
+            newName
         }
+    } else {
+        if (!extension.isNullOrEmpty()) ".$extension" else ""
     }
-    return EMPTY_STRING
 }
 
 /**

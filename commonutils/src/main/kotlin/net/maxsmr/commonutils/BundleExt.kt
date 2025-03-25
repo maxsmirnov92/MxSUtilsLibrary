@@ -21,11 +21,11 @@ inline fun <reified T : Parcelable> Bundle.getParcelableListCompat(key: String):
     return getParcelableArrayList(this, key, T::class.java) ?: arrayListOf()
 }
 
-inline fun <reified T : Serializable> Bundle.getSerializableCompat(name: String): T? {
+inline fun <reified T : Serializable> Bundle.getSerializableCompat(key: String): T? {
     return if (isAtLeastTiramisu()) {
-        getSerializable(name, T::class.java)
+        getSerializable(key, T::class.java)
     } else {
-        getSerializable(name) as? T
+        getSerializable(key) as? T
     }
 }
 
@@ -54,10 +54,10 @@ inline fun <reified T : Parcelable> Intent.getParcelableListExtraCompat(key: Str
     }
 }
 
-inline fun <reified T : Serializable> Intent.getSerializableExtraCompat(name: String): T? {
+inline fun <reified T : Serializable> Intent.getSerializableExtraCompat(key: String): T? {
     return if (isAtLeastTiramisu()) {
-        getSerializableExtra(name, T::class.java)
+        getSerializableExtra(key, T::class.java)
     } else {
-        getSerializableExtra(name) as? T
+        getSerializableExtra(key) as? T
     }
 }

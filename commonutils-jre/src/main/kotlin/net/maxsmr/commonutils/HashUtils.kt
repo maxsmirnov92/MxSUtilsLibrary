@@ -42,30 +42,26 @@ fun messageDigestOrThrow(algorithm: String): MessageDigest = try {
     throw RuntimeException(formatException(e, "getInstance"), e)
 }
 
-@JvmOverloads
-fun InputStream.digest(algorithm: String, closeStream: Boolean = true): ByteArray? = try {
-    digestOrThrow(algorithm, closeStream)
+fun InputStream.digest(algorithm: String): ByteArray? = try {
+    digestOrThrow(algorithm)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
 }
 
 @Throws(RuntimeException::class)
-@JvmOverloads
-fun InputStream.digestOrThrow(algorithm: String, closeStream: Boolean = true): ByteArray =
-        digestOrThrow(messageDigestOrThrow(algorithm), closeStream)
+fun InputStream.digestOrThrow(algorithm: String): ByteArray =
+        digestOrThrow(messageDigestOrThrow(algorithm))
 
-@JvmOverloads
-fun InputStream.digest(algorithm: MessageDigest, closeStream: Boolean = true): ByteArray? = try {
-    digestOrThrow(algorithm, closeStream)
+fun InputStream.digest(algorithm: MessageDigest): ByteArray? = try {
+    digestOrThrow(algorithm)
 } catch (e: RuntimeException) {
     logger.e(e)
     null
 }
 
 @Throws(RuntimeException::class)
-@JvmOverloads
-fun InputStream.digestOrThrow(md: MessageDigest, closeStream: Boolean = true): ByteArray {
+fun InputStream.digestOrThrow(md: MessageDigest): ByteArray {
     md.reset()
     val bis = BufferedInputStream(this)
 //    val dis = DigestInputStream(bis, md)
@@ -160,7 +156,7 @@ fun ByteArray?.toHexString(): String {
         result.append(HEX_CHARS[i shr 4 and 0x0f])
         result.append(HEX_CHARS[i and 0x0f])
     }
-    return result.toString().toLowerCase(Locale.getDefault())
+    return result.toString().lowercase(Locale.getDefault())
 }
 
 fun File?.getCrc32Hash(): Long = this?.readBytes().getCrc32Hash()
