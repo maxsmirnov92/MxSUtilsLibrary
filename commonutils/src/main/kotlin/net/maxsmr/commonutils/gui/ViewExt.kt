@@ -46,7 +46,7 @@ import net.maxsmr.commonutils.ReflectionUtils.getFieldValue
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.format.getUnformattedText
 import net.maxsmr.commonutils.gui.listeners.AfterTextChangeListener
-import net.maxsmr.commonutils.live.field.Field
+import net.maxsmr.commonutils.flow.field.Field
 import net.maxsmr.commonutils.live.setValueIfNew
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder

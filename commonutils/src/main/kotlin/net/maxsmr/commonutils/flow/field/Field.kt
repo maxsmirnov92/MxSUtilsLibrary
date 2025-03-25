@@ -1,16 +1,22 @@
-package net.maxsmr.commonutils.live.field
+package net.maxsmr.commonutils.flow.field
 
 import android.content.Context
 import android.os.Parcelable
 import androidx.annotation.MainThread
 import androidx.annotation.StringRes
-import androidx.lifecycle.LiveData
-import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.map
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import net.maxsmr.commonutils.gui.message.TextMessage
-import net.maxsmr.commonutils.live.*
-import net.maxsmr.commonutils.text.EMPTY_STRING
 import java.io.Serializable
 import java.util.Locale
 
@@ -18,42 +24,42 @@ import java.util.Locale
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 @MainThread
 class Field<T> private constructor(
-    private val _value: MutableLiveData<T>,
-    private val setValueFunction: (T) -> Boolean,
+    persistable: Persistable?,
+    val valueFlow: StateFlow<T>,
+    private val _valueFlow: MutableSharedFlow<T>,
+    private val scope: CoroutineScope,
+    private val setValueFunction: (T) -> Unit,
     private val getValueFunction: () -> T,
 ) {
-
-    private lateinit var emptyPredicate: (T) -> Boolean
-    private var emptyMessage: TextMessage? = null
 
     /**
      * Признак того, что поле является обязательным для заполнения
      */
-    val required: Boolean get() = emptyMessage != null
+    val requiredFlow by lazy {
+        _requiredFlow.asStateFlow()
+    }
 
-    val valueLive: LiveData<T> = _value
+    val required: Boolean get() = requiredFlow.value
 
-    private val _isEmptyLive: LiveData<Boolean> by lazy { valueLive.map { validateEmpty() } }
-
-    /**
-     * [LiveData] с изменением на предмет пустоты в динамике;
-     * Если поле необязательное - обозревать нет необходимости.
-     */
-    val isEmptyLive: LiveData<Boolean> by lazy { _isEmptyLive.distinct() }
+    val isEmptyFlow: StateFlow<Boolean> by lazy {
+        _valueFlow
+            .map { validateEmpty() }
+            .stateIn(scope, SharingStarted.Eagerly, false)
+    }
 
     /**
      * Возвращает признак отсутствия данных в поле сейчас
      */
-    val isEmpty: Boolean get() = isEmptyLive.value ?: false
-
-    private val _error = MutableLiveData<TextMessage?>()
+    val isEmpty: Boolean get() = isEmptyFlow.value
 
     /**
      * Поле с текущим значением по ошибке
      */
-    val errorLive: LiveData<TextMessage?> = _error
+    val errorFlow: StateFlow<TextMessage?> by lazy {
+        _errorFlow.asStateFlow()
+    }
 
-    val error: TextMessage? get() = errorLive.value
+    val error: TextMessage? get() = errorFlow.value
 
     /**
      * Возвращает true, если ошибка выставлялась ранее, иначе false
@@ -63,37 +69,32 @@ class Field<T> private constructor(
     /**
      * Observable вариант [hint]. Текст подсказки может меняться, если поле обязательное
      */
-    val hintLive: LiveData<Hint?> by lazy {
-        _isEmptyLive.map {
+    val hintFlow: StateFlow<Hint?> by lazy {
+        isEmptyFlow.map {
             val message = hintMessage ?: return@map null
-            return@map if (!required || !withAsterisk) {
-                Hint(message, false, withCaps, requiredStringResId)
+            return@map if (!requiredFlow.value || !withAsterisk) {
+                Hint(message, false, withCaps, requiredDescriptionResId)
             } else {
-                Hint(message, it, withCaps, requiredStringResId)
+                Hint(message, it, withCaps, requiredDescriptionResId)
             }
-        }
+        }.stateIn(scope, SharingStarted.Eagerly, null)
     }
 
     /**
      * Возвращает текущую подсказку поля, либо null, если подсказка не была задана при создании поля
      */
-    val hint: Hint? get() = hintLive.value
+    val hint: Hint? get() = hintFlow.value
 
     val hasHint: Boolean get() = hint != null
 
-    var wasChangedValue: Boolean = false
-        private set
+    private val _requiredFlow = MutableStateFlow(false)
 
-    /**
-     * Текущее значение поля;
-     * Для сеттера нулабельный тип является потенциально ошибочным
-     */
+    private val _errorFlow = MutableStateFlow<TextMessage?>(null)
+
     var value: T
         get() = getValueFunction()
         set(value) {
-            if (setValueFunction(value)) {
-                wasChangedValue = true
-            }
+            setValueFunction(value)
         }
 
     var validators: Array<out Validator<T>> = emptyArray()
@@ -102,19 +103,32 @@ class Field<T> private constructor(
             recharge()
         }
 
+    private lateinit var emptyPredicate: (T) -> Boolean
+    private var emptyMessage: TextMessage? = null
+
     private var hintMessage: TextMessage? = null
 
     @StringRes
-    private var requiredStringResId: Int = 0
+    private var requiredDescriptionResId: Int = 0
     private var withAsterisk: Boolean = true
-    private var withCaps: Boolean = false
+    private var withCaps: Boolean = true
+
+    init {
+        if (persistable != null) {
+            scope.launch {
+                valueFlow.collectLatest {
+                    persistable.handle[persistable.key] = it
+                }
+            }
+        }
+    }
 
     /**
      * @return true, если проверка по всем валидаторам прошла
      */
     fun validateAndSet(): Boolean {
         val result = validate()
-        _error.value = result
+        _errorFlow.value = result
         return result == null
     }
 
@@ -124,7 +138,7 @@ class Field<T> private constructor(
      */
     @JvmOverloads
     fun validateAndSetByRequired(ifEmpty: Boolean = true): Boolean {
-        return if (!required && (!ifEmpty || isEmpty)) {
+        return if (!requiredFlow.value && (!ifEmpty || isEmpty)) {
             // при необязательном пустом поле
             // считаем что валидация прошла
             clearError()
@@ -137,22 +151,32 @@ class Field<T> private constructor(
     }
 
     fun clearError() {
-        _error.value = null
+        _errorFlow.value = null
     }
 
     fun recharge() {
-        _value.recharge()
+        // повторно отправляем текущее значение
+        _valueFlow.tryEmit(valueFlow.value)
     }
 
     fun setNonRequired() {
-        setRequired(null as TextMessage?, false)
+        setRequired(false, null, false)
     }
 
-    fun setRequired(@StringRes emptyMessageResId: Int?, withAsterisk: Boolean = emptyMessageResId != null) {
-        setRequired(emptyMessageResId?.let { TextMessage(it) })
+    fun setRequired(
+        required: Boolean,
+        @StringRes emptyMessageResId: Int,
+        withAsterisk: Boolean
+    ) {
+        setRequired(required, TextMessage(emptyMessageResId), withAsterisk)
     }
 
-    fun setRequired(emptyMessage: TextMessage?, withAsterisk: Boolean = emptyMessage != null) {
+    fun setRequired(
+        required: Boolean,
+        emptyMessage: TextMessage?,
+        withAsterisk: Boolean = emptyMessage != null
+    ) {
+        _requiredFlow.value = required
         this.emptyMessage = emptyMessage
         this.withAsterisk = withAsterisk
         recharge()
@@ -224,14 +248,18 @@ class Field<T> private constructor(
         private val withAsterisk: Boolean,
         private val withCaps: Boolean,
         @StringRes
-        private val requiredStringResId: Int
-    ): Serializable {
+        private val requiredDescriptionResId: Int
+    ) : Serializable {
 
         /**
          * Возвращает текстовку текущей подсказки поля
          */
-        fun get(context: Context, formatHint: ((CharSequence) -> CharSequence)? = null): CharSequence {
-            var hint = if (!withCaps) hint.get(context) else hint.get(context).toString().uppercase(Locale.getDefault())
+        fun get(context: Context, formatHint: ((String) -> String)? = null): String {
+            var hint =  if (!withCaps) {
+                hint.get(context).toString()
+            } else {
+                hint.get(context).toString().uppercase(Locale.getDefault())
+            }
             hint = formatHint?.invoke(hint) ?: hint
             return if (withAsterisk) {
                 "$hint *"
@@ -251,10 +279,10 @@ class Field<T> private constructor(
 
         fun CharSequence?.getReplacedAsteriskContentDescription(context: Context): CharSequence? {
             this ?: return null
-            requiredStringResId.takeIf { it != 0 } ?: return null
+            requiredDescriptionResId.takeIf { it != 0 } ?: return null
             if (!this.contains("*")) return this
             return this.toString()
-                .replace("*", " ${context.getString(requiredStringResId)}")
+                .replace("*", " ${context.getString(requiredDescriptionResId)}")
         }
     }
 
@@ -265,17 +293,16 @@ class Field<T> private constructor(
      */
     open class Builder<T>(
         protected open val initialValue: T,
+        private val scope: CoroutineScope,
     ) {
 
+        protected var required: Boolean = false
+            private set
         protected var emptyPredicate: ((T) -> Boolean)? = null
             private set
         protected var emptyMessage: TextMessage? = null
             private set
         protected var validators: Array<out Validator<T>> = emptyArray()
-            private set
-        protected var handle: SavedStateHandle? = null
-            private set
-        protected var key: String = ""
             private set
         protected var hint: TextMessage? = null
             private set
@@ -283,14 +310,14 @@ class Field<T> private constructor(
             private set
         protected var withCaps: Boolean = true
             private set
+        private var persistable: Persistable? = null
+
         @StringRes
-        protected var requiredStringResId: Int? = null
-            private set
-        protected var distinctUntilChanged: Boolean = true
+        protected var requiredDescriptionResId: Int? = null
             private set
 
         /**
-         * Устанавливает функцию, определяющую факт отстутствия значения в поле.
+         * Устанавливает функцию, определяющую факт отсутствия значения в поле.
          *
          * @param predicate возвращает true, если поле пустое, иначе false
          */
@@ -301,19 +328,20 @@ class Field<T> private constructor(
         /**
          * Устанавливает признак того, что поле обязательное (по умолчанию - не обязательное).
          *
-         * @param emptyMessage сообщение о незаполненности поля
+         * @param emptyMessageRes сообщение о незаполненности поля
          */
-        fun setRequired(emptyMessage: TextMessage) = apply {
-            this.emptyMessage = emptyMessage
+        fun setRequired(required: Boolean, @StringRes emptyMessageRes: Int) = apply {
+            setRequired(required, TextMessage(emptyMessageRes))
         }
 
         /**
          * Устанавливает признак того, что поле обязательное (по умолчанию - не обязательное).
          *
-         * @param emptyMessageRes сообщение о незаполненности поля
+         * @param emptyMessage сообщение о незаполненности поля
          */
-        fun setRequired(@StringRes emptyMessageRes: Int) = apply {
-            this.emptyMessage = TextMessage(emptyMessageRes)
+        fun setRequired(required: Boolean, emptyMessage: TextMessage? = null) = apply {
+            this.required = required
+            this.emptyMessage = emptyMessage
         }
 
         /**
@@ -329,48 +357,39 @@ class Field<T> private constructor(
             this.validators = validators
         }
 
-        /**
-         * Устанавливает текстовку подсказки поля
-         *
-         * @param hintRes ресурс текстовки подсказки поля
-         * @param withAsterisk true, если для пустого **обязательного** поля надо добавлять '*' в подсказку
-         */
         @JvmOverloads
         fun hint(
             @StringRes hintRes: Int,
             @StringRes
-            requiredStringResId: Int? = null,
-            withAsterisk: Boolean = true
-        ) = hint(TextMessage(hintRes), requiredStringResId, withAsterisk)
+            requiredDescriptionResId: Int? = null,
+            withAsterisk: Boolean = true,
+            withCaps: Boolean = true
+        ) = hint(
+            TextMessage(hintRes),
+            requiredDescriptionResId,
+            withAsterisk,
+            withCaps
+        )
 
         /**
          * Устанавливает текстовку подсказки поля
          *
          * @param hint текстовка подсказки поля
          * @param withAsterisk true, если для пустого **обязательного** поля надо добавлять '*' в подсказку
+         * @param requiredDescriptionResId необязательная строка для формирования корректного contentDescription
          */
         @JvmOverloads
         fun hint(
             hint: TextMessage,
             @StringRes
-            requiredStringResId: Int? = null,
-            withAsterisk: Boolean = true
+            requiredDescriptionResId: Int? = null,
+            withAsterisk: Boolean = true,
+            withCaps: Boolean = true
         ) = apply {
             this.hint = hint
-            this.requiredStringResId = requiredStringResId
+            this.requiredDescriptionResId = requiredDescriptionResId
             this.withAsterisk = withAsterisk
             this.withCaps = withCaps
-        }
-
-        /**
-         * Устанавливает distinctUntilChanged логику эмита значений поля. По умолчанию true.
-         *
-         * @param distinctUntilChanged true, если при установке значения поля, эквивалетнтному текущему значению,
-         * эмитить его не надо. False, если эмитить одинаковые значения надо
-         */
-        @JvmOverloads
-        fun setDistinctUntilChanged(distinctUntilChanged: Boolean = true) = apply {
-            this.distinctUntilChanged = distinctUntilChanged
         }
 
         /**
@@ -381,57 +400,72 @@ class Field<T> private constructor(
          * @param key ключ для сохранения данных поля
          */
         fun persist(handle: SavedStateHandle, key: String) = apply {
-            this.handle = handle
-            this.key = key
+            persistable = Persistable(handle, key)
         }
 
         fun build(): Field<T> {
             val emptyIf = emptyPredicate
                 ?: throw IllegalStateException("emptyIf function must be called on Field.Builder")
-            val field = createField(distinctUntilChanged)
+            val field = createField()
+            field._requiredFlow.value = required
             field.emptyPredicate = emptyIf
             field.emptyMessage = emptyMessage
             field.validators = validators
             field.hintMessage = hint
-            field.requiredStringResId = requiredStringResId ?: 0
+            field.requiredDescriptionResId = requiredDescriptionResId ?: 0
             field.withAsterisk = withAsterisk
             field.withCaps = withCaps
             return field
         }
 
-        private fun createField(distinctUntilChanged: Boolean): Field<T> {
-            val fieldValue = fieldValue()
-            return Field(fieldValue, valueSetter(fieldValue, distinctUntilChanged), valueGetter(fieldValue))
+        private fun createField(): Field<T> {
+            val sharedFieldValue = fieldValue()
+            val stateFieldValue = sharedFieldValue.stateIn(
+                scope,
+                SharingStarted.Eagerly,
+                initialValue
+            )
+            return Field(
+                persistable,
+                stateFieldValue,
+                sharedFieldValue,
+                scope,
+                valueSetter(sharedFieldValue),
+                valueGetter(stateFieldValue)
+            )
         }
 
-        protected open fun fieldValue(): MutableLiveData<T> =
-            handle?.getLiveData(key, initialValue) ?: MutableLiveData<T>(initialValue)
-
-        protected open fun valueSetter(
-            fieldValue: MutableLiveData<T>,
-            distinctUntilChanged: Boolean,
-        ): (T) -> Boolean = {
-            it.checkPersistable()
-            if (distinctUntilChanged) {
-                fieldValue.setValueIfNew(it)
-            } else {
-                fieldValue.value = it
-                true
+        protected open fun fieldValue(): MutableSharedFlow<T> {
+            val p = persistable
+            val currentValue = p?.handle?.get<T>(p.key) ?: initialValue
+            return MutableSharedFlow<T>(replay = 1, onBufferOverflow = BufferOverflow.DROP_OLDEST).also {
+                it.tryEmit(currentValue)
             }
         }
 
+        protected open fun valueGetter(fieldValue: StateFlow<T>): () -> T = {
+            fieldValue.value
+        }
+
+        protected open fun valueSetter(
+            fieldValue: MutableSharedFlow<T>,
+        ): (T) -> Unit = {
+            it.checkPersistable()
+            fieldValue.tryEmit(it)
+        }
+
         protected fun T.checkPersistable() {
-            if (this == null || handle == null) return
+            if (this == null || persistable == null) return
             //Проверка для того, чтобы краш был сразу при первой попытке установки nonSerializable или nonParcelable
             //значения поля при использовании persist, а не при попытке сохранения в Bundle (которая отлавливается не всегда)
             check(this is Serializable || this is Parcelable) {
                 "Attempt to persist non serializable or parcelable object: \"${this.let { it::class.java.simpleName }}\"."
             }
         }
-
-        protected open fun valueGetter(fieldValue: MutableLiveData<T>): () -> T = {
-            @Suppress("UNCHECKED_CAST")
-            fieldValue.value as T
-        }
     }
+
+    private class Persistable(
+        val handle: SavedStateHandle,
+        val key: String
+    )
 }

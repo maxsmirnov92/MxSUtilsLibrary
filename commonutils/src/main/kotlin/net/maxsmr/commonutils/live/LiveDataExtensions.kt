@@ -491,8 +491,9 @@ fun <D> MutableLiveData<LoadState<D>>.loading(
     distinctUntilChanged: Boolean = true
 ): LoadState<D> {
     val initial = value ?: LoadState()
-    setOrPost(initial.preLoad(), setValue, distinctUntilChanged)
-    return initial
+    return initial.preLoad().also {
+        setOrPost(it, setValue, distinctUntilChanged)
+    }
 }
 
 @JvmOverloads
@@ -502,18 +503,21 @@ fun <D> MutableLiveData<LoadState<D>>.successLoad(
     distinctUntilChanged: Boolean = true
 ): LoadState<D> {
     val initial = value ?: LoadState()
-    setOrPost(initial.successLoad(data), setValue, distinctUntilChanged)
-    return initial
+    return initial.successLoad(data).also {
+        setOrPost(it, setValue, distinctUntilChanged)
+    }
 }
 
 @JvmOverloads
 fun <D> MutableLiveData<LoadState<D>>.errorLoad(
-    error: Throwable,
+    error: Exception,
     setValue: Boolean = true,
     distinctUntilChanged: Boolean = true
-): LoadState<D> = errorLoad(
-    ILoadState.ErrorData(error), setValue, distinctUntilChanged
-)
+): LoadState<D> {
+    return errorLoad(
+        ILoadState.ErrorData(error), setValue, distinctUntilChanged
+    )
+}
 
 @JvmOverloads
 fun <D> MutableLiveData<LoadState<D>>.errorLoad(
@@ -522,8 +526,9 @@ fun <D> MutableLiveData<LoadState<D>>.errorLoad(
     distinctUntilChanged: Boolean = true
 ): LoadState<D> {
     val initial = value ?: LoadState()
-    setOrPost(initial.errorLoad(error), setValue, distinctUntilChanged)
-    return initial
+    return initial.errorLoad(error).also {
+        setOrPost(it, setValue, distinctUntilChanged)
+    }
 }
 
 @JvmOverloads
@@ -533,16 +538,17 @@ fun <D> MutableLiveData<PgnLoadState<D>>.pgnLoading(
     distinctUntilChanged: Boolean = true
 ): PgnLoadState<D> {
     val initial = value ?: PgnLoadState()
-    setOrPost(
-        if (isFromStart) {
-            initial.preLoad()
-        } else {
-            initial.prePgnLoading()
-        },
-        setValue,
-        distinctUntilChanged
-    )
-    return initial
+    return if (isFromStart) {
+        initial.preLoad()
+    } else {
+        initial.prePgnLoading()
+    }.also {
+        setOrPost(
+            it,
+            setValue,
+            distinctUntilChanged
+        )
+    }
 }
 
 @JvmOverloads
@@ -553,14 +559,15 @@ fun <D> MutableLiveData<PgnLoadState<D>>.pgnSuccessLoad(
     distinctUntilChanged: Boolean = true
 ): PgnLoadState<D> {
     val initial = value ?: PgnLoadState()
-    setOrPost(
-        initial.successLoad(data).copy(
-            loadingState = PgnLoadState.PgnLoading.StandBy(isComplete)
-        ),
-        setValue,
-        distinctUntilChanged
-    )
-    return initial
+    return initial.successLoad(data).copy(
+        loadingState = PgnLoadState.PgnLoading.StandBy(isComplete)
+    ).also {
+        setOrPost(
+            it,
+            setValue,
+            distinctUntilChanged
+        )
+    }
 }
 
 @JvmOverloads
@@ -571,14 +578,15 @@ fun <D> MutableLiveData<PgnLoadState<D>>.pgnErrorLoad(
     distinctUntilChanged: Boolean = true
 ): PgnLoadState<D> {
     val initial = value ?: PgnLoadState()
-    setOrPost(
-        initial.errorLoad(error).copy(
-            loadingState = PgnLoadState.PgnLoading.StandBy(isComplete)
-        ),
-        setValue,
-        distinctUntilChanged
-    )
-    return initial
+    return initial.errorLoad(error).copy(
+        loadingState = PgnLoadState.PgnLoading.StandBy(isComplete)
+    ).also {
+        setOrPost(
+            it,
+            setValue,
+            distinctUntilChanged
+        )
+    }
 }
 
 // endregion

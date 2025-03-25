@@ -1,8 +1,13 @@
-package net.maxsmr.commonutils.live.field
+package net.maxsmr.commonutils.flow.field
 
 import android.widget.EditText
 import android.widget.TextView
 import androidx.lifecycle.LifecycleOwner
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.map
+import net.maxsmr.commonutils.flow.observe
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.gui.setSelectionToEnd
 import net.maxsmr.commonutils.gui.setTextDistinct
@@ -17,13 +22,13 @@ import ru.tinkoff.decoro.watchers.MaskFormatWatcher
  */
 @JvmOverloads
 fun Field<String>.observeFromTextFormatted(
-        view: TextView,
-        owner: LifecycleOwner,
-        maskWatcher: MaskFormatWatcher,
-        asString: Boolean = true,
-        onChanged: ((String?) -> Unit)? = null
+    view: TextView,
+    owner: LifecycleOwner,
+    maskWatcher: MaskFormatWatcher,
+    asString: Boolean = true,
+    onChanged: (suspend (String?) -> Unit)? = null
 ) {
-    valueLive.observe(owner) {
+    valueFlow.observe(owner) {
         onChanged?.invoke(it)
         if (view.setTextDistinctFormatted(it, maskWatcher, asString)) {
             (view as? EditText)?.setSelectionToEnd()
@@ -33,11 +38,11 @@ fun Field<String>.observeFromTextFormatted(
 
 @JvmOverloads
 fun Field<String>.observeFromTextFormatted(
-        view: TextView,
-        owner: LifecycleOwner,
-        mask: Mask,
-        asString: Boolean = true,
-        onChanged: ((String?) -> Unit)? = null
+    view: TextView,
+    owner: LifecycleOwner,
+    mask: Mask,
+    asString: Boolean = true,
+    onChanged: ((String?) -> Unit)? = null
 ) {
     observeFromText(view, owner, asString) {
         onChanged?.invoke(it)
@@ -51,10 +56,10 @@ fun Field<String>.observeFromTextFormatted(
  */
 @JvmOverloads
 fun Field<String>.observeFromText(
-        view: TextView,
-        owner: LifecycleOwner,
-        asString: Boolean = true,
-        formatFunc: ((String) -> CharSequence?)? = null
+    view: TextView,
+    owner: LifecycleOwner,
+    asString: Boolean = true,
+    formatFunc: ((String) -> CharSequence?)? = null
 ) {
     observeFrom(view, owner, asString) {
         formatFunc?.invoke(it) ?: it
@@ -63,20 +68,23 @@ fun Field<String>.observeFromText(
 
 @JvmOverloads
 fun <D> Field<D>.observeFrom(
-        view: TextView,
-        owner: LifecycleOwner,
-        asString: Boolean = true,
-        formatFunc: (D) -> CharSequence?
+    view: TextView,
+    owner: LifecycleOwner,
+    asString: Boolean = true,
+    formatFunc: (D) -> CharSequence?
 ) {
-    valueLive.observe(owner) {
+    valueFlow.observe(owner) {
         if (view.setTextDistinct(formatFunc(it), asString)) {
             (view as? EditText)?.setSelectionToEnd()
         }
     }
 }
 
-fun <D> Field<D>.clearErrorOnChange(lifecycleOwner: LifecycleOwner, onChanged: ((D) -> Unit)? = null) {
-    valueLive.observe(lifecycleOwner) {
+fun <D> Field<D>.observeWithClearError(
+    scope: CoroutineScope,
+    onChanged: (suspend (D) -> Unit)? = null
+) {
+    valueFlow.observe(scope) {
         onChanged?.invoke(it)
         clearError()
     }
@@ -127,4 +135,20 @@ fun Collection<Field<*>>.validateAndSet(predicate: (Field<*>) -> Boolean): List<
         }
     }
     return errorFields
+}
+
+fun Collection<Field<*>>.anyRequiredFieldEmptyFlow(): Flow<Boolean> {
+    return combine(this.map { f ->
+        f.isEmptyFlow.combine(f.requiredFlow) { isEmpty, required ->
+            isEmpty to required
+        }.map { (isEmpty, required) ->
+            if (required) {
+                isEmpty
+            } else {
+                false
+            }
+        }
+    }) { array ->
+        array.any { it }
+    }
 }
