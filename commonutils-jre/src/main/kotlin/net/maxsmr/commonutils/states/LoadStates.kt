@@ -20,6 +20,13 @@ interface ILoadState<D> {
 
     val error: ErrorData?
 
+    /**
+     * Статус успеха с данными или без
+     */
+    val isSuccess get() = !isLoading && error == null
+
+    val isError get() = getStatus() == Status.ERROR
+
     fun preLoad(): ILoadState<D>
 
     /**
@@ -29,22 +36,25 @@ interface ILoadState<D> {
 
     fun errorLoad(error: ErrorData): ILoadState<D>
 
-    fun hasData(dataValidator: ((D?) -> Boolean)? = null) = data != null
-            && (dataValidator == null || dataValidator(data))
+    fun hasData(
+        checkSuccess: Boolean = true,
+        dataValidator: ((D?) -> Boolean)? = null
+    ) = (!checkSuccess || isSuccess)
+                && data != null
+                && (dataValidator == null || dataValidator(data))
 
-    /**
-     * Статус успеха с данными или без
-     */
-    fun isSuccess() = !isLoading && error == null
-
-    fun isError() = getStatus() == Status.ERROR
-
-    fun isSuccessWithData(dataValidator: ((D?) -> Boolean)? = null) =
-        isSuccess() && hasData(dataValidator)
+    fun getData(
+        checkSuccess: Boolean = true,
+        dataValidator: ((D?) -> Boolean)? = null
+    ) = if (hasData(checkSuccess, dataValidator)) {
+            data
+        } else {
+            null
+        }
 
     fun getStatus(): Status = when {
         isLoading -> Status.LOADING
-        isSuccess() -> Status.SUCCESS
+        isSuccess -> Status.SUCCESS
         else -> Status.ERROR
     }
 
@@ -55,7 +65,7 @@ interface ILoadState<D> {
     }
 
     data class ErrorData(
-        val error: Throwable,
+        val error: Exception,
         val message: ITextMessage<*>? = null
     ) {
 
@@ -129,7 +139,7 @@ data class LoadState<D>(
 
         @JvmStatic
         fun <D> error(
-            error: Throwable,
+            error: Exception,
             data: D? = null,
         ): LoadState<D> = error(ErrorData(error), data)
 
@@ -196,7 +206,8 @@ data class PgnLoadState<D>(
     }
 
     override fun successLoad(result: D?): PgnLoadState<D> {
-        return pgnStateOf(this,
+        return pgnStateOf(
+            this,
             wasLoaded = true,
             loadingState = if (loadingState is PgnLoading.StandBy) {
                 loadingState
@@ -209,7 +220,8 @@ data class PgnLoadState<D>(
     }
 
     override fun errorLoad(error: ErrorData): PgnLoadState<D> {
-        return pgnStateOf(this,
+        return pgnStateOf(
+            this,
             wasLoaded = true,
             loadingState = if (loadingState is PgnLoading.StandBy) {
                 loadingState
@@ -269,7 +281,7 @@ data class PgnLoadState<D>(
 
         @JvmStatic
         fun <D> pgnError(
-            error: Throwable,
+            error: Exception,
             data: D? = null,
             isComplete: Boolean = true
         ): PgnLoadState<D> = pgnError(
@@ -331,17 +343,17 @@ data class PgnLoadState<D>(
 
         val isLoading: Boolean
 
-        class StandBy(val isCompleted: Boolean): PgnLoading {
+        class StandBy(val isCompleted: Boolean) : PgnLoading {
 
             override val isLoading: Boolean = false
         }
 
-        data object MainLoad: PgnLoading {
+        data object MainLoad : PgnLoading {
 
             override val isLoading: Boolean = true
         }
 
-        data object PageLoad: PgnLoading {
+        data object PageLoad : PgnLoading {
 
             override val isLoading: Boolean = true
         }
