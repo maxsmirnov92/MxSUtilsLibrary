@@ -7,7 +7,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
-import net.maxsmr.commonutils.flow.observe
+import net.maxsmr.commonutils.flow.observeLatest
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.gui.setSelectionToEnd
 import net.maxsmr.commonutils.gui.setTextDistinct
@@ -28,7 +28,7 @@ fun Field<String>.observeFromTextFormatted(
     asString: Boolean = true,
     onChanged: (suspend (String?) -> Unit)? = null
 ) {
-    valueFlow.observe(owner) {
+    valueFlow.observeLatest(owner) {
         onChanged?.invoke(it)
         if (view.setTextDistinctFormatted(it, maskWatcher, asString)) {
             (view as? EditText)?.setSelectionToEnd()
@@ -73,7 +73,7 @@ fun <D> Field<D>.observeFrom(
     asString: Boolean = true,
     formatFunc: (D) -> CharSequence?
 ) {
-    valueFlow.observe(owner) {
+    valueFlow.observeLatest(owner) {
         if (view.setTextDistinct(formatFunc(it), asString)) {
             (view as? EditText)?.setSelectionToEnd()
         }
@@ -84,7 +84,7 @@ fun <D> Field<D>.observeWithClearError(
     scope: CoroutineScope,
     onChanged: (suspend (D) -> Unit)? = null
 ) {
-    valueFlow.observe(scope) {
+    valueFlow.observeLatest(scope) {
         onChanged?.invoke(it)
         clearError()
     }
