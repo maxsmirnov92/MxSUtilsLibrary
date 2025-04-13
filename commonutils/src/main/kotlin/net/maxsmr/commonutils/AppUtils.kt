@@ -76,7 +76,11 @@ fun Context.getSelfPackageInfo(flags: Int = 0): PackageInfo? =
 fun PackageManager.getPackageInfoOrNull(packageName: String, flags: Int = 0): PackageInfo? {
     if (!isEmpty(packageName)) {
         try {
-            return getPackageInfo(packageName, flags)
+            return if (isAtLeastTiramisu()) {
+                getPackageInfo(packageName, PackageManager.PackageInfoFlags.of(flags.toLong()))
+            } else {
+                getPackageInfo(packageName, flags)
+            }
         } catch (e: PackageManager.NameNotFoundException) {
             // ignored
         }
