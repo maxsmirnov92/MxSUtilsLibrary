@@ -160,31 +160,55 @@ class Field<T> private constructor(
     }
 
     fun setNonRequired() {
-        setRequired(false, null, false)
+        setRequired(false, null)
     }
 
     fun setRequired(
         required: Boolean,
         @StringRes emptyMessageResId: Int,
-        withAsterisk: Boolean
     ) {
-        setRequired(required, TextMessage(emptyMessageResId), withAsterisk)
+        setRequired(required, TextMessage(emptyMessageResId))
     }
 
     fun setRequired(
         required: Boolean,
         emptyMessage: TextMessage?,
-        withAsterisk: Boolean = emptyMessage != null
     ) {
         _requiredFlow.value = required
         this.emptyMessage = emptyMessage
-        this.withAsterisk = withAsterisk
         recharge()
     }
 
     private fun validateEmpty(): Boolean {
         val field = value
         return field == null || emptyPredicate(field)
+    }
+
+    @JvmOverloads
+    fun setHint(
+        @StringRes hintRes: Int,
+        @StringRes requiredDescriptionResId: Int? = null,
+        withAsterisk: Boolean = true,
+        withCaps: Boolean = false
+    ) = setHint(
+        TextMessage(hintRes),
+        requiredDescriptionResId,
+        withAsterisk,
+        withCaps
+    )
+
+    @JvmOverloads
+    fun setHint(
+        hint: TextMessage,
+        @StringRes requiredDescriptionResId: Int? = null,
+        withAsterisk: Boolean = true,
+        withCaps: Boolean = false
+    ) = apply {
+        this.hintMessage = hint
+        this.requiredDescriptionResId = requiredDescriptionResId ?: 0
+        this.withAsterisk = withAsterisk
+        this.withCaps = withCaps
+        recharge()
     }
 
     /**
@@ -243,19 +267,18 @@ class Field<T> private constructor(
     /**
      * Хранит данные о текущей подсказке поля
      */
-    data class Hint(
+    class Hint internal constructor(
         private val hint: TextMessage,
         private val withAsterisk: Boolean,
         private val withCaps: Boolean,
-        @StringRes
-        private val requiredDescriptionResId: Int
+        @StringRes private val requiredDescriptionResId: Int
     ) : Serializable {
 
         /**
          * Возвращает текстовку текущей подсказки поля
          */
         fun get(context: Context, formatHint: ((String) -> String)? = null): String {
-            var hint =  if (!withCaps) {
+            var hint = if (!withCaps) {
                 hint.get(context).toString()
             } else {
                 hint.get(context).toString().uppercase(Locale.getDefault())
@@ -330,8 +353,8 @@ class Field<T> private constructor(
          *
          * @param emptyMessageRes сообщение о незаполненности поля
          */
-        fun setRequired(required: Boolean, @StringRes emptyMessageRes: Int) = apply {
-            setRequired(required, TextMessage(emptyMessageRes))
+        fun required(toggle: Boolean, @StringRes emptyMessageRes: Int) = apply {
+            required(toggle, TextMessage(emptyMessageRes))
         }
 
         /**
@@ -339,7 +362,7 @@ class Field<T> private constructor(
          *
          * @param emptyMessage сообщение о незаполненности поля
          */
-        fun setRequired(required: Boolean, emptyMessage: TextMessage? = null) = apply {
+        fun required(required: Boolean, emptyMessage: TextMessage? = null) = apply {
             this.required = required
             this.emptyMessage = emptyMessage
         }
@@ -360,8 +383,7 @@ class Field<T> private constructor(
         @JvmOverloads
         fun hint(
             @StringRes hintRes: Int,
-            @StringRes
-            requiredDescriptionResId: Int? = null,
+            @StringRes requiredDescriptionResId: Int? = null,
             withAsterisk: Boolean = true,
             withCaps: Boolean = true
         ) = hint(
@@ -381,8 +403,7 @@ class Field<T> private constructor(
         @JvmOverloads
         fun hint(
             hint: TextMessage,
-            @StringRes
-            requiredDescriptionResId: Int? = null,
+            @StringRes requiredDescriptionResId: Int? = null,
             withAsterisk: Boolean = true,
             withCaps: Boolean = true
         ) = apply {

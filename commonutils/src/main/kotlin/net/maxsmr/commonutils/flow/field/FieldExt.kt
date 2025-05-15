@@ -90,11 +90,20 @@ fun <D> Field<D>.observeWithClearError(
     }
 }
 
+@JvmOverloads
+fun Collection<Field<*>>.validateAndSetByRequiredFirst(ifEmpty: Boolean = true): Boolean {
+    return validateAndSetByRequiredFirstField(ifEmpty) == null
+}
+
+@JvmOverloads
+fun Collection<Field<*>>.validateAndSetByRequired(ifEmpty: Boolean = true): Boolean {
+    return validateAndSetByRequiredFields(ifEmpty).isEmpty()
+}
+
 /**
  * @return null, если все обязательные
  * (или необязательные при непустом значении в зав-ти от [ifEmpty])
- * филды прошли валидацию,
- * или еррорный филд
+ * филды прошли валидацию, или еррорный филд
  */
 @JvmOverloads
 fun Collection<Field<*>>.validateAndSetByRequiredFirstField(ifEmpty: Boolean = true): Field<*>? {
@@ -106,25 +115,8 @@ fun Collection<Field<*>>.validateAndSetByRequiredFields(ifEmpty: Boolean = true)
     return validateAndSet { it.validateAndSetByRequired(ifEmpty) }
 }
 
-@JvmOverloads
-fun Collection<Field<*>>.validateAndSetByRequiredFirst(ifEmpty: Boolean = true): Boolean {
-    return validateAndSetByRequiredFirstField(ifEmpty) == null
-}
-
-@JvmOverloads
-fun Collection<Field<*>>.validateAndSetByRequired(ifEmpty: Boolean = true): Boolean {
-    return validateAndSetByRequiredFields(ifEmpty).isEmpty()
-}
-
 fun Collection<Field<*>>.validateAndSetByFirst(predicate: (Field<*>) -> Boolean): Field<*>? {
-    var errorField: Field<*>? = null
-    forEach {
-        if (!predicate(it)) {
-            errorField = it
-            return@forEach
-        }
-    }
-    return errorField
+    return firstOrNull { !predicate(it) }
 }
 
 fun Collection<Field<*>>.validateAndSet(predicate: (Field<*>) -> Boolean): List<Field<*>> {
@@ -137,13 +129,45 @@ fun Collection<Field<*>>.validateAndSet(predicate: (Field<*>) -> Boolean): List<
     return errorFields
 }
 
-fun Collection<Field<*>>.anyRequiredFieldEmptyFlow(): Flow<Boolean> {
+fun List<Field<*>>.anyRequiredFieldIsEmptyFlow(): Flow<Boolean> {
     return combine(this.map { f ->
-        f.isEmptyFlow.combine(f.requiredFlow) { isEmpty, required ->
+        combine(f.isEmptyFlow, f.requiredFlow) { isEmpty, required ->
             isEmpty to required
         }.map { (isEmpty, required) ->
             if (required) {
                 isEmpty
+            } else {
+                false
+            }
+        }
+    }) { array ->
+        array.any { it }
+    }
+}
+
+fun List<Field<*>>.anyRequiredFieldHasErrorFlow(): Flow<Boolean> {
+    return combine(this.map { f ->
+        combine(f.errorFlow, f.requiredFlow) { error, required ->
+            error to required
+        }.map { (error, required) ->
+            if (required) {
+                error
+            } else {
+                null
+            }
+        }
+    }) { array ->
+        array.any { it != null }
+    }
+}
+
+fun List<Field<*>>.anyRequiredFieldIsEmptyOrErrorFlow(): Flow<Boolean> {
+    return combine(this.map { f ->
+        combine(f.isEmptyFlow, f.errorFlow, f.requiredFlow) { isEmpty, error, required ->
+            Triple(error, isEmpty, required)
+        }.map { (error, isEmpty, required) ->
+            if (required) {
+                error != null || isEmpty
             } else {
                 false
             }
