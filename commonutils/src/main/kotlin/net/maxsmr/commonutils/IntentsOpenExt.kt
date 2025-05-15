@@ -23,9 +23,7 @@ private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("OpenIntent
 fun Context.openEmailIntent(
     address: String?,
     sendAction: SendAction = SendAction.SENDTO,
-    chooserTitle: String? = null,
-    sendIntentFunc: ((Intent) -> Unit)? = null,
-    chooserIntentFunc: ((Intent) -> Unit)? = null,
+    sendIntentFunc: (Intent.() -> Unit)? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
     errorHandler: ((RuntimeException) -> Unit)? = null,
@@ -34,9 +32,7 @@ fun Context.openEmailIntent(
         getSendEmailUri(address),
         address?.let { listOf(address) },
         sendAction,
-        chooserTitle,
         sendIntentFunc,
-        chooserIntentFunc,
         flags,
         options,
         errorHandler
@@ -46,26 +42,23 @@ fun Context.openEmailIntent(
 /**
  * @param uri со схемой [URL_SCHEME_MAIL]
  * @param sendIntentFunc дополнительно можно указать subject, text и т.д.
- * @param chooserIntentFunc настройка chooser [Intent] при указании [chooserTitle]
  */
 @JvmOverloads
 fun Context.openEmailIntent(
     uri: Uri,
     addresses: List<String>? = null,
     sendAction: SendAction = SendAction.SENDTO,
-    chooserTitle: String? = null,
-    sendIntentFunc: ((Intent) -> Unit)? = null,
-    chooserIntentFunc: ((Intent) -> Unit)? = null,
+    sendIntentFunc: (Intent.() -> Unit)? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
     errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
-    val intent = getSendEmailIntent(uri, sendAction, addresses) ?: return false
+    val intent = getSendEmailIntent(uri, sendAction, addresses)
+        ?: return false
     return openSendDataIntent(
-        intent,
-        chooserTitle,
-        sendIntentFunc,
-        chooserIntentFunc,
+        intent.also {
+            sendIntentFunc?.invoke(it)
+        },
         flags,
         options,
         errorHandler
@@ -75,18 +68,15 @@ fun Context.openEmailIntent(
 @JvmOverloads
 fun Context.openSendDataIntent(
     sendAction: SendAction = SendAction.SEND,
-    chooserTitle: String? = null,
-    sendIntentFunc: (Intent) -> Unit,
-    chooserIntentFunc: ((Intent) -> Unit)? = null,
+    sendIntentFunc: (Intent.() -> Unit)? = null,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
     errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     return openSendDataIntent(
-        getSendIntent(sendAction),
-        chooserTitle,
-        sendIntentFunc,
-        chooserIntentFunc,
+        getSendIntent(sendAction).also {
+            sendIntentFunc?.invoke(it)
+        },
         flags,
         options,
         errorHandler
@@ -95,20 +85,12 @@ fun Context.openSendDataIntent(
 
 private fun Context.openSendDataIntent(
     intent: Intent,
-    chooserTitle: String?,
-    sendIntentFunc: ((Intent) -> Unit)?,
-    chooserIntentFunc: ((Intent) -> Unit)?,
     flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
     options: Bundle? = null,
     errorHandler: ((RuntimeException) -> Unit)? = null,
 ): Boolean {
     return startActivitySafe(
-        intent.apply {
-            sendIntentFunc?.invoke(this)
-            addFlags(flags)
-        }.wrapChooser(chooserTitle).apply {
-            chooserIntentFunc?.invoke(this)
-        },
+        intent.addFlags(flags),
         options = options,
         errorHandler = errorHandler
     )
@@ -276,7 +258,7 @@ fun Context.queryIntentActivitiesCompat(
 }
 
 @JvmOverloads
-fun  Context.startActivitySafe(
+fun Context.startActivitySafe(
     intent: Intent,
     requestCode: Int? = null,
     options: Bundle? = null,

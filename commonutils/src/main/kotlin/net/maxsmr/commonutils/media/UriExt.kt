@@ -1,7 +1,6 @@
 package net.maxsmr.commonutils.media
 
 import android.content.ContentResolver
-import android.content.ContentResolver.SCHEME_CONTENT
 import android.content.Context
 import android.content.Intent
 import android.content.res.Resources
@@ -220,7 +219,7 @@ fun Uri.copyToOrThrow(
 }
 
 fun Uri.takePersistableReadPermission(contentResolver: ContentResolver) {
-    if (this.scheme != SCHEME_CONTENT) return
+    if (this.scheme != ContentResolver.SCHEME_CONTENT) return
     try {
         contentResolver.takePersistableUriPermission(this, Intent.FLAG_GRANT_READ_URI_PERMISSION)
     } catch (e: Exception) {
@@ -406,6 +405,15 @@ fun Uri?.isContentScheme(): Boolean {
         return ContentResolver.SCHEME_CONTENT.equals(this.scheme, true)
     }
     return false
+}
+
+fun Uri.isContentUriFromSelfPackage(context: Context): Boolean {
+    return isContentUriFromPackage(context.packageName)
+}
+
+fun Uri.isContentUriFromPackage(packageName: String): Boolean {
+    if (!isContentScheme()) return false
+    return authority?.equals("$packageName.provider") == true
 }
 
 fun Uri?.getTableName(): String? {
