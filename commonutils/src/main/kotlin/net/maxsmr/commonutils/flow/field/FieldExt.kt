@@ -78,6 +78,9 @@ fun <D> Field<D>.observeFrom(
             (view as? EditText)?.setSelectionToEnd()
         }
     }
+    enabledFlow.observeLatest(owner) {
+        view.isEnabled = it
+    }
 }
 
 fun <D> Field<D>.observeWithClearError(
@@ -90,43 +93,19 @@ fun <D> Field<D>.observeWithClearError(
     }
 }
 
-@JvmOverloads
-fun Collection<Field<*>>.validateAndSetByRequiredFirst(ifEmpty: Boolean = true): Boolean {
-    return validateAndSetByRequiredFirstField(ifEmpty) == null
-}
-
-@JvmOverloads
-fun Collection<Field<*>>.validateAndSetByRequired(ifEmpty: Boolean = true): Boolean {
-    return validateAndSetByRequiredFields(ifEmpty).isEmpty()
-}
-
 /**
  * @return null, если все обязательные
  * (или необязательные при непустом значении в зав-ти от [ifEmpty])
- * филды прошли валидацию, или еррорный филд
+ * филды прошли валидацию, или первый еррорный филд
  */
 @JvmOverloads
-fun Collection<Field<*>>.validateAndSetByRequiredFirstField(ifEmpty: Boolean = true): Field<*>? {
-    return validateAndSetByFirst { it.validateAndSetByRequired(ifEmpty) }
+fun Collection<Field<*>>.validateAndSetByRequiredFirst(ifEmpty: Boolean = true): Field<*>? {
+    return firstOrNull { !it.validateAndSetByRequired(ifEmpty) }
 }
 
 @JvmOverloads
-fun Collection<Field<*>>.validateAndSetByRequiredFields(ifEmpty: Boolean = true): List<Field<*>> {
-    return validateAndSet { it.validateAndSetByRequired(ifEmpty) }
-}
-
-fun Collection<Field<*>>.validateAndSetByFirst(predicate: (Field<*>) -> Boolean): Field<*>? {
-    return firstOrNull { !predicate(it) }
-}
-
-fun Collection<Field<*>>.validateAndSet(predicate: (Field<*>) -> Boolean): List<Field<*>> {
-    val errorFields = mutableListOf<Field<*>>()
-    forEach {
-        if (!predicate(it)) {
-            errorFields.add(it)
-        }
-    }
-    return errorFields
+fun Collection<Field<*>>.validateAndSetByRequired(ifEmpty: Boolean = true): List<Field<*>> {
+    return filter { !it.validateAndSetByRequired(ifEmpty) }
 }
 
 fun List<Field<*>>.anyRequiredFieldIsEmptyFlow(): Flow<Boolean> {

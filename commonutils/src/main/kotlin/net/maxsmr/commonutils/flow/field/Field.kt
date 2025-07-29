@@ -12,10 +12,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import kotlinx.coroutines.launch
+import net.maxsmr.commonutils.flow.field.Field.Validator.Companion.regExp
+import net.maxsmr.commonutils.flow.observeLatest
 import net.maxsmr.commonutils.gui.message.TextMessage
 import java.io.Serializable
 import java.util.Locale
@@ -25,6 +26,7 @@ import java.util.Locale
 @MainThread
 class Field<T> private constructor(
     persistable: Persistable?,
+    hasInitial: Boolean,
     val valueFlow: StateFlow<T>,
     private val _valueFlow: MutableSharedFlow<T>,
     private val scope: CoroutineScope,
@@ -35,16 +37,14 @@ class Field<T> private constructor(
     /**
      * Признак того, что поле является обязательным для заполнения
      */
-    val requiredFlow by lazy {
+    val requiredFlow: StateFlow<Boolean> by lazy {
         _requiredFlow.asStateFlow()
     }
 
     val required: Boolean get() = requiredFlow.value
 
     val isEmptyFlow: StateFlow<Boolean> by lazy {
-        _valueFlow
-            .map { validateEmpty() }
-            .stateIn(scope, SharingStarted.Eagerly, false)
+        _isEmptyFlow.stateIn(scope, SharingStarted.Eagerly, false)
     }
 
     /**
@@ -70,7 +70,7 @@ class Field<T> private constructor(
      * Observable вариант [hint]. Текст подсказки может меняться, если поле обязательное
      */
     val hintFlow: StateFlow<Hint?> by lazy {
-        isEmptyFlow.map {
+        _isEmptyFlow.map {
             val message = hintMessage ?: return@map null
             return@map if (!requiredFlow.value || !withAsterisk) {
                 Hint(message, false, withCaps, requiredDescriptionResId)
@@ -87,14 +87,32 @@ class Field<T> private constructor(
 
     val hasHint: Boolean get() = hint != null
 
+    val enabledFlow: StateFlow<Boolean> by lazy {
+        _enabledFlow.asStateFlow()
+    }
+
     private val _requiredFlow = MutableStateFlow(false)
 
     private val _errorFlow = MutableStateFlow<TextMessage?>(null)
 
+    private val _enabledFlow = MutableStateFlow(true)
+
+    private val _isEmptyFlow = _valueFlow
+        .map { validateEmpty() }
+        // в _valueFlow исходное значение попадёт не сразу
+        .drop(if (hasInitial) 1 else 0)
+
     var value: T
         get() = getValueFunction()
         set(value) {
+            if (!enabled) return
             setValueFunction(value)
+        }
+
+    var enabled: Boolean
+        get() = _enabledFlow.value
+        set(value) {
+            _enabledFlow.value = value
         }
 
     var validators: Array<out Validator<T>> = emptyArray()
@@ -115,10 +133,8 @@ class Field<T> private constructor(
 
     init {
         if (persistable != null) {
-            scope.launch {
-                valueFlow.collectLatest {
-                    persistable.handle[persistable.key] = it
-                }
+            valueFlow.observeLatest(scope) {
+                persistable.handle[persistable.key] = it
             }
         }
     }
@@ -179,11 +195,6 @@ class Field<T> private constructor(
         recharge()
     }
 
-    private fun validateEmpty(): Boolean {
-        val field = value
-        return field == null || emptyPredicate(field)
-    }
-
     @JvmOverloads
     fun setHint(
         @StringRes hintRes: Int,
@@ -209,6 +220,11 @@ class Field<T> private constructor(
         this.withAsterisk = withAsterisk
         this.withCaps = withCaps
         recharge()
+    }
+
+    private fun validateEmpty(): Boolean {
+        val field = value
+        return field == null || emptyPredicate(field)
     }
 
     /**
@@ -321,6 +337,8 @@ class Field<T> private constructor(
 
         protected var required: Boolean = false
             private set
+        protected var enabled: Boolean = true
+            private set
         protected var emptyPredicate: ((T) -> Boolean)? = null
             private set
         protected var emptyMessage: TextMessage? = null
@@ -348,13 +366,8 @@ class Field<T> private constructor(
             this.emptyPredicate = predicate
         }
 
-        /**
-         * Устанавливает признак того, что поле обязательное (по умолчанию - не обязательное).
-         *
-         * @param emptyMessageRes сообщение о незаполненности поля
-         */
-        fun required(toggle: Boolean, @StringRes emptyMessageRes: Int) = apply {
-            required(toggle, TextMessage(emptyMessageRes))
+        fun required(@StringRes emptyMessageRes: Int) = apply {
+            required(TextMessage(emptyMessageRes))
         }
 
         /**
@@ -362,9 +375,13 @@ class Field<T> private constructor(
          *
          * @param emptyMessage сообщение о незаполненности поля
          */
-        fun required(required: Boolean, emptyMessage: TextMessage? = null) = apply {
-            this.required = required
+        fun required(emptyMessage: TextMessage? = null) = apply {
+            this.required = true
             this.emptyMessage = emptyMessage
+        }
+
+        fun disable() = apply {
+            enabled = false
         }
 
         /**
@@ -427,8 +444,9 @@ class Field<T> private constructor(
         fun build(): Field<T> {
             val emptyIf = emptyPredicate
                 ?: throw IllegalStateException("emptyIf function must be called on Field.Builder")
-            val field = createField()
+            val field = createField(!emptyIf(initialValue))
             field._requiredFlow.value = required
+            field._enabledFlow.value = enabled
             field.emptyPredicate = emptyIf
             field.emptyMessage = emptyMessage
             field.validators = validators
@@ -439,7 +457,7 @@ class Field<T> private constructor(
             return field
         }
 
-        private fun createField(): Field<T> {
+        private fun createField(hasInitial: Boolean): Field<T> {
             val sharedFieldValue = fieldValue()
             val stateFieldValue = sharedFieldValue.stateIn(
                 scope,
@@ -448,6 +466,7 @@ class Field<T> private constructor(
             )
             return Field(
                 persistable,
+                hasInitial,
                 stateFieldValue,
                 sharedFieldValue,
                 scope,
