@@ -12,89 +12,13 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import androidx.annotation.RequiresApi
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("OpenIntentUtils")
-
-@JvmOverloads
-fun Context.openEmailIntent(
-    address: String?,
-    sendAction: SendAction = SendAction.SENDTO,
-    sendIntentFunc: (Intent.() -> Unit)? = null,
-    flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
-    options: Bundle? = null,
-    errorHandler: ((RuntimeException) -> Unit)? = null,
-): Boolean {
-    return openEmailIntent(
-        getSendEmailUri(address),
-        address?.let { listOf(address) },
-        sendAction,
-        sendIntentFunc,
-        flags,
-        options,
-        errorHandler
-    )
-}
-
-/**
- * @param uri со схемой [URL_SCHEME_MAIL]
- * @param sendIntentFunc дополнительно можно указать subject, text и т.д.
- */
-@JvmOverloads
-fun Context.openEmailIntent(
-    uri: Uri,
-    addresses: List<String>? = null,
-    sendAction: SendAction = SendAction.SENDTO,
-    sendIntentFunc: (Intent.() -> Unit)? = null,
-    flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
-    options: Bundle? = null,
-    errorHandler: ((RuntimeException) -> Unit)? = null,
-): Boolean {
-    val intent = getSendEmailIntent(uri, sendAction, addresses)
-        ?: return false
-    return openSendDataIntent(
-        intent.also {
-            sendIntentFunc?.invoke(it)
-        },
-        flags,
-        options,
-        errorHandler
-    )
-}
-
-@JvmOverloads
-fun Context.openSendDataIntent(
-    sendAction: SendAction = SendAction.SEND,
-    sendIntentFunc: (Intent.() -> Unit)? = null,
-    flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
-    options: Bundle? = null,
-    errorHandler: ((RuntimeException) -> Unit)? = null,
-): Boolean {
-    return openSendDataIntent(
-        getSendIntent(sendAction).also {
-            sendIntentFunc?.invoke(it)
-        },
-        flags,
-        options,
-        errorHandler
-    )
-}
-
-private fun Context.openSendDataIntent(
-    intent: Intent,
-    flags: Int = Intent.FLAG_ACTIVITY_NEW_TASK,
-    options: Bundle? = null,
-    errorHandler: ((RuntimeException) -> Unit)? = null,
-): Boolean {
-    return startActivitySafe(
-        intent.addFlags(flags),
-        options = options,
-        errorHandler = errorHandler
-    )
-}
 
 @JvmOverloads
 fun Context.openDocument(
@@ -125,7 +49,7 @@ fun Context.openViewUrl(
     return if (url.isEmpty()) {
         false
     } else {
-        openViewUrl(Uri.parse(url), mimeType, flags, options, errorHandler)
+        openViewUrl(url.toUri(), mimeType, flags, options, errorHandler)
     }
 }
 
@@ -155,7 +79,7 @@ fun Context.openViewUrlNonBrowser(
     return if (url.isEmpty()) {
         false
     } else {
-        openViewUrlNonBrowser(Uri.parse(url), mimeType, flags, options, errorHandler)
+        openViewUrlNonBrowser(url.toUri(), mimeType, flags, options, errorHandler)
     }
 }
 
@@ -188,7 +112,7 @@ fun Context.openViewUrlNonBrowser(
 fun Context.openBatteryOptimizationSettings() {
     startActivitySafe(
         Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
-            .setData(Uri.parse("package:$packageName"))
+            .setData("package:$packageName".toUri())
     ) {
         startActivitySafe(Intent().apply {
             setClassName(
@@ -213,7 +137,7 @@ fun Context.openRequestIgnoreBatteryOptimizations() {
         startActivitySafe(
             Intent().apply {
                 action = Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS
-                data = Uri.parse("package:$packageName")
+                data = "package:$packageName".toUri()
             }
         )
     }
