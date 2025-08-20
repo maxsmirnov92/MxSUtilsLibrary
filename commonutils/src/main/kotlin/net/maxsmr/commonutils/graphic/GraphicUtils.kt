@@ -1,6 +1,5 @@
 package net.maxsmr.commonutils.graphic
 
-import android.annotation.TargetApi
 import android.content.ContentResolver
 import android.content.Context
 import android.content.res.ColorStateList
@@ -26,7 +25,6 @@ import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.Drawable
 import android.graphics.drawable.RippleDrawable
 import android.net.Uri
-import android.os.Build
 import android.renderscript.Allocation
 import android.renderscript.Element
 import android.renderscript.RenderScript
@@ -34,7 +32,6 @@ import android.renderscript.ScriptIntrinsicYuvToRGB
 import android.renderscript.Type
 import androidx.annotation.ColorInt
 import androidx.annotation.DrawableRes
-import androidx.annotation.RequiresApi
 import net.maxsmr.commonutils.checkFile
 import net.maxsmr.commonutils.createFile
 import net.maxsmr.commonutils.deleteFile

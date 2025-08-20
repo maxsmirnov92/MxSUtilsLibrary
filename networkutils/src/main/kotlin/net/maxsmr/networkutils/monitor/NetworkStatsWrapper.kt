@@ -1,6 +1,6 @@
 package net.maxsmr.networkutils.monitor
 
-import android.annotation.TargetApi
+import androidx.annotation.RequiresApi
 import android.app.usage.NetworkStats
 import android.app.usage.NetworkStatsManager
 import android.content.Context
@@ -18,7 +18,7 @@ import java.lang.RuntimeException
 /**
  * Only for apps which has allowed sharing stats to other apps
  */
-@TargetApi(Build.VERSION_CODES.M)
+@RequiresApi(Build.VERSION_CODES.M)
 class NetworkStatsWrapper @JvmOverloads constructor(
         private val context: Context,
         private val packageUid: Int = getApplicationUid(context, context.packageName) ?: -1

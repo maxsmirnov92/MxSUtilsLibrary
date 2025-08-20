@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.gui
 
 import android.animation.ValueAnimator
-import android.annotation.TargetApi
+import androidx.annotation.RequiresApi
 import android.app.Activity
 import android.graphics.Point
 import android.graphics.Rect
@@ -110,14 +110,14 @@ fun RecyclerView.addFloatingActionButtonScrollListener(
     return listener
 }
 
-@TargetApi(Build.VERSION_CODES.M)
+@RequiresApi(Build.VERSION_CODES.M)
 fun ScrollView.setOnScrollChangesListener(listener: ((ScrollState) -> Unit)) {
     setOnScrollChangeListener { _, scrollX, scrollY, oldScrollX, oldScrollY ->
         listener.invoke(detectScrollChangesByParams(scrollX, scrollY, oldScrollX, oldScrollY))
     }
 }
 
-@TargetApi(Build.VERSION_CODES.M)
+@RequiresApi(Build.VERSION_CODES.M)
 fun NestedScrollView.setOnScrollChangesListener(listener: ((ScrollState) -> Unit)) {
     setOnScrollChangeListener { _, scrollX, scrollY, oldScrollX, oldScrollY ->
         listener.invoke(detectScrollChangesByParams(scrollX, scrollY, oldScrollX, oldScrollY))

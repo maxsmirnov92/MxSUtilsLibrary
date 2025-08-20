@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.gui.views;
 
-import android.annotation.TargetApi;
+import androidx.annotation.RequiresApi;
 import android.content.Context;
 import android.content.res.TypedArray;
 import android.graphics.drawable.Drawable;
@@ -52,7 +52,7 @@ public class ViewPagerIndicator extends LinearLayout implements ViewPager.OnPage
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
+    @RequiresApi(Build.VERSION_CODES.HONEYCOMB)
     public ViewPagerIndicator(Context context, AttributeSet attrs, int defStyleAttr) {
         super(context, attrs, defStyleAttr);
         if (!isInEditMode()) {
@@ -60,7 +60,7 @@ public class ViewPagerIndicator extends LinearLayout implements ViewPager.OnPage
         }
     }
 
-    @TargetApi(Build.VERSION_CODES.LOLLIPOP)
+    @RequiresApi(Build.VERSION_CODES.LOLLIPOP)
     public ViewPagerIndicator(Context context, AttributeSet attrs, int defStyleAttr, int defStyleRes) {
         super(context, attrs, defStyleAttr, defStyleRes);
         if (!isInEditMode()) {

@@ -143,26 +143,6 @@ fun Context.getActionBarHeight(): Int {
     }
 }
 
-@SuppressLint("InternalInsetResource")
-fun Resources.getStatusBarHeight(): Int {
-    var result = 0
-    val resourceId = getIdentifier("status_bar_height", "dimen", "android")
-    if (resourceId > 0) {
-        result = getDimensionPixelSize(resourceId)
-    }
-    return result
-}
-
-@SuppressLint("InternalInsetResource")
-fun Resources.getNavigationBarHeight(): Int {
-    val resourceId = getIdentifier("navigation_bar_height", "dimen", "android")
-    return if (resourceId > 0) {
-        getDimensionPixelSize(resourceId)
-    } else {
-        0
-    }
-}
-
 @JvmOverloads
 fun AssetManager.readStringsFromAsset(
     assetName: String,

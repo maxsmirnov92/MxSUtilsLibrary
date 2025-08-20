@@ -1,7 +1,7 @@
 package net.maxsmr.commonutils.gui
 
 import android.annotation.SuppressLint
-import android.annotation.TargetApi
+import androidx.annotation.RequiresApi
 import android.content.res.ColorStateList
 import android.graphics.*
 import android.graphics.drawable.Drawable
@@ -591,7 +591,7 @@ fun TextInputLayout.setInputError(
         this.isErrorEnabled = isErrorEnabled
         refreshDrawableState()
         if (requestFocusIfError && isErrorEnabled) {
-            requestFocusWithCheck()
+            editText?.requestFocus()
         }
     }
 }
@@ -715,50 +715,6 @@ fun ImageView.getRescaledImageViewSize(): Size {
         } //rescaled height of image within ImageView;
     }
     return Size(measuredWidth, measuredHeight)
-}
-
-fun View.getViewInset(): Int {
-    val statusBarHeight = context.resources.getStatusBarHeight()
-    if (statusBarHeight < 0) {
-        return 0
-    }
-    val dm = context.resources.displayMetrics
-    if (isPreLollipop() || this.height == dm.heightPixels || this.height == dm.heightPixels - statusBarHeight) {
-        return 0
-    }
-    val info: Any? = getFieldValue<Any?, View>(View::class.java, this, "mAttachInfo")
-    if (info != null) {
-        val insets: Rect? = getFieldValue(info.javaClass, info, "mStableInsets")
-        return insets?.bottom ?: 0
-    }
-    return 0
-}
-
-/**
- * @return true if focused, false otherwise
- */
-fun View?.requestFocusWithCheck(): Boolean {
-    if (this != null) {
-        if (this.isFocusable) {
-//            act.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_VISIBLE);
-            if (this.requestFocus()) {
-                return true
-            }
-        }
-    }
-    return false
-}
-
-/**
- * @return true if focus cleared, false otherwise
- */
-fun View?.clearFocusWithCheck(): Boolean {
-    if (this != null) {
-        this.clearFocus()
-//        act.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_HIDDEN);
-        return true
-    }
-    return false
 }
 
 fun View.runOnceLayoutChanges(action: () -> Unit) {
@@ -1305,7 +1261,7 @@ fun WebView.loadDataCompat(
     }
 }
 
-@TargetApi(Build.VERSION_CODES.N)
+@RequiresApi(Build.VERSION_CODES.N)
 @JvmOverloads
 fun WebView.loadDataBase64(
     data: String,

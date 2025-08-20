@@ -2,18 +2,17 @@ package net.maxsmr.commonutils
 
 import android.app.Activity
 import android.app.ActivityManager
-import android.content.*
+import android.content.ClipData
+import android.content.ClipboardManager
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.Intent
 import android.content.pm.ApplicationInfo
 import android.content.pm.PackageInfo
 import android.content.pm.PackageManager
-import android.graphics.Insets
 import android.os.Build
 import android.os.StrictMode
-import android.util.DisplayMetrics
-import android.util.Size
 import android.view.View
-import android.view.WindowInsets
-import android.view.WindowMetrics
 import androidx.annotation.RequiresApi
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
@@ -25,8 +24,6 @@ import net.maxsmr.commonutils.processmanager.AbstractProcessManager
 import net.maxsmr.commonutils.text.isEmpty
 import java.io.File
 import java.lang.reflect.Method
-import java.util.*
-
 
 private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("AppUtils")
 
@@ -338,50 +335,6 @@ fun Context.copyToClipboard(label: String, text: String) {
     clipboard.setPrimaryClip(clip)
 }
 
-fun Activity.getDisplaySize(): Size {
-    return if (isAtLeastR()) {
-        val windowMetrics: WindowMetrics = windowManager.currentWindowMetrics
-        val insets: Insets = windowMetrics.windowInsets
-            .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
-        Size(
-            windowMetrics.bounds.width() - insets.left - insets.right,
-            windowMetrics.bounds.height() - insets.top - insets.bottom
-        )
-    } else {
-        val outMetrics = DisplayMetrics()
-        windowManager.defaultDisplay.getMetrics(outMetrics)
-        Size(outMetrics.widthPixels, outMetrics.heightPixels)
-    }
-}
-
-fun Activity.getDisplaySizeWithDensity(): Pair<Size, Float> {
-    return if (isAtLeastUpsideDownCake()) {
-        val windowMetrics: WindowMetrics = windowManager.currentWindowMetrics
-        val insets: Insets = windowMetrics.windowInsets
-            .getInsetsIgnoringVisibility(WindowInsets.Type.systemBars())
-        Size(
-            windowMetrics.bounds.width() - insets.left - insets.right,
-            windowMetrics.bounds.height() - insets.top - insets.bottom
-        ) to windowMetrics.density
-    } else {
-        val outMetrics = DisplayMetrics()
-        windowManager.defaultDisplay.getMetrics(outMetrics)
-        Size(outMetrics.widthPixels, outMetrics.heightPixels) to outMetrics.density
-    }
-}
-
-/**
- * @return одна из 4-х констант, соответствующая ориентации в текущей конфигурации
- * (значение не меняется при фактическом повороте без пересоздания активити)
- */
-fun Activity.getDisplayRotation(): Int? {
-    return if (isAtLeastR()) {
-        display?.rotation
-    } else {
-        windowManager.defaultDisplay.rotation
-    }
-}
-
 @JvmOverloads
 fun Context.fragmentActivity(maxDepth: Int = 20): FragmentActivity? = try {
     fragmentActivityOrThrow(maxDepth)
@@ -398,11 +351,7 @@ fun Context.fragmentActivityOrThrow(maxDepth: Int = 20): FragmentActivity {
     while (--depth > 0 && curContext !is FragmentActivity) {
         curContext = (curContext as ContextWrapper).baseContext
     }
-    return if (curContext is FragmentActivity) {
-        curContext
-    } else {
-        throw RuntimeException("FragmentActivity not found")
-    }
+    return curContext as? FragmentActivity ?: throw RuntimeException("FragmentActivity not found")
 }
 
 @JvmOverloads
@@ -421,11 +370,7 @@ fun Context.lifecycleOwnerOrThrow(maxDepth: Int = 20): LifecycleOwner {
     while (--depth > 0 && curContext !is LifecycleOwner) {
         curContext = (curContext as ContextWrapper).baseContext
     }
-    return if (curContext is LifecycleOwner) {
-        curContext
-    } else {
-        throw RuntimeException("LifecycleOwner not found")
-    }
+    return curContext as? LifecycleOwner ?: throw RuntimeException("LifecycleOwner not found")
 }
 
 fun Any.asContext(): Context? = try {

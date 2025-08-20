@@ -1,6 +1,6 @@
 package net.maxsmr.commonutils.media
 
-import android.annotation.TargetApi
+import androidx.annotation.RequiresApi
 import android.content.ContentResolver
 import android.content.ContentUris
 import android.content.ContentValues
@@ -175,7 +175,7 @@ fun getFilteredExternalFilesDirs(
     return result
 }
 
-@TargetApi(Build.VERSION_CODES.Q)
+@RequiresApi(Build.VERSION_CODES.Q)
 @JvmOverloads
 fun File.copyToExternal(
     contentResolver: ContentResolver,
@@ -189,7 +189,7 @@ fun File.copyToExternal(
     false
 }
 
-@TargetApi(Build.VERSION_CODES.Q)
+@RequiresApi(Build.VERSION_CODES.Q)
 @Throws(RuntimeException::class)
 @JvmOverloads
 fun File.copyToExternalOrThrow(
@@ -255,7 +255,7 @@ fun scanFiles(
  * @author paulburke
  */
 @Suppress("DEPRECATION")
-@TargetApi(Build.VERSION_CODES.KITKAT)
+@RequiresApi(Build.VERSION_CODES.KITKAT)
 fun Uri?.getPath(context: Context): String {
     if (this == null) return EMPTY_STRING
 
@@ -621,7 +621,7 @@ fun Uri.getImageRotationAngleOrThrow(contentResolver: ContentResolver): Int =
 /**
  * Определяет поворот картинки
  */
-@TargetApi(Build.VERSION_CODES.Q)
+@RequiresApi(Build.VERSION_CODES.Q)
 fun Uri.getOrientationFromMediaStore(contentResolver: ContentResolver): Int? = try {
     getOrientationFromMediaStoreOrThrow(contentResolver)
 } catch (e: RuntimeException) {
@@ -629,7 +629,7 @@ fun Uri.getOrientationFromMediaStore(contentResolver: ContentResolver): Int? = t
     null
 }
 
-@TargetApi(Build.VERSION_CODES.Q)
+@RequiresApi(Build.VERSION_CODES.Q)
 @Throws(RuntimeException::class)
 fun Uri.getOrientationFromMediaStoreOrThrow(contentResolver: ContentResolver): Int =
     queryFirstOrThrow(

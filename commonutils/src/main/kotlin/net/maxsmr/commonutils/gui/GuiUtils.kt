@@ -1,6 +1,7 @@
 package net.maxsmr.commonutils.gui
 
 import android.app.Activity
+import android.content.Context
 import android.os.CountDownTimer
 import android.util.Rational
 import android.util.Size
@@ -15,6 +16,7 @@ import androidx.annotation.ColorInt
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.graphics.ColorUtils
 import net.maxsmr.commonutils.getColorFromAttrs
+import net.maxsmr.commonutils.getDisplayCompat
 import net.maxsmr.commonutils.getDisplaySize
 import net.maxsmr.commonutils.isAtLeastLollipop
 import net.maxsmr.commonutils.isAtLeastMarshmallow
@@ -29,8 +31,6 @@ private const val DEFAULT_DARK_COLOR_RATIO = 0.7
 
 private const val RATIO_4_3_VALUE = 4.0 / 3.0
 private const val RATIO_16_9_VALUE = 16.0 / 9.0
-
-private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("GuiUtils")
 
 fun Activity.setFullScreen(toggle: Boolean) {
     with(window) {
@@ -52,9 +52,9 @@ fun AppCompatActivity.setHomeButtonEnabled(toggle: Boolean) {
     }
 }
 
-fun KeyEvent?.isEnterKeyPressed(actionId: Int): Boolean =
-        this != null && this.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_NULL
-
+fun KeyEvent?.isEnterKeyPressed(actionId: Int): Boolean {
+    return this != null && this.keyCode == KeyEvent.KEYCODE_ENTER || actionId == EditorInfo.IME_NULL
+}
 
 @Deprecated("")
 fun Activity.setDefaultStatusBarColor() {
@@ -67,23 +67,19 @@ fun Activity.setDefaultStatusBarColor() {
  */
 @Deprecated("")
 fun Activity.setStatusBarColor(@ColorInt color: Int) {
-    if (isAtLeastLollipop()) {
-        window.statusBarColor = color
-        if (isAtLeastMarshmallow()) {
-            // если цвет слишком белый, то красим иконки statusbar'а в серый цвет
-            // инчае возвращаем к дефолтному белому
-            if (ColorUtils.calculateLuminance(color).compareTo(DEFAULT_DARK_COLOR_RATIO) != -1) {
-                var flags = window.decorView.systemUiVisibility
-                flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
-                window.decorView.systemUiVisibility = flags
-            } else {
-                window.decorView.systemUiVisibility = 0
-            }
+    window.statusBarColor = color
+    if (isAtLeastMarshmallow()) {
+        // если цвет слишком белый, то красим иконки statusbar'а в серый цвет
+        // инчае возвращаем к дефолтному белому
+        if (ColorUtils.calculateLuminance(color).compareTo(DEFAULT_DARK_COLOR_RATIO) != -1) {
+            var flags = window.decorView.systemUiVisibility
+            flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
+            window.decorView.systemUiVisibility = flags
+        } else {
+            window.decorView.systemUiVisibility = 0
         }
     }
 }
-
-
 
 fun Activity.setDefaultNavigationColor() {
     setNavigationBarColor(window.context.getColorFromAttrs(intArrayOf(android.R.attr.colorPrimaryDark)))
@@ -108,48 +104,25 @@ fun Window.hideAboveLockscreen(window: Window, wakeScreen: Boolean) {
     toggleAboveLockscreen(wakeScreen, false)
 }
 
-@Deprecated("")
-private fun Window.toggleAboveLockscreen(wakeScreen: Boolean, toggle: Boolean) {
-    var flags = WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
-    if (wakeScreen) {
-        flags = flags or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
-    }
-    if (toggle) {
-        addFlags(flags)
-    } else {
-        clearFlags(flags)
-    }
-}
-
-/**
- * @return true if focus cleared, false otherwise
- */
-fun Activity?.clearFocus(): Boolean =
-        this?.currentFocus.clearFocusWithCheck()
-
 fun Activity.getDisplayStandardAspectRatio(): StandardAspectRatio {
     return getStandardAspectRatio(getDisplaySize())
 }
 
+/**
+ * @return одна из 4-х констант, соответствующая ориентации в текущей конфигурации
+ * (значение не меняется при фактическом повороте без пересоздания активити)
+ */
+fun Context.getDisplayRotation(): Int? {
+    return getDisplayCompat().rotation
+}
+
 fun getStandardAspectRatio(size: Size): StandardAspectRatio {
     val previewRatio = max(size.width, size.height).toDouble() / min(size.width, size.height)
-    return  if (abs(previewRatio - RATIO_4_3_VALUE) <= abs(previewRatio - RATIO_16_9_VALUE)) {
+    return if (abs(previewRatio - RATIO_4_3_VALUE) <= abs(previewRatio - RATIO_16_9_VALUE)) {
         StandardAspectRatio._4_3
     } else {
         StandardAspectRatio._16_9
     }
-}
-
-enum class StandardAspectRatio {
-    _4_3,
-    _16_9;
-
-    val value: Rational
-        get() = when(this) {
-            _4_3 -> Rational(4, 3)
-            _16_9 -> Rational(16, 9)
-        }
 }
 
 fun getAspectRatio(size: Size): Rational {
@@ -212,12 +185,15 @@ fun getCorrectedDisplayRotation(rotation: Int): Int {
         in 315..359, in 0..44 -> {
             result = 0
         }
+
         in 45..134 -> {
             result = 90
         }
+
         in 135..224 -> {
             result = 180
         }
+
         in 225..314 -> {
             result = 270
         }
@@ -243,4 +219,29 @@ fun getSurfaceRotation(rotationDegrees: Int): Int {
         270 -> Surface.ROTATION_270
         else -> 0
     }
+}
+
+@Deprecated("")
+private fun Window.toggleAboveLockscreen(wakeScreen: Boolean, toggle: Boolean) {
+    var flags = WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
+            WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
+    if (wakeScreen) {
+        flags = flags or WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+    }
+    if (toggle) {
+        addFlags(flags)
+    } else {
+        clearFlags(flags)
+    }
+}
+
+enum class StandardAspectRatio {
+    _4_3,
+    _16_9;
+
+    val value: Rational
+        get() = when (this) {
+            _4_3 -> Rational(4, 3)
+            _16_9 -> Rational(16, 9)
+        }
 }
