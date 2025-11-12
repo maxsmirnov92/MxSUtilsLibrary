@@ -144,20 +144,18 @@ fun speed(begin: Location, end: Location): Double {
     return if (interval > 0) distance / interval.toDouble() else 0.0
 }
 
-/**
- * Проверка наличия функции GPS на устройстве
- */
-fun isGpsAvailable(isGpsOnly: Boolean, context: Context): Boolean {
+
+fun hasLocationFeature(withGpsOnly: Boolean, context: Context): Boolean {
     val pm: PackageManager = context.packageManager
-    return pm.hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS) || !isGpsOnly && pm.hasSystemFeature(
-        PackageManager.FEATURE_LOCATION_NETWORK)
+    return pm.hasSystemFeature(PackageManager.FEATURE_LOCATION_GPS)
+            || !withGpsOnly && pm.hasSystemFeature(PackageManager.FEATURE_LOCATION_NETWORK)
 }
 
 /**
  * Проверка того, что функция GPS включена на устройстве
  */
-fun isGpsEnabled(isGpsOnly: Boolean, context: Context): Boolean {
-    return checkLocationProviderEnabled(isGpsOnly, context) != null
+fun isLocationProviderEnabled(withGpsOnly: Boolean, context: Context): Boolean {
+    return checkLocationProviderEnabled(withGpsOnly, context) != null
 }
 
 /**
