@@ -13,7 +13,7 @@ import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRunt
 import net.maxsmr.commonutils.shell.DEFAULT_TARGET_CODE
 import net.maxsmr.commonutils.shell.ShellCallback
 import net.maxsmr.commonutils.shell.ShellWrapper
-import net.maxsmr.commonutils.stream.IStreamNotifier
+import net.maxsmr.commonutils.stream.StreamNotifier
 import net.maxsmr.commonutils.stream.compressStreamsToZipOrThrow
 import net.maxsmr.commonutils.stream.copyStreamOrThrow
 import net.maxsmr.commonutils.stream.readBytesOrThrow
@@ -759,7 +759,7 @@ fun File.writeStringsOrThrow(
 fun File.writeFromStream(
     inputStream: InputStream,
     append: Boolean = false,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
 ): Boolean = try {
     writeFromStreamOrThrow(inputStream, append, notifier, buffSize)
@@ -774,7 +774,7 @@ fun File.writeFromStream(
 fun File.writeFromStreamOrThrow(
     inputStream: InputStream,
     append: Boolean = false,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
 ) {
     if (!isFileExistsOrThrow(this)) {
@@ -790,7 +790,7 @@ fun File.writeFromStreamOrThrow(
 @JvmOverloads
 fun File.writeToStream(
     outputStream: OutputStream,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ): Boolean = try {
     writeToStreamOrThrow(outputStream, notifier, buffSize)
@@ -804,7 +804,7 @@ fun File.writeToStream(
 @JvmOverloads
 fun File.writeToStreamOrThrow(
     outputStream: OutputStream,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
     try {
@@ -963,7 +963,7 @@ fun copyFileWithBuffering(
     }
 
     try {
-        targetFile.writeFromStreamOrThrow(fis, !rewrite, if (notifier != null) object : IStreamNotifier {
+        targetFile.writeFromStreamOrThrow(fis, !rewrite, if (notifier != null) object : StreamNotifier {
 
             override val notifyInterval: Long
                 get() = notifier.notifyInterval
@@ -1832,7 +1832,7 @@ fun compressFilesToZip(
     destZipParent: String?,
     recreate: Boolean = true,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
-    notifier: IStreamNotifier? = null
+    notifier: StreamNotifier? = null
 ): File? = try {
     compressFilesToZipOrThrow(srcFiles, destZipName, destZipParent, recreate, buffSize, notifier)
 } catch (e: RuntimeException) {
@@ -1848,7 +1848,7 @@ fun compressFilesToZipOrThrow(
     destZipParent: String?,
     recreate: Boolean = true,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
-    notifier: IStreamNotifier? = null
+    notifier: StreamNotifier? = null
 ): File {
     val zipFile = createFileOrThrow(destZipName, destZipParent, recreate)
 
@@ -1874,7 +1874,7 @@ fun File.unzip(
     saveDirHierarchy: Boolean = true,
     recreate: Boolean = true,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
-    notifier: IStreamNotifier? = null
+    notifier: StreamNotifier? = null
 ) = try {
     unzipOrThrow(destPath, saveDirHierarchy, recreate, buffSize, notifier)
     true
@@ -1890,7 +1890,7 @@ fun File.unzipOrThrow(
     saveDirHierarchy: Boolean = true,
     recreate: Boolean = true,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
-    notifier: IStreamNotifier? = null
+    notifier: StreamNotifier? = null
 ) {
     if (!isFileValidOrThrow(this)) {
         throw IllegalArgumentException("Invalid zip file: '$this'")

@@ -26,7 +26,7 @@ import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
-import net.maxsmr.commonutils.stream.IStreamNotifier
+import net.maxsmr.commonutils.stream.StreamNotifier
 import net.maxsmr.commonutils.stream.copyStreamOrThrow
 import net.maxsmr.commonutils.text.EMPTY_STRING
 import net.maxsmr.commonutils.text.getExtension
@@ -196,7 +196,7 @@ fun File.copyToExternalOrThrow(
     contentResolver: ContentResolver,
     mimeType: String? = null,
     useRelativePath: Boolean = false,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
     val values = ContentValues().apply {

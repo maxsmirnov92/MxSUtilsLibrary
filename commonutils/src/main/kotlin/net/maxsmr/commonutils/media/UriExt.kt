@@ -15,7 +15,7 @@ import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
-import net.maxsmr.commonutils.stream.IStreamNotifier
+import net.maxsmr.commonutils.stream.StreamNotifier
 import net.maxsmr.commonutils.stream.copyStreamOrThrow
 import net.maxsmr.commonutils.stream.readBytesOrThrow
 import net.maxsmr.commonutils.stream.readStringOrThrow
@@ -157,7 +157,7 @@ fun Uri.writeStringsOrThrow(contentResolver: ContentResolver, data: Collection<S
 fun Uri.writeFromStream(
     contentResolver: ContentResolver,
     inputStream: InputStream,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
 ) = try {
     writeFromStreamOrThrow(contentResolver, inputStream, notifier, buffSize)
@@ -172,7 +172,7 @@ fun Uri.writeFromStream(
 fun Uri.writeFromStreamOrThrow(
     contentResolver: ContentResolver,
     inputStream: InputStream,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
     closeInput: Boolean = true
 ) {

@@ -1,11 +1,21 @@
 package net.maxsmr.commonutils.stream
 
-import net.maxsmr.commonutils.text.EMPTY_STRING
-import net.maxsmr.commonutils.text.NEXT_LINE
 import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.logException
-import java.io.*
+import net.maxsmr.commonutils.text.EMPTY_STRING
+import net.maxsmr.commonutils.text.NEXT_LINE
+import java.io.BufferedOutputStream
+import java.io.BufferedReader
+import java.io.BufferedWriter
+import java.io.ByteArrayOutputStream
+import java.io.File
+import java.io.IOException
+import java.io.InputStream
+import java.io.InputStreamReader
+import java.io.InterruptedIOException
+import java.io.OutputStream
+import java.io.Writer
 import java.nio.charset.Charset
 import java.util.zip.ZipEntry
 import java.util.zip.ZipInputStream
@@ -22,7 +32,7 @@ private val logger = BaseLoggerHolder.instance.getLogger<BaseLogger>("StreamUtil
 @JvmOverloads
 fun InputStream.copyStream(
     out: OutputStream,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
     closeInput: Boolean = true,
     closeOutput: Boolean = true
@@ -40,18 +50,20 @@ fun InputStream.copyStream(
 @JvmOverloads
 fun InputStream.copyStreamOrThrow(
     out: OutputStream,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
     closeInput: Boolean = true,
-    closeOutput: Boolean = true
+    closeOutput: Boolean = true,
 ): Long {
     require(buffSize > 0) { "buffSize" }
 
-    var bytesWriteCount = 0L
+    var bytesWrite = 0L
 
     try {
         val buff = ByteArray(buffSize)
-        val totalBytesCount = this.available().toLong()
+        val bytesTotal = this.available().toLong()
+
+        notifier?.onCopyStart(bytesTotal)
 
         var len: Int
         var lastNotifyTime: Long = 0
@@ -61,12 +73,10 @@ fun InputStream.copyStreamOrThrow(
                 val current = System.currentTimeMillis()
                 if (interval >= 0 && (interval == 0L || lastNotifyTime == 0L || current - lastNotifyTime >= interval)) {
                     if (!notifier.onProcessing(
-                            this, out, bytesWriteCount,
-                            if (totalBytesCount >= bytesWriteCount) {
-                                totalBytesCount
-                            } else {
-                                0L
-                            }
+                            this,
+                            out,
+                            bytesWrite,
+                            bytesTotal
                         )
                     ) {
                         throw InterruptedIOException("Copying streams interrupted")
@@ -75,9 +85,9 @@ fun InputStream.copyStreamOrThrow(
                 }
             }
             out.write(buff, 0, len)
-            bytesWriteCount += len
+            bytesWrite += len
         }
-        notifier?.onStreamEnd(this, out, bytesWriteCount)
+        notifier?.onCopyEnd(bytesWrite)
     } finally {
         if (closeInput) {
             this.close()
@@ -86,7 +96,7 @@ fun InputStream.copyStreamOrThrow(
             out.close()
         }
     }
-    return bytesWriteCount
+    return bytesWrite
 }
 
 @JvmOverloads
@@ -247,7 +257,7 @@ fun compressStreamsToZip(
     inputStreams: Map<String, InputStream>,
     outputStream: OutputStream,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     closeInput: Boolean = true,
     closeOutput: Boolean = true
 ): Int = try {
@@ -263,7 +273,7 @@ fun compressStreamsToZipOrThrow(
     inputStreams: Map<String, InputStream>,
     outputStream: OutputStream,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     closeInput: Boolean = true,
     closeOutput: Boolean = true
 ): Int {
@@ -301,7 +311,7 @@ fun compressStreamsToZipOrThrow(
 fun InputStream.unzipStream(
     saveDirHierarchy: Boolean = true,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     closeInput: Boolean = true,
     closeOutput: Boolean = true,
     createDirFunc: (String) -> Unit,
@@ -326,7 +336,7 @@ fun InputStream.unzipStream(
 fun InputStream.unzipStreamOrThrow(
     saveDirHierarchy: Boolean = true,
     buffSize: Int = DEFAULT_BUFFER_SIZE,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     closeInput: Boolean = true,
     closeOutput: Boolean = true,
     createDirFunc: (String) -> Unit,
@@ -356,7 +366,7 @@ fun InputStream.unzipStreamOrThrow(
     }
 }
 
-interface IStreamNotifier {
+interface StreamNotifier {
 
     val notifyInterval: Long get() = 0L
 
@@ -367,14 +377,10 @@ interface IStreamNotifier {
         inputStream: InputStream,
         outputStream: OutputStream,
         bytesWrite: Long,
-        bytesTotal: Long
+        bytesTotal: Long,
     ): Boolean = true
 
-    fun onStreamEnd(
-        inputStream: InputStream,
-        outputStream: OutputStream,
-        bytesWrite: Long
-    ) {
-        // do nothing
-    }
+    fun onCopyStart(bytesLeft: Long) {}
+
+    fun onCopyEnd(bytesWrite: Long) {}
 }

@@ -1,6 +1,5 @@
 package net.maxsmr.commonutils
 
-import android.annotation.SuppressLint
 import android.content.ContentResolver
 import android.content.Context
 import android.content.res.AssetManager
@@ -27,7 +26,7 @@ import net.maxsmr.commonutils.logger.BaseLogger
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.formatException
 import net.maxsmr.commonutils.logger.holder.BaseLoggerHolder.Companion.throwRuntimeException
-import net.maxsmr.commonutils.stream.IStreamNotifier
+import net.maxsmr.commonutils.stream.StreamNotifier
 import net.maxsmr.commonutils.stream.copyStreamOrThrow
 import net.maxsmr.commonutils.stream.readStringOrThrow
 import net.maxsmr.commonutils.stream.readStringsOrThrow
@@ -256,7 +255,7 @@ fun AssetManager.copyFromAssets(
     assetName: String,
     targetFile: File,
     rewrite: Boolean = true,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ) = try {
     copyFromAssetsOrThrow(assetName, targetFile, rewrite, notifier, buffSize)
@@ -272,7 +271,7 @@ fun AssetManager.copyFromAssetsOrThrow(
     assetName: String,
     targetFile: File,
     rewrite: Boolean = true,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
     createFileOrThrow(targetFile.name, targetFile.parent, rewrite)
@@ -288,7 +287,7 @@ fun Resources.copyFromRawRes(
     @RawRes resId: Int,
     targetFile: File,
     rewrite: Boolean = true,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ) = try {
     copyFromRawResOrThrow(resId, targetFile, rewrite, notifier, buffSize)
@@ -309,7 +308,7 @@ fun Resources.copyFromRawResOrThrow(
     @RawRes resId: Int,
     targetFile: File,
     rewrite: Boolean = true,
-    notifier: IStreamNotifier? = null,
+    notifier: StreamNotifier? = null,
     buffSize: Int = DEFAULT_BUFFER_SIZE
 ) {
     createFileOrThrow(targetFile.name, targetFile.parent, rewrite)
