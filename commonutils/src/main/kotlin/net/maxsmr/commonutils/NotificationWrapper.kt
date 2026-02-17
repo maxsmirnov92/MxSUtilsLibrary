@@ -88,7 +88,7 @@ class NotificationWrapper(
     fun create(
         notificationId: Int,
         params: ChannelParams,
-        notificationConfig: NotificationCompat.Builder.() -> Unit,
+        config: NotificationCompat.Builder.() -> Unit,
     ): Notification {
         if (!channelsMap.containsKey(params.id)) {
             params.groupParams?.let {
@@ -96,11 +96,22 @@ class NotificationWrapper(
             }
             createNotificationChannel(params)
         }
-        // реюз Builder
-        val b = notificationsMap.getOrPut(notificationId) {NotificationCompat.Builder(context, params.id)}
-        b.clearActions()
-        b.clearPeople()
-        return b.apply(notificationConfig).build()
+        var shouldClearBuilder = true
+        return notificationsMap.getOrPut(notificationId) {
+            shouldClearBuilder = false
+            NotificationCompat.Builder(context, params.id)
+        }.apply {
+            if (shouldClearBuilder) {
+                // при реюзе Builder чистим некоторые вещи
+                try {
+                    extras.clear()
+                    clearActions()
+                    clearInvisibleActions()
+                    clearPeople()
+                } catch (_: Exception) {
+                }
+            }
+        }.apply(config).build()
     }
 
     fun cancel(notificationId: Int) {
@@ -127,15 +138,12 @@ class NotificationWrapper(
             val description: String? = null
         )
     }
+}
 
-    companion object {
-
-        fun NotificationCompat.Builder.setContentBigText(text: String?) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                setStyle(NotificationCompat.BigTextStyle().bigText(text))
-            } else {
-                setContentText(text)
-            }
-        }
+fun NotificationCompat.Builder.setContentBigText(text: String) {
+    if (isAtLeastOreo()) {
+        setStyle(NotificationCompat.BigTextStyle().bigText(text))
+    } else {
+        setContentText(text)
     }
 }
