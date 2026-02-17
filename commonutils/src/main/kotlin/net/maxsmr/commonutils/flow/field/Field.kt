@@ -125,11 +125,11 @@ class Field<T> private constructor(
     private var emptyMessage: TextMessage? = null
 
     private var hintMessage: TextMessage? = null
-
-    @StringRes
-    private var requiredDescriptionResId: Int = 0
     private var withAsterisk: Boolean = true
     private var withCaps: Boolean = true
+
+    @StringRes
+    private var requiredDescriptionResId: Int? = null
 
     init {
         if (persistable != null) {
@@ -285,9 +285,9 @@ class Field<T> private constructor(
      */
     class Hint internal constructor(
         private val hint: TextMessage,
-        private val withAsterisk: Boolean,
-        private val withCaps: Boolean,
-        @StringRes private val requiredDescriptionResId: Int
+        private val withAsterisk: Boolean = true,
+        private val withCaps: Boolean = true,
+        @StringRes private val requiredDescriptionResId: Int? = null,
     ) : Serializable {
 
         /**
@@ -318,7 +318,7 @@ class Field<T> private constructor(
 
         fun CharSequence?.getReplacedAsteriskContentDescription(context: Context): CharSequence? {
             this ?: return null
-            requiredDescriptionResId.takeIf { it != 0 } ?: return null
+            requiredDescriptionResId?.takeIf { it != 0 } ?: return null
             if (!this.contains("*")) return this
             return this.toString()
                 .replace("*", " ${context.getString(requiredDescriptionResId)}")
@@ -470,8 +470,14 @@ class Field<T> private constructor(
                 stateFieldValue,
                 sharedFieldValue,
                 scope,
-                valueSetter(sharedFieldValue),
-                valueGetter(stateFieldValue)
+                {
+                    val value = transformSet(it)
+                    value.checkPersistable()
+                    sharedFieldValue.tryEmit(value)
+                },
+                {
+                    transformGet(stateFieldValue.value)
+                }
             )
         }
 
@@ -483,16 +489,9 @@ class Field<T> private constructor(
             }
         }
 
-        protected open fun valueGetter(fieldValue: StateFlow<T>): () -> T = {
-            fieldValue.value
-        }
+        protected open fun transformGet(value: T): T = value
 
-        protected open fun valueSetter(
-            fieldValue: MutableSharedFlow<T>,
-        ): (T) -> Unit = {
-            it.checkPersistable()
-            fieldValue.tryEmit(it)
-        }
+        protected open fun transformSet(value: T): T = value
 
         protected fun T.checkPersistable() {
             if (this == null || persistable == null) return
