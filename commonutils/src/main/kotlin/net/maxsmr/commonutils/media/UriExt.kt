@@ -218,10 +218,13 @@ fun Uri.copyToOrThrow(
     return fileTo.toFileUri()
 }
 
-fun Uri.takePersistableReadPermission(contentResolver: ContentResolver) {
+fun Uri.takePersistableUriPermission(
+    contentResolver: ContentResolver,
+    flags: Int
+) {
     if (this.scheme != ContentResolver.SCHEME_CONTENT) return
     try {
-        contentResolver.takePersistableUriPermission(this, Intent.FLAG_GRANT_READ_URI_PERMISSION)
+        contentResolver.takePersistableUriPermission(this, flags)
     } catch (e: Exception) {
         logger.w(e)
     }
@@ -458,11 +461,11 @@ fun Uri.isEmpty(contentResolver: ContentResolver): Boolean = try {
 fun Uri.isEmptyOrThrow(contentResolver: ContentResolver): Boolean =
     lengthOrThrow(contentResolver) == 0L
 
-fun Uri.length(contentResolver: ContentResolver): Long = try {
+fun Uri.length(contentResolver: ContentResolver): Long? = try {
     lengthOrThrow(contentResolver)
 } catch (e: RuntimeException) {
     logger.e(e)
-    0L
+    null
 }
 
 @Throws(RuntimeException::class)
