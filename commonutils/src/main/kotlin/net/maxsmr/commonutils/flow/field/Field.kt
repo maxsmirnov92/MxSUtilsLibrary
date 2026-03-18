@@ -15,7 +15,6 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
-import net.maxsmr.commonutils.flow.field.Field.Validator.Companion.regExp
 import net.maxsmr.commonutils.flow.observeLatest
 import net.maxsmr.commonutils.gui.message.TextMessage
 import java.io.Serializable
@@ -142,8 +141,8 @@ class Field<T> private constructor(
     /**
      * @return true, если проверка по всем валидаторам прошла
      */
-    fun validateAndSet(): Boolean {
-        val result = validate()
+    fun validateAndSet(tag: Any? = null): Boolean {
+        val result = validate(tag)
         _errorFlow.value = result
         return result == null
     }
@@ -151,9 +150,14 @@ class Field<T> private constructor(
     /**
      * Валидация в зав-ти от обязательности данного поля
      * @param ifEmpty при true необязательное поле будет валидироваться если непустое
+     * @param tag тэг, которому должен соответствовать конкретный валидатор для проверки;
+     * null - не учитывать тэг
      */
     @JvmOverloads
-    fun validateAndSetByRequired(ifEmpty: Boolean = true): Boolean {
+    fun validateAndSetByRequired(
+        ifEmpty: Boolean = true,
+        tag: Any? = null,
+    ): Boolean {
         return if (!requiredFlow.value && (!ifEmpty || isEmpty)) {
             // при необязательном пустом поле
             // считаем что валидация прошла
@@ -162,7 +166,7 @@ class Field<T> private constructor(
         } else {
             // при обязательности -
             // валидация по всем как обычно
-            validateAndSet()
+            validateAndSet(tag)
         }
     }
 
@@ -222,18 +226,25 @@ class Field<T> private constructor(
         recharge()
     }
 
-    private fun validateEmpty(): Boolean {
+    /**
+     * Вызвать emptyPredicate без выставления ошибки
+     * @return true, если условие на пустоту сработало
+     */
+    fun validateEmpty(): Boolean {
         val field = value
         return field == null || emptyPredicate(field)
     }
 
     /**
-     * Возвращает текущую ошибку поля, формируемую одним из валидаторов, либо null при отсутствии ошибок
+     * Вызвать emptyPredicate и validators без выставления ошибки
+     * @return текущая ошибку поля, формируемую одним из валидаторов, либо null при отсутствии ошибок
      */
-    private fun validate(): TextMessage? {
+    fun validate(tag: Any? = null): TextMessage? {
         val field = value
         if (field == null || emptyPredicate(field)) return emptyMessage
-        return validators.find { !it.isValid(field) }?.errorMessageProvider?.invoke(field)
+        return validators.find {
+            !it.isValid(value = field, tag = tag)
+        }?.errorMessageProvider?.invoke(field)
     }
 
     /**
@@ -246,36 +257,76 @@ class Field<T> private constructor(
     open class Validator<in T>(
         val errorMessageProvider: (T) -> TextMessage,
         private val validPredicate: (T) -> Boolean,
+        private val tag: Any? = null,
     ) {
-
-        fun isValid(value: T): Boolean = validPredicate(value)
 
         /**
          * Осуществляет валидацию значения поля на предмет **конкретной** ошибки
          *
-         * @param errorMessageRes ресурс сообщения об ошибке на случай, если [validPredicate] возвращает false
+         * @param errorMessageResId ресурс сообщения об ошибке на случай, если [validPredicate] возвращает false
          * @param validPredicate функция проверки значения поля на наличие ошибки с **конкретной** текстовкой
          */
         constructor(
-            @StringRes errorMessageRes: Int,
+            @StringRes errorMessageResId: Int,
             validPredicate: (T) -> Boolean,
-        ) : this({ TextMessage(errorMessageRes) }, validPredicate)
+            tag: Any? = null,
+        ) : this(
+            errorMessage = TextMessage(errorMessageResId),
+            validPredicate = validPredicate,
+            tag = tag
+        )
 
+        constructor(
+            errorMessage: String,
+            validPredicate: (T) -> Boolean,
+            tag: Any? = null,
+        ) : this(
+            errorMessage = TextMessage(errorMessage),
+            validPredicate = validPredicate,
+            tag = tag
+        )
+
+        constructor(
+            errorMessage: TextMessage,
+            validPredicate: (T) -> Boolean,
+            tag: Any? = null,
+        ) : this(
+            errorMessageProvider = { errorMessage },
+            validPredicate = validPredicate,
+            tag = tag
+        )
+
+        internal fun isValid(value: T, tag: Any?): Boolean {
+            if (tag != null && tag != this.tag) {
+                // искомый тэг указан и не соответствует тому, что в этом валидаторе ->
+                // проверка НЕ дёргается, считаем валидацию пройденной
+                return true
+            }
+            return validPredicate(value)
+        }
 
         companion object {
 
             /**
              * Возвращает валидатор, осуществляющий проверку поля по регулярному выражению
-             *
-             * @param errorMessageRes ресурс сообщения об ошибке, если проверка завершается неуспешно
+             * @param errorMessage сообщение об ошибке, если проверка завершается неуспешно
              * @param regExp строковое представление регулярного выражения
              */
-            fun regExp(@StringRes errorMessageRes: Int, regExp: String?): Validator<String?> {
-                return Validator(errorMessageRes) {
-                    it ?: return@Validator true
-                    regExp ?: return@Validator true
-                    it.matches(regExp.toRegex())
-                }
+            fun fromRegExp(
+                errorMessage: TextMessage,
+                regExp: String?,
+                tag: Any? = null,
+            ): Validator<String?> {
+                return Validator(
+                    errorMessage = errorMessage,
+                    validPredicate = {
+                        it ?: return@Validator true
+                        regExp ?: return@Validator true
+                        it.matches(regExp.toRegex())
+
+                    },
+                    tag = tag
+                )
             }
         }
     }
@@ -507,4 +558,6 @@ class Field<T> private constructor(
         val handle: SavedStateHandle,
         val key: String
     )
+
+    companion object
 }
