@@ -99,12 +99,12 @@ fun <D> Field<D>.observeWithClearError(
  * филды прошли валидацию, или первый еррорный филд
  */
 @JvmOverloads
-fun Collection<Field<*>>.validateAndSetByRequiredFirst(ifEmpty: Boolean = true): Field<*>? {
+fun Collection<Field<*>>.firstValidateAndSetByRequired(ifEmpty: Boolean = true): Field<*>? {
     return firstOrNull { !it.validateAndSetByRequired(ifEmpty) }
 }
 
 @JvmOverloads
-fun Collection<Field<*>>.validateAndSetByRequired(ifEmpty: Boolean = true): List<Field<*>> {
+fun Collection<Field<*>>.allValidateAndSetByRequired(ifEmpty: Boolean = true): List<Field<*>> {
     return filter { !it.validateAndSetByRequired(ifEmpty) }
 }
 
