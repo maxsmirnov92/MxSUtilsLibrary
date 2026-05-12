@@ -13,7 +13,6 @@ import java.io.File
 import java.io.IOException
 import java.io.InputStream
 import java.io.InputStreamReader
-import java.io.InterruptedIOException
 import java.io.OutputStream
 import java.io.Writer
 import java.nio.charset.Charset
@@ -79,7 +78,8 @@ fun InputStream.copyStreamOrThrow(
                             bytesTotal
                         )
                     ) {
-                        throw InterruptedIOException("Copying streams interrupted")
+                        // not use InterruptedIOException
+                        throw StreamCancellationException("Copying streams interrupted")
                     }
                     lastNotifyTime = System.currentTimeMillis()
                 }
