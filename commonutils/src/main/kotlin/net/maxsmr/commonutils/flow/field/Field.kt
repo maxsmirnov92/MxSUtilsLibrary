@@ -139,24 +139,15 @@ class Field<T> private constructor(
     }
 
     /**
-     * @return true, если проверка по всем валидаторам прошла
-     */
-    fun validateAndSet(tag: Any? = null): Boolean {
-        val result = validate(tag)
-        _errorFlow.value = result
-        return result == null
-    }
-
-    /**
      * Валидация в зав-ти от обязательности данного поля
      * @param ifEmpty при true необязательное поле будет валидироваться если непустое
      * @param tag тэг, которому должен соответствовать конкретный валидатор для проверки;
      * null - не учитывать тэг
      */
-    @JvmOverloads
     fun validateAndSetByRequired(
-        ifEmpty: Boolean = true,
         tag: Any? = null,
+        ifEmpty: Boolean = true,
+        skipEmpty: Boolean = false
     ): Boolean {
         return if (!requiredFlow.value && (!ifEmpty || isEmpty)) {
             // при необязательном пустом поле
@@ -166,8 +157,44 @@ class Field<T> private constructor(
         } else {
             // при обязательности -
             // валидация по всем как обычно
-            validateAndSet(tag)
+            validateAndSet(tag, skipEmpty)
         }
+    }
+
+    /**
+     * @return true, если проверка по всем валидаторам прошла
+     */
+    fun validateAndSet(
+        tag: Any? = null,
+        skipEmpty: Boolean = false
+    ): Boolean {
+        val result = validate(tag, skipEmpty)
+        _errorFlow.value = result
+        return result == null
+    }
+
+    /**
+     * Вызвать emptyPredicate и validators без выставления ошибки
+     * @return текущая ошибку поля, формируемую одним из валидаторов, либо null при отсутствии ошибок
+     */
+    fun validate(
+        tag: Any? = null,
+        skipEmpty: Boolean = false
+    ): TextMessage? {
+        if (!skipEmpty && validateEmpty()) return emptyMessage
+        val value = value
+        return validators.find {
+            !it.isValid(value = value, tag = tag)
+        }?.errorMessageProvider?.invoke(value)
+    }
+
+    /**
+     * Вызвать emptyPredicate без выставления ошибки
+     * @return true, если условие на пустоту сработало
+     */
+    fun validateEmpty(): Boolean {
+        val value = value
+        return value == null || emptyPredicate(value)
     }
 
     fun clearError() {
@@ -224,27 +251,6 @@ class Field<T> private constructor(
         this.withAsterisk = withAsterisk
         this.withCaps = withCaps
         recharge()
-    }
-
-    /**
-     * Вызвать emptyPredicate без выставления ошибки
-     * @return true, если условие на пустоту сработало
-     */
-    fun validateEmpty(): Boolean {
-        val field = value
-        return field == null || emptyPredicate(field)
-    }
-
-    /**
-     * Вызвать emptyPredicate и validators без выставления ошибки
-     * @return текущая ошибку поля, формируемую одним из валидаторов, либо null при отсутствии ошибок
-     */
-    fun validate(tag: Any? = null): TextMessage? {
-        val field = value
-        if (field == null || emptyPredicate(field)) return emptyMessage
-        return validators.find {
-            !it.isValid(value = field, tag = tag)
-        }?.errorMessageProvider?.invoke(field)
     }
 
     /**
