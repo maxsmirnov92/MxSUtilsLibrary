@@ -7,6 +7,7 @@ import androidx.annotation.StringRes
 import androidx.lifecycle.SavedStateHandle
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.channels.BufferOverflow
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -15,6 +16,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.launch
 import net.maxsmr.commonutils.flow.observeLatest
 import net.maxsmr.commonutils.gui.message.TextMessage
 import java.io.Serializable
@@ -25,9 +27,10 @@ import java.util.Locale
 @MainThread
 class Field<T> private constructor(
     persistable: Persistable?,
-    hasInitial: Boolean,
     val valueFlow: StateFlow<T>,
     private val _valueFlow: MutableSharedFlow<T>,
+    private val initialValue: T,
+    private val emptyIf: (T) -> Boolean,
     private val scope: CoroutineScope,
     private val setValueFunction: (T) -> Unit,
     private val getValueFunction: () -> T,
@@ -90,6 +93,12 @@ class Field<T> private constructor(
         _enabledFlow.asStateFlow()
     }
 
+    val hasChanges: Boolean
+        get() = value != initialValue
+
+    private val hasInitial: Boolean
+        get() = !emptyIf(initialValue)
+
     private val _requiredFlow = MutableStateFlow(false)
 
     private val _errorFlow = MutableStateFlow<TextMessage?>(null)
@@ -120,7 +129,7 @@ class Field<T> private constructor(
             recharge()
         }
 
-    private lateinit var emptyPredicate: (T) -> Boolean
+
     private var emptyMessage: TextMessage? = null
 
     private var hintMessage: TextMessage? = null
@@ -134,6 +143,13 @@ class Field<T> private constructor(
         if (persistable != null) {
             valueFlow.observeLatest(scope) {
                 persistable.handle[persistable.key] = it
+            }
+        }
+        if (hasInitial) {
+            // костыль для случая, когда hint нужен сразу одновременно с value
+            scope.launch {
+                delay(50)
+                recharge()
             }
         }
     }
@@ -194,7 +210,7 @@ class Field<T> private constructor(
      */
     fun validateEmpty(): Boolean {
         val value = value
-        return value == null || emptyPredicate(value)
+        return value == null || emptyIf(value)
     }
 
     fun clearError() {
@@ -255,7 +271,7 @@ class Field<T> private constructor(
 
     /**
      * Осуществляет валидацию значения поля на предмет наличия ошибки с **конкретной** текстовкой.
-     * Валидаторы вызываются, только если поле **не** пустое (см. [emptyPredicate]).
+     * Валидаторы вызываются, только если поле **не** пустое (см. [emptyIf]).
      *
      * @param errorMessageProvider возвращает сообщение об ошибке на случай, если [validPredicate] возвращает false
      * @param validPredicate функция проверки значения поля на наличие ошибки с **конкретной** текстовкой
@@ -311,30 +327,7 @@ class Field<T> private constructor(
             return validPredicate(value)
         }
 
-        companion object {
-
-            /**
-             * Возвращает валидатор, осуществляющий проверку поля по регулярному выражению
-             * @param errorMessage сообщение об ошибке, если проверка завершается неуспешно
-             * @param regExp строковое представление регулярного выражения
-             */
-            fun fromRegExp(
-                errorMessage: TextMessage,
-                regExp: String?,
-                tag: Any? = null,
-            ): Validator<String?> {
-                return Validator(
-                    errorMessage = errorMessage,
-                    validPredicate = {
-                        it ?: return@Validator true
-                        regExp ?: return@Validator true
-                        it.matches(regExp.toRegex())
-
-                    },
-                    tag = tag
-                )
-            }
-        }
+        companion object {}
     }
 
     /**
@@ -499,12 +492,10 @@ class Field<T> private constructor(
         }
 
         fun build(): Field<T> {
-            val emptyIf = emptyPredicate
-                ?: throw IllegalStateException("emptyIf function must be called on Field.Builder")
-            val field = createField(!emptyIf(initialValue))
+
+            val field = createField(initialValue)
             field._requiredFlow.value = required
             field._enabledFlow.value = enabled
-            field.emptyPredicate = emptyIf
             field.emptyMessage = emptyMessage
             field.validators = validators
             field.hintMessage = hint
@@ -514,25 +505,30 @@ class Field<T> private constructor(
             return field
         }
 
-        private fun createField(hasInitial: Boolean): Field<T> {
+        private fun createField(initialValue: T): Field<T> {
+            val emptyIf = emptyPredicate
+                ?: throw IllegalStateException("emptyIf function must be called on Field.Builder")
+
             val sharedFieldValue = fieldValue()
             val stateFieldValue = sharedFieldValue.stateIn(
                 scope,
                 SharingStarted.Eagerly,
                 initialValue
             )
+
             return Field(
-                persistable,
-                hasInitial,
-                stateFieldValue,
-                sharedFieldValue,
-                scope,
-                {
+                persistable = persistable,
+                valueFlow = stateFieldValue,
+                _valueFlow = sharedFieldValue,
+                initialValue = initialValue,
+                emptyIf = emptyIf,
+                scope = scope,
+                setValueFunction = {
                     val value = transformSet(it)
                     value.checkPersistable()
                     sharedFieldValue.tryEmit(value)
                 },
-                {
+                getValueFunction = {
                     transformGet(stateFieldValue.value)
                 }
             )
