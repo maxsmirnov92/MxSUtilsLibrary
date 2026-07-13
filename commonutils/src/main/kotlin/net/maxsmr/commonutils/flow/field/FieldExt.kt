@@ -4,9 +4,14 @@ import android.widget.EditText
 import android.widget.TextView
 import androidx.lifecycle.LifecycleOwner
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
+import kotlinx.coroutines.launch
 import net.maxsmr.commonutils.flow.observeLatest
 import net.maxsmr.commonutils.format.getFormattedText
 import net.maxsmr.commonutils.gui.setSelectionToEnd
@@ -14,6 +19,8 @@ import net.maxsmr.commonutils.gui.setTextDistinct
 import net.maxsmr.commonutils.gui.setTextDistinctFormatted
 import ru.tinkoff.decoro.Mask
 import ru.tinkoff.decoro.watchers.MaskFormatWatcher
+import kotlin.time.Duration
+import kotlin.time.Duration.Companion.milliseconds
 
 /**
  * Обозревание форматированного или неформатированного (второй вариант более правильный)
@@ -91,6 +98,44 @@ fun <D> Field<D>.observeWithClearError(
         onChanged?.invoke(it)
         clearError()
     }
+}
+
+@OptIn(FlowPreview::class)
+fun <T : Any> Field<T>.observeWithDebounceValidateAndSet(
+    coroutineScope: CoroutineScope,
+    delay: Duration = 1500.milliseconds,
+    tag: Any? = null,
+    ifEmpty: Boolean = true,
+    skipEmpty: Boolean = false,
+    onBefore: (() -> Unit)? = null,
+    onAfter: (() -> Unit)? = null,
+) {
+    coroutineScope.launch {
+        valueFlow
+            .onEach { onBefore?.invoke() }
+            .debounce {
+                if (delay.isPositive()) {
+                    delay
+                } else {
+                    0.milliseconds
+                }
+            }
+            .onEach { onAfter?.invoke() }
+            .collectLatest {
+                validateAndSetByRequired(tag, ifEmpty, skipEmpty)
+            }
+    }
+    if (delay.isPositive()) {
+        coroutineScope.launch {
+            valueFlow.collectLatest {
+                clearError()
+            }
+        }
+    }
+}
+
+fun Collection<Field<*>>.allFieldsWithoutChangesOrError(): Boolean {
+    return all { !it.hasChanges && !it.hasError }
 }
 
 /**
